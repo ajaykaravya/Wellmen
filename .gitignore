@@ -41,3 +41,18 @@ yarn-error.log*
 next-env.d.ts
 
 /lib/generated/prisma
+
+# Node
+node_modules
+.next
+out
+
+# Android / Capacitor / Gradle
+android/.gradle-cache
+android/build
+android/.idea
+.gradle
+build/
+
+# OS
+.DS_Store
