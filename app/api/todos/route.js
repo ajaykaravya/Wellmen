@@ -1,0 +1,196 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { requireRole } from "@/lib/rbac";
+
+const parseStatus = (value) => {
+  const normalized = String(value || "").toUpperCase();
+  if (normalized === "TODO") return "TODO";
+  if (normalized === "IN_PROGRESS") return "IN_PROGRESS";
+  if (normalized === "DONE") return "DONE";
+  if (normalized === "ON_HOLD") return "ON_HOLD";
+
+  return null;
+};
+
+const parseDate = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
+};
+
+export async function GET(req) {
+  const gate = await requireRole(req, ["Admin"]);
+  if (!gate.ok) return gate.res;
+
+  const { searchParams } = new URL(req.url);
+  const q = String(searchParams.get("q") || "").trim();
+  const status = parseStatus(searchParams.get("status"));
+  const date = searchParams.get("date");
+  const fromDate = searchParams.get("fromDate");
+  const toDate = searchParams.get("toDate");
+  const assigneeId = String(searchParams.get("assigneeId") || "").trim();
+  const pageParam = Number(searchParams.get("page") || "1");
+  const pageSizeParam = Number(searchParams.get("pageSize") || "10");
+  const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+  const pageSize =
+    Number.isFinite(pageSizeParam) && pageSizeParam > 0
+      ? Math.min(pageSizeParam, 100)
+      : 10;
+
+  const where = {};
+
+  if (q) {
+    where.OR = [
+      { title: { contains: q, mode: "insensitive" } },
+      { description: { contains: q, mode: "insensitive" } },
+    ];
+  }
+
+  if (status) {
+    where.status = status;
+  }
+
+  if (assigneeId) {
+    where.assigneeId = assigneeId;
+  }
+
+  const parsedFromDate = parseDate(fromDate);
+  const parsedToDate = parseDate(toDate);
+  if (fromDate && !parsedFromDate) {
+    return NextResponse.json({ error: "Invalid fromDate." }, { status: 400 });
+  }
+  if (toDate && !parsedToDate) {
+    return NextResponse.json({ error: "Invalid toDate." }, { status: 400 });
+  }
+
+  if (parsedFromDate || parsedToDate) {
+    where.startDate = {};
+    if (parsedFromDate) {
+      where.startDate.gte = parsedFromDate;
+    }
+    if (parsedToDate) {
+      const end = new Date(parsedToDate);
+      end.setHours(23, 59, 59, 999);
+      where.startDate.lte = end;
+    }
+  } else if (date) {
+    const start = new Date(date);
+    if (Number.isNaN(start.getTime())) {
+      return NextResponse.json({ error: "Invalid date." }, { status: 400 });
+    }
+
+    const end = new Date(date);
+    end.setDate(end.getDate() + 1);
+
+    where.startDate = {
+      gte: start,
+      lt: end,
+    };
+  }
+
+  const [total, todos] = await Promise.all([
+    prisma.todo.count({ where }),
+    prisma.todo.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      include: {
+        assignee: { include: { role: true } },
+      },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+  ]);
+
+  const data = todos.map((todo) => ({
+    id: todo.id,
+    title: todo.title,
+    description: todo.description,
+    startDate: todo.startDate,
+    status: todo.status,
+    assignee: todo.assignee
+      ? {
+          id: todo.assignee.id,
+          firstName: todo.assignee.firstName,
+          lastName: todo.assignee.lastName,
+          mobileNumber: todo.assignee.mobileNumber,
+          role: todo.assignee.role?.name || null,
+        }
+      : null,
+    createdAt: todo.createdAt,
+  }));
+
+  return NextResponse.json({
+    data,
+    page,
+    pageSize,
+    total,
+    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+  });
+}
+
+export async function POST(req) {
+  const gate = await requireRole(req, ["Admin"]);
+  if (!gate.ok) return gate.res;
+
+  const body = await req.json();
+  const title = String(body.title || "").trim();
+  const description = String(body.description || "").trim();
+  const startDate = String(body.startDate || "").trim();
+  const status = parseStatus(body.status) || "TODO";
+  const assigneeId = String(body.assigneeId || "").trim();
+
+  if (!title || !startDate) {
+    return NextResponse.json(
+      { error: "Task title and start date are required." },
+      { status: 400 }
+    );
+  }
+
+  const parsedDate = new Date(startDate);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return NextResponse.json({ error: "Invalid start date." }, { status: 400 });
+  }
+
+  if (assigneeId) {
+    const exists = await prisma.user.findUnique({ where: { id: assigneeId } });
+    if (!exists) {
+      return NextResponse.json({ error: "Assignee not found." }, { status: 400 });
+    }
+  }
+
+  const todo = await prisma.todo.create({
+    data: {
+      title,
+      description: description || null,
+      startDate: parsedDate,
+      status,
+      assigneeId: assigneeId || null,
+      createdById: gate.auth?.user?.id || null,
+    },
+    include: {
+      assignee: { include: { role: true } },
+    },
+  });
+
+  return NextResponse.json(
+    {
+      id: todo.id,
+      title: todo.title,
+      description: todo.description,
+      startDate: todo.startDate,
+      status: todo.status,
+      assignee: todo.assignee
+        ? {
+            id: todo.assignee.id,
+            firstName: todo.assignee.firstName,
+            lastName: todo.assignee.lastName,
+            mobileNumber: todo.assignee.mobileNumber,
+            role: todo.assignee.role?.name || null,
+          }
+        : null,
+      createdAt: todo.createdAt,
+    },
+    { status: 201 }
+  );
+}

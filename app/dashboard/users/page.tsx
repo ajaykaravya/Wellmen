@@ -1,0 +1,293 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { flexRender, useReactTable, ColumnDef, getCoreRowModel } from "@tanstack/react-table";
+import DashboardShell, { useDashboardContext } from "../_components/DashboardShell";
+import ConfirmDialog from "../../components/ConfirmDialog";
+import { toast } from "react-toastify";
+
+type UserRow = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  mobileNumber?: string | null;
+  role?: string | null;
+};
+
+function UsersContent() {
+  const router = useRouter();
+  const { isAdmin, setNavOpen } = useDashboardContext();
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState<UserRow | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+
+  const loadUsers = async () => {
+    if (!isAdmin) return;
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `/api/users?page=${pageIndex + 1}&pageSize=${pageSize}`
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      setUsers(Array.isArray(data?.data) ? data.data : []);
+      setTotal(typeof data?.total === "number" ? data.total : 0);
+    } catch (error) {
+      console.error("Failed to load users", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUsers();
+  }, [isAdmin, pageIndex, pageSize]);
+
+  const handleEditUser = (row: UserRow) => {
+    router.push(`/dashboard/users/${row.id}`);
+  };
+
+  const handleDeleteUser = async (row: UserRow) => {
+    setConfirmTarget(row);
+    setConfirmOpen(true);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!confirmTarget) return;
+    try {
+      const res = await fetch(`/api/users/${confirmTarget.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        toast.error(payload.error || "Failed to delete user.");
+        return;
+      }
+      await loadUsers();
+      toast.success("User deleted successfully.");
+    } catch (error) {
+      console.error("Failed to delete user", error);
+      toast.error("Failed to delete user.");
+    } finally {
+      setConfirmOpen(false);
+      setConfirmTarget(null);
+    }
+  };
+
+  const columns = useMemo<ColumnDef<UserRow>[]>(
+    () => [
+      {
+        header: "Name",
+        accessorKey: "firstName",
+        cell: ({row}:any) => (
+          <span className="rbac-name">
+            {row.original?.firstName} {row.original?.lastName}
+          </span>
+        ),
+      },
+      {
+        header: "Mobile number",
+        accessorKey: "mobileNumber",
+        cell: (info:any) => (
+          <span className="rbac-muted">{(info.getValue() as string) || "-"}</span>
+        ),
+      },
+      {
+        header: "Role",
+        accessorKey: "role",
+        cell: (info:any) => (
+          <span className="rbac-muted">{(info.getValue() as string) || "-"}</span>
+        ),
+      },
+      {
+        header: "Action",
+        id: "action",
+        cell: ({ row }:any) => (
+          <div className="rbac-inline-actions flex gap-4">
+            <button
+              className="rbac-link"
+              type="button"
+              onClick={() => handleEditUser(row.original)}
+            >
+              Edit
+            </button>
+            <button
+              className="rbac-link danger"
+              type="button"
+              onClick={() => handleDeleteUser(row.original)}
+            >
+              Delete
+            </button>
+          </div>
+        ),
+      },
+    ],
+    [handleEditUser, handleDeleteUser]
+  );
+
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+
+  const table = useReactTable({
+    data: users,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    manualPagination: true,
+    pageCount,
+  });
+
+  return (
+    <>
+      <header className="rbac-header">
+        <div>
+          <button
+            className="rbac-hamburger"
+            type="button"
+            onClick={() => setNavOpen(true)}
+          >
+            <span />
+          </button>
+          <p className="rbac-eyebrow">User Management</p>
+          <h1 className="rbac-heading">Manage users</h1>
+          <p className="rbac-subtext">
+            Create and manage users with role assignments.
+          </p>
+        </div>
+        <button
+          className="rbac-button"
+          type="button"
+          onClick={() => router.push("/dashboard/users/new")}
+        >
+          Create user
+        </button>
+      </header>
+
+      <section className="rbac-section">
+        <div className="rbac-card">
+          <h3 className="rbac-title-lg">All users</h3>
+          <div className="mt-4 overflow-x-auto">
+            <table className="min-w-full border-separate border-spacing-y-2">
+              <thead>
+                {table.getHeaderGroups().map((headerGroup:any) => (
+                  <tr key={headerGroup.id}>
+                    {headerGroup.headers.map((header:any) => (
+                      <th
+                        key={header.id}
+                        className="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody>
+                {loading && (
+                  <tr>
+                    <td colSpan={columns.length} className="py-6 text-sm text-slate-500">
+                      Loading users...
+                    </td>
+                  </tr>
+                )}
+                {!loading && users.length === 0 && (
+                  <tr>
+                    <td colSpan={columns.length} className="py-6 text-sm text-slate-500">
+                      No users found.
+                    </td>
+                  </tr>
+                )}
+                {!loading &&
+                  table.getRowModel().rows.map((row:any) => (
+                    <tr key={row.id} className="bg-white">
+                      {row.getVisibleCells().map((cell:any) => (
+                        <td key={cell.id} className="py-4 pr-6 text-sm text-slate-700">
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
+            <span>
+              Page {pageIndex + 1} of {pageCount}
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                className="rbac-button rbac-button-secondary"
+                type="button"
+                onClick={() => setPageIndex((prev) => Math.max(prev - 1, 0))}
+                disabled={pageIndex === 0}
+              >
+                Previous
+              </button>
+              <button
+                className="rbac-button rbac-button-secondary"
+                type="button"
+                onClick={() =>
+                  setPageIndex((prev) => Math.min(prev + 1, pageCount - 1))
+                }
+                disabled={pageIndex + 1 >= pageCount}
+              >
+                Next
+              </button>
+              <select
+                className="rbac-input rbac-select"
+                value={pageSize}
+                onChange={(event) => {
+                  setPageIndex(0);
+                  setPageSize(Number(event.target.value));
+                }}
+              >
+                {[5, 10, 20, 30].map((size) => (
+                  <option key={size} value={size}>
+                    Show {size} 
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Delete user?"
+        description={
+          confirmTarget
+            ? `Delete ${confirmTarget.firstName} ${confirmTarget.lastName}? This action cannot be undone.`
+            : "This action cannot be undone."
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={confirmDeleteUser}
+        onClose={() => {
+          setConfirmOpen(false);
+          setConfirmTarget(null);
+        }}
+      />
+    </>
+  );
+}
+
+export default function UsersPage() {
+  return (
+    <DashboardShell requireAdmin>
+      <UsersContent />
+    </DashboardShell>
+  );
+}

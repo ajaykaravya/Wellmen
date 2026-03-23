@@ -1,0 +1,418 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { flexRender, useReactTable } from "@tanstack/react-table";
+import { ColumnDef, getCoreRowModel } from "@tanstack/table-core";
+import DashboardShell, {
+  useDashboardContext,
+} from "../_components/DashboardShell";
+import ConfirmDialog from "../../components/ConfirmDialog";
+import { toast } from "react-toastify";
+
+type ProjectStatus = "PENDING" | "IN_PROGRESS" | "DONE" | "ON_HOLD";
+
+type ProjectRow = {
+  id: string;
+  name: string;
+  address: string;
+  contactNumber: string;
+  email: string;
+  startDate: string;
+  endDate: string;
+  description: string | null;
+  status: ProjectStatus;
+};
+
+function ProjectListContent() {
+  const router = useRouter();
+  const { setNavOpen } = useDashboardContext();
+  const [projects, setProjects] = useState<ProjectRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState<ProjectRow | null>(null);
+
+  const loadProjects = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page: String(pageIndex + 1),
+        pageSize: String(pageSize),
+      });
+
+      if (query.trim()) params.set("q", query.trim());
+      if (statusFilter) params.set("status", statusFilter);
+      if (fromDate) params.set("fromDate", fromDate);
+      if (toDate) params.set("toDate", toDate);
+
+      const res = await fetch(`/api/projects?${params.toString()}`);
+      if (!res.ok) return;
+
+      const data = await res.json();
+      setProjects(Array.isArray(data?.data) ? data.data : []);
+      setTotal(typeof data?.total === "number" ? data.total : 0);
+    } catch (error) {
+      console.error("Failed to load projects", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [fromDate, pageIndex, pageSize, query, statusFilter, toDate]);
+
+  useEffect(() => {
+    loadProjects();
+  }, [loadProjects]);
+
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+
+  useEffect(() => {
+    if (pageIndex > pageCount - 1) {
+      setPageIndex(Math.max(pageCount - 1, 0));
+    }
+  }, [pageCount, pageIndex]);
+
+  const handleEditProject = useCallback(
+    (row: ProjectRow) => {
+      router.push(`/dashboard/projects/${row.id}`);
+    },
+    [router],
+  );
+
+  const handleDeleteProject = useCallback((row: ProjectRow) => {
+    setConfirmTarget(row);
+    setConfirmOpen(true);
+  }, []);
+
+  const confirmDeleteProject = useCallback(async () => {
+    if (!confirmTarget) return;
+    try {
+      const res = await fetch(`/api/projects/${confirmTarget.id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        toast.error(payload.error || "Failed to delete project.");
+        return;
+      }
+
+      await loadProjects();
+      toast.success("Project deleted successfully.");
+    } catch (error) {
+      console.error("Failed to delete project", error);
+      toast.error("Failed to delete project.");
+    } finally {
+      setConfirmOpen(false);
+      setConfirmTarget(null);
+    }
+  }, [confirmTarget, loadProjects]);
+
+  const columns = useMemo<ColumnDef<ProjectRow>[]>(
+    () => [
+      {
+        header: "Project",
+        accessorKey: "name",
+        cell: (info) => (
+          <span className="rbac-name">{String(info.getValue() || "")}</span>
+        ),
+      },
+      {
+        header: "Address",
+        accessorKey: "address",
+        size: 500,
+        cell: (info) => (
+          <span className="rbac-muted">{String(info.getValue() || "-")}</span>
+        ),
+      },
+      {
+        header: "Contact",
+        accessorKey: "contactNumber",
+      },
+      {
+        header: "Email",
+        accessorKey: "email",
+      },
+      {
+        header: "Start",
+        accessorKey: "startDate",
+        cell: (info) => {
+          const value = String(info.getValue() || "");
+          return value ? new Date(value).toLocaleDateString() : "-";
+        },
+      },
+      {
+        header: "End",
+        accessorKey: "endDate",
+        cell: (info) => {
+          const value = String(info.getValue() || "");
+          return value ? new Date(value).toLocaleDateString() : "-";
+        },
+      },
+      {
+        header: "Status",
+        accessorKey: "status",
+        cell: (info) => (
+          <span className="rbac-muted">
+            {String(info.getValue() || "").replaceAll("_", " ")}
+          </span>
+        ),
+      },
+      {
+        header: "Action",
+        id: "action",
+        cell: ({ row }) => (
+          <div className="rbac-inline-actions flex gap-4">
+            <button
+              className="rbac-link"
+              type="button"
+              onClick={() => handleEditProject(row.original)}
+            >
+              Edit
+            </button>
+            <button
+              className="rbac-link danger"
+              type="button"
+              onClick={() => handleDeleteProject(row.original)}
+            >
+              Delete
+            </button>
+          </div>
+        ),
+      },
+    ],
+    [handleDeleteProject, handleEditProject],
+  );
+
+  const table = useReactTable({
+    data: projects,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    manualPagination: true,
+    pageCount,
+  });
+
+  return (
+    <>
+      <header className="rbac-header">
+        <div>
+          <button
+            className="rbac-hamburger"
+            type="button"
+            onClick={() => setNavOpen(true)}
+          >
+            <span />
+          </button>
+          <p className="rbac-eyebrow">Projects</p>
+          <h1 className="rbac-heading">Project list</h1>
+          <p className="rbac-subtext">Create and manage projects.</p>
+        </div>
+        <button
+          className="rbac-button"
+          type="button"
+          onClick={() => router.push("/dashboard/projects/new")}
+        >
+          Add Project
+        </button>
+      </header>
+
+      <section className="rbac-section">
+        <div className="rbac-card">
+          <h3 className="rbac-title-lg">All projects</h3>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-5">
+            <input
+              className="rbac-input"
+              type="text"
+              placeholder="Search name, address or description"
+              value={query}
+              onChange={(event) => {
+                setPageIndex(0);
+                setQuery(event.target.value);
+              }}
+            />
+            <select
+              className="rbac-input rbac-select"
+              value={statusFilter}
+              onChange={(event) => {
+                setPageIndex(0);
+                setStatusFilter(event.target.value);
+              }}
+            >
+              <option value="">All status</option>
+              <option value="PENDING">Pending</option>
+              <option value="IN_PROGRESS">In progress</option>
+              <option value="DONE">Done</option>
+              <option value="ON_HOLD">On hold</option>
+            </select>
+            <input
+              className="rbac-input"
+              type="date"
+              value={fromDate}
+              onChange={(event) => {
+                setPageIndex(0);
+                setFromDate(event.target.value);
+              }}
+            />
+            <input
+              className="rbac-input"
+              type="date"
+              value={toDate}
+              onChange={(event) => {
+                setPageIndex(0);
+                setToDate(event.target.value);
+              }}
+            />
+            <button
+              className="rbac-button rbac-button-secondary"
+              type="button"
+              onClick={() => {
+                setPageIndex(0);
+                setQuery("");
+                setStatusFilter("");
+                setFromDate("");
+                setToDate("");
+              }}
+            >
+              Clear filters
+            </button>
+          </div>
+
+          <div className="mt-4 overflow-x-auto">
+            <table className="min-w-full border-separate border-spacing-y-2">
+              <thead>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <tr key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <th
+                        key={header.id}
+                        style={{ width: header.getSize() }}
+                        className="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody>
+                {loading && (
+                  <tr>
+                    <td
+                      colSpan={columns.length}
+                      className="py-6 text-sm text-slate-500"
+                    >
+                      Loading projects...
+                    </td>
+                  </tr>
+                )}
+                {!loading && projects.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={columns.length}
+                      className="py-6 text-sm text-slate-500"
+                    >
+                      No projects found.
+                    </td>
+                  </tr>
+                )}
+                {!loading &&
+                  table.getRowModel().rows.map((row) => (
+                    <tr key={row.id} className="bg-white">
+                      {row.getVisibleCells().map((cell) => (
+                        <td
+                          key={cell.id}
+                          style={{ width: cell.column.getSize() }}
+                          className="py-4 text-sm text-slate-700"
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
+            <span>
+              Page {pageIndex + 1} of {pageCount}
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                className="rbac-button rbac-button-secondary"
+                type="button"
+                onClick={() => setPageIndex((prev) => Math.max(prev - 1, 0))}
+                disabled={pageIndex === 0}
+              >
+                Previous
+              </button>
+              <button
+                className="rbac-button rbac-button-secondary"
+                type="button"
+                onClick={() =>
+                  setPageIndex((prev) => Math.min(prev + 1, pageCount - 1))
+                }
+                disabled={pageIndex + 1 >= pageCount}
+              >
+                Next
+              </button>
+              <select
+                className="rbac-input rbac-select"
+                value={pageSize}
+                onChange={(event) => {
+                  setPageIndex(0);
+                  setPageSize(Number(event.target.value));
+                }}
+              >
+                {[5, 10, 20, 30].map((size) => (
+                  <option key={size} value={size}>
+                    Show {size}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Delete project?"
+        description={
+          confirmTarget
+            ? `Delete "${confirmTarget.name}"? This action cannot be undone.`
+            : "This action cannot be undone."
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={confirmDeleteProject}
+        onClose={() => {
+          setConfirmOpen(false);
+          setConfirmTarget(null);
+        }}
+      />
+    </>
+  );
+}
+
+export default function ProjectsPage() {
+  return (
+    <DashboardShell requireAdmin>
+      <ProjectListContent />
+    </DashboardShell>
+  );
+}

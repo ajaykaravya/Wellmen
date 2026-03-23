@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id              String    @id @default(uuid())
+  firstName       String
+  lastName        String
+  fullName        String
+  email           String    @unique
+  mobileNumber    String    @unique
+  username        String?   @unique
+  passwordHash    String
+  roleId          String
+  role            Role      @relation(fields: [roleId], references: [id])
+  assignedTodos   Todo[]    @relation("TodoAssignee")
+  createdTodos    Todo[]    @relation("TodoCreator")
+  createdProjects Project[] @relation("ProjectCreator")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+enum TodoStatus {
+  TODO
+  IN_PROGRESS
+  ON_HOLD
+  DONE
+}
+
+enum ProjectStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+  ON_HOLD
+}
+
+model Todo {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  comments    String?
+  startDate   DateTime
+  status      TodoStatus @default(TODO)
+  assigneeId  String?
+  assignee    User?      @relation("TodoAssignee", fields: [assigneeId], references: [id])
+  createdById String?
+  createdBy   User?      @relation("TodoCreator", fields: [createdById], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Project {
+  id            String        @id @default(uuid())
+  name          String
+  address       String
+  contactNumber String
+  email         String
+  startDate     DateTime
+  endDate       DateTime
+  description   String?
+  status        ProjectStatus @default(PENDING)
+  createdById   String?
+  createdBy     User?         @relation("ProjectCreator", fields: [createdById], references: [id])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Role {
+  id              String           @id @default(uuid())
+  name            String           @unique
+  users           User[]
+  rolePermissions RolePermission[]
+}
+
+model Permission {
+  id              String           @id @default(uuid())
+  name            String           @unique
+  rolePermissions RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+}
