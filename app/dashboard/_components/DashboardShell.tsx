@@ -130,6 +130,7 @@ export default function DashboardShell({
       items.push({ key: "projects", label: "Projects" });
     }
     items.push({ key: "todo", label: "To-Do" });
+    items.push({ key: "reports", label: "Reporting" });
 
     items.push({ key: "profile", label: "My Profile" });
     return items;

@@ -146,8 +146,8 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
 
       <section className="rbac-section">
         <div className="rbac-card">
-          <form className="rbac-form" onSubmit={handleSubmit}>
-            <div className="rbac-form-grid">
+          <form className="rbac-form " onSubmit={handleSubmit}>
+            <div className="">
               <label className="rbac-label">
                 Project name
                 <input
@@ -160,7 +160,7 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
                 />
               </label>
 
-              <label className="rbac-label">
+              <label className="rbac-label mt-5">
                 Address
                 <input
                   className="rbac-input"
@@ -172,7 +172,7 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
                 />
               </label>
 
-              <label className="rbac-label">
+              <label className="rbac-label mt-5">
                 Contact number
                 <input
                   className="rbac-input"
@@ -184,7 +184,7 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
                 />
               </label>
 
-              <label className="rbac-label">
+              <label className="rbac-label mt-5">
                 Email
                 <input
                   className="rbac-input"
@@ -197,7 +197,7 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
                 />
               </label>
 
-              <label className="rbac-label">
+              <label className="rbac-label mt-5">
                 Start date
                 <input
                   className="rbac-input"
@@ -209,7 +209,7 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
                 />
               </label>
 
-              <label className="rbac-label">
+              <label className="rbac-label mt-5">
                 End date
                 <input
                   className="rbac-input"
@@ -221,7 +221,7 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
                 />
               </label>
 
-              <label className="rbac-label">
+              <label className="rbac-label mt-5">
                 Status
                 <select
                   className="rbac-input rbac-select"

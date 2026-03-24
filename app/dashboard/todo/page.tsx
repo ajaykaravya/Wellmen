@@ -26,6 +26,8 @@ type TodoRow = {
   comments?: string | null;
   startDate: string;
   status: TodoStatus;
+  projectId?: string | null;
+  projectName?: string;
   createdById?: string | null;
   canManage?: boolean;
   assignee: {

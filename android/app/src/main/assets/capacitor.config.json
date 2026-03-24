@@ -1,8 +1,5 @@
 {
 	"appId": "com.example.app",
 	"appName": "nextjs-capacitor",
-	"webDir": "out",
-	"server": {
-		"url": "http://192.168.1.62:3000"
-	}
+	"webDir": "out"
 }

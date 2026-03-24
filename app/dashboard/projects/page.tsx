@@ -125,7 +125,7 @@ function ProjectListContent() {
       {
         header: "Address",
         accessorKey: "address",
-        size: 500,
+        size: 300,
         cell: (info) => (
           <span className="rbac-muted">{String(info.getValue() || "-")}</span>
         ),

@@ -18,6 +18,8 @@ const parseDate = (value) => {
   return date;
 };
 
+const parseProjectId = (value) => String(value || "").trim();
+
 export async function GET(req) {
   const gate = await requireAuth(req);
   if (!gate.ok) return gate.res;
@@ -29,6 +31,7 @@ export async function GET(req) {
   const date = searchParams.get("date");
   const fromDate = searchParams.get("fromDate");
   const toDate = searchParams.get("toDate");
+  const projectId = parseProjectId(searchParams.get("projectId"));
   const pageParam = Number(searchParams.get("page") || "1");
   const pageSizeParam = Number(searchParams.get("pageSize") || "10");
   const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
@@ -50,6 +53,10 @@ export async function GET(req) {
 
   if (status) {
     where.status = status;
+  }
+
+  if (projectId) {
+    where.projectId = projectId;
   }
 
   const parsedFromDate = parseDate(fromDate);
@@ -91,7 +98,10 @@ export async function GET(req) {
     prisma.todo.findMany({
       where,
       orderBy: { createdAt: "desc" },
-      include: { assignee: { include: { role: true } } },
+      include: {
+        assignee: { include: { role: true } },
+        project: { select: { id: true, name: true } },
+      },
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
@@ -104,6 +114,8 @@ export async function GET(req) {
     comments: todo.comments,
     startDate: todo.startDate,
     status: todo.status,
+    projectId: todo.projectId,
+    projectName: todo.project?.name || "-",
     createdById: todo.createdById,
     canManage: todo.createdById === userId,
     assignee: todo.assignee
@@ -137,6 +149,7 @@ export async function POST(req) {
   const comments = String(body.comments || "").trim();
   const startDate = String(body.startDate || "").trim();
   const status = parseStatus(body.status) || "TODO";
+  const projectId = parseProjectId(body.projectId);
   const parsedDate = parseDate(startDate);
 
   if (!title || !startDate) {
@@ -150,6 +163,13 @@ export async function POST(req) {
     return NextResponse.json({ error: "Invalid start date." }, { status: 400 });
   }
 
+  if (projectId) {
+    const exists = await prisma.project.findUnique({ where: { id: projectId } });
+    if (!exists) {
+      return NextResponse.json({ error: "Project not found." }, { status: 400 });
+    }
+  }
+
   const userId = gate.auth?.user?.id || null;
 
   const todo = await prisma.todo.create({
@@ -159,10 +179,14 @@ export async function POST(req) {
       comments: comments || null,
       startDate: parsedDate,
       status,
+      projectId: projectId || null,
       assigneeId: userId,
       createdById: userId,
     },
-    include: { assignee: { include: { role: true } } },
+    include: {
+      assignee: { include: { role: true } },
+      project: { select: { id: true, name: true } },
+    },
   });
 
   return NextResponse.json(
@@ -173,6 +197,8 @@ export async function POST(req) {
       comments: todo.comments,
       startDate: todo.startDate,
       status: todo.status,
+      projectId: todo.projectId,
+      projectName: todo.project?.name || "-",
       createdById: todo.createdById,
       canManage: true,
       assignee: todo.assignee

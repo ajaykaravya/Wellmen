@@ -13,6 +13,8 @@ const parseStatus = (value) => {
   return null;
 };
 
+const parseProjectId = (value) => String(value || "").trim();
+
 export async function GET(req, { params }) {
   const gate = await requireRole(req, ["Admin"]);
   if (!gate.ok) return gate.res;
@@ -24,7 +26,10 @@ export async function GET(req, { params }) {
 
   const todo = await prisma.todo.findUnique({
     where: { id },
-    include: { assignee: { include: { role: true } } },
+    include: {
+      assignee: { include: { role: true } },
+      project: { select: { id: true, name: true } },
+    },
   });
 
   if (!todo) {
@@ -37,6 +42,8 @@ export async function GET(req, { params }) {
     description: todo.description,
     startDate: todo.startDate,
     status: todo.status,
+    projectId: todo.projectId,
+    projectName: todo.project?.name || "-",
     assigneeId: todo.assigneeId,
     assignee: todo.assignee
       ? {
@@ -66,6 +73,7 @@ export async function PUT(req, { params }) {
   const startDate = String(body.startDate || "").trim();
   const status = parseStatus(body.status);
   const assigneeId = String(body.assigneeId || "").trim();
+  const projectId = parseProjectId(body.projectId);
 
   if (!title || !startDate) {
     return NextResponse.json(
@@ -86,6 +94,13 @@ export async function PUT(req, { params }) {
     }
   }
 
+  if (projectId) {
+    const exists = await prisma.project.findUnique({ where: { id: projectId } });
+    if (!exists) {
+      return NextResponse.json({ error: "Project not found." }, { status: 400 });
+    }
+  }
+
   const todo = await prisma.todo.update({
     where: { id },
     data: {
@@ -93,9 +108,13 @@ export async function PUT(req, { params }) {
       description: description || null,
       startDate: parsedDate,
       status: status || "TODO",
+      projectId: projectId || null,
       assigneeId: assigneeId || null,
     },
-    include: { assignee: { include: { role: true } } },
+    include: {
+      assignee: { include: { role: true } },
+      project: { select: { id: true, name: true } },
+    },
   });
 
   return NextResponse.json({
@@ -104,6 +123,8 @@ export async function PUT(req, { params }) {
     description: todo.description,
     startDate: todo.startDate,
     status: todo.status,
+    projectId: todo.projectId,
+    projectName: todo.project?.name || "-",
     assigneeId: todo.assigneeId,
     assignee: todo.assignee
       ? {

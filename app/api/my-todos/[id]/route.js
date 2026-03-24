@@ -20,6 +20,8 @@ const parseDate = (value) => {
   return date;
 };
 
+const parseProjectId = (value) => String(value || "").trim();
+
 const serializeTodo = (todo, userId) => ({
   id: todo.id,
   title: todo.title,
@@ -28,6 +30,8 @@ const serializeTodo = (todo, userId) => ({
   startDate: todo.startDate,
   status: todo.status,
   assigneeId: todo.assigneeId,
+  projectId: todo.projectId,
+  projectName: todo.project?.name || "-",
   createdById: todo.createdById,
   canManage: todo.createdById === userId,
   createdAt: todo.createdAt,
@@ -45,7 +49,10 @@ async function loadAllowedTodo(req, params) {
     };
   }
 
-  const todo = await prisma.todo.findUnique({ where: { id } });
+  const todo = await prisma.todo.findUnique({
+    where: { id },
+    include: { project: { select: { id: true, name: true } } },
+  });
   if (!todo) {
     return {
       ok: false,
@@ -92,6 +99,7 @@ export async function PUT(req, { params }) {
   const comments = String(body.comments || "").trim();
   const startDate = String(body.startDate || "").trim();
   const status = parseStatus(body.status) || "TODO";
+  const projectId = parseProjectId(body.projectId);
   const parsedDate = parseDate(startDate);
 
   if (!title || !startDate) {
@@ -105,6 +113,13 @@ export async function PUT(req, { params }) {
     return NextResponse.json({ error: "Invalid start date." }, { status: 400 });
   }
 
+  if (projectId) {
+    const exists = await prisma.project.findUnique({ where: { id: projectId } });
+    if (!exists) {
+      return NextResponse.json({ error: "Project not found." }, { status: 400 });
+    }
+  }
+
   const todo = await prisma.todo.update({
     where: { id: loaded.todo.id },
     data: {
@@ -113,7 +128,9 @@ export async function PUT(req, { params }) {
       comments: comments || null,
       startDate: parsedDate,
       status,
+      projectId: projectId || null,
     },
+    include: { project: { select: { id: true, name: true } } },
   });
 
   return NextResponse.json(serializeTodo(todo, loaded.userId));
@@ -130,7 +147,8 @@ export async function PATCH(req, { params }) {
     const triedRestrictedField =
       typeof body.title === "string" ||
       typeof body.description === "string" ||
-      typeof body.startDate === "string";
+      typeof body.startDate === "string" ||
+      typeof body.projectId === "string";
 
     if (triedRestrictedField) {
       return NextResponse.json(
@@ -148,6 +166,8 @@ export async function PATCH(req, { params }) {
   const status = parseStatus(body.status);
   const startDate =
     typeof body.startDate === "string" ? body.startDate.trim() : undefined;
+  const projectId =
+    typeof body.projectId === "string" ? parseProjectId(body.projectId) : undefined;
 
   const data = {};
 
@@ -182,6 +202,15 @@ export async function PATCH(req, { params }) {
       }
       data.startDate = parsedDate;
     }
+    if (typeof projectId === "string") {
+      if (projectId) {
+        const exists = await prisma.project.findUnique({ where: { id: projectId } });
+        if (!exists) {
+          return NextResponse.json({ error: "Project not found." }, { status: 400 });
+        }
+      }
+      data.projectId = projectId || null;
+    }
   }
 
   if (Object.keys(data).length === 0) {
@@ -191,6 +220,7 @@ export async function PATCH(req, { params }) {
   const todo = await prisma.todo.update({
     where: { id: loaded.todo.id },
     data,
+    include: { project: { select: { id: true, name: true } } },
   });
 
   return NextResponse.json(serializeTodo(todo, loaded.userId));

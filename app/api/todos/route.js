@@ -19,6 +19,8 @@ const parseDate = (value) => {
   return date;
 };
 
+const parseProjectId = (value) => String(value || "").trim();
+
 export async function GET(req) {
   const gate = await requireRole(req, ["Admin"]);
   if (!gate.ok) return gate.res;
@@ -30,6 +32,7 @@ export async function GET(req) {
   const fromDate = searchParams.get("fromDate");
   const toDate = searchParams.get("toDate");
   const assigneeId = String(searchParams.get("assigneeId") || "").trim();
+  const projectId = parseProjectId(searchParams.get("projectId"));
   const pageParam = Number(searchParams.get("page") || "1");
   const pageSizeParam = Number(searchParams.get("pageSize") || "10");
   const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
@@ -53,6 +56,10 @@ export async function GET(req) {
 
   if (assigneeId) {
     where.assigneeId = assigneeId;
+  }
+
+  if (projectId) {
+    where.projectId = projectId;
   }
 
   const parsedFromDate = parseDate(fromDate);
@@ -96,6 +103,7 @@ export async function GET(req) {
       orderBy: { createdAt: "desc" },
       include: {
         assignee: { include: { role: true } },
+        project: { select: { id: true, name: true } },
       },
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -108,6 +116,8 @@ export async function GET(req) {
     description: todo.description,
     startDate: todo.startDate,
     status: todo.status,
+    projectId: todo.projectId,
+    projectName: todo.project?.name || "-",
     assignee: todo.assignee
       ? {
           id: todo.assignee.id,
@@ -139,6 +149,7 @@ export async function POST(req) {
   const startDate = String(body.startDate || "").trim();
   const status = parseStatus(body.status) || "TODO";
   const assigneeId = String(body.assigneeId || "").trim();
+  const projectId = parseProjectId(body.projectId);
 
   if (!title || !startDate) {
     return NextResponse.json(
@@ -159,17 +170,26 @@ export async function POST(req) {
     }
   }
 
+  if (projectId) {
+    const exists = await prisma.project.findUnique({ where: { id: projectId } });
+    if (!exists) {
+      return NextResponse.json({ error: "Project not found." }, { status: 400 });
+    }
+  }
+
   const todo = await prisma.todo.create({
     data: {
       title,
       description: description || null,
       startDate: parsedDate,
       status,
+      projectId: projectId || null,
       assigneeId: assigneeId || null,
       createdById: gate.auth?.user?.id || null,
     },
     include: {
       assignee: { include: { role: true } },
+      project: { select: { id: true, name: true } },
     },
   });
 
@@ -180,6 +200,8 @@ export async function POST(req) {
       description: todo.description,
       startDate: todo.startDate,
       status: todo.status,
+      projectId: todo.projectId,
+      projectName: todo.project?.name || "-",
       assignee: todo.assignee
         ? {
             id: todo.assignee.id,

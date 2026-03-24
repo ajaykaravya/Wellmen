@@ -779,7 +779,7 @@ button,
 
 .rbac-note {
   background: var(--brand-soft);
-  color: var(--brand-dark);
+  color: red;
   border-radius: 12px;
   padding: 10px 12px;
   font-size: 0.9rem;

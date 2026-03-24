@@ -136,7 +136,7 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
       <section className="rbac-section">
         <div className="rbac-card">
           <form className="rbac-form" onSubmit={handleSubmit}>
-            <div className="rbac-form-grid">
+            <div className="">
               <label className="rbac-label">
                 First name
                 <input
@@ -151,7 +151,7 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
                   }
                 />
               </label>
-              <label className="rbac-label">
+              <label className="rbac-label mt-5">
                 Last name
                 <input
                   className="rbac-input"
@@ -165,7 +165,7 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
                   }
                 />
               </label>
-              <label className="rbac-label">
+              <label className="rbac-label mt-5">
                 Email
                 <input
                   className="rbac-input"
@@ -179,7 +179,7 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
                   }
                 />
               </label>
-              <label className="rbac-label">
+              <label className="rbac-label mt-5">
                 Mobile number
                 <input
                   inputMode="tel"
@@ -194,7 +194,7 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
                   }
                 />
               </label>
-              <label className="rbac-label">
+              <label className="rbac-label mt-5">
                 Password
                 <input
                   type="password"
@@ -210,7 +210,7 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
                 />
               </label>
               <select
-                className="rbac-input rbac-select"
+                className="rbac-input rbac-select mt-5"
                 value={form.roleName}
                 onChange={(event) =>
                   setForm((prev) => ({

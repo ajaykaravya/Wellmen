@@ -12,11 +12,17 @@ type UserOption = {
   role?: string | null;
 };
 
+type ProjectOption = {
+  id: string;
+  name: string;
+};
+
 type TodoFormState = {
   title: string;
   description: string;
   startDate: string;
   status: "TODO" | "IN_PROGRESS" | "ON_HOLD" | "DONE";
+  projectId: string;
   assigneeId: string;
 };
 
@@ -35,6 +41,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
   const router = useRouter();
   const { setNavOpen, isAdmin } = useDashboardContext();
   const [users, setUsers] = useState<UserOption[]>([]);
+  const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [note, setNote] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<TodoFormState>({
@@ -42,6 +49,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
     description: "",
     startDate: "",
     status: "TODO",
+    projectId: "",
     assigneeId: "",
   });
 
@@ -50,14 +58,20 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
       try {
         const endpoint = isAdmin ? "/api/todos" : "/api/my-todos";
 
-        const [usersRes, todoRes] = await Promise.all([
+        const [usersRes, projectsRes, todoRes] = await Promise.all([
           isAdmin ? fetch("/api/users/options") : Promise.resolve(null),
+          fetch("/api/projects/options"),
           todoId ? fetch(`${endpoint}/${todoId}`) : Promise.resolve(null),
         ]);
 
         if (usersRes?.ok) {
           const data = await usersRes.json();
           setUsers(Array.isArray(data) ? data : []);
+        }
+
+        if (projectsRes.ok) {
+          const data = await projectsRes.json();
+          setProjects(Array.isArray(data) ? data : []);
         }
 
         if (todoRes?.ok) {
@@ -67,6 +81,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
             description: todo.description || "",
             startDate: formatDateForInput(todo.startDate),
             status: todo.status || "TODO",
+            projectId: todo.projectId || "",
             assigneeId: todo.assigneeId || "",
           });
         }
@@ -99,6 +114,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
           description: form.description.trim(),
           startDate: form.startDate,
           status: form.status,
+          projectId: form.projectId,
           ...(isAdmin ? { assigneeId: form.assigneeId } : {}),
         }),
       });
@@ -189,6 +205,27 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
                     }))
                   }
                 />
+              </label>
+
+              <label className="rbac-label mt-5">
+                Project
+                <select
+                  className="rbac-input rbac-select"
+                  value={form.projectId}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      projectId: event.target.value,
+                    }))
+                  }
+                >
+                  <option value="">No project</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label className="rbac-label mt-5">

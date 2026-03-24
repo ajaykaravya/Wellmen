@@ -64,6 +64,8 @@ export async function GET(req) {
       { name: { contains: q, mode: "insensitive" } },
       { description: { contains: q, mode: "insensitive" } },
       { address: { contains: q, mode: "insensitive" } },
+      { email: { contains: q, mode: "insensitive" } },
+      { contactNumber: { contains: q, mode: "insensitive" } },
     ];
   }
 
