@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "export": "next export"
@@ -17,7 +17,6 @@
     "@prisma/client": "^7.5.0",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/table-core": "^8.21.3",
-    "react-toastify": "^10.0.5",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
     "next": "16.1.6",
@@ -25,6 +24,7 @@
     "pg-hstore": "^2.3.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-toastify": "^10.0.5",
     "sequelize": "^6.37.8"
   },
   "devDependencies": {
