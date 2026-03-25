@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import ToastProvider from "./components/ToastProvider";
@@ -16,6 +16,13 @@ const bodyFont = Space_Grotesk({
 export const metadata: Metadata = {
   title: "Super Admin Portal",
   description: "Super Admin registration and user PIN access",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
 };
 
 export default function RootLayout({
