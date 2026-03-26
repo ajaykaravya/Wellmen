@@ -7,6 +7,7 @@ import { flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-tabl
 import { ColumnDef } from "@tanstack/table-core";
 import { toast } from "react-toastify";
 import DashboardShell, { useDashboardContext } from "./_components/DashboardShell";
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 type TodoStatus = "TODO" | "IN_PROGRESS" | "ON_HOLD" | "DONE";
 
@@ -233,7 +234,7 @@ function OverviewContent() {
         {
           header: "Task Title",
           accessorKey: "title",
-          cell: (info) => <span className="rbac-name">{String(info.getValue() || "")}</span>,
+          cell: (info) => <span className="rbac-muted">{String(info.getValue() || "")}</span>,
         },
         {
           header: "Description",
@@ -279,7 +280,7 @@ function OverviewContent() {
       {
         header: "Task Title",
         accessorKey: "title",
-        cell: (info) => <span className="rbac-name">{String(info.getValue() || "")}</span>,
+        cell: (info) => <span className="rbac-muted">{String(info.getValue() || "")}</span>,
       },
       {
         header: "Description",
@@ -348,10 +349,10 @@ function OverviewContent() {
       <header className="rbac-header">
         <div>
           <p className="rbac-eyebrow">Dashboard</p>
-          <h1 className="rbac-heading">Welcome back, {displayName}</h1>
-          <p className="rbac-subtext">
+          <h1 className="rbac-heading font-medium">Welcome back, {displayName}</h1>
+          <span className="text-sm">
             Role-based workspace tailored for {user?.role || "your role"}.
-          </p>
+          </span>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-3">
           <div className="rbac-role">
@@ -381,81 +382,7 @@ function OverviewContent() {
         </section>
       )}
 
-      {isAdmin && (
-        <section className="rbac-section">
-          <div className="rbac-card">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h3 className="rbac-title-lg">Employee reporting</h3>
-              <div className="flex items-center gap-2">
-                <button
-                  className="rbac-button rbac-button-secondary"
-                  type="button"
-                  onClick={() => setAdminDate((prev) => shiftInputDate(prev, -1))}
-                >
-                  Previous
-                </button>
-                <input
-                  className="rbac-input"
-                  type="date"
-                  value={adminDate}
-                  onChange={(event) => setAdminDate(event.target.value)}
-                />
-                <button
-                  className="rbac-button rbac-button-secondary"
-                  type="button"
-                  onClick={() => setAdminDate((prev) => shiftInputDate(prev, 1))}
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-4 overflow-x-auto">
-              <table className="min-w-full border-separate border-spacing-y-2">
-                <thead>
-                  <tr>
-                    <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Project</th>
-                    <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Title</th>
-                    <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Description</th>
-                    <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {adminLoading && (
-                    <tr>
-                      <td colSpan={4} className="py-6 text-sm text-slate-500">Loading reporting...</td>
-                    </tr>
-                  )}
-                  {!adminLoading && adminReports.length === 0 && (
-                    <tr>
-                      <td colSpan={4} className="py-6 text-sm text-slate-500">No reporting found for selected date.</td>
-                    </tr>
-                  )}
-                  {!adminLoading &&
-                    adminReports.map((report) => (
-                      <tr key={report.id} className="bg-white">
-                        <td className="py-4 text-sm text-slate-700">{report.projectName}</td>
-                        <td className="py-4 text-sm text-slate-700">{report.title}</td>
-                        <td className="py-4 text-sm text-slate-700">{report.description}</td>
-                        <td className="py-4 text-sm text-slate-700">
-                          <button
-                            className="rbac-link"
-                            type="button"
-                            onClick={() => openReportView(report)}
-                          >
-                            View
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-      )}
-
-      <section className="rbac-section">
+       <section className="rbac-section">
         <div className="rbac-card">
           <h3 className="rbac-title-lg">{isAdmin ? "Today tasks (all employees)" : "Today tasks"}</h3>
 
@@ -509,6 +436,81 @@ function OverviewContent() {
           </div>
         </div>
       </section>
+
+      {isAdmin && (
+        <section className="rbac-section">
+          <div className="rbac-card">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h3 className="rbac-title-lg">Employee reporting</h3>
+              <div className="flex items-center gap-2">
+                <button
+                  className="change-button change-button-secondary"
+                  type="button"
+                  onClick={() => setAdminDate((prev) => shiftInputDate(prev, -1))}
+                >
+                    <FaChevronLeft size={20}/>
+                </button>
+                <input
+                  className="date-input"
+                  type="date"
+                  value={adminDate}
+                  onChange={(event) => setAdminDate(event.target.value)}
+                />
+                <button
+                  className="change-button change-button-secondary"
+                  type="button"
+                  onClick={() => setAdminDate((prev) => shiftInputDate(prev, 1))}
+                >
+                  <FaChevronRight size={20}/>
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-4 overflow-x-auto">
+              <table className="min-w-full border-separate border-spacing-y-2">
+                <thead>
+                  <tr>
+                    <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Project</th>
+                    <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Title</th>
+                    <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Description</th>
+                    <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {adminLoading && (
+                    <tr>
+                      <td colSpan={4} className="py-6 text-sm text-slate-500">Loading reporting...</td>
+                    </tr>
+                  )}
+                  {!adminLoading && adminReports.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="py-6 text-sm text-slate-500">No reporting found for selected date.</td>
+                    </tr>
+                  )}
+                  {!adminLoading &&
+                    adminReports.map((report) => (
+                      <tr key={report.id} className="bg-white">
+                        <td className="py-4 text-sm text-slate-700">{report.projectName}</td>
+                        <td className="py-4 text-sm text-slate-700">{report.title}</td>
+                        <td className="py-4 text-sm text-slate-700">{report.description}</td>
+                        <td className="py-4 text-sm text-slate-700">
+                          <button
+                            className="rbac-link"
+                            type="button"
+                            onClick={() => openReportView(report)}
+                          >
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      )}
+
 
       {modalOpen && !isAdmin && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">

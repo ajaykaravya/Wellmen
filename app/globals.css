@@ -14,6 +14,7 @@
   --stroke: rgba(13, 23, 38, 0.12);
   --shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
   --radius: 20px;
+  --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", Segoe UI Symbol, "Noto Color Emoji";
 }
 
 * {
@@ -27,12 +28,16 @@ body {
   overflow-x: hidden;
   overflow-wrap: break-word;
   word-wrap: break-word;
-  font-family: var(--font-sans), system-ui, sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   color: var(--ink);
   background:
     radial-gradient(circle at 8% 8%, #ffffff 0%, transparent 45%),
     radial-gradient(circle at 92% 12%, #d8e7ff 0%, transparent 42%),
     linear-gradient(160deg, var(--bg) 0%, var(--bg-soft) 100%);
+}
+
+.font-sans {
+  font-family: var(--font-sans) !important;
 }
 
 a {
@@ -136,15 +141,8 @@ a {
 }
 
 h1 {
-  font-family: var(--font-display), serif;
   font-size: clamp(2.3rem, 4vw, 3.2rem);
   line-height: 1.05;
-}
-
-h2,
-h3,
-h4 {
-  font-family: var(--font-display), serif;
 }
 
 .subtitle {
@@ -164,22 +162,6 @@ h4 {
   gap: 16px;
 }
 
-label {
-  display: grid;
-  gap: 8px;
-  font-weight: 600;
-  color: var(--ink);
-}
-
-input {
-  padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(13, 23, 38, 0.16);
-  font-size: 1rem;
-  font-family: inherit;
-  background: #f9fbff;
-}
-
 input:focus {
   outline: 2px solid var(--brand);
   border-color: transparent;
@@ -189,7 +171,6 @@ button,
 .primary,
 .ghost {
   border: none;
-  font-family: inherit;
   cursor: pointer;
 }
 
@@ -231,14 +212,6 @@ button,
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
-}
-
-.label {
-  font-size: 0.8rem;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  margin-bottom: 6px;
 }
 
 .list {
@@ -538,14 +511,15 @@ button,
 }
 
 .rbac-logo {
-  width: 48px;
-  height: 48px;
-  border-radius: 18px;
-  background: var(--brand);
-  color: white;
-  display: grid;
+  width: 55px;
+  display: flex;
+  /* height: 48px; */
+  /* border-radius: 18px; */
+  /* background: var(--brand); */
+  /* color: white; */
+  /* display: grid;
   place-items: center;
-  font-weight: 700;
+  font-weight: 700; */
 }
 
 .rbac-title {
@@ -627,7 +601,7 @@ button,
 }
 
 .rbac-name {
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ink);
 }
 
@@ -679,24 +653,19 @@ button,
 }
 
 .rbac-eyebrow {
-  font-size: 0.8rem;
+  font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 0.25em;
   color: var(--brand-dark);
 }
 
 .rbac-heading {
-  font-size: clamp(1.5rem, 5vw, 2rem);
+  font-size: 20px;
   margin-top: 10px;
   line-height: 1.2;
   color: var(--ink);
   word-wrap: break-word;
   overflow-wrap: break-word;
-}
-
-.rbac-subtext {
-  margin-top: 6px;
-  color: var(--muted);
 }
 
 .rbac-role {
@@ -760,8 +729,8 @@ button,
 }
 
 .rbac-title-lg {
-  font-size: 1.15rem;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 500;
   color: var(--ink);
 }
 
@@ -783,20 +752,39 @@ button,
 }
 
 .rbac-input {
-  width: 100%;
   padding: 12px 30px 12px 10px;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid rgba(13, 23, 38, 0.16);
   background: #f8faff;
-  font-size: 1rem;
+  /* font-size: 1rem; */
+  width: 100%;
 }
 
-.rbac-input:focus {
+.rbac-input-filter {
+  padding: 5px;
+  border-radius: 8px;
+  border: 1px solid rgba(13, 23, 38, 0.16);
+  background: #f8faff;
+  /* font-size: 1rem; */
+}
+
+.date-input{
+  padding: 5px;
+  border-radius: 8px;
+  border: 1px solid rgba(13, 23, 38, 0.16);
+  background: #f8faff;
+  font-size: 14px;
+}
+
+.rbac-input:focus,
+.rbac-input-filter:focus {
   outline: 2px solid var(--brand);
   border-color: transparent;
 }
 
 .rbac-select {
+  padding: 8px 30px 8px 10px;
+
   appearance: none;
   background-image: linear-gradient(45deg, transparent 50%, #5b6b82 50%),
     linear-gradient(135deg, #5b6b82 50%, transparent 50%);
@@ -816,21 +804,43 @@ button,
 
 .rbac-button {
   width: fit-content;
-  padding: 10px 20px;
-  border-radius: 999px;
+  padding: 8px 16px;
+  border-radius: 8px;
   border: none;
   background: var(--brand);
   color: white;
   font-weight: 600;
+  font-size: 14px;
   cursor: pointer;
-  box-shadow: 0 12px 24px rgba(31, 107, 255, 0.25);
+  /* box-shadow: 0 12px 24px rgba(31, 107, 255, 0.25); */
 }
 
+.change-button{
+  width: fit-content;
+  /* padding: 2px 2px; */
+  
+  border: none;
+  cursor: pointer;
+  /* box-shadow: 0 12px 24px rgba(31, 107, 255, 0.25); */
+}
+
+.change-button-secondary{
+  /* border: 1px solid rgba(31, 107, 255, 0.3); */
+  /* color: var(--brand-dark); */
+  /* box-shadow: none; */
+}
 .rbac-button-secondary {
   background: white;
   color: var(--brand-dark);
   border: 1px solid rgba(31, 107, 255, 0.3);
   box-shadow: none;
+}
+
+.change-button:disabled{
+  cursor: not-allowed;
+  opacity: 0.5;
+  /* background-color: #ccc; */
+  color: #666; 
 }
 
 .rbac-button:disabled {
@@ -931,10 +941,6 @@ button,
     gap: 12px;
   }
 
-  .rbac-heading {
-    font-size: clamp(1.25rem, 4vw, 1.75rem);
-  }
-
   .rbac-hamburger {
     display: inline-flex;
     margin-bottom: 8px;
@@ -947,7 +953,7 @@ button,
   .rbac-mobile-topbar {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: space-between;
     position: sticky;
     top: 0;
     z-index: 35;
@@ -1019,12 +1025,6 @@ button,
   .flex.items-center.gap-2 input {
     width: 100%;
     padding: 8px 12px;
-  }
-
-  .rbac-input {
-    padding: 10px 12px;
-    font-size: 16px;
-    width: 100%;
   }
 
   .rbac-section {
@@ -1101,16 +1101,9 @@ button,
     max-width: 100% !important;
   }
 
-  label {
-    gap: 6px;
-  }
-
   .rbac-subtext {
-    font-size: 0.9rem;
-  }
-
-  .rbac-title-lg {
-    font-size: 1rem;
+    font-size: 14px!important;
+    color: var(--muted);
   }
 
   .flex.flex-wrap.items-center.justify-end.gap-3 {
@@ -1127,25 +1120,6 @@ button,
 .user-list {
   display: grid;
   gap: 14px;
-}
-
-.user-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: #f5f8ff;
-  border: 1px solid rgba(31, 107, 255, 0.08);
-}
-
-.user-row h4 {
-  margin-bottom: 4px;
-}
-
-.user-row p {
-  color: var(--muted);
-  font-size: 0.95rem;
 }
 
 .pin-block {
@@ -1205,10 +1179,6 @@ button,
     gap: 12px;
   }
 
-  .rbac-heading {
-    font-size: clamp(1.1rem, 3vw, 1.5rem);
-  }
-
   .flex.items-center.gap-2 {
     grid-template-columns: 1fr;
   }
@@ -1216,15 +1186,6 @@ button,
   .flex.items-center.gap-2 button,
   .flex.items-center.gap-2 input {
     width: 100%;
-  }
-
-  .rbac-input {
-    padding: 8px 10px;
-    font-size: 14px;
-  }
-
-  .rbac-select {
-    padding-right: 24px;
   }
 
   table {
@@ -1257,30 +1218,8 @@ button,
     overflow: hidden;
   }
 
-  .rbac-heading {
-    font-size: clamp(1rem, 3vw, 1.4rem);
-    margin-top: 6px;
-    word-break: break-word;
-  }
-
-  .rbac-eyebrow {
-    font-size: 0.7rem;
-  }
-
-  .rbac-subtext {
-    font-size: 0.8rem;
-    margin-top: 4px;
-  }
-
   .rbac-container {
     gap: 16px;
-  }
-
-  .rbac-input {
-    padding: 8px 10px;
-    font-size: 14px;
-    border-radius: 8px;
-    width: 100%;
   }
 
   .rbac-link {
@@ -1335,15 +1274,6 @@ button,
 
   .gap-4 {
     gap: 12px !important;
-  }
-
-  label {
-    gap: 4px;
-    font-size: 0.85rem;
-  }
-
-  .rbac-title-lg {
-    font-size: 0.95rem;
   }
 
   .rbac-role {

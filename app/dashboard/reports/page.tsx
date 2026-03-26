@@ -10,6 +10,7 @@ import DashboardShell, {
 } from "../_components/DashboardShell";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import { toast } from "react-toastify";
+import { FaChevronLeft, FaChevronRight, FaEdit, FaEye, FaTrash } from "react-icons/fa";
 
 type ReportStatus = "TODO" | "IN_PROGRESS" | "DONE" | "ON_HOLD";
 
@@ -215,7 +216,7 @@ function ReportingListContent() {
               header: "Employee",
               accessorKey: "createdByName",
               cell: (info) => (
-                <span className="rbac-name">{String(info.getValue() || "-")}</span>
+                <span className="rbac-muted">{String(info.getValue() || "-")}</span>
               ),
             } as ColumnDef<ReportRow>,
           ]
@@ -225,7 +226,7 @@ function ReportingListContent() {
         accessorKey: "projectName",
         size: 200,
         cell: (info) => (
-          <span className="rbac-name">{String(info.getValue() || "-")}</span>
+          <span className="rbac-muted">{String(info.getValue() || "-")}</span>
         ),
       },
       {
@@ -233,7 +234,7 @@ function ReportingListContent() {
         accessorKey: "title",
         size: 300,
         cell: (info) => (
-          <span className="rbac-name">{String(info.getValue() || "-")}</span>
+          <span className="rbac-muted">{String(info.getValue() || "-")}</span>
         ),
       },
       {
@@ -256,7 +257,7 @@ function ReportingListContent() {
                 type="button"
                 onClick={() => handleView(row.original)}
               >
-                View
+                <FaEye />
               </button>
               {canManage && (
                 <>
@@ -265,14 +266,14 @@ function ReportingListContent() {
                     type="button"
                     onClick={() => handleEdit(row.original)}
                   >
-                    Edit
+                        <FaEdit />
                   </button>
                   <button
                     className="rbac-link danger"
                     type="button"
                     onClick={() => handleDelete(row.original)}
                   >
-                    Delete
+                        <FaTrash />
                   </button>
                 </>
               )}
@@ -294,7 +295,7 @@ function ReportingListContent() {
 
   return (
     <>
-      <header className="rbac-header">
+      {/* <header className="rbac-header">
         <div>
           <button
             className="rbac-hamburger"
@@ -307,7 +308,14 @@ function ReportingListContent() {
           <h1 className="rbac-heading">Reporting list</h1>
           <p className="rbac-subtext">Track reporting with filters and actions.</p>
         </div>
-        {!isAdmin && (
+        
+      </header> */}
+
+      <section className="rbac-section">
+        <div className="rbac-card">
+          <div className="flex justify-between items-center">
+          <h3 className="rbac-title-lg">All reporting</h3>
+          {!isAdmin && (
           <button
             className="rbac-button"
             type="button"
@@ -316,16 +324,11 @@ function ReportingListContent() {
             Add Reporting
           </button>
         )}
-      </header>
-
-      <section className="rbac-section">
-        <div className="rbac-card">
-          <h3 className="rbac-title-lg">All reporting</h3>
-
-          <div className={`mt-4 grid gap-3 md:grid-cols-2 ${isAdmin ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}>
+</div>
+          <div className='mt-4 flex flex-wrap gap-3'>
 
             <input
-              className="rbac-input"
+              className="rbac-input-filter"
               type="text"
               placeholder="Search title, description"
               value={query}
@@ -336,7 +339,7 @@ function ReportingListContent() {
             />
 
             <select
-              className="rbac-input rbac-select"
+              className="rbac-input-filter rbac-select"
               value={projectFilter}
               onChange={(event) => {
                 setPageIndex(0);
@@ -353,7 +356,7 @@ function ReportingListContent() {
 
             {isAdmin && (
               <select
-                className="rbac-input rbac-select"
+                className="rbac-input-filter rbac-select"
                 value={employeeFilter}
                 onChange={(event) => {
                   setPageIndex(0);
@@ -370,7 +373,7 @@ function ReportingListContent() {
             )}
 
             <input
-              className="rbac-input"
+              className="rbac-input-filter"
               type="date"
               value={fromDate}
               onChange={(event) => {
@@ -379,7 +382,7 @@ function ReportingListContent() {
               }}
             />
             <input
-              className="rbac-input"
+              className="rbac-input-filter"
               type="date"
               value={toDate}
               onChange={(event) => {
@@ -462,29 +465,33 @@ function ReportingListContent() {
             </table>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
-            <span>
-              Page {pageIndex + 1} of {pageCount}
-            </span>
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-3 text-sm text-slate-600">
+           
             <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
               <button
-                className="rbac-button rbac-button-secondary"
+                className="change-button change-button-secondary"
                 type="button"
                 onClick={() => setPageIndex((prev) => Math.max(prev - 1, 0))}
                 disabled={pageIndex === 0}
               >
-                Previous
+                <FaChevronLeft size={20}/>
               </button>
+               <span>
+              Page {pageIndex + 1} of {pageCount}
+            </span>
               <button
-                className="rbac-button rbac-button-secondary"
+                className="change-button change-button-secondary"
                 type="button"
                 onClick={() =>
                   setPageIndex((prev) => Math.min(prev + 1, pageCount - 1))
                 }
                 disabled={pageIndex + 1 >= pageCount}
               >
-                Next
+                <FaChevronRight size={20}/>
               </button>
+              </div>
+              <div>
               <select
                 className="rbac-input rbac-select"
                 value={pageSize}
@@ -499,6 +506,7 @@ function ReportingListContent() {
                   </option>
                 ))}
               </select>
+              </div>
             </div>
           </div>
         </div>

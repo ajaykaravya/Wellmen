@@ -43,6 +43,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
   const [users, setUsers] = useState<UserOption[]>([]);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [note, setNote] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Partial<Record<keyof TodoFormState, string>>>({});
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<TodoFormState>({
     title: "",
@@ -99,10 +100,13 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
     event.preventDefault();
     setNote(null);
 
-    if (!form.title.trim() || !form.startDate) {
-      setNote("Task title and start date are required.");
-      return;
-    }
+    const newErrors: Partial<Record<keyof TodoFormState, string>> = {};
+    if (!form.title.trim()) newErrors.title = "Task title is required.";
+    if (!form.startDate) newErrors.startDate = "Start date is required.";
+    if (!form.projectId.trim()) newErrors.projectId = "Project is required.";
+    if (isAdmin && !form.assigneeId.trim()) newErrors.assigneeId = "Assignee is required for admins.";
+
+    setErrors(newErrors);
 
     try {
       const endpoint = isAdmin ? "/api/todos" : "/api/my-todos";
@@ -136,81 +140,15 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
 
   return (
     <>
-      <header className="rbac-header">
-        <div>
-          <button
-            className="rbac-hamburger"
-            type="button"
-            onClick={() => setNavOpen(true)}
-          >
-            <span />
-          </button>
-          <p className="rbac-eyebrow">To-Do</p>
-          <h1 className="rbac-heading">{todoId ? "Edit task" : "Add a task"}</h1>
-          <p className="rbac-subtext">
-            {isAdmin ? "Assign a task to your team." : "Create a personal task."}
-          </p>
-        </div>
-        <button
-          className="rbac-button rbac-button-secondary"
-          type="button"
-          onClick={() => router.push("/dashboard/todo")}
-        >
-          Back to list
-        </button>
-      </header>
-
       <section className="rbac-section">
         <div className="rbac-card">
           <form className="rbac-form" onSubmit={handleSubmit}>
             <div>
+
               <label className="rbac-label">
-                Task title
-                <input
-                  className="rbac-input"
-                  placeholder="Task title"
-                  value={form.title}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, title: event.target.value }))
-                  }
-                />
-              </label>
-
-              <label className="rbac-label mt-5">
-                Description
-                <textarea
-                  className="rbac-input"
-                  rows={4}
-                  placeholder="Task details"
-                  value={form.description}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      description: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-
-              <label className="rbac-label mt-5">
-                Start date
-                <input
-                  type="date"
-                  className="rbac-input"
-                  value={form.startDate}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      startDate: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-
-              <label className="rbac-label mt-5">
-                Project
+                Project <span className="text-red-600">*</span>
                 <select
-                  className="rbac-input rbac-select"
+                  className="rbac-input rbac-select mb-2"
                   value={form.projectId}
                   onChange={(event) =>
                     setForm((prev) => ({
@@ -227,31 +165,15 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
                   ))}
                 </select>
               </label>
-
-              <label className="rbac-label mt-5">
-                Status
-                <select
-                  className="rbac-input rbac-select"
-                  value={form.status}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      status: event.target.value as TodoFormState["status"],
-                    }))
-                  }
-                >
-                  <option value="TODO">To do</option>
-                  <option value="IN_PROGRESS">In progress</option>
-                  <option value="ON_HOLD">On hold</option>
-                  <option value="DONE">Done</option>
-                </select>
-              </label>
+              {errors.projectId && (
+                <p className="text-sm text-red-600 mb-2">{errors.projectId}</p>
+              )}
 
               {isAdmin && (
                 <label className="rbac-label mt-5">
                   Assign
                   <select
-                    className="rbac-input rbac-select"
+                    className="rbac-input rbac-select mb-2"
                     value={form.assigneeId}
                     onChange={(event) =>
                       setForm((prev) => ({
@@ -269,13 +191,79 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
                   </select>
                 </label>
               )}
-            </div>
 
-            {note && <p className="rbac-note">{note}</p>}
+              <label className="rbac-label">
+                Task title <span className="text-red-600">*</span>
+                <input
+                  className="rbac-input mb-2"
+                  placeholder="Task title"
+                  value={form.title}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, title: event.target.value }))
+                  }
+                />
+              </label>
+              {errors.title && (
+                <p className="text-sm text-red-600 mb-2">{errors.title}</p>
+              )}
+
+              <label className="rbac-label">
+                Description
+                <textarea
+                  className="rbac-input"
+                  rows={4}
+                  placeholder="Task details"
+                  value={form.description}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      description: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <label className="rbac-label mt-5">
+                Date <span className="text-red-600">*</span>
+                <input
+                  type="date"
+                  className="rbac-input mb-2"
+                  value={form.startDate}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      startDate: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+              {errors.startDate && (
+                <p className="text-sm text-red-600 mb-2">{errors.startDate}</p>
+              )}
+
+              <label className="rbac-label">
+                Status
+                <select
+                  className="rbac-input rbac-select"
+                  value={form.status}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      status: event.target.value as TodoFormState["status"],
+                    }))
+                  }
+                >
+                  <option value="TODO">To do</option>
+                  <option value="IN_PROGRESS">In progress</option>
+                  <option value="ON_HOLD">On hold</option>
+                  <option value="DONE">Done</option>
+                </select>
+              </label>
+            </div>
 
             <div className="rbac-actions">
               <button className="rbac-button" type="submit">
-                {todoId ? "Save changes" : "Save todo"}
+                Save
               </button>
               <button
                 className="text-red-500"

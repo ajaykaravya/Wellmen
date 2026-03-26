@@ -6,6 +6,7 @@ import { flexRender, useReactTable, ColumnDef, getCoreRowModel } from "@tanstack
 import DashboardShell, { useDashboardContext } from "../_components/DashboardShell";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import { toast } from "react-toastify";
+import { FaChevronLeft, FaChevronRight, FaEdit, FaTrash } from "react-icons/fa";
 
 type UserRow = {
   id: string;
@@ -86,7 +87,7 @@ function UsersContent() {
         header: "Name",
         accessorKey: "firstName",
         cell: ({row}:any) => (
-          <span className="rbac-name">
+          <span className="rbac-muted">
             {row.original?.firstName} {row.original?.lastName}
           </span>
         ),
@@ -115,14 +116,14 @@ function UsersContent() {
               type="button"
               onClick={() => handleEditUser(row.original)}
             >
-              Edit
+              <FaEdit />
             </button>
             <button
               className="rbac-link danger"
               type="button"
               onClick={() => handleDeleteUser(row.original)}
             >
-              Delete
+              <FaTrash />
             </button>
           </div>
         ),
@@ -143,33 +144,17 @@ function UsersContent() {
 
   return (
     <>
-      <header className="rbac-header">
-        <div>
-          <button
-            className="rbac-hamburger"
-            type="button"
-            onClick={() => setNavOpen(true)}
-          >
-            <span />
-          </button>
-          <p className="rbac-eyebrow">User Management</p>
-          <h1 className="rbac-heading">Manage users</h1>
-          <p className="rbac-subtext">
-            Create and manage users with role assignments.
-          </p>
-        </div>
-        <button
+      <section className="rbac-section">
+        <div className="rbac-card">
+          <div className="flex justify-between items-center">
+          <h3 className="rbac-title-lg">All users</h3> <button
           className="rbac-button"
           type="button"
           onClick={() => router.push("/dashboard/users/new")}
         >
           Create user
         </button>
-      </header>
-
-      <section className="rbac-section">
-        <div className="rbac-card">
-          <h3 className="rbac-title-lg">All users</h3>
+        </div>
           <div className="mt-4 overflow-x-auto">
             <table className="min-w-full border-separate border-spacing-y-2">
               <thead>
@@ -223,29 +208,33 @@ function UsersContent() {
             </table>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
-            <span>
-              Page {pageIndex + 1} of {pageCount}
-            </span>
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-3 text-sm text-slate-600">
+           
             <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
               <button
-                className="rbac-button rbac-button-secondary"
+                className="change-button change-button-secondary"
                 type="button"
                 onClick={() => setPageIndex((prev) => Math.max(prev - 1, 0))}
                 disabled={pageIndex === 0}
               >
-                Previous
+                <FaChevronLeft size={20}/>
               </button>
+               <span>
+              Page {pageIndex + 1} of {pageCount}
+            </span>
               <button
-                className="rbac-button rbac-button-secondary"
+                className="change-button change-button-secondary"
                 type="button"
                 onClick={() =>
                   setPageIndex((prev) => Math.min(prev + 1, pageCount - 1))
                 }
                 disabled={pageIndex + 1 >= pageCount}
               >
-                Next
+                <FaChevronRight size={20}/>
               </button>
+              </div>
+              <div>
               <select
                 className="rbac-input rbac-select"
                 value={pageSize}
@@ -260,6 +249,7 @@ function UsersContent() {
                   </option>
                 ))}
               </select>
+              </div>
             </div>
           </div>
         </div>

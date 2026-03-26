@@ -126,7 +126,7 @@ export default function DashboardShell({
     ];
 
     if (isAdmin) {
-      items.push({ key: "users", label: "User Management" });
+      items.push({ key: "users", label: "Users" });
       items.push({ key: "projects", label: "Projects" });
     }
     items.push({ key: "todo", label: "To-Do" });
@@ -163,12 +163,16 @@ export default function DashboardShell({
     <DashboardContext.Provider value={contextValue}>
       <main className="rbac-shell">
         <aside className={`rbac-sidebar ${navOpen ? "open" : ""}`}>
-          <div className="rbac-brand">
-            <div className="rbac-logo">RB</div>
+         <div className="rbac-brand">
+         {!navOpen &&
+         <> 
+            <div className="rbac-logo"> <img src="/images/logo.png" alt="WellMen" /> </div>
             <div>
-              <p className="rbac-title">RBAC Suite</p>
+              <p className="rbac-title">WellMen</p>
               <p className="rbac-subtitle">{user?.role || "Role"}</p>
             </div>
+            </>
+           }
           </div>
 
           <nav className="rbac-nav">
@@ -203,6 +207,8 @@ export default function DashboardShell({
         )}
         <section className="rbac-main">
           <div className="rbac-mobile-topbar">
+            <div className="rbac-logo"> <img src="/images/logo.png" alt="WellMen" /> </div>
+
             <button
               className="rbac-hamburger"
               type="button"

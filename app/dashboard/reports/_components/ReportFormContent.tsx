@@ -57,6 +57,7 @@ export default function ReportFormContent({ reportId }: ReportFormContentProps) 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Partial<Record<keyof ReportFormState, string>>>({});
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [existingVideoUrl, setExistingVideoUrl] = useState<string | null>(null);
   const [removeVideo, setRemoveVideo] = useState(false);
@@ -138,8 +139,15 @@ export default function ReportFormContent({ reportId }: ReportFormContentProps) 
       return;
     }
 
-    if (!form.reportDate || !form.projectId || !form.title.trim() || !form.description.trim()) {
-      setNote("Date, project, title and description are required.");
+    const newErrors: Partial<Record<keyof ReportFormState, string>> = {};
+    if (!form.reportDate) newErrors.reportDate = "Date is required.";
+    if (!form.projectId) newErrors.projectId = "Project is required.";
+    if (!form.title.trim()) newErrors.title = "Title is required.";
+    if (!form.description.trim()) newErrors.description = "Description is required.";
+
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      setNote("Please fix the highlighted fields.");
       return;
     }
 
@@ -193,7 +201,7 @@ export default function ReportFormContent({ reportId }: ReportFormContentProps) 
 
   return (
     <>
-      <header className="rbac-header">
+      {/* <header className="rbac-header">
         <div>
           <button
             className="rbac-hamburger"
@@ -215,7 +223,7 @@ export default function ReportFormContent({ reportId }: ReportFormContentProps) 
         >
           Back to list
         </button>
-      </header>
+      </header> */}
 
       <section className="rbac-section">
         <div className="rbac-card">
@@ -223,7 +231,7 @@ export default function ReportFormContent({ reportId }: ReportFormContentProps) 
             <div>
               <div className="grid gap-5 md:grid-cols-2">
                 <label className="rbac-label">
-                  Date
+                  Date <span className="text-red-600">*</span>
                   <input
                     type="date"
                     className="rbac-input"
@@ -233,9 +241,12 @@ export default function ReportFormContent({ reportId }: ReportFormContentProps) 
                     }
                   />
                 </label>
+                {errors.reportDate && (
+                  <p className="text-sm text-red-600 mt-1">{errors.reportDate}</p>
+                )}
 
                 <label className="rbac-label">
-                  Project
+                  Project <span className="text-red-600">*</span>
                   <select
                     className="rbac-input rbac-select"
                     value={form.projectId}
@@ -254,7 +265,7 @@ export default function ReportFormContent({ reportId }: ReportFormContentProps) 
               </div>
 
               <label className="rbac-label mt-5">
-                Title
+                Title <span className="text-red-600">*</span>
                 <input
                   className="rbac-input"
                   placeholder="Work summary title"
@@ -264,19 +275,25 @@ export default function ReportFormContent({ reportId }: ReportFormContentProps) 
                   }
                 />
               </label>
+              {errors.title && (
+                <p className="text-sm text-red-600 mt-1">{errors.title}</p>
+              )}
 
               <label className="rbac-label mt-5">
-                Description
+                Description <span className="text-red-600">*</span>
                 <textarea
                   className="rbac-input"
                   rows={4}
-                  placeholder="Describe what was done today"
+                  placeholder="Detailed description"
                   value={form.description}
                   onChange={(event) =>
                     setForm((prev) => ({ ...prev, description: event.target.value }))
                   }
                 />
               </label>
+              {errors.description && (
+                <p className="text-sm text-red-600 mt-1">{errors.description}</p>
+              )}
 
               <div className="grid gap-5 mt-5 md:grid-cols-2">
                 <label className="rbac-label">
@@ -397,11 +414,7 @@ export default function ReportFormContent({ reportId }: ReportFormContentProps) 
 
             <div className="rbac-actions">
               <button className="rbac-button" type="submit" disabled={!canSubmit}>
-                {submitting
-                  ? "Saving..."
-                  : reportId
-                    ? "Save changes"
-                    : "Save reporting"}
+                Save
               </button>
               <button
                 className="text-red-500"

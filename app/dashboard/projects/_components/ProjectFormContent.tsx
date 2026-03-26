@@ -30,6 +30,7 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
   const router = useRouter();
   const { setNavOpen } = useDashboardContext();
   const [note, setNote] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Partial<Record<keyof ProjectFormState, string>>>({});
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<ProjectFormState>({
     name: "",
@@ -82,19 +83,16 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
     event.preventDefault();
     setNote(null);
 
-    if (
-      !form.name.trim() ||
-      !form.address.trim() ||
-      !form.contactNumber.trim() ||
-      !form.email.trim() ||
-      !form.startDate ||
-      !form.endDate
-    ) {
-      setNote(
-        "Project name, address, contact number, email, start date and end date are required.",
-      );
-      return;
-    }
+    const newErrors: Partial<Record<keyof ProjectFormState, string>> = {};
+
+    if (!form.name.trim()) newErrors.name = "Project name is required.";
+    if (!form.address.trim()) newErrors.address = "Address is required.";
+    if (!form.contactNumber.trim()) newErrors.contactNumber = "Contact number is required.";
+    if (!form.email.trim()) newErrors.email = "Email is required.";
+    if (!form.startDate) newErrors.startDate = "Start date is required.";
+    if (!form.endDate) newErrors.endDate = "End date is required.";
+
+    setErrors(newErrors);
 
     try {
       const res = await fetch(projectId ? `/api/projects/${projectId}` : "/api/projects", {
@@ -129,40 +127,26 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
 
   return (
     <>
-      <header className="rbac-header">
-        <div>
-          <p className="rbac-eyebrow">Projects</p>
-          <h1 className="rbac-heading">{projectId ? "Edit project" : "Add project"}</h1>
-          <p className="rbac-subtext">Manage project details and lifecycle.</p>
-        </div>
-        <button
-          className="rbac-button rbac-button-secondary"
-          type="button"
-          onClick={() => router.push("/dashboard/projects")}
-        >
-          Back to list
-        </button>
-      </header>
-
       <section className="rbac-section">
         <div className="rbac-card">
           <form className="rbac-form " onSubmit={handleSubmit}>
             <div className="">
               <label className="rbac-label">
-                Project name
+                Project name  <span className="text-red-600">*</span>
                 <input
-                  className="rbac-input"
+                  className="rbac-input mb-2"
                   placeholder="Project name"
                   value={form.name}
                   onChange={(event) =>
                     setForm((prev) => ({ ...prev, name: event.target.value }))
                   }
-                />
-              </label>
+                  />
+                </label>
+              {errors.name && <p className="text-sm text-red-600 mb-2">{errors.name}</p>}
 
-              <label className="rbac-label mt-5">
-                Address
-                <input
+              <label className="rbac-label">
+                Address <span className="text-red-600">*</span>
+                <textarea
                   className="rbac-input"
                   placeholder="Project address"
                   value={form.address}
@@ -171,11 +155,12 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
                   }
                 />
               </label>
+              {errors.address && <p className="text-sm text-red-600 mb-2">{errors.address}</p>}
 
-              <label className="rbac-label mt-5">
-                Contact number
+              <label className="rbac-label">
+                Contact number <span className="text-red-600">*</span>
                 <input
-                  className="rbac-input"
+                  className="rbac-input mb-2"
                   placeholder="Contact number"
                   value={form.contactNumber}
                   onChange={(event) =>
@@ -183,11 +168,12 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
                   }
                 />
               </label>
+              {errors.contactNumber && <p className="text-sm text-red-600 mb-2">{errors.contactNumber}</p>}
 
-              <label className="rbac-label mt-5">
-                Email
+              <label className="rbac-label">
+                Email <span className="text-red-600">*</span>
                 <input
-                  className="rbac-input"
+                  className="rbac-input mb-2"
                   type="email"
                   placeholder="Project email"
                   value={form.email}
@@ -196,11 +182,12 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
                   }
                 />
               </label>
+              {errors.email && <p className="text-sm text-red-600 mb-2">{errors.email}</p>}
 
-              <label className="rbac-label mt-5">
-                Start date
+              <label className="rbac-label">
+                Start date <span className="text-red-600">*</span>
                 <input
-                  className="rbac-input"
+                  className="rbac-input mb-2"
                   type="date"
                   value={form.startDate}
                   onChange={(event) =>
@@ -208,11 +195,12 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
                   }
                 />
               </label>
+              {errors.startDate && <p className="text-sm text-red-600 mb-2">{errors.startDate}</p>}
 
-              <label className="rbac-label mt-5">
-                End date
+              <label className="rbac-label">
+                End date <span className="text-red-600">*</span>
                 <input
-                  className="rbac-input"
+                  className="rbac-input mb-2"
                   type="date"
                   value={form.endDate}
                   onChange={(event) =>
@@ -220,11 +208,12 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
                   }
                 />
               </label>
+              {errors.endDate && <p className="text-sm text-red-600 mb-2">{errors.endDate}</p>}
 
-              <label className="rbac-label mt-5">
+              <label className="rbac-label">
                 Status
                 <select
-                  className="rbac-input rbac-select"
+                  className="rbac-input rbac-select mb-2"
                   value={form.status}
                   onChange={(event) =>
                     setForm((prev) => ({
@@ -254,11 +243,9 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
               />
             </label>
 
-            {note && <p className="rbac-note">{note}</p>}
-
             <div className="rbac-actions">
               <button className="rbac-button" type="submit">
-                {projectId ? "Save changes" : "Save project"}
+                Save
               </button>
               <button
                 className="text-red-500"

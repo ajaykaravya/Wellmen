@@ -9,6 +9,7 @@ import DashboardShell, {
 } from "../_components/DashboardShell";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import { toast } from "react-toastify";
+import { FaChevronLeft, FaChevronRight, FaEdit, FaTrash } from "react-icons/fa";
 
 type ProjectStatus = "PENDING" | "IN_PROGRESS" | "DONE" | "ON_HOLD";
 
@@ -119,7 +120,7 @@ function ProjectListContent() {
         header: "Project",
         accessorKey: "name",
         cell: (info) => (
-          <span className="rbac-name">{String(info.getValue() || "")}</span>
+          <span className="rbac-muted">{String(info.getValue() || "")}</span>
         ),
       },
       {
@@ -173,14 +174,14 @@ function ProjectListContent() {
               type="button"
               onClick={() => handleEditProject(row.original)}
             >
-              Edit
+                  <FaEdit />
             </button>
             <button
               className="rbac-link danger"
               type="button"
               onClick={() => handleDeleteProject(row.original)}
             >
-              Delete
+                  <FaTrash />
             </button>
           </div>
         ),
@@ -199,7 +200,7 @@ function ProjectListContent() {
 
   return (
     <>
-      <header className="rbac-header">
+      {/* <header className="rbac-header">
         <div>
           <button
             className="rbac-hamburger"
@@ -219,15 +220,24 @@ function ProjectListContent() {
         >
           Add Project
         </button>
-      </header>
+      </header> */}
 
       <section className="rbac-section">
         <div className="rbac-card">
-          <h3 className="rbac-title-lg">All projects</h3>
+          <div className="flex justify-between item-center">
 
-          <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-5">
+          <h3 className="rbac-title-lg">All projects</h3>
+          <button
+          className="rbac-button"
+          type="button"
+          onClick={() => router.push("/dashboard/projects/new")}
+        >
+          Add Project
+        </button>
+</div>
+          <div className="my-4 flex flex-wrap gap-2 ">
             <input
-              className="rbac-input"
+              className="rbac-input-filter"
               type="text"
               placeholder="Search name, address or description"
               value={query}
@@ -237,7 +247,7 @@ function ProjectListContent() {
               }}
             />
             <select
-              className="rbac-input rbac-select"
+              className="rbac-input-filter rbac-select"
               value={statusFilter}
               onChange={(event) => {
                 setPageIndex(0);
@@ -251,7 +261,7 @@ function ProjectListContent() {
               <option value="ON_HOLD">On hold</option>
             </select>
             <input
-              className="rbac-input"
+              className="rbac-input-filter"
               type="date"
               value={fromDate}
               onChange={(event) => {
@@ -260,7 +270,7 @@ function ProjectListContent() {
               }}
             />
             <input
-              className="rbac-input"
+              className="rbac-input-filter"
               type="date"
               value={toDate}
               onChange={(event) => {
@@ -347,29 +357,33 @@ function ProjectListContent() {
             </table>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
-            <span>
-              Page {pageIndex + 1} of {pageCount}
-            </span>
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-3 text-sm text-slate-600">
+           
             <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
               <button
-                className="rbac-button rbac-button-secondary"
+                className="change-button change-button-secondary"
                 type="button"
                 onClick={() => setPageIndex((prev) => Math.max(prev - 1, 0))}
                 disabled={pageIndex === 0}
               >
-                Previous
+                <FaChevronLeft size={20}/>
               </button>
+               <span>
+              Page {pageIndex + 1} of {pageCount}
+            </span>
               <button
-                className="rbac-button rbac-button-secondary"
+                className="change-button change-button-secondary"
                 type="button"
                 onClick={() =>
                   setPageIndex((prev) => Math.min(prev + 1, pageCount - 1))
                 }
                 disabled={pageIndex + 1 >= pageCount}
               >
-                Next
+                <FaChevronRight size={20}/>
               </button>
+              </div>
+              <div>
               <select
                 className="rbac-input rbac-select"
                 value={pageSize}
@@ -384,6 +398,7 @@ function ProjectListContent() {
                   </option>
                 ))}
               </select>
+              </div>
             </div>
           </div>
         </div>

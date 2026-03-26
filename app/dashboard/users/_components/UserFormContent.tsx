@@ -22,6 +22,7 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
   const { setNavOpen } = useDashboardContext();
   const [formLoading, setFormLoading] = useState(Boolean(userId));
   const [note, setNote] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Partial<Record<keyof UserFormState, string>>>({});
   const [form, setForm] = useState<UserFormState>({
     firstName: "",
     lastName: "",
@@ -71,16 +72,15 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
     event.preventDefault();
     setNote(null);
 
-    if (!form.firstName || !form.lastName || !form.email || !form.mobileNumber) {
-      setNote("First name, last name, email, and mobile number are required.");
-      return;
-    }
+    const newErrors: Partial<Record<keyof UserFormState, string>> = {};
+    if (!form.firstName.trim()) newErrors.firstName = "First name is required.";
+    if (!form.lastName.trim()) newErrors.lastName = "Last name is required.";
+    if (!form.email.trim()) newErrors.email = "Email is required.";
+    if (!form.mobileNumber.trim()) newErrors.mobileNumber = "Mobile number is required.";
+    if (!userId && !form.password) newErrors.password = "Password is required.";
+    if (!form.roleName?.trim()) newErrors.roleName = "Role name is required.";
 
-    if (!userId && !form.password) {
-      setNote("Password is required.");
-      return;
-    }
-
+    setErrors(newErrors);
     try {
       const endpoint = userId ? `/api/users/${userId}` : "/api/users";
       const method = userId ? "PUT" : "POST";
@@ -107,40 +107,14 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
 
   return (
     <>
-      <header className="rbac-header">
-        <div>
-          <button
-            className="rbac-hamburger"
-            type="button"
-            onClick={() => setNavOpen(true)}
-          >
-            <span />
-          </button>
-          <p className="rbac-eyebrow">User Management</p>
-          <h1 className="rbac-heading">{userId ? "Edit user" : "Create user"}</h1>
-          <p className="rbac-subtext">
-            {userId
-              ? "Update user details and permissions."
-              : "Add a new user and assign their role."}
-          </p>
-        </div>
-        <button
-          className="rbac-button rbac-button-secondary"
-          type="button"
-          onClick={() => router.push("/dashboard/users")}
-        >
-          Back to users
-        </button>
-      </header>
-
       <section className="rbac-section">
         <div className="rbac-card">
           <form className="rbac-form" onSubmit={handleSubmit}>
             <div className="">
               <label className="rbac-label">
-                First name
+                First name <span className="text-red-600">*</span>
                 <input
-                  className="rbac-input"
+                  className="rbac-input mb-2"
                   placeholder="First name"
                   value={form.firstName}
                   onChange={(event) =>
@@ -150,11 +124,14 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
                     }))
                   }
                 />
-              </label>
+                </label>
+              {errors.firstName && (
+                <p className="text-sm text-red-600 mb-2">{errors.firstName}</p>
+              )}
               <label className="rbac-label mt-5">
-                Last name
+                Last name <span className="text-red-600">*</span>
                 <input
-                  className="rbac-input"
+                  className="rbac-input mb-2"
                   placeholder="Last name"
                   value={form.lastName}
                   onChange={(event) =>
@@ -165,10 +142,13 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
                   }
                 />
               </label>
-              <label className="rbac-label mt-5">
-                Email
+              {errors.lastName && (
+                <p className="text-sm text-red-600 mt-1">{errors.lastName}</p>
+              )}
+              <label className="rbac-label">
+                Email <span className="text-red-600">*</span>
                 <input
-                  className="rbac-input"
+                  className="rbac-input mb-2"
                   placeholder="Email"
                   value={form.email}
                   onChange={(event) =>
@@ -179,11 +159,14 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
                   }
                 />
               </label>
-              <label className="rbac-label mt-5">
-                Mobile number
+              {errors.email && (
+                <p className="text-sm text-red-600 mb-2">{errors.email}</p>
+              )}
+              <label className="rbac-label">
+                Mobile number <span className="text-red-600">*</span>
                 <input
                   inputMode="tel"
-                  className="rbac-input"
+                  className="rbac-input mb-2"
                   placeholder="Mobile number"
                   value={form.mobileNumber}
                   onChange={(event) =>
@@ -194,11 +177,14 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
                   }
                 />
               </label>
+              {errors.mobileNumber && (
+                <p className="text-sm text-red-600 mb-2">{errors.mobileNumber}</p>
+              )}
               <label className="rbac-label mt-5">
-                Password
+                Password {userId ? "(optional)" : "*"}
                 <input
                   type="password"
-                  className="rbac-input"
+                  className="rbac-input mb-2"
                   placeholder={userId ? "New password (optional)" : "Password"}
                   value={form.password}
                   onChange={(event) =>
@@ -209,26 +195,35 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
                   }
                 />
               </label>
-              <select
-                className="rbac-input rbac-select mt-5"
-                value={form.roleName}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    roleName: event.target.value,
-                  }))
-                }
-              >
-                <option value="Admin">Admin</option>
-                <option value="HR Admin">HR Admin</option>
-                <option value="Manager">Manager</option>
-                <option value="Employee">Employee</option>
-              </select>
+              {errors.password && (
+                <p className="text-sm text-red-600 mb-2">{errors.password}</p>
+              )}
+              <label className="rbac-label mt-5">
+                Role <span className="text-red-600">*</span>
+                <select
+                  className="rbac-input rbac-select"
+                  value={form.roleName}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      roleName: event.target.value,
+                    }))
+                  }
+                >
+                  <option value="Admin">Admin</option>
+                  <option value="HR Admin">HR Admin</option>
+                  <option value="Manager">Manager</option>
+                  <option value="Employee">Employee</option>
+                </select>
+              </label>
+              {errors.roleName && (
+                <p className="text-sm text-red-600 mb-2">{errors.roleName}</p>
+              )}
             </div>
-            {note && <p className="rbac-note">{note}</p>}
+            {/* {note && <p className="rbac-note">{note}</p>} */}
             <div className="rbac-actions">
               <button className="rbac-button" type="submit">
-                {userId ? "Save changes" : "Save user"}
+                Save
               </button>
               <button className="text-red-500" type="submit"
                 onClick={() => router.push("/dashboard/users")}>

@@ -8,14 +8,6 @@ function ProfileContent() {
 
   return (
     <>
-      <header className="rbac-header">
-        <div>
-         <p className="rbac-eyebrow">Profile</p>
-          <h1 className="rbac-heading">My Profile</h1>
-          <p className="rbac-subtext">Review your account details.</p>
-        </div>
-      </header>
-
       <section className="rbac-section">
         <div className="rbac-card">
           <h2 className="rbac-title-lg">My Profile</h2>

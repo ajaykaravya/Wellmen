@@ -9,6 +9,7 @@ import DashboardShell, {
 } from "../_components/DashboardShell";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import { toast } from "react-toastify";
+import { FaChevronLeft, FaChevronRight, FaEdit, FaTrash } from "react-icons/fa";
 
 type TodoStatus = "TODO" | "IN_PROGRESS" | "ON_HOLD" | "DONE";
 
@@ -172,7 +173,7 @@ function TodoListContent() {
         header: "Task Title",
         accessorKey: "title",
         cell: (info) => (
-          <span className="rbac-name">{String(info.getValue() || "")}</span>
+          <span className="rbac-muted">{String(info.getValue() || "")}</span>
         ),
       },
       {
@@ -184,7 +185,7 @@ function TodoListContent() {
         ),
       },
       {
-        header: "Start Date",
+        header: "Date",
         accessorKey: "startDate",
         cell: (info) => {
           const value = String(info.getValue() || "");
@@ -226,14 +227,14 @@ function TodoListContent() {
               type="button"
               onClick={() => handleEditTodo(row.original)}
             >
-              Edit
+                  <FaEdit />
             </button>
             <button
               className="rbac-link danger"
               type="button"
               onClick={() => handleDeleteTodo(row.original)}
             >
-              Delete
+              <FaTrash />
             </button>
           </div>
         ),
@@ -248,7 +249,7 @@ function TodoListContent() {
         header: "Task Name",
         accessorKey: "title",
         cell: (info) => (
-          <span className="rbac-name">{String(info.getValue() || "")}</span>
+          <span className="rbac-muted">{String(info.getValue() || "")}</span>
         ),
       },
       {
@@ -295,7 +296,7 @@ function TodoListContent() {
                 disabled={!canManage}
                 title={"Edit"}
               >
-                Edit
+                <FaEdit />
               </button>
               <button
                 className="rbac-link danger"
@@ -304,7 +305,7 @@ function TodoListContent() {
                 disabled={!canManage}
                 title={"Delete"}
               >
-                Delete
+                <FaTrash />
               </button>
               </>)}
             </div>
@@ -327,7 +328,7 @@ function TodoListContent() {
 
   return (
     <>
-      <header className="rbac-header">
+      {/* <header className="rbac-header">
         <div>
         <p className="rbac-eyebrow">To-Do</p>
           <h1 className="rbac-heading">Task list</h1>
@@ -337,22 +338,24 @@ function TodoListContent() {
               : "View all your tasks with quick filtering, and update or delete tasks created by you."}
           </p>
         </div>
-        <button
+       
+      </header> */}
+
+      <section className="rbac-section">
+        <div className="rbac-card">
+          <div className="flex justify-between items-center">
+          <h3 className="rbac-title-lg">{isAdmin ? "All tasks" : "My tasks"}</h3>
+           <button
           className="rbac-button"
           type="button"
           onClick={() => router.push("/dashboard/todo/new")}
         >
           Add Todo
         </button>
-      </header>
-
-      <section className="rbac-section">
-        <div className="rbac-card">
-          <h3 className="rbac-title-lg">{isAdmin ? "All tasks" : "My tasks"}</h3>
-
-          <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-6">
+</div>
+          <div className="mt-4 flex flex-wrap gap-3">
             <input
-              className="rbac-input"
+              className="rbac-input-filter"
               type="text"
               placeholder="Search task name or description"
               value={query}
@@ -362,7 +365,7 @@ function TodoListContent() {
               }}
             />
             <select
-              className="rbac-input rbac-select"
+              className="rbac-input-filter rbac-select"
               value={statusFilter}
               onChange={(event) => {
                 setPageIndex(0);
@@ -377,7 +380,7 @@ function TodoListContent() {
             </select>
             {isAdmin && (
               <select
-                className="rbac-input rbac-select"
+                className="rbac-input-filter rbac-select"
                 value={assigneeFilter}
                 onChange={(event) => {
                   setPageIndex(0);
@@ -393,7 +396,7 @@ function TodoListContent() {
               </select>
             )}
             <input
-              className="rbac-input"
+              className="rbac-input-filter"
               type="date"
               value={fromDate}
               onChange={(event) => {
@@ -402,7 +405,7 @@ function TodoListContent() {
               }}
             />
             <input
-              className="rbac-input"
+              className="rbac-input-filter"
               type="date"
               value={toDate}
               onChange={(event) => {
@@ -490,29 +493,33 @@ function TodoListContent() {
             </table>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
-            <span>
-              Page {pageIndex + 1} of {pageCount}
-            </span>
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-3 text-sm text-slate-600">
+           
             <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
               <button
-                className="rbac-button rbac-button-secondary"
+                className="change-button change-button-secondary"
                 type="button"
                 onClick={() => setPageIndex((prev) => Math.max(prev - 1, 0))}
                 disabled={pageIndex === 0}
               >
-                Previous
+                <FaChevronLeft size={20}/>
               </button>
+               <span >
+              Page {pageIndex + 1} of {pageCount}
+            </span>
               <button
-                className="rbac-button rbac-button-secondary"
+                className="change-button change-button-secondary"
                 type="button"
                 onClick={() =>
                   setPageIndex((prev) => Math.min(prev + 1, pageCount - 1))
                 }
                 disabled={pageIndex + 1 >= pageCount}
               >
-                Next
+                <FaChevronRight size={20}/>
               </button>
+              </div>
+              <div>
               <select
                 className="rbac-input rbac-select"
                 value={pageSize}
@@ -527,6 +534,7 @@ function TodoListContent() {
                   </option>
                 ))}
               </select>
+              </div>
             </div>
           </div>
         </div>
