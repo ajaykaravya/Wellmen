@@ -40,6 +40,7 @@ export async function GET(req, { params }) {
     id: todo.id,
     title: todo.title,
     description: todo.description,
+    comments: todo.comments,
     startDate: todo.startDate,
     status: todo.status,
     projectId: todo.projectId,
@@ -70,6 +71,7 @@ export async function PUT(req, { params }) {
   const body = await req.json();
   const title = String(body.title || "").trim();
   const description = String(body.description || "").trim();
+  const comments = String(body.comments || "").trim();
   const startDate = String(body.startDate || "").trim();
   const status = parseStatus(body.status);
   const assigneeId = String(body.assigneeId || "").trim();
@@ -106,6 +108,7 @@ export async function PUT(req, { params }) {
     data: {
       title,
       description: description || null,
+      comments: comments || null,
       startDate: parsedDate,
       status: status || "TODO",
       projectId: projectId || null,
@@ -121,6 +124,7 @@ export async function PUT(req, { params }) {
     id: todo.id,
     title: todo.title,
     description: todo.description,
+    comments: todo.comments,
     startDate: todo.startDate,
     status: todo.status,
     projectId: todo.projectId,

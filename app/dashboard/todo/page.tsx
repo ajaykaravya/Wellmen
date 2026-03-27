@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { flexRender, useReactTable } from "@tanstack/react-table";
 import { ColumnDef, getCoreRowModel } from "@tanstack/table-core";
+import { formatToDDMMYYYY } from "@/lib/dateUtils";
+import useDebounce from "@/app/hooks/useDebounce";
 import DashboardShell, {
   useDashboardContext,
 } from "../_components/DashboardShell";
@@ -40,6 +42,11 @@ type TodoRow = {
   } | null;
 };
 
+type TodoUpdateDraft = {
+  comments: string;
+  status: TodoStatus;
+};
+
 function TodoListContent() {
   const router = useRouter();
   const { setNavOpen, isAdmin } = useDashboardContext();
@@ -49,6 +56,7 @@ function TodoListContent() {
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebounce(query, 400);
   const [statusFilter, setStatusFilter] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -56,6 +64,14 @@ function TodoListContent() {
   const [assignees, setAssignees] = useState<UserOption[]>([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<TodoRow | null>(null);
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTarget, setModalTarget] = useState<TodoRow | null>(null);
+  const [modalDraft, setModalDraft] = useState<TodoUpdateDraft>({
+    comments: "",
+    status: "TODO",
+  });
+  const [savingId, setSavingId] = useState<string | null>(null);
 
   const loadAssignees = useCallback(async () => {
     if (!isAdmin) return;
@@ -81,7 +97,7 @@ function TodoListContent() {
         pageSize: String(pageSize),
       });
 
-      if (query.trim()) params.set("q", query.trim());
+      if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
       if (statusFilter) params.set("status", statusFilter);
       if (fromDate) params.set("fromDate", fromDate);
       if (toDate) params.set("toDate", toDate);
@@ -105,7 +121,7 @@ function TodoListContent() {
     isAdmin,
     pageIndex,
     pageSize,
-    query,
+    debouncedQuery,
     statusFilter,
     toDate,
   ]);
@@ -141,6 +157,69 @@ function TodoListContent() {
     },
     [isAdmin],
   );
+
+  const handleSave = useCallback(
+    async (row: TodoRow, draft: TodoUpdateDraft) => {
+      setSavingId(row.id);
+      try {
+        const res = await fetch(`/api/my-todos/${row.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            comments: draft.comments,
+            status: draft.status,
+          }),
+        });
+
+        if (!res.ok) {
+          const payload = await res.json().catch(() => ({}));
+          toast.error(payload.error || "Failed to update task.");
+          return false;
+        }
+
+        const updated = await res.json();
+        setTodos((prev) =>
+          prev.map((item) =>
+            item.id === row.id
+              ? {
+                  ...item,
+                  comments: updated.comments ?? null,
+                  status: updated.status,
+                }
+              : item,
+          ),
+        );
+
+        toast.success("Todo updated successfully.");
+        return true;
+      } catch (error) {
+        console.error("Failed to update todo", error);
+        toast.error("Failed to update todo.");
+        return false;
+      } finally {
+        setSavingId(null);
+      }
+    },
+    [],
+  );
+
+  const openModal = useCallback((row: TodoRow) => {
+    setModalTarget(row);
+    setModalDraft({ comments: row.comments || "", status: row.status });
+    setModalOpen(true);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setModalOpen(false);
+    setModalTarget(null);
+    setModalDraft({ comments: "", status: "TODO" });
+  }, []);
+
+  const handleModalSave = useCallback(async () => {
+    if (!modalTarget) return;
+    const ok = await handleSave(modalTarget, modalDraft);
+    if (ok) closeModal();
+  }, [closeModal, handleSave, modalDraft, modalTarget]);
 
   const confirmDeleteTodo = useCallback(async () => {
     if (!confirmTarget) return;
@@ -189,9 +268,8 @@ function TodoListContent() {
         accessorKey: "startDate",
         cell: (info) => {
           const value = String(info.getValue() || "");
-          const date = value ? new Date(value) : null;
           return (
-            <span className="rbac-muted">{date ? date.toLocaleDateString() : "-"}</span>
+            <span className="rbac-muted">{value ? formatToDDMMYYYY(value) : "-"}</span>
           );
         },
       },
@@ -202,6 +280,13 @@ function TodoListContent() {
           <span className="rbac-muted">
             {String(info.getValue() || "").replaceAll("_", " ")}
           </span>
+        ),
+      },
+      {
+        header: "Comments",
+        accessorKey: "comments",
+        cell: (info) => (
+          <span className="rbac-muted">{String(info.getValue() || "-")}</span>
         ),
       },
       {
@@ -265,9 +350,8 @@ function TodoListContent() {
         accessorKey: "startDate",
         cell: (info) => {
           const value = String(info.getValue() || "");
-          const date = value ? new Date(value) : null;
           return (
-            <span className="rbac-muted">{date ? date.toLocaleDateString() : "-"}</span>
+            <span className="rbac-muted">{value ? formatToDDMMYYYY(value) : "-"}</span>
           );
         },
       },
@@ -278,6 +362,13 @@ function TodoListContent() {
           <span className="rbac-muted">
             {String(info.getValue() || "").replaceAll("_", " ")}
           </span>
+        ),
+      },
+      {
+        header: "Comments",
+        accessorKey: "comments",
+        cell: (info) => (
+          <span className="rbac-muted">{String(info.getValue() || "-")}</span>
         ),
       },
       {
@@ -308,6 +399,13 @@ function TodoListContent() {
                 <FaTrash />
               </button>
               </>)}
+              <button
+                    className="rbac-button rbac-button-secondary"
+                    type="button"
+                    onClick={() => openModal(row.original)}
+                  >
+                    Update
+                  </button>
             </div>
           );
         },
@@ -325,6 +423,13 @@ function TodoListContent() {
     manualPagination: true,
     pageCount,
   });
+
+  const isModalDirty =
+    !!modalTarget &&
+    ((modalDraft.comments || "") !== (modalTarget.comments || "") ||
+      modalDraft.status !== modalTarget.status);
+
+  const isModalSaving = savingId === modalTarget?.id;
 
   return (
     <>
@@ -438,7 +543,7 @@ function TodoListContent() {
                       <th
                         key={header.id}
                         style={{ width: header.getSize() }}
-                        className="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                        className="text-left text-xs font-semibold uppercase tracking-[0.2em]"
                       >
                         {header.isPlaceholder
                           ? null
@@ -479,7 +584,7 @@ function TodoListContent() {
                         <td
                           key={cell.id}
                           style={{ width: cell.column.getSize() }}
-                          className="py-4 text-sm text-slate-700"
+                          className="py-4 text-sm "
                         >
                           {flexRender(
                             cell.column.columnDef.cell,
@@ -493,7 +598,7 @@ function TodoListContent() {
             </table>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-end gap-3 text-sm text-slate-600">
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-3 text-sm">
            
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2">
@@ -539,6 +644,73 @@ function TodoListContent() {
           </div>
         </div>
       </section>
+      {modalOpen && !isAdmin && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+            <h2 className="text-lg font-semibold ">Update task</h2>
+            <p className="mt-2 text-sm ">
+              Add your comments and choose a status before saving.
+            </p>
+
+            <div className="mt-4 grid gap-4">
+              <label className="rbac-label">
+                Comments
+                <textarea
+                  className="rbac-input"
+                  rows={4}
+                  value={modalDraft.comments}
+                  onChange={(event) =>
+                    setModalDraft((prev) => ({
+                      ...prev,
+                      comments: event.target.value,
+                    }))
+                  }
+                  placeholder="Add work comments"
+                />
+              </label>
+
+              <label className="rbac-label">
+                Status
+                <select
+                  className="rbac-input rbac-select"
+                  value={modalDraft.status}
+                  onChange={(event) =>
+                    setModalDraft((prev) => ({
+                      ...prev,
+                      status: event.target.value as TodoStatus,
+                    }))
+                  }
+                >
+                  <option value="TODO">To do</option>
+                  <option value="IN_PROGRESS">In progress</option>
+                  <option value="ON_HOLD">On hold</option>
+                  <option value="DONE">Done</option>
+                </select>
+              </label>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                className="rbac-button rbac-button-secondary"
+                type="button"
+                onClick={closeModal}
+                disabled={savingId === modalTarget?.id}
+              >
+                Cancel
+              </button>
+              <button
+                className="rbac-button"
+                type="button"
+                onClick={handleModalSave}
+                disabled={!modalTarget || !isModalDirty || isModalSaving}
+              >
+                {isModalSaving ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ConfirmDialog
         open={confirmOpen}
         title="Delete todo?"

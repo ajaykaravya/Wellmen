@@ -163,7 +163,7 @@ function UsersContent() {
                     {headerGroup.headers.map((header:any) => (
                       <th
                         key={header.id}
-                        className="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                        className="text-left text-xs font-semibold uppercase tracking-[0.2em]"
                       >
                         {header.isPlaceholder
                           ? null
@@ -195,7 +195,7 @@ function UsersContent() {
                   table.getRowModel().rows.map((row:any) => (
                     <tr key={row.id} className="bg-white">
                       {row.getVisibleCells().map((cell:any) => (
-                        <td key={cell.id} className="py-4 pr-6 text-sm text-slate-700">
+                        <td key={cell.id} className="py-4 pr-6 text-sm ">
                           {flexRender(
                             cell.column.columnDef.cell,
                             cell.getContext()
@@ -208,7 +208,7 @@ function UsersContent() {
             </table>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-end gap-3 text-sm text-slate-600">
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-3 text-sm">
            
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2">

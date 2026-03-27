@@ -5,6 +5,8 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { flexRender, useReactTable } from "@tanstack/react-table";
 import { ColumnDef, getCoreRowModel } from "@tanstack/table-core";
+import { formatToDDMMYYYY } from "@/lib/dateUtils";
+import useDebounce from "@/app/hooks/useDebounce";
 import DashboardShell, {
   useDashboardContext,
 } from "../_components/DashboardShell";
@@ -53,8 +55,10 @@ function ReportingListContent() {
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebounce(query, 400);
   const [projectFilter, setProjectFilter] = useState("");
   const [employeeFilter, setEmployeeFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -101,8 +105,9 @@ function ReportingListContent() {
         pageSize: String(pageSize),
       });
 
-      if (query.trim()) params.set("q", query.trim());
+      if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
       if (projectFilter) params.set("projectId", projectFilter);
+      if (statusFilter) params.set("status", statusFilter);
       if (isAdmin && employeeFilter) params.set("employeeId", employeeFilter);
       if (fromDate) params.set("fromDate", fromDate);
       if (toDate) params.set("toDate", toDate);
@@ -118,7 +123,7 @@ function ReportingListContent() {
     } finally {
       setLoading(false);
     }
-  }, [employeeFilter, fromDate, isAdmin, pageIndex, pageSize, projectFilter, query, toDate]);
+  }, [employeeFilter, fromDate, isAdmin, pageIndex, pageSize, projectFilter, debouncedQuery, toDate]);
 
   useEffect(() => {
     loadReports();
@@ -207,7 +212,7 @@ function ReportingListContent() {
         accessorKey: "reportDate",
         cell: (info) => {
           const value = String(info.getValue() || "");
-          return value ? new Date(value).toLocaleDateString() : "-";
+          return value ? formatToDDMMYYYY(value) : "-";
         },
       },
       ...(isAdmin
@@ -227,6 +232,13 @@ function ReportingListContent() {
         size: 200,
         cell: (info) => (
           <span className="rbac-muted">{String(info.getValue() || "-")}</span>
+        ),
+      },
+      {
+        header: "Status",
+        accessorKey: "status",
+        cell: (info) => (
+          <span className="rbac-muted">{String(info.getValue() || "").replaceAll("_", " ")}</span>
         ),
       },
       {
@@ -295,22 +307,6 @@ function ReportingListContent() {
 
   return (
     <>
-      {/* <header className="rbac-header">
-        <div>
-          <button
-            className="rbac-hamburger"
-            type="button"
-            onClick={() => setNavOpen(true)}
-          >
-            <span />
-          </button>
-          <p className="rbac-eyebrow">Reporting</p>
-          <h1 className="rbac-heading">Reporting list</h1>
-          <p className="rbac-subtext">Track reporting with filters and actions.</p>
-        </div>
-        
-      </header> */}
-
       <section className="rbac-section">
         <div className="rbac-card">
           <div className="flex justify-between items-center">
@@ -352,6 +348,21 @@ function ReportingListContent() {
                   {project.name}
                 </option>
               ))}
+            </select>
+
+            <select
+              className="rbac-input-filter rbac-select"
+              value={statusFilter}
+              onChange={(event) => {
+                setPageIndex(0);
+                setStatusFilter(event.target.value);
+              }}
+            >
+              <option value="">All status</option>
+              <option value="TODO">To do</option>
+              <option value="IN_PROGRESS">In progress</option>
+              <option value="ON_HOLD">On hold</option>
+              <option value="DONE">Done</option>
             </select>
 
             {isAdmin && (
@@ -416,7 +427,7 @@ function ReportingListContent() {
                       <th
                         key={header.id}
                         style={{ width: header.getSize() }}
-                        className="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                        className="text-left text-xs font-semibold uppercase tracking-[0.2em] "
                       >
                         {header.isPlaceholder
                           ? null
@@ -439,7 +450,7 @@ function ReportingListContent() {
                 )}
                 {!loading && reports.length === 0 && (
                   <tr>
-                    <td colSpan={columns.length} className="py-6 text-sm text-slate-500">
+                    <td colSpan={columns.length} className="py-6 text-sm">
                       No reporting found.
                     </td>
                   </tr>
@@ -451,7 +462,7 @@ function ReportingListContent() {
                         <td
                           key={cell.id}
                           style={{ width: cell.column.getSize() }}
-                          className="py-4 text-sm text-slate-700"
+                          className="py-4 text-sm "
                         >
                           {flexRender(
                             cell.column.columnDef.cell,
@@ -465,7 +476,7 @@ function ReportingListContent() {
             </table>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-end gap-3 text-sm text-slate-600">
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-3 text-sm ">
            
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2">
@@ -534,8 +545,8 @@ function ReportingListContent() {
           <div className="w-full max-w-4xl rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-auto">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Report details</h2>
-                <p className="mt-1 text-sm text-slate-600">
+                <h2 className="text-lg font-semibold ">Report details</h2>
+                <p className="mt-1 text-sm ">
                   View full report with media and download options.
                 </p>
               </div>
@@ -556,17 +567,17 @@ function ReportingListContent() {
             {!viewLoading && viewData && (
               <div className="mt-4 grid gap-4">
                 <div className="grid gap-3 md:grid-cols-2">
-                  <p className="text-sm text-slate-700"><strong>Date:</strong> {new Date(viewData.reportDate).toLocaleDateString()}</p>
-                  <p className="text-sm text-slate-700"><strong>Project:</strong> {viewData.projectName}</p>
-                  <p className="text-sm text-slate-700"><strong>Employee:</strong> {viewData.createdByName || "-"}</p>
-                  <p className="text-sm text-slate-700"><strong>Status:</strong> {String(viewData.status || "").replaceAll("_", " ")}</p>
+                  <p className="text-sm "><strong>Date:</strong> {formatToDDMMYYYY(viewData.reportDate)}</p>
+                  <p className="text-sm "><strong>Project:</strong> {viewData.projectName}</p>
+                  <p className="text-sm "><strong>Employee:</strong> {viewData.createdByName || "-"}</p>
+                  <p className="text-sm "><strong>Status:</strong> {String(viewData.status || "").replaceAll("_", " ")}</p>
                 </div>
 
-                <p className="text-sm text-slate-700"><strong>Title:</strong> {viewData.title}</p>
-                <p className="text-sm text-slate-700 whitespace-pre-wrap"><strong>Description:</strong> {viewData.description}</p>
+                <p className="text-sm "><strong>Title:</strong> {viewData.title}</p>
+                <p className="text-sm  whitespace-pre-wrap"><strong>Description:</strong> {viewData.description}</p>
 
                 <div>
-                  <p className="text-sm font-semibold text-slate-800">Images</p>
+                  <p className="text-sm font-semibold ">Images</p>
                   {viewData.imageUrls?.length ? (
                     <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                       {viewData.imageUrls.map((url) => (
@@ -586,12 +597,12 @@ function ReportingListContent() {
                       ))}
                     </div>
                   ) : (
-                    <p className="mt-1 text-sm text-slate-500">No images uploaded.</p>
+                    <p className="mt-1 text-sm ">No images uploaded.</p>
                   )}
                 </div>
 
                 <div>
-                  <p className="text-sm font-semibold text-slate-800">Video</p>
+                  <p className="text-sm font-semibold ">Video</p>
                   {viewData.videoUrl ? (
                     <div className="mt-2 rounded-xl border border-slate-200 p-3">
                       <video controls className="w-full rounded-lg" src={viewData.videoUrl} />
@@ -600,7 +611,7 @@ function ReportingListContent() {
                       </a>
                     </div>
                   ) : (
-                    <p className="mt-1 text-sm text-slate-500">No video uploaded.</p>
+                    <p className="mt-1 text-sm ">No video uploaded.</p>
                   )}
                 </div>
               </div>

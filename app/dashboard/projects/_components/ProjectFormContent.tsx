@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 import { useDashboardContext } from "../../_components/DashboardShell";
 
 type ProjectFormState = {
@@ -88,9 +89,7 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
     if (!form.name.trim()) newErrors.name = "Project name is required.";
     if (!form.address.trim()) newErrors.address = "Address is required.";
     if (!form.contactNumber.trim()) newErrors.contactNumber = "Contact number is required.";
-    if (!form.email.trim()) newErrors.email = "Email is required.";
     if (!form.startDate) newErrors.startDate = "Start date is required.";
-    if (!form.endDate) newErrors.endDate = "End date is required.";
 
     setErrors(newErrors);
 
@@ -116,6 +115,7 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
         return;
       }
 
+      toast.success(`Project ${projectId ? "updated" : "created"} successfully.`);
       router.push("/dashboard/projects");
     } catch (error) {
       console.error("Failed to save project", error);
@@ -130,6 +130,7 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
       <section className="rbac-section">
         <div className="rbac-card">
           <form className="rbac-form " onSubmit={handleSubmit}>
+            {note && <p className="rbac-note">{note}</p>}
             <div className="">
               <label className="rbac-label">
                 Project name  <span className="text-red-600">*</span>
@@ -140,9 +141,22 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
                   onChange={(event) =>
                     setForm((prev) => ({ ...prev, name: event.target.value }))
                   }
-                  />
-                </label>
+                />
+              </label>
               {errors.name && <p className="text-sm text-red-600 mb-2">{errors.name}</p>}
+
+              <label className="rbac-label">
+                Description
+                <textarea
+                  className="rbac-input"
+                  rows={4}
+                  placeholder="Project description"
+                  value={form.description}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, description: event.target.value }))
+                  }
+                />
+              </label>
 
               <label className="rbac-label">
                 Address <span className="text-red-600">*</span>
@@ -157,59 +171,64 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
               </label>
               {errors.address && <p className="text-sm text-red-600 mb-2">{errors.address}</p>}
 
-              <label className="rbac-label">
-                Contact number <span className="text-red-600">*</span>
-                <input
-                  className="rbac-input mb-2"
-                  placeholder="Contact number"
-                  value={form.contactNumber}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, contactNumber: event.target.value }))
-                  }
-                />
-              </label>
-              {errors.contactNumber && <p className="text-sm text-red-600 mb-2">{errors.contactNumber}</p>}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <label className="rbac-label">
+                  Mobile number <span className="text-red-600">*</span>
+                  <input
+                    className="rbac-input mb-2"
+                    placeholder="Contact number"
+                    value={form.contactNumber}
+                    onChange={(event) =>
+                      setForm((prev) => ({ ...prev, contactNumber: event.target.value }))
+                    }
+                  />
+                </label>
+                {errors.contactNumber && (
+                  <p className="text-sm text-red-600 mb-2">{errors.contactNumber}</p>
+                )}
 
-              <label className="rbac-label">
-                Email <span className="text-red-600">*</span>
-                <input
-                  className="rbac-input mb-2"
-                  type="email"
-                  placeholder="Project email"
-                  value={form.email}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, email: event.target.value }))
-                  }
-                />
-              </label>
-              {errors.email && <p className="text-sm text-red-600 mb-2">{errors.email}</p>}
+                <label className="rbac-label">
+                  Email
+                  <input
+                    className="rbac-input mb-2"
+                    type="email"
+                    placeholder="Project email"
+                    value={form.email}
+                    onChange={(event) =>
+                      setForm((prev) => ({ ...prev, email: event.target.value }))
+                    }
+                  />
+                </label>
+              </div>
 
-              <label className="rbac-label">
-                Start date <span className="text-red-600">*</span>
-                <input
-                  className="rbac-input mb-2"
-                  type="date"
-                  value={form.startDate}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, startDate: event.target.value }))
-                  }
-                />
-              </label>
-              {errors.startDate && <p className="text-sm text-red-600 mb-2">{errors.startDate}</p>}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <label className="rbac-label">
+                  Start date <span className="text-red-600">*</span>
+                  <input
+                    className="rbac-input mb-2"
+                    type="date"
+                    value={form.startDate}
+                    onChange={(event) =>
+                      setForm((prev) => ({ ...prev, startDate: event.target.value }))
+                    }
+                  />
+                </label>
+                {errors.startDate && (
+                  <p className="text-sm text-red-600 mb-2">{errors.startDate}</p>
+                )}
 
-              <label className="rbac-label">
-                End date <span className="text-red-600">*</span>
-                <input
-                  className="rbac-input mb-2"
-                  type="date"
-                  value={form.endDate}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, endDate: event.target.value }))
-                  }
-                />
-              </label>
-              {errors.endDate && <p className="text-sm text-red-600 mb-2">{errors.endDate}</p>}
-
+                <label className="rbac-label">
+                  End date
+                  <input
+                    className="rbac-input mb-2"
+                    type="date"
+                    value={form.endDate}
+                    onChange={(event) =>
+                      setForm((prev) => ({ ...prev, endDate: event.target.value }))
+                    }
+                  />
+                </label>
+              </div>
               <label className="rbac-label">
                 Status
                 <select
@@ -229,20 +248,6 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
                 </select>
               </label>
             </div>
-
-            <label className="rbac-label">
-              Description
-              <textarea
-                className="rbac-input"
-                rows={4}
-                placeholder="Project description"
-                value={form.description}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, description: event.target.value }))
-                }
-              />
-            </label>
-
             <div className="rbac-actions">
               <button className="rbac-button" type="submit">
                 Save

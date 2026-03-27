@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { flexRender, useReactTable } from "@tanstack/react-table";
 import { ColumnDef, getCoreRowModel } from "@tanstack/table-core";
+import { formatToDDMMYYYY } from "@/lib/dateUtils";
+import useDebounce from "@/app/hooks/useDebounce";
 import DashboardShell, {
   useDashboardContext,
 } from "../_components/DashboardShell";
@@ -34,6 +36,7 @@ function ProjectListContent() {
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebounce(query, 400);
   const [statusFilter, setStatusFilter] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -48,7 +51,7 @@ function ProjectListContent() {
         pageSize: String(pageSize),
       });
 
-      if (query.trim()) params.set("q", query.trim());
+      if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
       if (statusFilter) params.set("status", statusFilter);
       if (fromDate) params.set("fromDate", fromDate);
       if (toDate) params.set("toDate", toDate);
@@ -64,7 +67,7 @@ function ProjectListContent() {
     } finally {
       setLoading(false);
     }
-  }, [fromDate, pageIndex, pageSize, query, statusFilter, toDate]);
+  }, [fromDate, pageIndex, pageSize, debouncedQuery, statusFilter, toDate]);
 
   useEffect(() => {
     loadProjects();
@@ -144,7 +147,7 @@ function ProjectListContent() {
         accessorKey: "startDate",
         cell: (info) => {
           const value = String(info.getValue() || "");
-          return value ? new Date(value).toLocaleDateString() : "-";
+          return value ? formatToDDMMYYYY(value) : "-";
         },
       },
       {
@@ -152,7 +155,7 @@ function ProjectListContent() {
         accessorKey: "endDate",
         cell: (info) => {
           const value = String(info.getValue() || "");
-          return value ? new Date(value).toLocaleDateString() : "-";
+          return value ? formatToDDMMYYYY(value) : "-";
         },
       },
       {
@@ -199,30 +202,7 @@ function ProjectListContent() {
   });
 
   return (
-    <>
-      {/* <header className="rbac-header">
-        <div>
-          <button
-            className="rbac-hamburger"
-            type="button"
-            onClick={() => setNavOpen(true)}
-          >
-            <span />
-          </button>
-          <p className="rbac-eyebrow">Projects</p>
-          <h1 className="rbac-heading">Project list</h1>
-          <p className="rbac-subtext">Create and manage projects.</p>
-        </div>
-        <button
-          className="rbac-button"
-          type="button"
-          onClick={() => router.push("/dashboard/projects/new")}
-        >
-          Add Project
-        </button>
-      </header> */}
-
-      <section className="rbac-section">
+    <>      <section className="rbac-section">
         <div className="rbac-card">
           <div className="flex justify-between item-center">
 
@@ -302,7 +282,7 @@ function ProjectListContent() {
                       <th
                         key={header.id}
                         style={{ width: header.getSize() }}
-                        className="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+                        className="text-left text-xs font-semibold uppercase tracking-[0.2em]"
                       >
                         {header.isPlaceholder
                           ? null
@@ -343,7 +323,7 @@ function ProjectListContent() {
                         <td
                           key={cell.id}
                           style={{ width: cell.column.getSize() }}
-                          className="py-4 text-sm text-slate-700"
+                          className="py-4 text-sm"
                         >
                           {flexRender(
                             cell.column.columnDef.cell,
@@ -357,7 +337,7 @@ function ProjectListContent() {
             </table>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-end gap-3 text-sm text-slate-600">
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-3 text-sm">
            
             <div className="flex items-center gap-2">
               <div className="flex flex-wrap items-center gap-2">

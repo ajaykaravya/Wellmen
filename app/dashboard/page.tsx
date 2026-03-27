@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { ColumnDef } from "@tanstack/table-core";
+import { formatToDDMMYYYY } from "@/lib/dateUtils";
 import { toast } from "react-toastify";
 import DashboardShell, { useDashboardContext } from "./_components/DashboardShell";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
@@ -81,6 +82,8 @@ function OverviewContent() {
   const [adminDate, setAdminDate] = useState(getTodayInputDate());
   const [adminReports, setAdminReports] = useState<AdminReportRow[]>([]);
   const [adminLoading, setAdminLoading] = useState(false);
+  const [userReports, setUserReports] = useState<AdminReportRow[]>([]);
+  const [userReportsLoading, setUserReportsLoading] = useState(false);
   const [reportViewOpen, setReportViewOpen] = useState(false);
   const [reportViewLoading, setReportViewLoading] = useState(false);
   const [reportViewData, setReportViewData] = useState<AdminReportRow | null>(null);
@@ -133,6 +136,27 @@ function OverviewContent() {
   useEffect(() => {
     loadAdminReports();
   }, [loadAdminReports]);
+
+  const loadUserReports = useCallback(async () => {
+    if (isAdmin) return;
+
+    setUserReportsLoading(true);
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const res = await fetch(`/api/reports?date=${today}&page=1&pageSize=20`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setUserReports(Array.isArray(data?.data) ? data.data : []);
+    } catch (error) {
+      console.error("Failed to load user reports", error);
+    } finally {
+      setUserReportsLoading(false);
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
+    loadUserReports();
+  }, [loadUserReports]);
 
   const openReportView = useCallback(async (row: AdminReportRow) => {
     setReportViewOpen(true);
@@ -247,7 +271,7 @@ function OverviewContent() {
           accessorKey: "startDate",
           cell: (info) => {
             const value = String(info.getValue() || "");
-            return value ? new Date(value).toLocaleDateString() : "-";
+            return value ? formatToDDMMYYYY(value) : "-";
           },
         },
         {
@@ -299,7 +323,7 @@ function OverviewContent() {
         accessorKey: "startDate",
         cell: (info) => {
           const value = String(info.getValue() || "");
-          return value ? new Date(value).toLocaleDateString() : "-";
+          return value ? formatToDDMMYYYY(value) : "-";
         },
       },
       {
@@ -384,7 +408,7 @@ function OverviewContent() {
 
        <section className="rbac-section">
         <div className="rbac-card">
-          <h3 className="rbac-title-lg">{isAdmin ? "Today tasks (all employees)" : "Today tasks"}</h3>
+          <h3 className="rbac-title-lg"> Today tasks</h3>
 
           <div className="mt-4 overflow-x-auto">
             <table className="min-w-full border-separate border-spacing-y-2">
@@ -394,7 +418,7 @@ function OverviewContent() {
                     {headerGroup.headers.map((header) => (
                       <th
                         key={header.id}
-                        className="text-left text-xs font-semibold uppercase text-slate-400"
+                        className="text-left text-xs font-semibold uppercase"
                       >
                         {header.isPlaceholder
                           ? null
@@ -437,12 +461,60 @@ function OverviewContent() {
         </div>
       </section>
 
+      {!isAdmin && (
+        <section className="rbac-section">
+          <div className="rbac-card">
+            <h3 className="rbac-title-lg">Today's reporting</h3>
+            <div className="mt-4">
+              {userReportsLoading && <p>Loading reporting...</p>}
+              {!userReportsLoading && userReports.length === 0 && (
+                <p>No reporting found for today.</p>
+              )}
+              {!userReportsLoading && userReports.length > 0 && (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border-separate border-spacing-y-2">
+                    <thead>
+                      <tr>
+                        <th className="text-left text-xs font-semibold uppercase">Date</th>
+                        <th className="text-left text-xs font-semibold uppercase">Project</th>
+                        <th className="text-left text-xs font-semibold uppercase">Title</th>
+                        <th className="text-left text-xs font-semibold uppercase">Status</th>
+                        <th className="text-left text-xs font-semibold uppercase">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {userReports.map((report) => (
+                        <tr key={report.id} className="bg-white">
+                          <td className="py-3 text-sm">{formatToDDMMYYYY(report.reportDate)}</td>
+                          <td className="py-3 text-sm">{report.projectName || "-"}</td>
+                          <td className="py-3 text-sm">{report.title || "-"}</td>
+                          <td className="py-3 text-sm">{report.status.replaceAll("_", " ")}</td>
+                          <td className="py-3 text-sm">
+                            <button
+                              className="rbac-link"
+                              type="button"
+                              onClick={() => openReportView(report)}
+                            >
+                              View
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
       {isAdmin && (
         <section className="rbac-section">
           <div className="rbac-card">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h3 className="rbac-title-lg">Employee reporting</h3>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-end gap-2">
                 <button
                   className="change-button change-button-secondary"
                   type="button"
@@ -470,10 +542,10 @@ function OverviewContent() {
               <table className="min-w-full border-separate border-spacing-y-2">
                 <thead>
                   <tr>
-                    <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Project</th>
-                    <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Title</th>
-                    <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Description</th>
-                    <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Action</th>
+                    <th className="text-left text-xs font-semibold uppercase tracking-[0.2em]">Project</th>
+                    <th className="text-left text-xs font-semibold uppercase tracking-[0.2em]">Title</th>
+                    <th className="text-left text-xs font-semibold uppercase tracking-[0.2em]">Description</th>
+                    <th className="text-left text-xs font-semibold uppercase tracking-[0.2em]">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -490,10 +562,10 @@ function OverviewContent() {
                   {!adminLoading &&
                     adminReports.map((report) => (
                       <tr key={report.id} className="bg-white">
-                        <td className="py-4 text-sm text-slate-700">{report.projectName}</td>
-                        <td className="py-4 text-sm text-slate-700">{report.title}</td>
-                        <td className="py-4 text-sm text-slate-700">{report.description}</td>
-                        <td className="py-4 text-sm text-slate-700">
+                        <td className="py-4 text-sm">{report.projectName}</td>
+                        <td className="py-4 text-sm">{report.title}</td>
+                        <td className="py-4 text-sm">{report.description}</td>
+                        <td className="py-4 text-sm">
                           <button
                             className="rbac-link"
                             type="button"
@@ -606,14 +678,14 @@ function OverviewContent() {
             {!reportViewLoading && reportViewData && (
               <div className="mt-4 grid gap-4">
                 <div className="grid gap-3 md:grid-cols-2">
-                  <p className="text-sm text-slate-700"><strong>Date:</strong> {new Date(reportViewData.reportDate).toLocaleDateString()}</p>
-                  <p className="text-sm text-slate-700"><strong>Project:</strong> {reportViewData.projectName}</p>
-                  <p className="text-sm text-slate-700"><strong>Employee:</strong> {reportViewData.createdByName || "-"}</p>
-                  <p className="text-sm text-slate-700"><strong>Status:</strong> {String(reportViewData.status || "").replaceAll("_", " ")}</p>
+                  <p className="text-sm"><strong>Date:</strong> {formatToDDMMYYYY(reportViewData.reportDate)}</p>
+                  <p className="text-sm"><strong>Project:</strong> {reportViewData.projectName}</p>
+                  <p className="text-sm"><strong>Employee:</strong> {reportViewData.createdByName || "-"}</p>
+                  <p className="text-sm"><strong>Status:</strong> {String(reportViewData.status || "").replaceAll("_", " ")}</p>
                 </div>
 
-                <p className="text-sm text-slate-700"><strong>Title:</strong> {reportViewData.title}</p>
-                <p className="text-sm text-slate-700 whitespace-pre-wrap"><strong>Description:</strong> {reportViewData.description}</p>
+                <p className="text-sm"><strong>Title:</strong> {reportViewData.title}</p>
+                <p className="text-sm whitespace-pre-wrap"><strong>Description:</strong> {reportViewData.description}</p>
 
                 <div>
                   <p className="text-sm font-semibold text-slate-800">Images</p>

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
+import { getTodayInputDate } from "@/lib/dateUtils";
 import { useDashboardContext } from "../../_components/DashboardShell";
 
 type UserOption = {
@@ -20,6 +22,7 @@ type ProjectOption = {
 type TodoFormState = {
   title: string;
   description: string;
+  comments: string;
   startDate: string;
   status: "TODO" | "IN_PROGRESS" | "ON_HOLD" | "DONE";
   projectId: string;
@@ -48,7 +51,8 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
   const [form, setForm] = useState<TodoFormState>({
     title: "",
     description: "",
-    startDate: "",
+    comments: "",
+    startDate: getTodayInputDate(),
     status: "TODO",
     projectId: "",
     assigneeId: "",
@@ -80,6 +84,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
           setForm({
             title: todo.title || "",
             description: todo.description || "",
+            comments: todo.comments || "",
             startDate: formatDateForInput(todo.startDate),
             status: todo.status || "TODO",
             projectId: todo.projectId || "",
@@ -116,6 +121,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
         body: JSON.stringify({
           title: form.title.trim(),
           description: form.description.trim(),
+          comments: form.comments.trim(),
           startDate: form.startDate,
           status: form.status,
           projectId: form.projectId,
@@ -129,6 +135,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
         return;
       }
 
+      toast.success(`Todo ${todoId ? "updated" : "created"} successfully.`);
       router.push("/dashboard/todo");
     } catch (error) {
       console.error("Failed to save todo", error);
@@ -143,6 +150,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
       <section className="rbac-section">
         <div className="rbac-card">
           <form className="rbac-form" onSubmit={handleSubmit}>
+            {note && <p className="rbac-note">{note}</p>}
             <div>
 
               <label className="rbac-label">
@@ -219,6 +227,19 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
                       ...prev,
                       description: event.target.value,
                     }))
+                  }
+                />
+              </label>
+
+              <label className="rbac-label mt-3">
+                Comments
+                <textarea
+                  className="rbac-input"
+                  rows={3}
+                  placeholder="Enter comments"
+                  value={form.comments}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, comments: event.target.value }))
                   }
                 />
               </label>

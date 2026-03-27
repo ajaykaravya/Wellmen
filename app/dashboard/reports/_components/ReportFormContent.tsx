@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 import { useDashboardContext } from "../../_components/DashboardShell";
 
 type ReportStatus = "TODO" | "IN_PROGRESS" | "DONE" | "ON_HOLD";
@@ -188,6 +189,7 @@ export default function ReportFormContent({ reportId }: ReportFormContentProps) 
         return;
       }
 
+      toast.success(`Reporting ${reportId ? "updated" : "created"} successfully.`);
       router.push("/dashboard/reports");
     } catch (error) {
       console.error("Failed to save report", error);
@@ -201,30 +203,6 @@ export default function ReportFormContent({ reportId }: ReportFormContentProps) 
 
   return (
     <>
-      {/* <header className="rbac-header">
-        <div>
-          <button
-            className="rbac-hamburger"
-            type="button"
-            onClick={() => setNavOpen(true)}
-          >
-            <span />
-          </button>
-          <p className="rbac-eyebrow">Reporting</p>
-          <h1 className="rbac-heading">{reportId ? "Edit reporting" : "Add reporting"}</h1>
-          <p className="rbac-subtext">
-            Log your daily work updates with project details and media.
-          </p>
-        </div>
-        <button
-          className="rbac-button rbac-button-secondary"
-          type="button"
-          onClick={() => router.push("/dashboard/reports")}
-        >
-          Back to list
-        </button>
-      </header> */}
-
       <section className="rbac-section">
         <div className="rbac-card">
           <form className="rbac-form" onSubmit={handleSubmit}>

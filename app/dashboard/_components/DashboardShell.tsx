@@ -166,11 +166,7 @@ export default function DashboardShell({
          <div className="rbac-brand">
          {!navOpen &&
          <> 
-            <div className="rbac-logo"> <img src="/images/logo.png" alt="WellMen" /> </div>
-            <div>
-              <p className="rbac-title">WellMen</p>
-              <p className="rbac-subtitle">{user?.role || "Role"}</p>
-            </div>
+            <div className="rbac-logo"> <img src="/images/logo.svg" className="w-full" alt="WellMen" /> </div>
             </>
            }
           </div>
@@ -207,7 +203,7 @@ export default function DashboardShell({
         )}
         <section className="rbac-main">
           <div className="rbac-mobile-topbar">
-            <div className="rbac-logo"> <img src="/images/logo.png" alt="WellMen" /> </div>
+            <div className="rbac-logo"> <img src="/images/logo.svg" alt="WellMen" /> </div>
 
             <button
               className="rbac-hamburger"
