@@ -7,6 +7,7 @@ import DashboardShell, { useDashboardContext } from "../_components/DashboardShe
 import ConfirmDialog from "../../components/ConfirmDialog";
 import { toast } from "react-toastify";
 import { FaChevronLeft, FaChevronRight, FaEdit, FaTrash } from "react-icons/fa";
+import Link from "next/link";
 
 type UserRow = {
   id: string;
@@ -147,13 +148,15 @@ function UsersContent() {
       <section className="rbac-section">
         <div className="rbac-card">
           <div className="flex justify-between items-center">
-          <h3 className="rbac-title-lg">All users</h3> <button
+          <h3 className="rbac-title-lg">Users List</h3>
+          <Link href="/dashboard/users/new">
+          <button
           className="rbac-button"
           type="button"
-          onClick={() => router.push("/dashboard/users/new")}
         >
           Create user
         </button>
+        </Link>
         </div>
           <div className="mt-4 overflow-x-auto">
             <table className="min-w-full border-separate border-spacing-y-2">

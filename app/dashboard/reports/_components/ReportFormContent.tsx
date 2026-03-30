@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useDashboardContext } from "../../_components/DashboardShell";
+import Link from "next/link";
 
 type ReportStatus = "TODO" | "IN_PROGRESS" | "DONE" | "ON_HOLD";
 
@@ -394,13 +395,14 @@ export default function ReportFormContent({ reportId }: ReportFormContentProps) 
               <button className="rbac-button" type="submit" disabled={!canSubmit}>
                 Save
               </button>
+              <Link href="/dashboard/reports">
               <button
                 className="text-red-500"
                 type="button"
-                onClick={() => router.push("/dashboard/reports")}
               >
                 Cancel
               </button>
+              </Link>
             </div>
           </form>
         </div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useDashboardContext } from "../../_components/DashboardShell";
+import Link from "next/link";
 
 type ProjectFormState = {
   name: string;
@@ -252,13 +253,14 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
               <button className="rbac-button" type="submit">
                 Save
               </button>
+              <Link href="/dashboard/projects">
               <button
                 className="text-red-500"
                 type="button"
-                onClick={() => router.push("/dashboard/projects")}
               >
                 Cancel
               </button>
+              </Link>
             </div>
           </form>
         </div>

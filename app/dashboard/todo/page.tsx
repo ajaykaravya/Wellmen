@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { flexRender, useReactTable } from "@tanstack/react-table";
 import { ColumnDef, getCoreRowModel } from "@tanstack/table-core";
 import { formatToDDMMYYYY } from "@/lib/dateUtils";
@@ -12,6 +11,7 @@ import DashboardShell, {
 import ConfirmDialog from "../../components/ConfirmDialog";
 import { toast } from "react-toastify";
 import { FaChevronLeft, FaChevronRight, FaEdit, FaTrash } from "react-icons/fa";
+import Link from "next/link";
 
 type TodoStatus = "TODO" | "IN_PROGRESS" | "ON_HOLD" | "DONE";
 
@@ -48,7 +48,6 @@ type TodoUpdateDraft = {
 };
 
 function TodoListContent() {
-  const router = useRouter();
   const { setNavOpen, isAdmin } = useDashboardContext();
   const [todos, setTodos] = useState<TodoRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -137,14 +136,6 @@ function TodoListContent() {
       setPageIndex(Math.max(pageCount - 1, 0));
     }
   }, [pageCount, pageIndex]);
-
-  const handleEditTodo = useCallback(
-    (row: TodoRow) => {
-      if (!isAdmin && !row.canManage) return;
-      router.push(`/dashboard/todo/${row.id}`);
-    },
-    [isAdmin, router],
-  );
 
   const handleDeleteTodo = useCallback(
     (row: TodoRow) => {
@@ -258,7 +249,7 @@ function TodoListContent() {
       {
         header: "Description",
         accessorKey: "description",
-        size: 700,
+        size: 600,
         cell: (info) => (
           <span className="rbac-muted">{String(info.getValue() || "-")}</span>
         ),
@@ -307,13 +298,14 @@ function TodoListContent() {
         id: "action",
         cell: ({ row }) => (
           <div className="rbac-inline-actions flex gap-4">
+            <Link href={`/dashboard/todo/${row.original.id}`}>
             <button
               className="rbac-link"
               type="button"
-              onClick={() => handleEditTodo(row.original)}
             >
                   <FaEdit />
             </button>
+            </Link>
             <button
               className="rbac-link danger"
               type="button"
@@ -325,7 +317,7 @@ function TodoListContent() {
         ),
       },
     ],
-    [handleDeleteTodo, handleEditTodo],
+    [handleDeleteTodo],
   );
 
   const employeeColumns = useMemo<ColumnDef<TodoRow>[]>(
@@ -380,15 +372,16 @@ function TodoListContent() {
             <div className="rbac-inline-actions flex gap-4">
             {canManage && (
               <>
+              <Link href={`/dashboard/todo/${row.original.id}`}>
                 <button
                 className="rbac-link"
                 type="button"
-                onClick={() => handleEditTodo(row.original)}
                 disabled={!canManage}
                 title={"Edit"}
               >
                 <FaEdit />
               </button>
+              </Link>
               <button
                 className="rbac-link danger"
                 type="button"
@@ -411,7 +404,7 @@ function TodoListContent() {
         },
       },
     ],
-    [handleDeleteTodo, handleEditTodo],
+    [handleDeleteTodo],
   );
 
   const columns = isAdmin ? adminColumns : employeeColumns;
@@ -433,30 +426,18 @@ function TodoListContent() {
 
   return (
     <>
-      {/* <header className="rbac-header">
-        <div>
-        <p className="rbac-eyebrow">To-Do</p>
-          <h1 className="rbac-heading">Task list</h1>
-          <p className="rbac-subtext">
-            {isAdmin
-              ? "Create and assign tasks to your team."
-              : "View all your tasks with quick filtering, and update or delete tasks created by you."}
-          </p>
-        </div>
-       
-      </header> */}
-
       <section className="rbac-section">
         <div className="rbac-card">
           <div className="flex justify-between items-center">
-          <h3 className="rbac-title-lg">{isAdmin ? "All tasks" : "My tasks"}</h3>
+          <h3 className="rbac-title-lg">Todo's List</h3>
+          <Link href="/dashboard/todo/new">
            <button
           className="rbac-button"
           type="button"
-          onClick={() => router.push("/dashboard/todo/new")}
         >
           Add Todo
         </button>
+        </Link>
 </div>
           <div className="mt-4 flex flex-wrap gap-3">
             <input

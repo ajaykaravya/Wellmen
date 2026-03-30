@@ -13,6 +13,7 @@ import DashboardShell, {
 import ConfirmDialog from "../../components/ConfirmDialog";
 import { toast } from "react-toastify";
 import { FaChevronLeft, FaChevronRight, FaEdit, FaEye, FaTrash } from "react-icons/fa";
+import Link from "next/link";
 
 type ReportStatus = "TODO" | "IN_PROGRESS" | "DONE" | "ON_HOLD";
 
@@ -310,15 +311,16 @@ function ReportingListContent() {
       <section className="rbac-section">
         <div className="rbac-card">
           <div className="flex justify-between items-center">
-          <h3 className="rbac-title-lg">All reporting</h3>
+          <h3 className="rbac-title-lg">Reporting List</h3>
           {!isAdmin && (
+          <Link href="/dashboard/reports/new">
           <button
             className="rbac-button"
             type="button"
-            onClick={() => router.push("/dashboard/reports/new")}
           >
             Add Reporting
           </button>
+          </Link>
         )}
 </div>
           <div className='mt-4 flex flex-wrap gap-3'>

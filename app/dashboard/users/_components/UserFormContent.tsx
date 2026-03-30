@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useDashboardContext } from "../../_components/DashboardShell";
+import Link from "next/link";
 
 type UserFormState = {
   firstName: string;
@@ -19,9 +19,7 @@ type UserFormContentProps = {
 
 export default function UserFormContent({ userId }: UserFormContentProps) {
   const router = useRouter();
-  const { setNavOpen } = useDashboardContext();
   const [formLoading, setFormLoading] = useState(Boolean(userId));
-  const [note, setNote] = useState<string | null>(null);
   const [errors, setErrors] = useState<Partial<Record<keyof UserFormState, string>>>({});
   const [form, setForm] = useState<UserFormState>({
     firstName: "",
@@ -43,7 +41,6 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
         const res = await fetch(`/api/users/${userId}`);
         if (!res.ok) {
           const payload = await res.json().catch(() => ({}));
-          setNote(payload.error || "Failed to load user.");
           setFormLoading(false);
           return;
         }
@@ -59,7 +56,6 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
         }));
       } catch (error) {
         console.error("Failed to load user", error);
-        setNote("Failed to load user.");
       } finally {
         setFormLoading(false);
       }
@@ -70,7 +66,6 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setNote(null);
 
     const newErrors: Partial<Record<keyof UserFormState, string>> = {};
     if (!form.firstName.trim()) newErrors.firstName = "First name is required.";
@@ -92,14 +87,12 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
 
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
-        setNote(payload.error || "Failed to save user.");
         return;
       }
 
       router.push("/dashboard/users");
     } catch (error) {
       console.error("Failed to save user", error);
-      setNote("Failed to save user.");
     }
   };
 
@@ -220,15 +213,15 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
                 <p className="text-sm text-red-600 mb-2">{errors.roleName}</p>
               )}
             </div>
-            {/* {note && <p className="rbac-note">{note}</p>} */}
             <div className="rbac-actions">
               <button className="rbac-button" type="submit">
                 Save
               </button>
-              <button className="text-red-500" type="submit"
-                onClick={() => router.push("/dashboard/users")}>
+              <Link href="/dashboard/users">
+              <button className="text-red-500">
                 Cancel
               </button>
+              </Link>
             </div>
           </form>
         </div>

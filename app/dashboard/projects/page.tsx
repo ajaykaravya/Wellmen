@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { flexRender, useReactTable } from "@tanstack/react-table";
 import { ColumnDef, getCoreRowModel } from "@tanstack/table-core";
 import { formatToDDMMYYYY } from "@/lib/dateUtils";
@@ -12,6 +11,7 @@ import DashboardShell, {
 import ConfirmDialog from "../../components/ConfirmDialog";
 import { toast } from "react-toastify";
 import { FaChevronLeft, FaChevronRight, FaEdit, FaTrash } from "react-icons/fa";
+import Link from "next/link";
 
 type ProjectStatus = "PENDING" | "IN_PROGRESS" | "DONE" | "ON_HOLD";
 
@@ -28,7 +28,6 @@ type ProjectRow = {
 };
 
 function ProjectListContent() {
-  const router = useRouter();
   const { setNavOpen } = useDashboardContext();
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -80,13 +79,6 @@ function ProjectListContent() {
       setPageIndex(Math.max(pageCount - 1, 0));
     }
   }, [pageCount, pageIndex]);
-
-  const handleEditProject = useCallback(
-    (row: ProjectRow) => {
-      router.push(`/dashboard/projects/${row.id}`);
-    },
-    [router],
-  );
 
   const handleDeleteProject = useCallback((row: ProjectRow) => {
     setConfirmTarget(row);
@@ -172,13 +164,14 @@ function ProjectListContent() {
         id: "action",
         cell: ({ row }) => (
           <div className="rbac-inline-actions flex gap-4">
+            <Link href={`/dashboard/projects/${row.original.id}`}>
             <button
               className="rbac-link"
               type="button"
-              onClick={() => handleEditProject(row.original)}
             >
                   <FaEdit />
             </button>
+            </Link>
             <button
               className="rbac-link danger"
               type="button"
@@ -190,7 +183,7 @@ function ProjectListContent() {
         ),
       },
     ],
-    [handleDeleteProject, handleEditProject],
+    [handleDeleteProject],
   );
 
   const table = useReactTable({
@@ -206,14 +199,15 @@ function ProjectListContent() {
         <div className="rbac-card">
           <div className="flex justify-between item-center">
 
-          <h3 className="rbac-title-lg">All projects</h3>
+          <h3 className="rbac-title-lg">Projects List</h3>
+          <Link href="/dashboard/projects/new">
           <button
           className="rbac-button"
           type="button"
-          onClick={() => router.push("/dashboard/projects/new")}
         >
           Add Project
         </button>
+        </Link>
 </div>
           <div className="my-4 flex flex-wrap gap-2 ">
             <input

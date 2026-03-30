@@ -9,6 +9,7 @@ import { formatToDDMMYYYY } from "@/lib/dateUtils";
 import { toast } from "react-toastify";
 import DashboardShell, { useDashboardContext } from "./_components/DashboardShell";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import Link from "next/link";
 
 type TodoStatus = "TODO" | "IN_PROGRESS" | "ON_HOLD" | "DONE";
 
@@ -389,14 +390,15 @@ function OverviewContent() {
        <section className="rbac-section">
         <div className="rbac-card">
           <div className="flex justify-between items-center">
-          <h3 className="rbac-title-lg"> Today tasks</h3>
+          <h3 className="rbac-title-lg"> Today's tasks</h3>
+          <Link href="/dashboard/todo/new">
           <button
                 className="rbac-button"
                 type="button"
-                onClick={() => router.push("/dashboard/todo/new")}
                 >
                 Add Todo
               </button>
+              </Link>
           </div>
 
           <div className="mt-4 overflow-x-auto">
@@ -455,13 +457,14 @@ function OverviewContent() {
           <div className="rbac-card">
             <div className="flex justify-between items-center">
             <h3 className="rbac-title-lg">Today's reporting</h3>
+            <Link href="/dashboard/reports/new">
             <button
                 className="rbac-button"
                 type="button"
-                onClick={() => router.push("/dashboard/reports/new")}
               >
                 Add Reporting
               </button>
+              </Link>
             </div>
             <div className="mt-4">
               {userReportsLoading && <p>Loading reporting...</p>}
@@ -511,7 +514,7 @@ function OverviewContent() {
         <section className="rbac-section">
           <div className="rbac-card">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h3 className="rbac-title-lg">Employee reporting</h3>
+              <h3 className="rbac-title-lg">Employees reporting</h3>
               <div className="flex items-center justify-end gap-2">
                 <button
                   className="change-button change-button-secondary"
