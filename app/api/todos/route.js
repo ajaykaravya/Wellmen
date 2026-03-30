@@ -118,6 +118,7 @@ export async function GET(req) {
     status: todo.status,
     projectId: todo.projectId,
     projectName: todo.project?.name || "-",
+    comments: todo.comments,
     assignee: todo.assignee
       ? {
           id: todo.assignee.id,

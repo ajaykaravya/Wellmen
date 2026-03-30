@@ -386,29 +386,18 @@ function OverviewContent() {
         </div>
       </header>
 
-      {!isAdmin && (
-        <section className="rbac-section">
-          <div className="rbac-card">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h3 className="rbac-title-lg">Reporting</h3>
-                <p className="rbac-subtext">Create your daily reporting update.</p>
-              </div>
-              <button
-                className="rbac-button"
-                type="button"
-                onClick={() => router.push("/dashboard/reports/new")}
-              >
-                Add Reporting
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
-
        <section className="rbac-section">
         <div className="rbac-card">
+          <div className="flex justify-between items-center">
           <h3 className="rbac-title-lg"> Today tasks</h3>
+          <button
+                className="rbac-button"
+                type="button"
+                onClick={() => router.push("/dashboard/todo/new")}
+                >
+                Add Todo
+              </button>
+          </div>
 
           <div className="mt-4 overflow-x-auto">
             <table className="min-w-full border-separate border-spacing-y-2">
@@ -464,7 +453,16 @@ function OverviewContent() {
       {!isAdmin && (
         <section className="rbac-section">
           <div className="rbac-card">
+            <div className="flex justify-between items-center">
             <h3 className="rbac-title-lg">Today's reporting</h3>
+            <button
+                className="rbac-button"
+                type="button"
+                onClick={() => router.push("/dashboard/reports/new")}
+              >
+                Add Reporting
+              </button>
+            </div>
             <div className="mt-4">
               {userReportsLoading && <p>Loading reporting...</p>}
               {!userReportsLoading && userReports.length === 0 && (

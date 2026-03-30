@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { clearCachedSession } from "../dashboard/_components/DashboardShell";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -58,6 +59,7 @@ export default function LoginPage() {
         return;
       }
 
+      clearCachedSession();
       router.push("/dashboard");
     } catch (error) {
       console.error("Login failed", error);
@@ -125,37 +127,7 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 flex items-center justify-center px-6 py-10">
-      <div className="w-full max-w-6xl grid gap-8 lg:grid-cols-[1.15fr_1fr]">
-        <section className="rounded-3xl border border-slate-200 bg-gradient-to-br from-white via-white to-slate-50 p-9 shadow-lg">
-            <p className="text-xs font-semibold tracking-[0.3em] uppercase text-blue-600">
-              Secure Access
-            </p>
-            <h1 className="mt-4 text-4xl font-semibold text-slate-900">
-              Welcome back
-            </h1>
-            <p className="mt-3 text-slate-600">
-              Admins and users sign in with mobile number and password.
-            </p>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                Admin
-              </p>
-              <p className="mt-2 text-sm text-slate-600">
-                Manage users, roles, and permissions.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                Employee
-              </p>
-              <p className="mt-2 text-sm text-slate-600">
-                Access your profile and daily tasks.
-              </p>
-            </div>
-          </div>
-        </section>
-
+      <div className="">
         {needsSetup ? (
           <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl">
             <div className="flex items-center justify-between">
@@ -254,7 +226,7 @@ export default function LoginPage() {
                 />
               </label>
               {setupNote && (
-                <p className="rounded-xl bg-blue-50 px-4 py-2 text-sm text-blue-700">
+                <p className="rounded-xl  px-4 py-2 text-sm text-red-500">
                   {setupNote}
                 </p>
               )}
@@ -268,7 +240,8 @@ export default function LoginPage() {
           </section>
         ) : (
           <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl">
-            <div className="flex items-center justify-between">
+            <div className="flex justify-center"><img src="/images/logo.svg" alt="WellMen" /></div>
+            <div className="flex items-center justify-between mt-5">
               <p className="text-xs font-semibold tracking-[0.3em] uppercase text-blue-600">
                 Sign In
               </p>
@@ -276,7 +249,7 @@ export default function LoginPage() {
             <p className="mt-3 text-sm text-slate-500">
               Use your mobile number and password to continue.
             </p>
-            <form className="mt-6 grid gap-4" onSubmit={handleSubmit}>
+            <form className="mt-4 grid gap-4" onSubmit={handleSubmit}>
               <label className="text-sm font-semibold text-slate-700">
                 Mobile number
                 <input
@@ -305,7 +278,7 @@ export default function LoginPage() {
                 />
               </label>
               {note && (
-                <p className="rounded-xl bg-blue-50 px-4 py-2 text-sm text-blue-700">
+                <p className="rounded-xl px-4 text-sm text-red-500">
                   {note}
                 </p>
               )}

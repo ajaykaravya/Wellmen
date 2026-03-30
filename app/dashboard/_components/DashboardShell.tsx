@@ -1,12 +1,7 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 type SessionUser = {
@@ -40,6 +35,13 @@ type DashboardContextValue = {
 
 const DashboardContext = createContext<DashboardContextValue | null>(null);
 
+let cachedSession: { user: SessionUser | null; permissions: string[] } | null =
+  null;
+
+export function clearCachedSession() {
+  cachedSession = null;
+}
+
 export const useDashboardContext = () => {
   const context = useContext(DashboardContext);
   if (!context) {
@@ -57,7 +59,7 @@ const routeByMenu: Record<MenuKey, string> = {
   team: "/dashboard/team",
   profile: "/dashboard/profile",
   todo: "/dashboard/todo",
-  projects: "/dashboard/projects"
+  projects: "/dashboard/projects",
 };
 
 const getActiveMenu = (pathname: string): MenuKey => {
@@ -81,11 +83,20 @@ export default function DashboardShell({
   children,
   requireAdmin = false,
 }: DashboardShellProps) {
+  const parentContext = useContext(DashboardContext);
+  if (parentContext) {
+    return <>{children}</>;
+  }
+
   const router = useRouter();
   const pathname = usePathname();
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<SessionUser | null>(null);
-  const [permissions, setPermissions] = useState<string[]>([]);
+  const [loading, setLoading] = useState(!cachedSession);
+  const [user, setUser] = useState<SessionUser | null>(
+    cachedSession?.user ?? null,
+  );
+  const [permissions, setPermissions] = useState<string[]>(
+    cachedSession?.permissions ?? [],
+  );
   const [navOpen, setNavOpen] = useState(false);
 
   const isAdmin = user?.role === "Admin";
@@ -93,6 +104,13 @@ export default function DashboardShell({
 
   useEffect(() => {
     const loadSession = async () => {
+      if (cachedSession) {
+        setUser(cachedSession.user);
+        setPermissions(cachedSession.permissions);
+        setLoading(false);
+        return;
+      }
+
       try {
         const res = await fetch("/api/auth/session");
         if (!res.ok) {
@@ -100,8 +118,13 @@ export default function DashboardShell({
           return;
         }
         const data = await res.json();
-        setUser(data.user);
-        setPermissions(data.permissions || []);
+        const userData = data.user;
+        const permsData = data.permissions || [];
+
+        cachedSession = { user: userData, permissions: permsData };
+
+        setUser(userData);
+        setPermissions(permsData);
       } catch (error) {
         console.error("Failed to load session", error);
         router.replace("/login");
@@ -141,6 +164,9 @@ export default function DashboardShell({
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
+      clearCachedSession();
+      setUser(null);
+      setPermissions([]);
     } catch (error) {
       console.error("Logout failed", error);
     } finally {
@@ -148,8 +174,9 @@ export default function DashboardShell({
     }
   };
 
-  if (loading) return null;
-  if (requireAdmin && !isAdmin) return null;
+  if (requireAdmin && !isAdmin && !loading) {
+    return null;
+  }
 
   const contextValue: DashboardContextValue = {
     user,
@@ -163,28 +190,35 @@ export default function DashboardShell({
     <DashboardContext.Provider value={contextValue}>
       <main className="rbac-shell">
         <aside className={`rbac-sidebar ${navOpen ? "open" : ""}`}>
-         <div className="rbac-brand">
-         {!navOpen &&
-         <> 
-            <div className="rbac-logo"> <img src="/images/logo.svg" className="w-full" alt="WellMen" /> </div>
-            </>
-           }
+          <div className="rbac-brand">
+            {!navOpen && (
+              <>
+                <Link href="/dashboard">
+                  <div className="rbac-logo">
+                    <img
+                      src="/images/logo.svg"
+                      className="w-full"
+                      alt="WellMen"
+                    />
+                  </div>
+                </Link>
+              </>
+            )}
           </div>
 
           <nav className="rbac-nav">
             {menuItems.map((item) => (
-              <button
+              <Link
                 key={item.key}
+                href={routeByMenu[item.key]}
                 className={`rbac-nav-item ${
                   activeMenu === item.key ? "active" : ""
                 }`}
-                onClick={() => {
-                  router.push(routeByMenu[item.key]);
-                  setNavOpen(false);
-                }}
+                onClick={() => setNavOpen(false)}
+                prefetch={true}
               >
                 {item.label}
-              </button>
+              </Link>
             ))}
           </nav>
 
@@ -203,8 +237,11 @@ export default function DashboardShell({
         )}
         <section className="rbac-main">
           <div className="rbac-mobile-topbar">
-            <div className="rbac-logo"> <img src="/images/logo.svg" alt="WellMen" /> </div>
-
+            <Link href="/dashboard">
+              <div className="rbac-logo">
+                <img src="/images/logo.svg" alt="WellMen" />
+              </div>
+            </Link>
             <button
               className="rbac-hamburger"
               type="button"
@@ -213,7 +250,15 @@ export default function DashboardShell({
               <span />
             </button>
           </div>
-          <div className="rbac-container">{children}</div>
+          <div className="rbac-container">
+            {loading ? (
+              <div className="rbac-loading-placeholder">
+                <p>Loading dashboard...</p>
+              </div>
+            ) : (
+              children
+            )}
+          </div>
         </section>
       </main>
     </DashboardContext.Provider>
