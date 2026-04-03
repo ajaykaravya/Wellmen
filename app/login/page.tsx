@@ -34,12 +34,28 @@ export default function LoginPage() {
     loadBootstrap();
   }, []);
 
+  const isMobileValid = (mobileNumber: string) => /^\d{10}$/.test(mobileNumber);
+  const isPasswordValid = (password: string) =>
+    password.length >= 6 &&
+    /[A-Z]/.test(password) &&
+    /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password);
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setNote(null);
 
     if (!form.mobileNumber.trim() || !form.password) {
       setNote("Enter your mobile number and password.");
+      return;
+    }
+
+    if (!isMobileValid(form.mobileNumber.trim())) {
+      setNote("Mobile number must be 10 digits and numbers only.");
+      return;
+    }
+
+    if (!isPasswordValid(form.password)) {
+      setNote("Password must be at least 6 chars, include one uppercase letter and one special character.");
       return;
     }
 
@@ -71,6 +87,13 @@ export default function LoginPage() {
     event.preventDefault();
     setSetupNote(null);
 
+    const isEmailValid = (email: string) => /\S+@\S+\.\S+/.test(email);
+    const isMobileValid = (mobileNumber: string) => /^\d{10}$/.test(mobileNumber);
+    const isPasswordValid = (password: string) =>
+      password.length >= 6 &&
+      /[A-Z]/.test(password) &&
+      /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password);
+
     if (
       !setupForm.firstName.trim() ||
       !setupForm.lastName.trim() ||
@@ -80,10 +103,22 @@ export default function LoginPage() {
       setSetupNote("First name, last name, email, and mobile number are required.");
       return;
     }
-    if (setupForm.password.length < 6) {
-      setSetupNote("Password must be at least 6 characters.");
+
+    if (!isEmailValid(setupForm.email.trim())) {
+      setSetupNote("Email must contain @ and .");
       return;
     }
+
+    if (!isMobileValid(setupForm.mobileNumber.trim())) {
+      setSetupNote("Mobile number must be 10 digits and numbers only.");
+      return;
+    }
+
+    if (!isPasswordValid(setupForm.password)) {
+      setSetupNote("Password must be at least 6 chars, include one uppercase and one special character.");
+      return;
+    }
+
     if (setupForm.password !== setupForm.confirmPassword) {
       setSetupNote("Passwords do not match.");
       return;
@@ -131,7 +166,7 @@ export default function LoginPage() {
         {needsSetup ? (
           <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold tracking-[0.3em] uppercase text-blue-600">
+              <p className="text-xs font-semibold tracking-[0.3em] uppercase text-[#2596be]">
                 First-Time Setup
               </p>
               <span className="text-xs text-slate-400">Create Admin</span>
@@ -140,7 +175,7 @@ export default function LoginPage() {
               <label className="text-sm font-semibold text-slate-700">
                 First name
                 <input
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 focus:border-blue-500 focus:outline-none"
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 focus:border-[#2596be] focus:outline-none"
                   value={setupForm.firstName}
                   onChange={(event) =>
                     setSetupForm((prev) => ({
@@ -169,7 +204,7 @@ export default function LoginPage() {
                 Email
                 <input
                   type="email"
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 focus:border-blue-500 focus:outline-none"
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 focus:border-[#2596be] focus:outline-none"
                   value={setupForm.email}
                   onChange={(event) =>
                     setSetupForm((prev) => ({
@@ -184,7 +219,7 @@ export default function LoginPage() {
                 Mobile number
                 <input
                   inputMode="tel"
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 focus:border-blue-500 focus:outline-none"
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 focus:border-[#2596be] focus:outline-none"
                   value={setupForm.mobileNumber}
                   onChange={(event) =>
                     setSetupForm((prev) => ({
@@ -199,7 +234,7 @@ export default function LoginPage() {
                 Password
                 <input
                   type="password"
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 focus:border-blue-500 focus:outline-none"
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 focus:border-[#2596be] focus:outline-none"
                   value={setupForm.password}
                   onChange={(event) =>
                     setSetupForm((prev) => ({
@@ -214,7 +249,7 @@ export default function LoginPage() {
                 Confirm password
                 <input
                   type="password"
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 focus:border-blue-500 focus:outline-none"
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 focus:border-[#2596be] focus:outline-none"
                   value={setupForm.confirmPassword}
                   onChange={(event) =>
                     setSetupForm((prev) => ({
@@ -231,7 +266,7 @@ export default function LoginPage() {
                 </p>
               )}
               <button
-                className="mt-2 rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-200 transition hover:bg-blue-700"
+                className="mt-2 rounded-full bg-[#2596be] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-200 transition"
                 type="submit"
               >
                 Create Admin
@@ -242,7 +277,7 @@ export default function LoginPage() {
           <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl">
             <div className="flex justify-center"><img src="/images/logo.svg" alt="WellMen" /></div>
             <div className="flex items-center justify-between mt-5">
-              <p className="text-xs font-semibold tracking-[0.3em] uppercase text-blue-600">
+              <p className="text-xs font-semibold tracking-[0.3em] uppercase text-[#2596be]">
                 Sign In
               </p>
             </div>
@@ -283,7 +318,7 @@ export default function LoginPage() {
                 </p>
               )}
               <button
-                className="mt-2 rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-200 transition hover:bg-blue-700"
+                className="mt-2 rounded-full bg-[#2596be] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-200 transition hover:bg-[#1e7ca5]"
                 type="submit"
               >
                 Continue

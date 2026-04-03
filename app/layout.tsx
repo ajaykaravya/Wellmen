@@ -14,8 +14,8 @@ const bodyFont = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Super Admin Portal",
-  description: "Super Admin registration and user PIN access",
+  title: "WellMan Group",
+  description: "WellMan Group",
 };
 
 export const viewport: Viewport = {

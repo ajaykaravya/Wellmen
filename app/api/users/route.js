@@ -18,7 +18,7 @@ export async function GET(req) {
       : 10;
 
   const where = {
-    role: { name: { not: "Admin" } },
+    // Include all users, including admins
   };
 
   const [total, users] = await Promise.all([

@@ -2,18 +2,18 @@
 
 :root {
   color-scheme: light;
-  --bg: #f4f7fb;
-  --bg-soft: #e9eff7;
-  --ink: #000000;
-  --muted: #5b6b82;
-  --brand: #1f6bff;
-  --brand-dark: #184fd1;
-  --brand-soft: #e6f0ff;
+  --bg: #e6f2fa;
+  --bg-soft: #dbeaee;
+  --ink: #112a3c;
+  --muted: #4a6180;
+  --brand: #2596be;
+  --brand-dark: #1f7ea5;
+  --brand-soft: #67bed9;
   --accent: #11a36a;
-  --card: #ffffff;
-  --stroke: rgba(13, 23, 38, 0.12);
-  --shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
-  --radius: 20px;
+  --card: #f7fbff;
+  --stroke: rgba(36, 90, 122, 0.18);
+  --shadow: 0 16px 35px rgba(15, 23, 42, 0.12);
+  --radius: 16px;
   --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", Segoe UI Symbol, "Noto Color Emoji";
 }
 
@@ -150,11 +150,6 @@ a {
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--brand-dark);
-}
-
-h1 {
-  font-size: clamp(2.3rem, 4vw, 3.2rem);
-  line-height: 1.05;
 }
 
 .subtitle {
@@ -551,14 +546,14 @@ button,
   text-align: left;
   padding: 10px 14px;
   border-radius: 12px;
-  color: var(--muted);
+  color: var(--brand-dark);
   font-weight: 600;
   cursor: pointer;
 }
 
 .rbac-nav-item.active {
   background: var(--brand-soft);
-  color: var(--brand-dark);
+  color: white;
   box-shadow: 0 8px 16px rgba(31, 107, 255, 0.12);
 }
 
@@ -599,8 +594,7 @@ button,
 }
 
 .rbac-label {
-  font-size: 12px;
-  letter-spacing: 0.1em;
+  font-size: .875rem;
 }
 
 .rbac-name {
@@ -627,32 +621,58 @@ button,
 
 .rbac-main {
   flex: 1;
-  padding: 32px 40px;
+  padding: 0;
+}
+
+.rbac-container {
+  max-width: 100%;
+  margin: 0;
+  padding: 16px;
+  display: grid;
+  gap: 22px;
+}
+
+.rbac-main > .rbac-container {
+  padding: 16px 16px 24px;
 }
 
 .rbac-mobile-topbar {
   display: none;
 }
 
-.rbac-container {
-  max-width: 1080px;
-  margin: 0 auto;
-  display: grid;
-  gap: 28px;
-  width: 100%;
-  padding: 0;
-}
-
 .rbac-header {
-  background: white;
-  border-radius: 24px;
-  border: 1px solid var(--stroke);
-  padding: 24px 28px;
+  width: 100%;
+  background: linear-gradient(130deg, #2596be 0%, #67bed9 100%);
+  border-radius: 0;
+  border: none;
+  padding: 18px 22px;
+  margin: 0;
   display: flex;
   justify-content: space-between;
   gap: 16px;
   align-items: center;
   flex-wrap: wrap;
+  color: white;
+  box-shadow: 0 4px 26px rgba(37, 150, 190, 0.2);
+  position: sticky;
+  top: 0;
+  z-index: 60;
+}
+
+.rbac-header * {
+  color: white !important;
+}
+
+.rbac-header .rbac-role {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.rbac-header .rbac-eyebrow,
+.rbac-header .rbac-heading,
+.rbac-header .rbac-role-name,
+.rbac-header .rbac-label {
+  color: white !important;
 }
 
 .rbac-eyebrow {
@@ -663,7 +683,6 @@ button,
 }
 
 .rbac-heading {
-  font-size: 20px;
   margin-top: 10px;
   line-height: 1.2;
   color: var(--ink);
@@ -696,10 +715,10 @@ button,
 
 .rbac-card {
   background: white;
-  border-radius: 22px;
-  border: 1px solid var(--stroke);
-  padding: 20px;
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+  border-radius: 18px;
+  border: 1px solid rgba(37, 150, 190, 0.2);
+  padding: 16px;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
 }
 
 .rbac-card-accent {
@@ -734,6 +753,37 @@ button,
   font-size: 18px;
   font-weight: 500;
   color: var(--ink);
+}
+
+.chart-track {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(37, 150, 190, 0.15);
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.chart-bar {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.35s ease;
+}
+
+.sparkline {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 5px;
+  height: 50px;
+  margin-top: 12px;
+}
+
+.sparkline-bar {
+  width: 12%;
+  border-radius: 10px;
+  background: linear-gradient(130deg, #2596be, #67bed9);
+  transition: height 0.35s ease;
 }
 
 .rbac-stack {
@@ -1025,6 +1075,7 @@ button,
 
   .rbac-section {
     gap: 16px;
+    padding: 10px;
   }
 
   .overflow-x-auto {
@@ -1069,13 +1120,6 @@ button,
   }
 
   .md\:grid-cols-2 {
-    grid-template-columns: 1fr !important;
-  }
-
-  .lg\:grid-cols-6,
-  .lg\:grid-cols-5,
-  .lg\:grid-cols-4,
-  .lg\:grid-cols-3 {
     grid-template-columns: 1fr !important;
   }
 

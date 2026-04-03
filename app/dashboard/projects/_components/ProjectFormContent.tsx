@@ -128,8 +128,11 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
 
   return (
     <>
-      <section className="rbac-section">
+      <section className="rbac-section rbac-container">
         <div className="rbac-card">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="rbac-title-lg">{projectId ? "Edit Project" : "Add New Project"}</h3>
+          </div>
           <form className="rbac-form " onSubmit={handleSubmit}>
             {note && <p className="rbac-note">{note}</p>}
             <div className="">

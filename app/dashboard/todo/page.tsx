@@ -426,7 +426,7 @@ function TodoListContent() {
 
   return (
     <>
-      <section className="rbac-section">
+      <section className="rbac-section rbac-container">
         <div className="rbac-card">
           <div className="flex justify-between items-center">
           <h3 className="rbac-title-lg">Todo's List</h3>
@@ -515,68 +515,109 @@ function TodoListContent() {
             </button>
           </div>
 
-          <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full border-separate border-spacing-y-2">
-              <thead>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <tr key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <th
-                        key={header.id}
-                        style={{ width: header.getSize() }}
-                        className="text-left text-xs font-semibold uppercase tracking-[0.2em]"
-                      >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
-                      </th>
-                    ))}
-                  </tr>
-                ))}
-              </thead>
-              <tbody>
-                {loading && (
-                  <tr>
-                    <td
-                      colSpan={columns.length}
-                      className="py-6 text-sm text-slate-500"
-                    >
-                      Loading tasks...
-                    </td>
-                  </tr>
-                )}
-                {!loading && todos.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={columns.length}
-                      className="py-6 text-sm text-slate-500"
-                    >
-                      No tasks found.
-                    </td>
-                  </tr>
-                )}
-                {!loading &&
-                  table.getRowModel().rows.map((row) => (
-                    <tr key={row.id} className="bg-white">
-                      {row.getVisibleCells().map((cell) => (
-                        <td
-                          key={cell.id}
-                          style={{ width: cell.column.getSize() }}
-                          className="py-4 text-sm "
+          <div className="mt-4">
+            <div className="hidden md:block overflow-x-auto">
+              <table className="min-w-full border border-slate-200 border-separate border-spacing-0">
+                <thead className="bg-slate-50">
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <tr key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <th
+                          key={header.id}
+                          style={{ width: header.getSize() }}
+                          className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200"
                         >
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext(),
-                          )}
-                        </td>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext(),
+                              )}
+                        </th>
                       ))}
                     </tr>
                   ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {loading && (
+                    <tr>
+                      <td
+                        colSpan={columns.length}
+                        className="px-4 py-3 text-sm text-slate-500"
+                      >
+                        Loading tasks...
+                      </td>
+                    </tr>
+                  )}
+                  {!loading && todos.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={columns.length}
+                        className="px-4 py-3 text-sm text-slate-500"
+                      >
+                        No tasks found.
+                      </td>
+                    </tr>
+                  )}
+                  {!loading &&
+                    table.getRowModel().rows.map((row, index) => (
+                      <tr key={row.id} className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                        {row.getVisibleCells().map((cell) => (
+                          <td
+                            key={cell.id}
+                            style={{ width: cell.column.getSize() }}
+                            className="px-4 py-3 text-sm border-b border-slate-100"
+                          >
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext(),
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="md:hidden space-y-3">
+              {loading && (
+                <div className="rbac-card py-4 text-sm text-slate-500">Loading tasks...</div>
+              )}
+              {!loading && todos.length === 0 && (
+                <div className="rbac-card py-4 text-sm text-slate-500">No tasks found.</div>
+              )}
+              {!loading && todos.map((todo) => (
+                <div key={todo.id} className="rbac-card p-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-semibold">{todo.title}</h4>
+                      <p className="text-xs text-slate-500">{todo.description || "No description"}</p>
+                    </div>
+                   {todo.canManage && (<div className="flex gap-2">
+                      <Link href={`/dashboard/todo/${todo.id}`}>
+                        <button className="rbac-link" type="button"><FaEdit /></button>
+                      </Link>
+                      <button className="rbac-link danger" type="button" onClick={() => handleDeleteTodo(todo)}><FaTrash /></button>
+                    </div> )}
+                  </div>
+                  <div className="grid gap-1 text-sm">
+                    <p><strong>Date:</strong> {todo.startDate ? formatToDDMMYYYY(todo.startDate) : "-"}</p>
+                    <p><strong>Status:</strong> {todo.status.replaceAll("_", " ")}</p>
+                    <p><strong>Comments:</strong> {todo.comments || "-"}</p>
+                     <p><strong>Assignee:</strong> {todo.assignee ? `${todo.assignee.firstName} ${todo.assignee.lastName}` : "Unassigned"}</p>
+                  </div>
+                  <div className="mt-2 flex gap-2  justify-end">
+                    <button
+                      className="rbac-button rbac-button-secondary"
+                      type="button"
+                      onClick={() => openModal(todo)}
+                    >
+                      Update
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="mt-4 flex flex-wrap items-center justify-end gap-3 text-sm">

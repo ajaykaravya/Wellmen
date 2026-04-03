@@ -204,8 +204,11 @@ export default function ReportFormContent({ reportId }: ReportFormContentProps) 
 
   return (
     <>
-      <section className="rbac-section">
+      <section className="rbac-section rbac-container">
         <div className="rbac-card">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="rbac-title-lg">{reportId ? "Edit Report" : "Add New Report"}</h3>
+          </div>
           <form className="rbac-form" onSubmit={handleSubmit}>
             <div>
               <div className="grid gap-5 md:grid-cols-2">

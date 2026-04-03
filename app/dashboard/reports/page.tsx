@@ -12,7 +12,13 @@ import DashboardShell, {
 } from "../_components/DashboardShell";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import { toast } from "react-toastify";
-import { FaChevronLeft, FaChevronRight, FaEdit, FaEye, FaTrash } from "react-icons/fa";
+import {
+  FaChevronLeft,
+  FaChevronRight,
+  FaEdit,
+  FaEye,
+  FaTrash,
+} from "react-icons/fa";
 import Link from "next/link";
 
 type ReportStatus = "TODO" | "IN_PROGRESS" | "DONE" | "ON_HOLD";
@@ -124,7 +130,16 @@ function ReportingListContent() {
     } finally {
       setLoading(false);
     }
-  }, [employeeFilter, fromDate, isAdmin, pageIndex, pageSize, projectFilter, debouncedQuery, toDate]);
+  }, [
+    employeeFilter,
+    fromDate,
+    isAdmin,
+    pageIndex,
+    pageSize,
+    projectFilter,
+    debouncedQuery,
+    toDate,
+  ]);
 
   useEffect(() => {
     loadReports();
@@ -222,7 +237,9 @@ function ReportingListContent() {
               header: "Employee",
               accessorKey: "createdByName",
               cell: (info) => (
-                <span className="rbac-muted">{String(info.getValue() || "-")}</span>
+                <span className="rbac-muted">
+                  {String(info.getValue() || "-")}
+                </span>
               ),
             } as ColumnDef<ReportRow>,
           ]
@@ -239,7 +256,9 @@ function ReportingListContent() {
         header: "Status",
         accessorKey: "status",
         cell: (info) => (
-          <span className="rbac-muted">{String(info.getValue() || "").replaceAll("_", " ")}</span>
+          <span className="rbac-muted">
+            {String(info.getValue() || "").replaceAll("_", " ")}
+          </span>
         ),
       },
       {
@@ -279,14 +298,14 @@ function ReportingListContent() {
                     type="button"
                     onClick={() => handleEdit(row.original)}
                   >
-                        <FaEdit />
+                    <FaEdit />
                   </button>
                   <button
                     className="rbac-link danger"
                     type="button"
                     onClick={() => handleDelete(row.original)}
                   >
-                        <FaTrash />
+                    <FaTrash />
                   </button>
                 </>
               )}
@@ -308,23 +327,19 @@ function ReportingListContent() {
 
   return (
     <>
-      <section className="rbac-section">
+      <section className="rbac-section rbac-container">
         <div className="rbac-card">
           <div className="flex justify-between items-center">
-          <h3 className="rbac-title-lg">Reporting List</h3>
-          {!isAdmin && (
-          <Link href="/dashboard/reports/new">
-          <button
-            className="rbac-button"
-            type="button"
-          >
-            Add Reporting
-          </button>
-          </Link>
-        )}
-</div>
-          <div className='mt-4 flex flex-wrap gap-3'>
-
+            <h3 className="rbac-title-lg">Reporting List</h3>
+            {!isAdmin && (
+              <Link href="/dashboard/reports/new">
+                <button className="rbac-button" type="button">
+                  Add Reporting
+                </button>
+              </Link>
+            )}
+          </div>
+          <div className="mt-4 flex flex-wrap gap-3">
             <input
               className="rbac-input-filter"
               type="text"
@@ -420,105 +435,186 @@ function ReportingListContent() {
             </button>
           </div>
 
-          <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full border-separate border-spacing-y-2">
-              <thead>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <tr key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <th
-                        key={header.id}
-                        style={{ width: header.getSize() }}
-                        className="text-left text-xs font-semibold uppercase tracking-[0.2em] "
-                      >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
-                      </th>
-                    ))}
-                  </tr>
-                ))}
-              </thead>
-              <tbody>
-                {loading && (
-                  <tr>
-                    <td colSpan={columns.length} className="py-6 text-sm text-slate-500">
-                      Loading reporting...
-                    </td>
-                  </tr>
-                )}
-                {!loading && reports.length === 0 && (
-                  <tr>
-                    <td colSpan={columns.length} className="py-6 text-sm">
-                      No reporting found.
-                    </td>
-                  </tr>
-                )}
-                {!loading &&
-                  table.getRowModel().rows.map((row) => (
-                    <tr key={row.id} className="bg-white">
-                      {row.getVisibleCells().map((cell) => (
-                        <td
-                          key={cell.id}
-                          style={{ width: cell.column.getSize() }}
-                          className="py-4 text-sm "
+          <div className="mt-4">
+            <div className="hidden md:block overflow-x-auto">
+              <table className="min-w-full border border-slate-200 border-separate border-spacing-0">
+                <thead className="bg-slate-50">
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <tr key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <th
+                          key={header.id}
+                          style={{ width: header.getSize() }}
+                          className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200"
                         >
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext(),
-                          )}
-                        </td>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext(),
+                              )}
+                        </th>
                       ))}
                     </tr>
                   ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {loading && (
+                    <tr>
+                      <td
+                        colSpan={columns.length}
+                        className="px-4 py-3 text-sm text-slate-500"
+                      >
+                        Loading reporting...
+                      </td>
+                    </tr>
+                  )}
+                  {!loading && reports.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={columns.length}
+                        className="px-4 py-3 text-sm text-slate-500"
+                      >
+                        No reporting found.
+                      </td>
+                    </tr>
+                  )}
+                  {!loading &&
+                    table.getRowModel().rows.map((row, index) => (
+                      <tr
+                        key={row.id}
+                        className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <td
+                            key={cell.id}
+                            style={{ width: cell.column.getSize() }}
+                            className="px-4 py-3 text-sm border-b border-slate-100"
+                          >
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext(),
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="md:hidden space-y-3">
+              {loading && (
+                <div className="rbac-card py-4 text-sm text-slate-500">
+                  Loading reporting...
+                </div>
+              )}
+              {!loading && reports.length === 0 && (
+                <div className="rbac-card py-4 text-sm text-slate-500">
+                  No reporting found.
+                </div>
+              )}
+              {!loading &&
+                reports.map((report) => (
+                  <div key={report.id} className="rbac-card p-4">
+                    <div className="mb-2 flex items-center justify-between">
+                      <div>
+                        <h4 className="text-sm font-semibold">
+                          {report.title}
+                        </h4>
+                        <p className="text-xs text-slate-500">
+                          {report.projectName} •{" "}
+                          {formatToDDMMYYYY(report.reportDate)}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          className="rbac-link"
+                          type="button"
+                          onClick={() => handleView(report)}
+                        >
+                          <FaEye />
+                        </button>
+                        {report.canManage && (
+                          <>
+                            <button
+                              className="rbac-link"
+                              type="button"
+                              onClick={() => handleEdit(report)}
+                            >
+                              <FaEdit />
+                            </button>
+                            <button
+                              className="rbac-link danger"
+                              type="button"
+                              onClick={() => handleDelete(report)}
+                            >
+                              <FaTrash />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid gap-1 text-sm">
+                      {isAdmin && (
+                        <p>
+                          <strong>Employee:</strong>{" "}
+                          {report.createdByName || "-"}
+                        </p>
+                      )}
+                      <p>
+                        <strong>Status:</strong>{" "}
+                        {report.status.replaceAll("_", " ")}
+                      </p>
+                      <p>
+                        <strong>Description:</strong>{" "}
+                        {report.description || "-"}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+            </div>
           </div>
 
           <div className="mt-4 flex flex-wrap items-center justify-end gap-3 text-sm ">
-           
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2">
-              <button
-                className="change-button change-button-secondary"
-                type="button"
-                onClick={() => setPageIndex((prev) => Math.max(prev - 1, 0))}
-                disabled={pageIndex === 0}
-              >
-                <FaChevronLeft size={20}/>
-              </button>
-               <span>
-              Page {pageIndex + 1} of {pageCount}
-            </span>
-              <button
-                className="change-button change-button-secondary"
-                type="button"
-                onClick={() =>
-                  setPageIndex((prev) => Math.min(prev + 1, pageCount - 1))
-                }
-                disabled={pageIndex + 1 >= pageCount}
-              >
-                <FaChevronRight size={20}/>
-              </button>
+                <button
+                  className="change-button change-button-secondary"
+                  type="button"
+                  onClick={() => setPageIndex((prev) => Math.max(prev - 1, 0))}
+                  disabled={pageIndex === 0}
+                >
+                  <FaChevronLeft size={20} />
+                </button>
+                <span>
+                  Page {pageIndex + 1} of {pageCount}
+                </span>
+                <button
+                  className="change-button change-button-secondary"
+                  type="button"
+                  onClick={() =>
+                    setPageIndex((prev) => Math.min(prev + 1, pageCount - 1))
+                  }
+                  disabled={pageIndex + 1 >= pageCount}
+                >
+                  <FaChevronRight size={20} />
+                </button>
               </div>
               <div>
-              <select
-                className="rbac-input rbac-select"
-                value={pageSize}
-                onChange={(event) => {
-                  setPageIndex(0);
-                  setPageSize(Number(event.target.value));
-                }}
-              >
-                {[5, 10, 20, 30].map((size) => (
-                  <option key={size} value={size}>
-                    Show {size}
-                  </option>
-                ))}
-              </select>
+                <select
+                  className="rbac-input rbac-select"
+                  value={pageSize}
+                  onChange={(event) => {
+                    setPageIndex(0);
+                    setPageSize(Number(event.target.value));
+                  }}
+                >
+                  {[5, 10, 20, 30].map((size) => (
+                    <option key={size} value={size}>
+                      Show {size}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
@@ -564,56 +660,87 @@ function ReportingListContent() {
               </button>
             </div>
 
-            {viewLoading && <p className="mt-4 text-sm text-slate-500">Loading details...</p>}
+            {viewLoading && (
+              <p className="mt-4 text-sm text-slate-500">Loading details...</p>
+            )}
 
             {!viewLoading && viewData && (
               <div className="mt-4 grid gap-4">
                 <div className="grid gap-3 md:grid-cols-2">
-                  <p className="text-sm "><strong>Date:</strong> {formatToDDMMYYYY(viewData.reportDate)}</p>
-                  <p className="text-sm "><strong>Project:</strong> {viewData.projectName}</p>
-                  <p className="text-sm "><strong>Employee:</strong> {viewData.createdByName || "-"}</p>
-                  <p className="text-sm "><strong>Status:</strong> {String(viewData.status || "").replaceAll("_", " ")}</p>
+                  <p className="text-sm ">
+                    <strong>Date:</strong>{" "}
+                    {formatToDDMMYYYY(viewData.reportDate)}
+                  </p>
+                  <p className="text-sm ">
+                    <strong>Project:</strong> {viewData.projectName}
+                  </p>
+                  <p className="text-sm ">
+                    <strong>Employee:</strong> {viewData.createdByName || "-"}
+                  </p>
+                  <p className="text-sm ">
+                    <strong>Status:</strong>{" "}
+                    {String(viewData.status || "").replaceAll("_", " ")}
+                  </p>
                 </div>
 
-                <p className="text-sm "><strong>Title:</strong> {viewData.title}</p>
-                <p className="text-sm  whitespace-pre-wrap"><strong>Description:</strong> {viewData.description}</p>
+                <p className="text-sm ">
+                  <strong>Title:</strong> {viewData.title}
+                </p>
+                <p className="text-sm  whitespace-pre-wrap">
+                  <strong>Description:</strong> {viewData.description}
+                </p>
 
                 <div>
-                  <p className="text-sm font-semibold ">Images</p>
-                  {viewData.imageUrls?.length ? (
-                    <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                      {viewData.imageUrls.map((url) => (
-                        <div key={url} className="rounded-xl border border-slate-200 p-2">
-                          <Image
-                            src={url}
-                            alt="Report"
-                            width={640}
-                            height={320}
-                            unoptimized
-                            className="h-40 w-full rounded-lg object-cover"
-                          />
-                          <a className="rbac-link mt-2 inline-block" href={url} download>
-                            Download image
-                          </a>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="mt-1 text-sm ">No images uploaded.</p>
+                  {viewData.imageUrls?.length > 0 && (
+                    <>
+                      <p className="text-sm font-semibold ">Images</p>
+                      <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {viewData.imageUrls.map((url) => (
+                          <div
+                            key={url}
+                            className="rounded-xl border border-slate-200 p-2"
+                          >
+                            <Image
+                              src={url}
+                              alt="Report"
+                              width={640}
+                              height={320}
+                              unoptimized
+                              className="h-40 w-full rounded-lg object-cover"
+                            />
+                            <a
+                              className="rbac-link mt-2 inline-block"
+                              href={url}
+                              download
+                            >
+                              Download image
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </>
                   )}
                 </div>
 
                 <div>
-                  <p className="text-sm font-semibold ">Video</p>
-                  {viewData.videoUrl ? (
-                    <div className="mt-2 rounded-xl border border-slate-200 p-3">
-                      <video controls className="w-full rounded-lg" src={viewData.videoUrl} />
-                      <a className="rbac-link mt-2 inline-block" href={viewData.videoUrl} download>
-                        Download video
-                      </a>
-                    </div>
-                  ) : (
-                    <p className="mt-1 text-sm ">No video uploaded.</p>
+                  {viewData.videoUrl && (
+                    <>
+                      <p className="text-sm font-semibold ">Video</p>
+                      <div className="mt-2 rounded-xl border border-slate-200 p-3">
+                        <video
+                          controls
+                          className="w-full rounded-lg"
+                          src={viewData.videoUrl}
+                        />
+                        <a
+                          className="rbac-link mt-2 inline-block"
+                          href={viewData.videoUrl}
+                          download
+                        >
+                          Download video
+                        </a>
+                      </div>
+                    </>
                   )}
                 </div>
               </div>

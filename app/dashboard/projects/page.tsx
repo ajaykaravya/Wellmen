@@ -5,9 +5,7 @@ import { flexRender, useReactTable } from "@tanstack/react-table";
 import { ColumnDef, getCoreRowModel } from "@tanstack/table-core";
 import { formatToDDMMYYYY } from "@/lib/dateUtils";
 import useDebounce from "@/app/hooks/useDebounce";
-import DashboardShell, {
-  useDashboardContext,
-} from "../_components/DashboardShell";
+import DashboardShell from "../_components/DashboardShell";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import { toast } from "react-toastify";
 import { FaChevronLeft, FaChevronRight, FaEdit, FaTrash } from "react-icons/fa";
@@ -28,7 +26,6 @@ type ProjectRow = {
 };
 
 function ProjectListContent() {
-  const { setNavOpen } = useDashboardContext();
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
@@ -195,7 +192,7 @@ function ProjectListContent() {
   });
 
   return (
-    <>      <section className="rbac-section">
+    <>      <section className="rbac-section rbac-container">
         <div className="rbac-card">
           <div className="flex justify-between item-center">
 
@@ -267,68 +264,102 @@ function ProjectListContent() {
             </button>
           </div>
 
-          <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full border-separate border-spacing-y-2">
-              <thead>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <tr key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <th
-                        key={header.id}
-                        style={{ width: header.getSize() }}
-                        className="text-left text-xs font-semibold uppercase tracking-[0.2em]"
-                      >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
-                      </th>
-                    ))}
-                  </tr>
-                ))}
-              </thead>
-              <tbody>
-                {loading && (
-                  <tr>
-                    <td
-                      colSpan={columns.length}
-                      className="py-6 text-sm text-slate-500"
-                    >
-                      Loading projects...
-                    </td>
-                  </tr>
-                )}
-                {!loading && projects.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={columns.length}
-                      className="py-6 text-sm text-slate-500"
-                    >
-                      No projects found.
-                    </td>
-                  </tr>
-                )}
-                {!loading &&
-                  table.getRowModel().rows.map((row) => (
-                    <tr key={row.id} className="bg-white">
-                      {row.getVisibleCells().map((cell) => (
-                        <td
-                          key={cell.id}
-                          style={{ width: cell.column.getSize() }}
-                          className="py-4 text-sm"
+          <div className="mt-4">
+            <div className="hidden md:block overflow-x-auto">
+              <table className="min-w-full border border-slate-200 border-separate border-spacing-0">
+                <thead className="bg-slate-50">
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <tr key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <th
+                          key={header.id}
+                          style={{ width: header.getSize() }}
+                          className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200"
                         >
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext(),
-                          )}
-                        </td>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext(),
+                              )}
+                        </th>
                       ))}
                     </tr>
                   ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {loading && (
+                    <tr>
+                      <td
+                        colSpan={columns.length}
+                        className="px-4 py-3 text-sm text-slate-500"
+                      >
+                        Loading projects...
+                      </td>
+                    </tr>
+                  )}
+                  {!loading && projects.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={columns.length}
+                        className="px-4 py-3 text-sm text-slate-500"
+                      >
+                        No projects found.
+                      </td>
+                    </tr>
+                  )}
+                  {!loading &&
+                    table.getRowModel().rows.map((row, index) => (
+                      <tr key={row.id} className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                        {row.getVisibleCells().map((cell) => (
+                          <td
+                            key={cell.id}
+                            style={{ width: cell.column.getSize() }}
+                            className="px-4 py-3 text-sm border-b border-slate-100"
+                          >
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext(),
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="md:hidden space-y-3">
+              {loading && (
+                <div className="rbac-card py-4 text-sm text-slate-500">Loading projects...</div>
+              )}
+              {!loading && projects.length === 0 && (
+                <div className="rbac-card py-4 text-sm text-slate-500">No projects found.</div>
+              )}
+              {!loading && projects.map((project) => (
+                <div key={project.id} className="rbac-card p-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-semibold">{project.name}</h4>
+                      <p className="text-xs text-slate-500">{project.address}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Link href={`/dashboard/projects/${project.id}`}>
+                        <button className="rbac-link" type="button"><FaEdit /></button>
+                      </Link>
+                      <button className="rbac-link danger" type="button" onClick={() => handleDeleteProject(project)}><FaTrash /></button>
+                    </div>
+                  </div>
+                  <div className="grid gap-1 text-sm">
+                    <p><strong>Contact:</strong> {project.contactNumber}</p>
+                    <p><strong>Email:</strong> {project.email}</p>
+                    <p><strong>Start:</strong> {project.startDate ? formatToDDMMYYYY(project.startDate) : "-"}</p>
+                    <p><strong>End:</strong> {project.endDate ? formatToDDMMYYYY(project.endDate) : "-"}</p>
+                    <p><strong>Status:</strong> {project.status.replaceAll("_", " ")}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="mt-4 flex flex-wrap items-center justify-end gap-3 text-sm">

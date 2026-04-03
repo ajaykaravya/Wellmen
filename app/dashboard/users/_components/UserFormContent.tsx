@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { toast } from "react-toastify";
 
 type UserFormState = {
   firstName: string;
@@ -64,18 +65,46 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
     loadUser();
   }, [userId]);
 
+  const isEmailValid = (email: string) => /\S+@\S+\.\S+/.test(email);
+  const isPasswordValid = (password: string) =>
+    password.length >= 6 &&
+    /[A-Z]/.test(password) &&
+    /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password);
+  const isMobileValid = (mobile: string) => /^\d{10}$/.test(mobile);
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
     const newErrors: Partial<Record<keyof UserFormState, string>> = {};
     if (!form.firstName.trim()) newErrors.firstName = "First name is required.";
     if (!form.lastName.trim()) newErrors.lastName = "Last name is required.";
-    if (!form.email.trim()) newErrors.email = "Email is required.";
-    if (!form.mobileNumber.trim()) newErrors.mobileNumber = "Mobile number is required.";
-    if (!userId && !form.password) newErrors.password = "Password is required.";
+
+    if (form.email.trim() && !isEmailValid(form.email.trim())) {
+      newErrors.email = "Email must contain @ and .";
+    }
+
+    if (!form.mobileNumber.trim()) {
+      newErrors.mobileNumber = "Mobile number is required.";
+    } else if (!isMobileValid(form.mobileNumber.trim())) {
+      newErrors.mobileNumber = "Mobile number must be 10 digits and numbers only.";
+    }
+
+    if (!userId && !form.password) {
+      newErrors.password = "Password is required.";
+    } else if (form.password) {
+      if (!isPasswordValid(form.password)) {
+        newErrors.password = "Password must be at least 6 chars, include one uppercase, one special char.";
+      }
+    }
+
     if (!form.roleName?.trim()) newErrors.roleName = "Role name is required.";
 
-    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
     try {
       const endpoint = userId ? `/api/users/${userId}` : "/api/users";
       const method = userId ? "PUT" : "POST";
@@ -87,12 +116,14 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
 
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
+        toast.error(payload.error || "Failed to save user");
         return;
       }
 
+      toast.success(userId ? "User updated successfully" : "User added successfully");
       router.push("/dashboard/users");
-    } catch (error) {
-      console.error("Failed to save user", error);
+    } catch (error:any) {
+      toast.error(error || "Failed to save user");
     }
   };
 
@@ -100,8 +131,11 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
 
   return (
     <>
-      <section className="rbac-section">
+      <section className="rbac-section rbac-container">
         <div className="rbac-card">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="rbac-title-lg">{userId ? "Edit User" : "Add New User"}</h3>
+          </div>
           <form className="rbac-form" onSubmit={handleSubmit}>
             <div className="">
               <label className="rbac-label">
@@ -139,7 +173,7 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
                 <p className="text-sm text-red-600 mt-1">{errors.lastName}</p>
               )}
               <label className="rbac-label">
-                Email <span className="text-red-600">*</span>
+                Email
                 <input
                   className="rbac-input mb-2"
                   placeholder="Email"
@@ -174,7 +208,7 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
                 <p className="text-sm text-red-600 mb-2">{errors.mobileNumber}</p>
               )}
               <label className="rbac-label mt-5">
-                Password {userId ? "(optional)" : "*"}
+                Password {userId ? "" : <span className="text-red-600">*</span>}
                 <input
                   type="password"
                   className="rbac-input mb-2"

@@ -8,7 +8,7 @@ function ProfileContent() {
 
   return (
     <>
-      <section className="rbac-section">
+      <section className="rbac-section rbac-container">
         <div className="rbac-card">
           <h2 className="rbac-title-lg">My Profile</h2>
           <div className="rbac-profile-grid">

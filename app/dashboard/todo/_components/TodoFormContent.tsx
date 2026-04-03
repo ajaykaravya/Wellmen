@@ -147,8 +147,11 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
 
   return (
     <>
-      <section className="rbac-section">
+      <section className="rbac-section rbac-container">
         <div className="rbac-card">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="rbac-title-lg">{todoId ? "Edit Todo" : "Add New Todo"}</h3>
+          </div>
           <form className="rbac-form" onSubmit={handleSubmit}>
             {note && <p className="rbac-note">{note}</p>}
             <div>

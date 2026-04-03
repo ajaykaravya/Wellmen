@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.example.app',
-  appName: 'nextjs-capacitor',
+  appName: 'wellman',
   webDir: 'out',
    server: {
     url: 'https://nextjs-capacitor-puce.vercel.app/', // 👈 YOUR LIVE URL

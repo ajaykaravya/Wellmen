@@ -2,14 +2,50 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
+import {
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
 import { ColumnDef } from "@tanstack/table-core";
 import { formatToDDMMYYYY } from "@/lib/dateUtils";
 import { toast } from "react-toastify";
-import DashboardShell, { useDashboardContext } from "./_components/DashboardShell";
-import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import DashboardShell, {
+  useDashboardContext,
+} from "./_components/DashboardShell";
+import {
+  FaChevronLeft,
+  FaChevronRight,
+  FaEye,
+  FaClock,
+  FaHourglass,
+  FaCheckCircle,
+} from "react-icons/fa";
 import Link from "next/link";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Filler,
+  Tooltip,
+  Legend,
+} from "chart.js";
+import { Line, Bar } from "react-chartjs-2";
+import { FaListCheck } from "react-icons/fa6";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Filler,
+  Tooltip,
+  Legend,
+);
 
 type TodoStatus = "TODO" | "IN_PROGRESS" | "ON_HOLD" | "DONE";
 
@@ -66,7 +102,6 @@ const shiftInputDate = (value: string, diffDays: number) => {
 };
 
 function OverviewContent() {
-  const router = useRouter();
   const { user, isAdmin } = useDashboardContext();
   const displayName = user ? `${user.firstName} ${user.lastName}`.trim() : "";
 
@@ -87,7 +122,9 @@ function OverviewContent() {
   const [userReportsLoading, setUserReportsLoading] = useState(false);
   const [reportViewOpen, setReportViewOpen] = useState(false);
   const [reportViewLoading, setReportViewLoading] = useState(false);
-  const [reportViewData, setReportViewData] = useState<AdminReportRow | null>(null);
+  const [reportViewData, setReportViewData] = useState<AdminReportRow | null>(
+    null,
+  );
 
   const loadTodayTodos = useCallback(async () => {
     setLoading(true);
@@ -259,13 +296,19 @@ function OverviewContent() {
         {
           header: "Task Title",
           accessorKey: "title",
-          cell: (info) => <span className="rbac-muted">{String(info.getValue() || "")}</span>,
+          cell: (info) => (
+            <span className="rbac-muted">{String(info.getValue() || "")}</span>
+          ),
         },
         {
           header: "Description",
           accessorKey: "description",
           size: 500,
-          cell: ({ row }) => <span className="rbac-muted">{row.original.description || "-"}</span>,
+          cell: ({ row }) => (
+            <span className="rbac-muted">
+              {row.original.description || "-"}
+            </span>
+          ),
         },
         {
           header: "Start Date",
@@ -279,7 +322,9 @@ function OverviewContent() {
           header: "Status",
           accessorKey: "status",
           cell: ({ row }) => (
-            <span className="rbac-muted">{String(row.original.status || "").replaceAll("_", " ")}</span>
+            <span className="rbac-muted">
+              {String(row.original.status || "").replaceAll("_", " ")}
+            </span>
           ),
         },
         {
@@ -287,15 +332,22 @@ function OverviewContent() {
           id: "assignee",
           cell: ({ row }) => {
             const assignee = row.original.assignee;
-            if (!assignee) return <span className="rbac-muted">Unassigned</span>;
-            return <span className="rbac-muted">{assignee.firstName} {assignee.lastName}</span>;
+            if (!assignee)
+              return <span className="rbac-muted">Unassigned</span>;
+            return (
+              <span className="rbac-muted">
+                {assignee.firstName} {assignee.lastName}
+              </span>
+            );
           },
         },
         {
           header: "Assignee Role",
           id: "assigneeRole",
           cell: ({ row }) => (
-            <span className="rbac-muted">{row.original.assignee?.role || "-"}</span>
+            <span className="rbac-muted">
+              {row.original.assignee?.role || "-"}
+            </span>
           ),
         },
       ];
@@ -305,19 +357,25 @@ function OverviewContent() {
       {
         header: "Task Title",
         accessorKey: "title",
-        cell: (info) => <span className="rbac-muted">{String(info.getValue() || "")}</span>,
+        cell: (info) => (
+          <span className="rbac-muted">{String(info.getValue() || "")}</span>
+        ),
       },
       {
         header: "Description",
         accessorKey: "description",
         size: 500,
-        cell: ({ row }) => <span className="rbac-muted">{row.original.description || "-"}</span>,
+        cell: ({ row }) => (
+          <span className="rbac-muted">{row.original.description || "-"}</span>
+        ),
       },
       {
         header: "Comments",
         id: "comments",
         size: 500,
-        cell: ({ row }) => <span className="rbac-muted">{row.original.comments || "-"}</span>,
+        cell: ({ row }) => (
+          <span className="rbac-muted">{row.original.comments || "-"}</span>
+        ),
       },
       {
         header: "Start Date",
@@ -331,7 +389,9 @@ function OverviewContent() {
         header: "Status",
         accessorKey: "status",
         cell: ({ row }) => (
-          <span className="rbac-muted">{String(row.original.status || "").replaceAll("_", " ")}</span>
+          <span className="rbac-muted">
+            {String(row.original.status || "").replaceAll("_", " ")}
+          </span>
         ),
       },
       {
@@ -363,6 +423,77 @@ function OverviewContent() {
     getCoreRowModel: getCoreRowModel(),
   });
 
+  const todoTotal = todos.length;
+  const todoInProgress = todos.filter(
+    (task) => task.status === "IN_PROGRESS",
+  ).length;
+  const todoTodo = todos.filter((task) => task.status === "TODO").length;
+  const todoDone = todos.filter((task) => task.status === "DONE").length;
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { enabled: true },
+    },
+    scales: {
+      x: { display: false },
+      y: { display: false },
+    },
+    elements: {
+      line: {
+        tension: 0.4,
+        borderWidth: 2,
+        borderColor: "#2596be",
+        backgroundColor: "rgba(37,150,190,0.2)",
+        fill: "start",
+      },
+      point: { radius: 0 },
+    },
+  };
+
+  const statsChartData = (values: number[]) => ({
+    labels: values.map((_, index) => `p${index}`),
+    datasets: [
+      {
+        data: values,
+        borderColor: "#2596be",
+        backgroundColor: "rgba(37,150,190,0.2)",
+        fill: true,
+      },
+    ],
+  });
+
+  const totalTasksChart = statsChartData([
+    todoTotal * 0.4,
+    todoTotal * 0.6,
+    todoTotal * 0.55,
+    todoTotal * 0.8,
+    todoTotal,
+  ]);
+  const inProgressChart = statsChartData([
+    todoInProgress * 0.3,
+    todoInProgress * 0.5,
+    todoInProgress * 0.7,
+    todoInProgress * 0.6,
+    todoInProgress,
+  ]);
+  const todoChart = statsChartData([
+    todoTodo * 0.4,
+    todoTodo * 0.8,
+    todoTodo * 0.7,
+    todoTodo * 0.9,
+    todoTodo,
+  ]);
+  const doneChart = statsChartData([
+    todoDone * 0.2,
+    todoDone * 0.35,
+    todoDone * 0.45,
+    todoDone * 0.75,
+    todoDone,
+  ]);
+
   const isModalDirty =
     !!modalTarget &&
     ((modalDraft.comments || "") !== (modalTarget.comments || "") ||
@@ -371,224 +502,414 @@ function OverviewContent() {
 
   return (
     <>
-      <header className="rbac-header">
+      <header className="flex justify-between gap-3 z-50 bg-white border-b border-slate-200 p-3 ">
         <div>
-          <p className="rbac-eyebrow">Dashboard</p>
-          <h1 className="rbac-heading font-medium">Welcome back, {displayName}</h1>
-          <span className="text-sm">
+          <h1 className="rbac-heading text-md sm:text-2xl font-medium">
+            Welcome back, {displayName}
+          </h1>
+          <span className="text-xs sm:text-sm text-slate-500">
             Role-based workspace tailored for {user?.role || "your role"}.
           </span>
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          <div className="rbac-role">
-            <p className="rbac-label">Role</p>
-            <p className="rbac-role-name">{user?.role || "Unknown"}</p>
+        <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+          <div className="rbac-role px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-slate-200 bg-slate-50">
+            <p className="rbac-label text-[10px] sm:text-xs">Role</p>
+            <p className="rbac-role-name text-xs sm:text-sm">
+              {user?.role || "Unknown"}
+            </p>
           </div>
         </div>
       </header>
-
-       <section className="rbac-section">
-        <div className="rbac-card">
-          <div className="flex justify-between items-center">
-          <h3 className="rbac-title-lg"> Today's tasks</h3>
-          <Link href="/dashboard/todo/new">
-          <button
-                className="rbac-button"
-                type="button"
-                >
-                Add Todo
-              </button>
-              </Link>
+      <section className="rbac-section mt-4 rbac-container">
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+          <div className="rbac-card p-6 sm:p-8 flex items-center gap-4">
+            <div className="bg-blue-500 text-white rounded-full p-3 flex-shrink-0">
+              <FaListCheck size={24} />
+            </div>
+            <div>
+              <p className="text-xs uppercase text-slate-500">Total Tasks</p>
+              <p className="text-2xl sm:text-3xl font-bold">{todoTotal}</p>
+            </div>
           </div>
-
-          <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full border-separate border-spacing-y-2">
-              <thead>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <tr key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <th
-                        key={header.id}
-                        className="text-left text-xs font-semibold uppercase"
-                      >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
-                      </th>
-                    ))}
-                  </tr>
-                ))}
-              </thead>
-              <tbody>
-                {loading && (
-                  <tr>
-                    <td colSpan={columns.length}>Loading...</td>
-                  </tr>
-                )}
-                {!loading && todos.length === 0 && (
-                  <tr>
-                    <td colSpan={columns.length}>No tasks for today</td>
-                  </tr>
-                )}
-                {!loading &&
-                  table.getRowModel().rows.map((row) => (
-                    <tr key={row.original.id} className="bg-white">
-                      {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className="py-3 text-sm">
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext(),
-                          )}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
+          <div className="rbac-card p-4 sm:p-6 flex items-center gap-4">
+            <div className="bg-orange-500 text-white rounded-full p-3 flex-shrink-0">
+              <FaHourglass size={24} />
+            </div>
+            <div>
+              <p className="text-xs uppercase text-slate-500">In Progress</p>
+              <p className="text-2xl sm:text-3xl font-bold">{todoInProgress}</p>
+            </div>
+          </div>
+          <div className="rbac-card p-4 sm:p-6 flex items-center gap-4">
+            <div className="bg-cyan-500 text-white rounded-full p-3 flex-shrink-0">
+              <FaClock size={24} />
+            </div>
+            <div>
+              <p className="text-xs uppercase text-slate-500">To Do</p>
+              <p className="text-2xl sm:text-3xl font-bold">{todoTodo}</p>
+            </div>
+          </div>
+          <div className="rbac-card p-4 sm:p-6 flex items-center gap-4">
+            <div className="bg-green-500 text-white rounded-full p-3 flex-shrink-0">
+              <FaCheckCircle size={24} />
+            </div>
+            <div>
+              <p className="text-xs uppercase text-slate-500">Completed</p>
+              <p className="text-2xl sm:text-3xl font-bold">{todoDone}</p>
+            </div>
           </div>
         </div>
       </section>
 
-      {!isAdmin && (
-        <section className="rbac-section">
+      <section className="rbac-section mt-4 rbac-container">
+        <div className="grid gap-4 lg:grid-cols-2">
           <div className="rbac-card">
             <div className="flex justify-between items-center">
-            <h3 className="rbac-title-lg">Today's reporting</h3>
-            <Link href="/dashboard/reports/new">
-            <button
-                className="rbac-button"
-                type="button"
-              >
-                Add Reporting
-              </button>
+              <h3 className="rbac-title-lg">Today's tasks</h3>
+              <Link href="/dashboard/todo/new">
+                <button className="rbac-button" type="button">
+                  Add Todo
+                </button>
               </Link>
             </div>
+
             <div className="mt-4">
-              {userReportsLoading && <p>Loading reporting...</p>}
-              {!userReportsLoading && userReports.length === 0 && (
-                <p>No reporting found for today.</p>
-              )}
-              {!userReportsLoading && userReports.length > 0 && (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full border-separate border-spacing-y-2">
-                    <thead>
-                      <tr>
-                        <th className="text-left text-xs font-semibold uppercase">Date</th>
-                        <th className="text-left text-xs font-semibold uppercase">Project</th>
-                        <th className="text-left text-xs font-semibold uppercase">Title</th>
-                        <th className="text-left text-xs font-semibold uppercase">Status</th>
-                        <th className="text-left text-xs font-semibold uppercase">Action</th>
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full border border-slate-200 border-separate border-spacing-0">
+                  <thead className="bg-slate-50">
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <tr key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => (
+                          <th
+                            key={header.id}
+                            className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200"
+                          >
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext(),
+                                )}
+                          </th>
+                        ))}
                       </tr>
-                    </thead>
-                    <tbody>
-                      {userReports.map((report) => (
-                        <tr key={report.id} className="bg-white">
-                          <td className="py-3 text-sm">{formatToDDMMYYYY(report.reportDate)}</td>
-                          <td className="py-3 text-sm">{report.projectName || "-"}</td>
-                          <td className="py-3 text-sm">{report.title || "-"}</td>
-                          <td className="py-3 text-sm">{report.status.replaceAll("_", " ")}</td>
-                          <td className="py-3 text-sm">
-                            <button
-                              className="rbac-link"
-                              type="button"
-                              onClick={() => openReportView(report)}
+                    ))}
+                  </thead>
+                  <tbody>
+                    {loading && (
+                      <tr>
+                        <td
+                          colSpan={columns.length}
+                          className="px-4 py-3 text-sm text-slate-500"
+                        >
+                          Loading...
+                        </td>
+                      </tr>
+                    )}
+                    {!loading && todos.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={columns.length}
+                          className="px-4 py-3 text-sm text-slate-500"
+                        >
+                          No tasks for today
+                        </td>
+                      </tr>
+                    )}
+                    {!loading &&
+                      table.getRowModel().rows.map((row, index) => (
+                        <tr
+                          key={row.original.id}
+                          className={
+                            index % 2 === 0 ? "bg-white" : "bg-slate-50"
+                          }
+                        >
+                          {row.getVisibleCells().map((cell) => (
+                            <td
+                              key={cell.id}
+                              className="px-4 py-3 text-sm border-b border-slate-100"
                             >
-                              View
-                            </button>
-                          </td>
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext(),
+                              )}
+                            </td>
+                          ))}
                         </tr>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-      )}
+                  </tbody>
+                </table>
+              </div>
 
-      {isAdmin && (
-        <section className="rbac-section">
-          <div className="rbac-card">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h3 className="rbac-title-lg">Employees reporting</h3>
-              <div className="flex items-center justify-end gap-2">
-                <button
-                  className="change-button change-button-secondary"
-                  type="button"
-                  onClick={() => setAdminDate((prev) => shiftInputDate(prev, -1))}
-                >
-                    <FaChevronLeft size={20}/>
-                </button>
-                <input
-                  className="date-input"
-                  type="date"
-                  value={adminDate}
-                  onChange={(event) => setAdminDate(event.target.value)}
-                />
-                <button
-                  className="change-button change-button-secondary"
-                  type="button"
-                  onClick={() => setAdminDate((prev) => shiftInputDate(prev, 1))}
-                >
-                  <FaChevronRight size={20}/>
-                </button>
+              <div className="md:hidden space-y-3">
+                {todos.map((task) => (
+                  <div key={task.id} className="rbac-card p-4">
+                    <p className="text-xs uppercase text-slate-500">
+                      {task.title}
+                    </p>
+                    <p className="text-sm text-slate-700">
+                      {task.description || "No description"}
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      Status: {task.status.replaceAll("_", " ")}
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      Start: {formatToDDMMYYYY(task.startDate)}
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      Comments: {task.comments || "-"}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
+          </div>
 
-            <div className="mt-4 overflow-x-auto">
-              <table className="min-w-full border-separate border-spacing-y-2">
-                <thead>
-                  <tr>
-                    <th className="text-left text-xs font-semibold uppercase tracking-[0.2em]">Project</th>
-                    <th className="text-left text-xs font-semibold uppercase tracking-[0.2em]">Title</th>
-                    <th className="text-left text-xs font-semibold uppercase tracking-[0.2em]">Description</th>
-                    <th className="text-left text-xs font-semibold uppercase tracking-[0.2em]">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {adminLoading && (
-                    <tr>
-                      <td colSpan={4} className="py-6 text-sm text-slate-500">Loading reporting...</td>
-                    </tr>
-                  )}
-                  {!adminLoading && adminReports.length === 0 && (
-                    <tr>
-                      <td colSpan={4} className="py-6 text-sm text-slate-500">No reporting found for selected date.</td>
-                    </tr>
-                  )}
-                  {!adminLoading &&
-                    adminReports.map((report) => (
-                      <tr key={report.id} className="bg-white">
-                        <td className="py-4 text-sm">{report.projectName}</td>
-                        <td className="py-4 text-sm">{report.title}</td>
-                        <td className="py-4 text-sm">{report.description}</td>
-                        <td className="py-4 text-sm">
+          <div className="rbac-card">
+            <div className="flex justify-between items-center">
+              <h3 className="rbac-title-lg">
+                {isAdmin ? "Employees reporting" : "Today's reporting"}
+              </h3>
+              {!isAdmin && (
+                <Link href="/dashboard/reports/new">
+                  <button className="rbac-button" type="button">
+                    Add Reporting
+                  </button>
+                </Link>
+              )}
+            </div>
+
+            {isAdmin ? (
+              <div className="mt-4">
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <button
+                    className="change-button change-button-secondary bg-slate-200 p-2 rounded-md"
+                    type="button"
+                    onClick={() =>
+                      setAdminDate((prev) => shiftInputDate(prev, -1))
+                    }
+                  >
+                    <FaChevronLeft size={15} />
+                  </button>
+                  <input
+                    className="date-input"
+                    type="date"
+                    value={adminDate}
+                    onChange={(event) => setAdminDate(event.target.value)}
+                  />
+                  <button
+                    className="change-button change-button-secondary bg-slate-200 p-2 rounded-md"
+                    type="button"
+                    onClick={() =>
+                      setAdminDate((prev) => shiftInputDate(prev, 1))
+                    }
+                  >
+                    <FaChevronRight size={15} />
+                  </button>
+                </div>
+
+                <div className="mt-4">
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="min-w-full border border-slate-200 border-separate border-spacing-0">
+                      <thead className="bg-slate-50">
+                        <tr>
+                          <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] px-4 py-3 border-b border-slate-200">
+                            Project
+                          </th>
+                          <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] px-4 py-3 border-b border-slate-200">
+                            Title
+                          </th>
+                          <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] px-4 py-3 border-b border-slate-200">
+                            Description
+                          </th>
+                          <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] px-4 py-3 border-b border-slate-200">
+                            Action
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {adminLoading && (
+                          <tr>
+                            <td
+                              colSpan={4}
+                              className="px-4 py-3 text-sm text-slate-500"
+                            >
+                              Loading reporting...
+                            </td>
+                          </tr>
+                        )}
+                        {!adminLoading && adminReports.length === 0 && (
+                          <tr>
+                            <td
+                              colSpan={4}
+                              className="px-4 py-3 text-sm text-slate-500"
+                            >
+                              No reporting found for selected date.
+                            </td>
+                          </tr>
+                        )}
+                        {!adminLoading &&
+                          adminReports.map((report, index) => (
+                            <tr
+                              key={report.id}
+                              className={
+                                index % 2 === 0 ? "bg-white" : "bg-slate-50"
+                              }
+                            >
+                              <td className="px-4 py-3 text-sm border-b border-slate-100">
+                                {report.projectName}
+                              </td>
+                              <td className="px-4 py-3 text-sm border-b border-slate-100">
+                                {report.title}
+                              </td>
+                              <td className="px-4 py-3 text-sm border-b border-slate-100">
+                                {report.description}
+                              </td>
+                              <td className="px-4 py-3 text-sm border-b border-slate-100">
+                                <button
+                                  className="rbac-link"
+                                  type="button"
+                                  onClick={() => openReportView(report)}
+                                >
+                                  <FaEye size={15} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="md:hidden space-y-3">
+                    {adminReports.map((report) => (
+                      <div key={report.id} className="rbac-card p-4">
+                        <p className="text-xs uppercase text-slate-500">
+                          {report.projectName}
+                        </p>
+                        <p className="text-sm font-semibold">{report.title}</p>
+                        <p className="text-sm text-slate-700">
+                          {report.description}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {formatToDDMMYYYY(report.reportDate)}
+                        </p>
+                        <div className="flex justify-end">
                           <button
-                            className="rbac-link"
+                            className="rbac-link mt-2"
+                            type="button"
+                            onClick={() => openReportView(report)}
+                          >
+                            <FaEye size={15} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4">
+                {userReportsLoading && <p>Loading reporting...</p>}
+                {!userReportsLoading && userReports.length === 0 && (
+                  <p>No reporting found for today.</p>
+                )}
+                {!userReportsLoading && userReports.length > 0 && (
+                  <div>
+                    <div className="hidden md:block overflow-x-auto">
+                      <table className="min-w-full border border-slate-200 border-separate border-spacing-0">
+                        <thead className="bg-slate-50">
+                          <tr>
+                            <th className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200">
+                              Date
+                            </th>
+                            <th className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200">
+                              Project
+                            </th>
+                            <th className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200">
+                              Title
+                            </th>
+                            <th className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200">
+                              Status
+                            </th>
+                            <th className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200">
+                              Action
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {userReports.map((report, index) => (
+                            <tr
+                              key={report.id}
+                              className={
+                                index % 2 === 0 ? "bg-white" : "bg-slate-50"
+                              }
+                            >
+                              <td className="px-4 py-3 text-sm border-b border-slate-100">
+                                {formatToDDMMYYYY(report.reportDate)}
+                              </td>
+                              <td className="px-4 py-3 text-sm border-b border-slate-100">
+                                {report.projectName || "-"}
+                              </td>
+                              <td className="px-4 py-3 text-sm border-b border-slate-100">
+                                {report.title || "-"}
+                              </td>
+                              <td className="px-4 py-3 text-sm border-b border-slate-100">
+                                {report.status.replaceAll("_", " ")}
+                              </td>
+                              <td className="px-4 py-3 text-sm border-b border-slate-100">
+                                <button
+                                  className="rbac-link"
+                                  type="button"
+                                  onClick={() => openReportView(report)}
+                                >
+                                  View
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="md:hidden space-y-3">
+                      {userReports.map((report) => (
+                        <div key={report.id} className="rbac-card p-4">
+                          <p className="text-xs uppercase text-slate-500">
+                            {formatToDDMMYYYY(report.reportDate)}
+                          </p>
+                          <p className="text-sm font-semibold">
+                            {report.projectName || "-"}
+                          </p>
+                          <p className="text-sm text-slate-700">
+                            {report.title || "-"}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {report.status.replaceAll("_", " ")}
+                          </p>
+                          <button
+                            className="rbac-link mt-2"
                             type="button"
                             onClick={() => openReportView(report)}
                           >
                             View
                           </button>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        </section>
-      )}
-
+        </div>
+      </section>
 
       {modalOpen && !isAdmin && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="text-lg font-semibold text-slate-900">Update task</h2>
+            <h2 className="text-lg font-semibold text-slate-900">
+              Update task
+            </h2>
             <p className="mt-2 text-sm text-slate-600">
               Add your comments and choose a status before saving.
             </p>
@@ -657,10 +978,9 @@ function OverviewContent() {
           <div className="w-full max-w-4xl rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-auto">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Report details</h2>
-                <p className="mt-1 text-sm text-slate-600">
-                  Full details with playable/downloadable media.
-                </p>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Report details
+                </h2>
               </div>
               <button
                 className="rbac-button rbac-button-secondary"
@@ -674,49 +994,92 @@ function OverviewContent() {
               </button>
             </div>
 
-            {reportViewLoading && <p className="mt-4 text-sm text-slate-500">Loading details...</p>}
+            {reportViewLoading && (
+              <p className="mt-4 text-sm text-slate-500">Loading details...</p>
+            )}
 
             {!reportViewLoading && reportViewData && (
               <div className="mt-4 grid gap-4">
                 <div className="grid gap-3 md:grid-cols-2">
-                  <p className="text-sm"><strong>Date:</strong> {formatToDDMMYYYY(reportViewData.reportDate)}</p>
-                  <p className="text-sm"><strong>Project:</strong> {reportViewData.projectName}</p>
-                  <p className="text-sm"><strong>Employee:</strong> {reportViewData.createdByName || "-"}</p>
-                  <p className="text-sm"><strong>Status:</strong> {String(reportViewData.status || "").replaceAll("_", " ")}</p>
+                  <p className="text-sm">
+                    <strong>Date:</strong>{" "}
+                    {formatToDDMMYYYY(reportViewData.reportDate)}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Project:</strong> {reportViewData.projectName}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Employee:</strong>{" "}
+                    {reportViewData.createdByName || "-"}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Status:</strong>{" "}
+                    {String(reportViewData.status || "").replaceAll("_", " ")}
+                  </p>
                 </div>
 
-                <p className="text-sm"><strong>Title:</strong> {reportViewData.title}</p>
-                <p className="text-sm whitespace-pre-wrap"><strong>Description:</strong> {reportViewData.description}</p>
+                <p className="text-sm">
+                  <strong>Title:</strong> {reportViewData.title}
+                </p>
+                <p className="text-sm whitespace-pre-wrap">
+                  <strong>Description:</strong> {reportViewData.description}
+                </p>
 
                 <div>
-                  <p className="text-sm font-semibold text-slate-800">Images</p>
-                  {reportViewData.imageUrls?.length ? (
-                    <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                      {reportViewData.imageUrls.map((url) => (
-                        <div key={url} className="rounded-xl border border-slate-200 p-2">
-                          <Image src={url} alt="Report" width={640} height={320} unoptimized className="h-40 w-full rounded-lg object-cover" />
-                          <a className="rbac-link mt-2 inline-block" href={url} download>
-                            Download image
-                          </a>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="mt-1 text-sm text-slate-500">No images uploaded.</p>
+                  {reportViewData.imageUrls?.length > 0 && (
+                    <>
+                      <p className="text-sm font-semibold text-slate-800">
+                        Images
+                      </p>
+                      <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {reportViewData.imageUrls.map((url) => (
+                          <div
+                            key={url}
+                            className="rounded-xl border border-slate-200 p-2"
+                          >
+                            <Image
+                              src={url}
+                              alt="Report"
+                              width={640}
+                              height={320}
+                              unoptimized
+                              className="h-40 w-full rounded-lg object-cover"
+                            />
+                            <a
+                              className="rbac-link mt-2 inline-block"
+                              href={url}
+                              download
+                            >
+                              Download image
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </>
                   )}
                 </div>
 
                 <div>
-                  <p className="text-sm font-semibold text-slate-800">Video</p>
-                  {reportViewData.videoUrl ? (
-                    <div className="mt-2 rounded-xl border border-slate-200 p-3">
-                      <video controls className="w-full rounded-lg" src={reportViewData.videoUrl} />
-                      <a className="rbac-link mt-2 inline-block" href={reportViewData.videoUrl} download>
-                        Download video
-                      </a>
-                    </div>
-                  ) : (
-                    <p className="mt-1 text-sm text-slate-500">No video uploaded.</p>
+                  {reportViewData.videoUrl && (
+                    <>
+                      <p className="text-sm font-semibold text-slate-800">
+                        Video
+                      </p>
+                      <div className="mt-2 rounded-xl border border-slate-200 p-3">
+                        <video
+                          controls
+                          className="w-full rounded-lg"
+                          src={reportViewData.videoUrl}
+                        />
+                        <a
+                          className="rbac-link mt-2 inline-block"
+                          href={reportViewData.videoUrl}
+                          download
+                        >
+                          Download video
+                        </a>
+                      </div>
+                    </>
                   )}
                 </div>
               </div>

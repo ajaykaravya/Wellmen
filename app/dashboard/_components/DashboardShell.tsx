@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 type SessionUser = {
   id: string;
@@ -98,6 +99,7 @@ export default function DashboardShell({
     cachedSession?.permissions ?? [],
   );
   const [navOpen, setNavOpen] = useState(false);
+  const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
 
   const isAdmin = user?.role === "Admin";
   const displayName = user ? `${user.firstName} ${user.lastName}`.trim() : "";
@@ -170,6 +172,7 @@ export default function DashboardShell({
     } catch (error) {
       console.error("Logout failed", error);
     } finally {
+      setConfirmLogoutOpen(false);
       router.push("/login");
     }
   };
@@ -226,11 +229,20 @@ export default function DashboardShell({
             <p className="rbac-label">Signed in</p>
             <p className="rbac-name">{displayName}</p>
             <p className="rbac-email">{user?.email}</p>
-            <button className="rbac-logout" onClick={handleLogout}>
+            <button className="rbac-logout" onClick={() => setConfirmLogoutOpen(true)}>
               Logout
             </button>
           </div>
         </aside>
+        <ConfirmDialog
+          open={confirmLogoutOpen}
+          title="Confirm logout"
+          description="Are you sure you want to logout?"
+          confirmLabel="Yes"
+          cancelLabel="No"
+          onConfirm={handleLogout}
+          onClose={() => setConfirmLogoutOpen(false)}
+        />
 
         {navOpen && (
           <button className="rbac-overlay" onClick={() => setNavOpen(false)} />
@@ -250,10 +262,10 @@ export default function DashboardShell({
               <span />
             </button>
           </div>
-          <div className="rbac-container">
+          <div className="">
             {loading ? (
               <div className="rbac-loading-placeholder">
-                <p>Loading dashboard...</p>
+                <p>Loading ...</p>
               </div>
             ) : (
               children
