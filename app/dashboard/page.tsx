@@ -13,6 +13,8 @@ import { toast } from "react-toastify";
 import DashboardShell, {
   useDashboardContext,
 } from "./_components/DashboardShell";
+import Loading from "../components/Loading";
+import CustomDatePicker from "../components/CustomDatePicker";
 import {
   FaChevronLeft,
   FaChevronRight,
@@ -20,6 +22,7 @@ import {
   FaClock,
   FaHourglass,
   FaCheckCircle,
+  FaSpinner,
 } from "react-icons/fa";
 import Link from "next/link";
 import {
@@ -94,11 +97,28 @@ const getTodayInputDate = () => {
 };
 
 const shiftInputDate = (value: string, diffDays: number) => {
-  const base = new Date(value || getTodayInputDate());
+  let base: Date;
+  if (value) {
+    const parts = value.split('/');
+    if (parts.length === 3) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const year = parseInt(parts[2], 10);
+      base = new Date(year, month, day);
+    } else {
+      base = new Date();
+    }
+  } else {
+    base = new Date();
+  }
+
   if (Number.isNaN(base.getTime())) return getTodayInputDate();
   base.setDate(base.getDate() + diffDays);
-  const local = new Date(base.getTime() - base.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 10);
+
+  const day = base.getDate().toString().padStart(2, '0');
+  const month = (base.getMonth() + 1).toString().padStart(2, '0');
+  const year = base.getFullYear();
+  return `${day}/${month}/${year}`;
 };
 
 function OverviewContent() {
@@ -129,7 +149,7 @@ function OverviewContent() {
   const loadTodayTodos = useCallback(async () => {
     setLoading(true);
     try {
-      const today = new Date().toISOString().split("T")[0];
+      const today = getTodayInputDate();
       const endpoint = isAdmin ? "/api/todos" : "/api/my-todos";
       const res = await fetch(`${endpoint}?date=${today}&page=1&pageSize=10`);
       if (!res.ok) return;
@@ -180,7 +200,7 @@ function OverviewContent() {
 
     setUserReportsLoading(true);
     try {
-      const today = new Date().toISOString().split("T")[0];
+      const today = getTodayInputDate();
       const res = await fetch(`/api/reports?date=${today}&page=1&pageSize=20`);
       if (!res.ok) return;
       const data = await res.json();
@@ -602,7 +622,9 @@ function OverviewContent() {
                           colSpan={columns.length}
                           className="px-4 py-3 text-sm text-slate-500"
                         >
-                          Loading...
+                          <div className="flex items-center justify-center">
+                            <FaSpinner className="animate-spin mr-2" size={16} />
+                          </div>
                         </td>
                       </tr>
                     )}
@@ -642,7 +664,15 @@ function OverviewContent() {
               </div>
 
               <div className="md:hidden space-y-3">
-                {todos.map((task) => (
+                {loading && (
+                  <div className="flex items-center justify-center py-4">
+                    <FaSpinner className="animate-spin mr-2" size={16} />
+                  </div>
+                )}
+                {!loading && todos.length === 0 && (
+                  <div className="rbac-card py-4 text-sm text-slate-500">No tasks for today</div>
+                )}
+                {!loading && todos.map((task) => (
                   <div key={task.id} className="rbac-card p-4">
                     <p className="text-xs uppercase text-slate-500">
                       {task.title}
@@ -659,6 +689,15 @@ function OverviewContent() {
                     <p className="text-sm text-slate-500">
                       Comments: {task.comments || "-"}
                     </p>
+                     <div className="mt-2 flex gap-2  justify-end">
+                    <button
+                      className="rbac-button rbac-button-secondary"
+                      type="button"
+                      onClick={() => setModalOpen(true)}
+                    >
+                      Update
+                    </button>
+                  </div>
                   </div>
                 ))}
               </div>
@@ -691,11 +730,11 @@ function OverviewContent() {
                   >
                     <FaChevronLeft size={15} />
                   </button>
-                  <input
-                    className="date-input"
-                    type="date"
+                  <CustomDatePicker
                     value={adminDate}
-                    onChange={(event) => setAdminDate(event.target.value)}
+                    onChange={setAdminDate}
+                    placeholder="Select date"
+                    className="date-input"
                   />
                   <button
                     className="change-button change-button-secondary bg-slate-200 p-2 rounded-md"
@@ -734,7 +773,9 @@ function OverviewContent() {
                               colSpan={4}
                               className="px-4 py-3 text-sm text-slate-500"
                             >
-                              Loading reporting...
+                              <div className="flex items-center justify-center">
+                                <FaSpinner className="animate-spin mr-2" size={16} />
+                              </div>
                             </td>
                           </tr>
                         )}
@@ -809,7 +850,11 @@ function OverviewContent() {
               </div>
             ) : (
               <div className="mt-4">
-                {userReportsLoading && <p>Loading reporting...</p>}
+                {userReportsLoading && (
+                  <div className="flex items-center justify-center py-4">
+                    <FaSpinner className="animate-spin mr-2" size={16} />
+                  </div>
+                )}
                 {!userReportsLoading && userReports.length === 0 && (
                   <p>No reporting found for today.</p>
                 )}
@@ -995,7 +1040,9 @@ function OverviewContent() {
             </div>
 
             {reportViewLoading && (
-              <p className="mt-4 text-sm text-slate-500">Loading details...</p>
+              <div className="flex items-center justify-center py-4">
+                <FaSpinner className="animate-spin mr-2" size={16} />
+              </div>
             )}
 
             {!reportViewLoading && reportViewData && (

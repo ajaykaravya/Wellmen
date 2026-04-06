@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { FaSpinner } from "react-icons/fa";
 import { clearCachedSession } from "../dashboard/_components/DashboardShell";
 
 export default function LoginPage() {
   const router = useRouter();
   const [form, setForm] = useState({ mobileNumber: "", password: "" });
   const [note, setNote] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [needsSetup, setNeedsSetup] = useState<boolean | null>(null);
   const [setupForm, setSetupForm] = useState({
     firstName: "",
@@ -18,6 +20,7 @@ export default function LoginPage() {
     confirmPassword: "",
   });
   const [setupNote, setSetupNote] = useState<string | null>(null);
+  const [setupLoading, setSetupLoading] = useState(false);
 
   useEffect(() => {
     const loadBootstrap = async () => {
@@ -43,19 +46,23 @@ export default function LoginPage() {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setNote(null);
+    setLoading(true);
 
     if (!form.mobileNumber.trim() || !form.password) {
       setNote("Enter your mobile number and password.");
+      setLoading(false);
       return;
     }
 
     if (!isMobileValid(form.mobileNumber.trim())) {
       setNote("Mobile number must be 10 digits and numbers only.");
+      setLoading(false);
       return;
     }
 
     if (!isPasswordValid(form.password)) {
       setNote("Password must be at least 6 chars, include one uppercase letter and one special character.");
+      setLoading(false);
       return;
     }
 
@@ -72,6 +79,7 @@ export default function LoginPage() {
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
         setNote(payload.error || "Login failed.");
+        setLoading(false);
         return;
       }
 
@@ -80,12 +88,14 @@ export default function LoginPage() {
     } catch (error) {
       console.error("Login failed", error);
       setNote("Login failed. Try again.");
+      setLoading(false);
     }
   };
 
   const handleSetup = async (event: React.FormEvent) => {
     event.preventDefault();
     setSetupNote(null);
+    setSetupLoading(true);
 
     const isEmailValid = (email: string) => /\S+@\S+\.\S+/.test(email);
     const isMobileValid = (mobileNumber: string) => /^\d{10}$/.test(mobileNumber);
@@ -101,26 +111,31 @@ export default function LoginPage() {
       !setupForm.mobileNumber.trim()
     ) {
       setSetupNote("First name, last name, email, and mobile number are required.");
+      setSetupLoading(false);
       return;
     }
 
     if (!isEmailValid(setupForm.email.trim())) {
       setSetupNote("Email must contain @ and .");
+      setSetupLoading(false);
       return;
     }
 
     if (!isMobileValid(setupForm.mobileNumber.trim())) {
       setSetupNote("Mobile number must be 10 digits and numbers only.");
+      setSetupLoading(false);
       return;
     }
 
     if (!isPasswordValid(setupForm.password)) {
       setSetupNote("Password must be at least 6 chars, include one uppercase and one special character.");
+      setSetupLoading(false);
       return;
     }
 
     if (setupForm.password !== setupForm.confirmPassword) {
       setSetupNote("Passwords do not match.");
+      setSetupLoading(false);
       return;
     }
 
@@ -141,6 +156,7 @@ export default function LoginPage() {
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
         setSetupNote(payload.error || "Failed to create Admin.");
+        setSetupLoading(false);
         return;
       }
 
@@ -154,9 +170,11 @@ export default function LoginPage() {
         password: "",
         confirmPassword: "",
       });
+      setSetupLoading(false);
     } catch (error) {
       console.error("Setup failed", error);
       setSetupNote("Failed to create Admin.");
+      setSetupLoading(false);
     }
   };
 
@@ -266,9 +284,11 @@ export default function LoginPage() {
                 </p>
               )}
               <button
-                className="mt-2 rounded-full bg-[#2596be] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-200 transition"
+                className="mt-2 rounded-full bg-[#2596be] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-200 transition flex items-center justify-center disabled:opacity-50"
                 type="submit"
+                disabled={setupLoading}
               >
+                {setupLoading && <FaSpinner className="animate-spin mr-2" size={14} />}
                 Create Admin
               </button>
             </form>
@@ -318,9 +338,11 @@ export default function LoginPage() {
                 </p>
               )}
               <button
-                className="mt-2 rounded-full bg-[#2596be] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-200 transition hover:bg-[#1e7ca5]"
+                className="mt-2 rounded-full bg-[#2596be] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-200 transition hover:bg-[#1e7ca5] flex items-center justify-center disabled:opacity-50"
                 type="submit"
+                disabled={loading}
               >
+                {loading && <FaSpinner className="animate-spin mr-2" size={14} />}
                 Continue
               </button>
             </form>

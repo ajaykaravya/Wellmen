@@ -12,6 +12,8 @@ export const formatToDDMMYYYY = (value?: string | Date | null) => {
 
 export const getTodayInputDate = () => {
   const now = new Date();
-  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 10);
+  const day = pad2(now.getDate());
+  const month = pad2(now.getMonth() + 1);
+  const year = now.getFullYear();
+  return `${day}/${month}/${year}`;
 };

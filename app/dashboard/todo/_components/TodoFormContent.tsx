@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { getTodayInputDate } from "@/lib/dateUtils";
 import { useDashboardContext } from "../../_components/DashboardShell";
+import CustomDatePicker from "../../../components/CustomDatePicker";
 
 type UserOption = {
   id: string;
@@ -153,7 +154,6 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
             <h3 className="rbac-title-lg">{todoId ? "Edit Todo" : "Add New Todo"}</h3>
           </div>
           <form className="rbac-form" onSubmit={handleSubmit}>
-            {note && <p className="rbac-note">{note}</p>}
             <div>
 
               <label className="rbac-label">
@@ -249,16 +249,16 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
 
               <label className="rbac-label mt-5">
                 Date <span className="text-red-600">*</span>
-                <input
-                  type="date"
-                  className="rbac-input mb-2"
+                <CustomDatePicker
                   value={form.startDate}
-                  onChange={(event) =>
+                  onChange={(value) =>
                     setForm((prev) => ({
                       ...prev,
-                      startDate: event.target.value,
+                      startDate: value,
                     }))
                   }
+                  placeholder="Select start date"
+                  className="rbac-input mb-2"
                 />
               </label>
               {errors.startDate && (

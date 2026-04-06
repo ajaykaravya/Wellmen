@@ -9,8 +9,9 @@ import DashboardShell, {
   useDashboardContext,
 } from "../_components/DashboardShell";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import CustomDatePicker from "../../components/CustomDatePicker";
 import { toast } from "react-toastify";
-import { FaChevronLeft, FaChevronRight, FaEdit, FaTrash } from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight, FaEdit, FaTrash, FaSpinner } from "react-icons/fa";
 import Link from "next/link";
 
 type TodoStatus = "TODO" | "IN_PROGRESS" | "ON_HOLD" | "DONE";
@@ -393,11 +394,11 @@ function TodoListContent() {
               </button>
               </>)}
               <button
-                    className="rbac-button rbac-button-secondary"
-                    type="button"
-                    onClick={() => openModal(row.original)}
-                  >
-                    Update
+                className="rbac-button rbac-button-secondary"
+                type="button"
+                onClick={() => openModal(row.original)}
+              >
+                  Update
                   </button>
             </div>
           );
@@ -481,23 +482,23 @@ function TodoListContent() {
                 ))}
               </select>
             )}
-            <input
-              className="rbac-input-filter"
-              type="date"
+            <CustomDatePicker
               value={fromDate}
-              onChange={(event) => {
+              onChange={(value) => {
                 setPageIndex(0);
-                setFromDate(event.target.value);
+                setFromDate(value);
               }}
-            />
-            <input
+              placeholder="From date"
               className="rbac-input-filter"
-              type="date"
+            />
+            <CustomDatePicker
               value={toDate}
-              onChange={(event) => {
+              onChange={(value) => {
                 setPageIndex(0);
-                setToDate(event.target.value);
+                setToDate(value);
               }}
+              placeholder="To date"
+              className="rbac-input-filter"
             />
             <button
               className="rbac-button rbac-button-secondary"
@@ -545,7 +546,9 @@ function TodoListContent() {
                         colSpan={columns.length}
                         className="px-4 py-3 text-sm text-slate-500"
                       >
-                        Loading tasks...
+                        <div className="flex items-center justify-center">
+                          <FaSpinner className="animate-spin mr-2" size={16} />
+                        </div>
                       </td>
                     </tr>
                   )}
@@ -581,7 +584,9 @@ function TodoListContent() {
             </div>
             <div className="md:hidden space-y-3">
               {loading && (
-                <div className="rbac-card py-4 text-sm text-slate-500">Loading tasks...</div>
+                <div className="flex items-center justify-center py-4">
+                  <FaSpinner className="animate-spin mr-2" size={16} />
+                </div>
               )}
               {!loading && todos.length === 0 && (
                 <div className="rbac-card py-4 text-sm text-slate-500">No tasks found.</div>
@@ -593,11 +598,11 @@ function TodoListContent() {
                       <h4 className="text-sm font-semibold">{todo.title}</h4>
                       <p className="text-xs text-slate-500">{todo.description || "No description"}</p>
                     </div>
-                   {todo.canManage && (<div className="flex gap-2">
+                   {(isAdmin || todo.canManage) && (<div className="flex gap-2">
                       <Link href={`/dashboard/todo/${todo.id}`}>
-                        <button className="rbac-link" type="button"><FaEdit /></button>
+                        <button className="rbac-link" type="button" title="Edit"><FaEdit /></button>
                       </Link>
-                      <button className="rbac-link danger" type="button" onClick={() => handleDeleteTodo(todo)}><FaTrash /></button>
+                      <button className="rbac-link danger" type="button" onClick={() => handleDeleteTodo(todo)} title="Delete"><FaTrash /></button>
                     </div> )}
                   </div>
                   <div className="grid gap-1 text-sm">
@@ -606,7 +611,7 @@ function TodoListContent() {
                     <p><strong>Comments:</strong> {todo.comments || "-"}</p>
                      <p><strong>Assignee:</strong> {todo.assignee ? `${todo.assignee.firstName} ${todo.assignee.lastName}` : "Unassigned"}</p>
                   </div>
-                  <div className="mt-2 flex gap-2  justify-end">
+              {!isAdmin  &&    <div className="mt-2 flex gap-2  justify-end">
                     <button
                       className="rbac-button rbac-button-secondary"
                       type="button"
@@ -614,7 +619,7 @@ function TodoListContent() {
                     >
                       Update
                     </button>
-                  </div>
+                  </div>}
                 </div>
               ))}
             </div>

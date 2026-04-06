@@ -14,6 +14,14 @@ const parseStatus = (value) => {
 
 const parseDate = (value) => {
   if (!value) return null;
+
+  const ddmmyyyyMatch = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (ddmmyyyyMatch) {
+    const [, day, month, year] = ddmmyyyyMatch;
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    if (!Number.isNaN(date.getTime())) return date;
+  }
+
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
   return date;

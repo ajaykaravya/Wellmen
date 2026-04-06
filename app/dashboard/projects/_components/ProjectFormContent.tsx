@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useDashboardContext } from "../../_components/DashboardShell";
+import CustomDatePicker from "../../../components/CustomDatePicker";
 import Link from "next/link";
 
 type ProjectFormState = {
@@ -134,7 +135,6 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
             <h3 className="rbac-title-lg">{projectId ? "Edit Project" : "Add New Project"}</h3>
           </div>
           <form className="rbac-form " onSubmit={handleSubmit}>
-            {note && <p className="rbac-note">{note}</p>}
             <div className="">
               <label className="rbac-label">
                 Project name  <span className="text-red-600">*</span>
@@ -208,13 +208,13 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <label className="rbac-label">
                   Start date <span className="text-red-600">*</span>
-                  <input
-                    className="rbac-input mb-2"
-                    type="date"
+                  <CustomDatePicker
                     value={form.startDate}
-                    onChange={(event) =>
-                      setForm((prev) => ({ ...prev, startDate: event.target.value }))
+                    onChange={(value) =>
+                      setForm((prev) => ({ ...prev, startDate: value }))
                     }
+                    placeholder="Select start date"
+                    className="rbac-input mb-2"
                   />
                 </label>
                 {errors.startDate && (
@@ -223,13 +223,13 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
 
                 <label className="rbac-label">
                   End date
-                  <input
-                    className="rbac-input mb-2"
-                    type="date"
+                  <CustomDatePicker
                     value={form.endDate}
-                    onChange={(event) =>
-                      setForm((prev) => ({ ...prev, endDate: event.target.value }))
+                    onChange={(value) =>
+                      setForm((prev) => ({ ...prev, endDate: value }))
                     }
+                    placeholder="Select end date"
+                    className="rbac-input mb-2"
                   />
                 </label>
               </div>

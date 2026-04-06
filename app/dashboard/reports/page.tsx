@@ -11,12 +11,14 @@ import DashboardShell, {
   useDashboardContext,
 } from "../_components/DashboardShell";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import CustomDatePicker from "../../components/CustomDatePicker";
 import { toast } from "react-toastify";
 import {
   FaChevronLeft,
   FaChevronRight,
   FaEdit,
   FaEye,
+  FaSpinner,
   FaTrash,
 } from "react-icons/fa";
 import Link from "next/link";
@@ -400,23 +402,23 @@ function ReportingListContent() {
               </select>
             )}
 
-            <input
-              className="rbac-input-filter"
-              type="date"
+            <CustomDatePicker
               value={fromDate}
-              onChange={(event) => {
+              onChange={(value) => {
                 setPageIndex(0);
-                setFromDate(event.target.value);
+                setFromDate(value);
               }}
-            />
-            <input
+              placeholder="From date"
               className="rbac-input-filter"
-              type="date"
+            />
+            <CustomDatePicker
               value={toDate}
-              onChange={(event) => {
+              onChange={(value) => {
                 setPageIndex(0);
-                setToDate(event.target.value);
+                setToDate(value);
               }}
+              placeholder="To date"
+              className="rbac-input-filter"
             />
 
             <button
@@ -465,7 +467,9 @@ function ReportingListContent() {
                         colSpan={columns.length}
                         className="px-4 py-3 text-sm text-slate-500"
                       >
-                        Loading reporting...
+                        <div className="flex items-center justify-center">
+                          <FaSpinner className="animate-spin mr-2" size={16} />
+                        </div>
                       </td>
                     </tr>
                   )}
@@ -504,8 +508,8 @@ function ReportingListContent() {
             </div>
             <div className="md:hidden space-y-3">
               {loading && (
-                <div className="rbac-card py-4 text-sm text-slate-500">
-                  Loading reporting...
+                <div className="flex items-center justify-center py-4">
+                  <FaSpinner className="animate-spin mr-2" size={16} />
                 </div>
               )}
               {!loading && reports.length === 0 && (
@@ -661,7 +665,9 @@ function ReportingListContent() {
             </div>
 
             {viewLoading && (
-              <p className="mt-4 text-sm text-slate-500">Loading details...</p>
+              <div className="flex items-center justify-center py-4">
+                <FaSpinner className="animate-spin mr-2" size={16} />
+              </div>
             )}
 
             {!viewLoading && viewData && (

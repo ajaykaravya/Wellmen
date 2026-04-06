@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Fraunces, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import ToastProvider from "./components/ToastProvider";
+import AndroidBackButtonHandler from "./components/AndroidBackButtonHandler";
 
 const displayFont = Fraunces({
   variable: "--font-display",
@@ -32,7 +33,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body >
+      <body>
+        <AndroidBackButtonHandler />
         {children}
         <ToastProvider />
       </body>

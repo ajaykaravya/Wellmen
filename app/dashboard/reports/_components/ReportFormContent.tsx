@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useDashboardContext } from "../../_components/DashboardShell";
+import CustomDatePicker from "../../../components/CustomDatePicker";
 import Link from "next/link";
 
 type ReportStatus = "TODO" | "IN_PROGRESS" | "DONE" | "ON_HOLD";
@@ -214,13 +215,13 @@ export default function ReportFormContent({ reportId }: ReportFormContentProps) 
               <div className="grid gap-5 md:grid-cols-2">
                 <label className="rbac-label">
                   Date <span className="text-red-600">*</span>
-                  <input
-                    type="date"
-                    className="rbac-input"
+                  <CustomDatePicker
                     value={form.reportDate}
-                    onChange={(event) =>
-                      setForm((prev) => ({ ...prev, reportDate: event.target.value }))
+                    onChange={(value) =>
+                      setForm((prev) => ({ ...prev, reportDate: value }))
                     }
+                    placeholder="Select report date"
+                    className="rbac-input"
                   />
                 </label>
                 {errors.reportDate && (

@@ -7,8 +7,9 @@ import { formatToDDMMYYYY } from "@/lib/dateUtils";
 import useDebounce from "@/app/hooks/useDebounce";
 import DashboardShell from "../_components/DashboardShell";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import CustomDatePicker from "../../components/CustomDatePicker";
 import { toast } from "react-toastify";
-import { FaChevronLeft, FaChevronRight, FaEdit, FaTrash } from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight, FaEdit, FaTrash, FaSpinner } from "react-icons/fa";
 import Link from "next/link";
 
 type ProjectStatus = "PENDING" | "IN_PROGRESS" | "DONE" | "ON_HOLD";
@@ -231,23 +232,23 @@ function ProjectListContent() {
               <option value="DONE">Done</option>
               <option value="ON_HOLD">On hold</option>
             </select>
-            <input
-              className="rbac-input-filter"
-              type="date"
+            <CustomDatePicker
               value={fromDate}
-              onChange={(event) => {
+              onChange={(value) => {
                 setPageIndex(0);
-                setFromDate(event.target.value);
+                setFromDate(value);
               }}
-            />
-            <input
+              placeholder="From date"
               className="rbac-input-filter"
-              type="date"
+            />
+            <CustomDatePicker
               value={toDate}
-              onChange={(event) => {
+              onChange={(value) => {
                 setPageIndex(0);
-                setToDate(event.target.value);
+                setToDate(value);
               }}
+              placeholder="To date"
+              className="rbac-input-filter"
             />
             <button
               className="rbac-button rbac-button-secondary"
@@ -294,7 +295,9 @@ function ProjectListContent() {
                         colSpan={columns.length}
                         className="px-4 py-3 text-sm text-slate-500"
                       >
-                        Loading projects...
+                        <div className="flex items-center justify-center">
+                          <FaSpinner className="animate-spin mr-2" size={16} />
+                        </div>
                       </td>
                     </tr>
                   )}
@@ -331,7 +334,9 @@ function ProjectListContent() {
 
             <div className="md:hidden space-y-3">
               {loading && (
-                <div className="rbac-card py-4 text-sm text-slate-500">Loading projects...</div>
+                <div className="flex items-center justify-center py-4">
+                  <FaSpinner className="animate-spin mr-2" size={16} />
+                </div>
               )}
               {!loading && projects.length === 0 && (
                 <div className="rbac-card py-4 text-sm text-slate-500">No projects found.</div>

@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import Loading from "../../components/Loading";
 
 type SessionUser = {
   id: string;
@@ -264,9 +265,7 @@ export default function DashboardShell({
           </div>
           <div className="">
             {loading ? (
-              <div className="rbac-loading-placeholder">
-                <p>Loading ...</p>
-              </div>
+              <Loading />
             ) : (
               children
             )}

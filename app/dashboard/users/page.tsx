@@ -6,7 +6,7 @@ import { flexRender, useReactTable, ColumnDef, getCoreRowModel } from "@tanstack
 import DashboardShell, { useDashboardContext } from "../_components/DashboardShell";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import { toast } from "react-toastify";
-import { FaChevronLeft, FaChevronRight, FaEdit, FaTrash } from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight, FaEdit, FaTrash, FaSpinner } from "react-icons/fa";
 import Link from "next/link";
 
 type UserRow = {
@@ -188,7 +188,9 @@ function UsersContent() {
                   {loading && (
                     <tr>
                       <td colSpan={columns.length} className="px-4 py-3 text-sm text-slate-500">
-                        Loading users...
+                        <div className="flex items-center justify-center">
+                          <FaSpinner className="animate-spin mr-2" size={16} />
+                        </div>
                       </td>
                     </tr>
                   )}
@@ -218,7 +220,9 @@ function UsersContent() {
 
             <div className="md:hidden space-y-3">
               {loading && (
-                <div className="rbac-card py-4 text-sm text-slate-500">Loading users...</div>
+                <div className="flex items-center justify-center py-4">
+                  <FaSpinner className="animate-spin mr-2" size={16} />
+                </div>
               )}
               {!loading && users.length === 0 && (
                 <div className="rbac-card py-4 text-sm text-slate-500">No users found.</div>
