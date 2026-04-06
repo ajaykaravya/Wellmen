@@ -15,6 +15,14 @@ const parseStatus = (value) => {
 
 const parseDate = (value) => {
   if (!value) return null;
+
+  const ddmmyyyyMatch = String(value).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (ddmmyyyyMatch) {
+    const [, day, month, year] = ddmmyyyyMatch;
+    const date = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
+    if (!Number.isNaN(date.getTime())) return date;
+  }
+
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
   return date;
@@ -87,30 +95,34 @@ export async function PUT(req, { params }) {
     !payload.name ||
     !payload.address ||
     !payload.contactNumber ||
-    !payload.email ||
-    !payload.startDate ||
-    !payload.endDate
+    !payload.startDate
   ) {
     return NextResponse.json(
       {
         error:
-          "Project name, address, contact number, email, start date and end date are required.",
+          "Project name, address, contact number and start date are required.",
       },
       { status: 400 },
     );
   }
 
   const parsedStartDate = parseDate(payload.startDate);
-  const parsedEndDate = parseDate(payload.endDate);
-
-  if (!parsedStartDate || !parsedEndDate) {
+  if (!parsedStartDate) {
     return NextResponse.json(
-      { error: "Invalid start date or end date." },
+      { error: "Invalid start date. Use DD/MM/YYYY." },
       { status: 400 },
     );
   }
 
-  if (parsedEndDate < parsedStartDate) {
+  const parsedEndDate = parseDate(payload.endDate);
+  if (payload.endDate && !parsedEndDate) {
+    return NextResponse.json(
+      { error: "Invalid end date. Use DD/MM/YYYY." },
+      { status: 400 },
+    );
+  }
+
+  if (parsedEndDate && parsedEndDate < parsedStartDate) {
     return NextResponse.json(
       { error: "End date must be greater than or equal to start date." },
       { status: 400 },

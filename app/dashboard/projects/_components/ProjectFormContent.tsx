@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { FaSpinner } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
+import Loading from "../../../components/Loading";
 import { useDashboardContext } from "../../_components/DashboardShell";
 import CustomDatePicker from "../../../components/CustomDatePicker";
 import Link from "next/link";
+import { formatToDDMMYYYY, getTodayInputDate } from "@/lib/dateUtils";
 
 type ProjectFormState = {
   name: string;
@@ -24,10 +27,12 @@ type ProjectFormContentProps = {
 
 const formatDateForInput = (value?: string) => {
   if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toISOString().slice(0, 10);
+  const formatted = formatToDDMMYYYY(value);
+  return formatted === "-" ? "" : formatted;
 };
+
+const isMobileValid = (mobile: string) => /^\d{10}$/.test(mobile);
+const isEmailValid = (email: string) => email === "" || /\S+@\S+\.\S+/.test(email);
 
 export default function ProjectFormContent({ projectId }: ProjectFormContentProps) {
   const router = useRouter();
@@ -35,12 +40,13 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
   const [note, setNote] = useState<string | null>(null);
   const [errors, setErrors] = useState<Partial<Record<keyof ProjectFormState, string>>>({});
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<ProjectFormState>({
     name: "",
     address: "",
     contactNumber: "",
     email: "",
-    startDate: "",
+    startDate: getTodayInputDate(),
     endDate: "",
     description: "",
     status: "PENDING",
@@ -91,11 +97,21 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
     if (!form.name.trim()) newErrors.name = "Project name is required.";
     if (!form.address.trim()) newErrors.address = "Address is required.";
     if (!form.contactNumber.trim()) newErrors.contactNumber = "Contact number is required.";
+    else if (!isMobileValid(form.contactNumber.trim())) {
+      newErrors.contactNumber = "Contact number must be 10 digits.";
+    }
+    if (form.email.trim() && !isEmailValid(form.email.trim())) {
+      newErrors.email = "Email must contain @ and .";
+    }
     if (!form.startDate) newErrors.startDate = "Start date is required.";
 
     setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      return;
+    }
 
     try {
+      setSaving(true);
       const res = await fetch(projectId ? `/api/projects/${projectId}` : "/api/projects", {
         method: projectId ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -113,7 +129,19 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
 
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
-        setNote(payload.error || "Failed to save project.");
+        const errorMessage = payload.error || "Failed to save project.";
+        const backendErrors: Partial<Record<keyof ProjectFormState, string>> = {};
+
+        if (errorMessage.toLowerCase().includes("end date")) {
+          backendErrors.endDate = errorMessage;
+        }
+        if (errorMessage.toLowerCase().includes("start date")) {
+          backendErrors.startDate = errorMessage;
+        }
+
+        setErrors((prev) => ({ ...prev, ...backendErrors }));
+        setNote(errorMessage);
+        toast.error(errorMessage);
         return;
       }
 
@@ -122,10 +150,17 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
     } catch (error) {
       console.error("Failed to save project", error);
       setNote("Failed to save project.");
+    } finally {
+      setSaving(false);
     }
   };
 
-  if (loading) return null;
+  if (loading)
+    return (
+      <div className="min-h-80 flex items-center justify-center">
+        <Loading />
+      </div>
+    );
 
   return (
     <>
@@ -135,7 +170,8 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
             <h3 className="rbac-title-lg">{projectId ? "Edit Project" : "Add New Project"}</h3>
           </div>
           <form className="rbac-form " onSubmit={handleSubmit}>
-            <div className="">
+            <fieldset disabled={saving} className={saving ? "opacity-70 pointer-events-none" : ""}>
+              <div className="">
               <label className="rbac-label">
                 Project name  <span className="text-red-600">*</span>
                 <input
@@ -186,10 +222,10 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
                       setForm((prev) => ({ ...prev, contactNumber: event.target.value }))
                     }
                   />
-                </label>
                 {errors.contactNumber && (
                   <p className="text-sm text-red-600 mb-2">{errors.contactNumber}</p>
                 )}
+                </label>
 
                 <label className="rbac-label">
                   Email
@@ -203,6 +239,9 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
                     }
                   />
                 </label>
+                {errors.email && (
+                  <p className="text-sm text-red-600 mb-2">{errors.email}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -213,13 +252,13 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
                     onChange={(value) =>
                       setForm((prev) => ({ ...prev, startDate: value }))
                     }
-                    placeholder="Select start date"
+                    placeholder="DD/MM/YYYY"
                     className="rbac-input mb-2"
                   />
-                </label>
                 {errors.startDate && (
                   <p className="text-sm text-red-600 mb-2">{errors.startDate}</p>
                 )}
+                </label>
 
                 <label className="rbac-label">
                   End date
@@ -228,7 +267,7 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
                     onChange={(value) =>
                       setForm((prev) => ({ ...prev, endDate: value }))
                     }
-                    placeholder="Select end date"
+                    placeholder="DD/MM/YYYY"
                     className="rbac-input mb-2"
                   />
                 </label>
@@ -252,14 +291,23 @@ export default function ProjectFormContent({ projectId }: ProjectFormContentProp
                 </select>
               </label>
             </div>
+            </fieldset>
             <div className="rbac-actions">
-              <button className="rbac-button" type="submit">
-                Save
+              <button className="rbac-button" type="submit" disabled={saving}>
+                {saving ? (
+                  <span className="inline-flex items-center gap-2">
+                    <FaSpinner className="animate-spin" size={16} />
+                    Saving...
+                  </span>
+                ) : (
+                  "Save"
+                )}
               </button>
               <Link href="/dashboard/projects">
               <button
                 className="text-red-500"
                 type="button"
+                disabled={saving}
               >
                 Cancel
               </button>

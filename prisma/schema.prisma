@@ -72,7 +72,7 @@ model Project {
   contactNumber String
   email         String
   startDate     DateTime
-  endDate       DateTime
+  endDate       DateTime?
   description   String?
   status        ProjectStatus @default(PENDING)
   createdById   String?

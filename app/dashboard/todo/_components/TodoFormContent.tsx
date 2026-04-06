@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import { getTodayInputDate } from "@/lib/dateUtils";
+import { FaSpinner } from "react-icons/fa";
+import Loading from "../../../components/Loading";
+import { getTodayInputDate, formatToDDMMYYYY } from "@/lib/dateUtils";
 import { useDashboardContext } from "../../_components/DashboardShell";
 import CustomDatePicker from "../../../components/CustomDatePicker";
 
@@ -36,9 +38,8 @@ type TodoFormContentProps = {
 
 const formatDateForInput = (value?: string) => {
   if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toISOString().slice(0, 10);
+  const formatted = formatToDDMMYYYY(value);
+  return formatted === "-" ? "" : formatted;
 };
 
 export default function TodoFormContent({ todoId }: TodoFormContentProps) {
@@ -49,6 +50,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
   const [note, setNote] = useState<string | null>(null);
   const [errors, setErrors] = useState<Partial<Record<keyof TodoFormState, string>>>({});
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<TodoFormState>({
     title: "",
     description: "",
@@ -110,11 +112,15 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
     if (!form.title.trim()) newErrors.title = "Task title is required.";
     if (!form.startDate) newErrors.startDate = "Start date is required.";
     if (!form.projectId.trim()) newErrors.projectId = "Project is required.";
-    if (isAdmin && !form.assigneeId.trim()) newErrors.assigneeId = "Assignee is required for admins.";
+    // if (isAdmin && !form.assigneeId.trim()) newErrors.assigneeId = "Assignee is required for admins.";
 
     setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      return;
+    }
 
     try {
+      setSaving(true);
       const endpoint = isAdmin ? "/api/todos" : "/api/my-todos";
       const res = await fetch(todoId ? `${endpoint}/${todoId}` : endpoint, {
         method: todoId ? "PUT" : "POST",
@@ -141,10 +147,17 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
     } catch (error) {
       console.error("Failed to save todo", error);
       setNote("Failed to save todo.");
+    } finally {
+      setSaving(false);
     }
   };
 
-  if (loading) return null;
+  if (loading)
+    return (
+      <div className="min-h-80 flex items-center justify-center">
+        <Loading />
+      </div>
+    );
 
   return (
     <>
@@ -154,7 +167,8 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
             <h3 className="rbac-title-lg">{todoId ? "Edit Todo" : "Add New Todo"}</h3>
           </div>
           <form className="rbac-form" onSubmit={handleSubmit}>
-            <div>
+            <fieldset disabled={saving} className={saving ? "opacity-70 pointer-events-none" : ""}>
+              <div>
 
               <label className="rbac-label">
                 Project <span className="text-red-600">*</span>
@@ -257,7 +271,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
                       startDate: value,
                     }))
                   }
-                  placeholder="Select start date"
+                  placeholder="DD/MM/YYYY"
                   className="rbac-input mb-2"
                 />
               </label>
@@ -284,15 +298,24 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
                 </select>
               </label>
             </div>
+            </fieldset>
 
             <div className="rbac-actions">
-              <button className="rbac-button" type="submit">
-                Save
+              <button className="rbac-button" type="submit" disabled={saving}>
+                {saving ? (
+                  <span className="inline-flex items-center gap-2">
+                    <FaSpinner className="animate-spin" size={16} />
+                    Saving...
+                  </span>
+                ) : (
+                  "Save"
+                )}
               </button>
               <button
                 className="text-red-500"
                 type="button"
                 onClick={() => router.push("/dashboard/todo")}
+                disabled={saving}
               >
                 Cancel
               </button>

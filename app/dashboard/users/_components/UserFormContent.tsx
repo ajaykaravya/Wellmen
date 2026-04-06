@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { FaSpinner } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Loading from "../../../components/Loading";
 import { toast } from "react-toastify";
 
 type UserFormState = {
@@ -21,6 +23,8 @@ type UserFormContentProps = {
 export default function UserFormContent({ userId }: UserFormContentProps) {
   const router = useRouter();
   const [formLoading, setFormLoading] = useState(Boolean(userId));
+  const [saving, setSaving] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
   const [errors, setErrors] = useState<Partial<Record<keyof UserFormState, string>>>({});
   const [form, setForm] = useState<UserFormState>({
     firstName: "",
@@ -106,6 +110,7 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
 
     setErrors({});
     try {
+      setSaving(true);
       const endpoint = userId ? `/api/users/${userId}` : "/api/users";
       const method = userId ? "PUT" : "POST";
       const res = await fetch(endpoint, {
@@ -116,7 +121,9 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
 
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to save user");
+        const errorMessage = payload.error || "Failed to save user";
+        setNote(errorMessage);
+        toast.error(errorMessage);
         return;
       }
 
@@ -124,10 +131,17 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
       router.push("/dashboard/users");
     } catch (error:any) {
       toast.error(error || "Failed to save user");
+    } finally {
+      setSaving(false);
     }
   };
 
-  if (formLoading) return null;
+  if (formLoading)
+    return (
+      <div className="min-h-80 flex items-center justify-center">
+        <Loading />
+      </div>
+    );
 
   return (
     <>
@@ -137,7 +151,8 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
             <h3 className="rbac-title-lg">{userId ? "Edit User" : "Add New User"}</h3>
           </div>
           <form className="rbac-form" onSubmit={handleSubmit}>
-            <div className="">
+            <fieldset disabled={saving} className={saving ? "opacity-70 pointer-events-none" : ""}>
+              <div className="">
               <label className="rbac-label">
                 First name <span className="text-red-600">*</span>
                 <input
@@ -247,12 +262,20 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
                 <p className="text-sm text-red-600 mb-2">{errors.roleName}</p>
               )}
             </div>
+            </fieldset>
             <div className="rbac-actions">
-              <button className="rbac-button" type="submit">
-                Save
+              <button className="rbac-button" type="submit" disabled={saving}>
+                {saving ? (
+                  <span className="inline-flex items-center gap-2">
+                    <FaSpinner className="animate-spin" size={16} />
+                    Saving...
+                  </span>
+                ) : (
+                  "Save"
+                )}
               </button>
               <Link href="/dashboard/users">
-              <button className="text-red-500">
+              <button className="text-red-500" type="button" disabled={saving}>
                 Cancel
               </button>
               </Link>

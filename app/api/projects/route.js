@@ -143,29 +143,34 @@ export async function POST(req) {
     !payload.name ||
     !payload.address ||
     !payload.contactNumber ||
-    !payload.startDate ||
-    !payload.endDate
+    !payload.startDate
   ) {
     return NextResponse.json(
       {
         error:
-          "Project name, address, contact number, start date and end date are required.",
+          "Project name, address, contact number and start date are required.",
       },
       { status: 400 },
     );
   }
 
   const parsedStartDate = parseDate(payload.startDate);
-  const parsedEndDate = parseDate(payload.endDate);
-
-  if (!parsedStartDate || !parsedEndDate) {
+  if (!parsedStartDate) {
     return NextResponse.json(
-      { error: "Invalid start date or end date." },
+      { error: "Invalid start date. Use DD/MM/YYYY." },
       { status: 400 },
     );
   }
 
-  if (parsedEndDate < parsedStartDate) {
+  const parsedEndDate = parseDate(payload.endDate);
+  if (payload.endDate && !parsedEndDate) {
+    return NextResponse.json(
+      { error: "Invalid end date. Use DD/MM/YYYY." },
+      { status: 400 },
+    );
+  }
+
+  if (parsedEndDate && parsedEndDate < parsedStartDate) {
     return NextResponse.json(
       { error: "End date must be greater than or equal to start date." },
       { status: 400 },

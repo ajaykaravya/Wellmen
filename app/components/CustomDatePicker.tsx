@@ -24,34 +24,37 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   minDate,
   maxDate,
 }) => {
-  const [selectedDate, setSelectedDate] = useState<Date | null>(() => {
-    if (value) {
-      const parts = value.split('/');
-      if (parts.length === 3) {
-        const day = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10) - 1;
-        const year = parseInt(parts[2], 10);
-        return new Date(year, month, day);
-      }
+  const parseDateValue = (value?: string) => {
+    if (!value) return null;
+    const trimmed = String(value).trim();
+
+    const ddmmyyyyMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (ddmmyyyyMatch) {
+      const [, day, month, year] = ddmmyyyyMatch;
+      const date = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
+      if (!isNaN(date.getTime())) return date;
     }
-    return null;
-  });
+
+    const yyyymmddMatch = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (yyyymmddMatch) {
+      const [, year, month, day] = yyyymmddMatch;
+      const date = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
+      if (!isNaN(date.getTime())) return date;
+    }
+
+    const fallback = new Date(trimmed);
+    return Number.isNaN(fallback.getTime()) ? null : fallback;
+  };
+
+  const [selectedDate, setSelectedDate] = useState<Date | null>(() => parseDateValue(value));
 
   const [isOpen, setIsOpen] = useState(false);
   const datePickerRef = useRef<DatePicker>(null);
 
   useEffect(() => {
     if (value) {
-      const parts = value.split('/');
-      if (parts.length === 3) {
-        const day = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10) - 1;
-        const year = parseInt(parts[2], 10);
-        const newDate = new Date(year, month, day);
-        if (!isNaN(newDate.getTime())) {
-          setSelectedDate(newDate);
-        }
-      }
+      const newDate = parseDateValue(value);
+      setSelectedDate(newDate);
     } else {
       setSelectedDate(null);
     }
@@ -79,16 +82,8 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
     onChange(inputValue);
-    const parts = inputValue.split('/');
-    if (parts.length === 3) {
-      const day = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1;
-      const year = parseInt(parts[2], 10);
-      const newDate = new Date(year, month, day);
-      if (!isNaN(newDate.getTime())) {
-        setSelectedDate(newDate);
-      }
-    }
+    const parsedDate = parseDateValue(inputValue);
+    setSelectedDate(parsedDate);
   };
 
   const displayValue = selectedDate

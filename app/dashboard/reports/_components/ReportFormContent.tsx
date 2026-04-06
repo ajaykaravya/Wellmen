@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { FaSpinner } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useDashboardContext } from "../../_components/DashboardShell";
 import CustomDatePicker from "../../../components/CustomDatePicker";
+import Loading from "../../../components/Loading";
 import Link from "next/link";
+import { getTodayInputDate, formatToDDMMYYYY } from "@/lib/dateUtils";
 
 type ReportStatus = "TODO" | "IN_PROGRESS" | "DONE" | "ON_HOLD";
 
@@ -38,19 +41,10 @@ type ReportFormContentProps = {
   reportId?: string;
 };
 
-const getTodayInputDate = () => {
-  const now = new Date();
-  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 10);
-};
-
 const formatDateForInput = (value?: string) => {
   if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 10);
+  const formatted = formatToDDMMYYYY(value);
+  return formatted === "-" ? "" : formatted;
 };
 
 export default function ReportFormContent({ reportId }: ReportFormContentProps) {
@@ -201,7 +195,12 @@ export default function ReportFormContent({ reportId }: ReportFormContentProps) 
     }
   };
 
-  if (loading) return null;
+  if (loading)
+    return (
+      <div className="min-h-80 flex items-center justify-center">
+        <Loading />
+      </div>
+    );
 
   return (
     <>
@@ -211,7 +210,8 @@ export default function ReportFormContent({ reportId }: ReportFormContentProps) 
             <h3 className="rbac-title-lg">{reportId ? "Edit Report" : "Add New Report"}</h3>
           </div>
           <form className="rbac-form" onSubmit={handleSubmit}>
-            <div>
+            <fieldset disabled={submitting} className={submitting ? "opacity-70 pointer-events-none" : ""}>
+              <div>
               <div className="grid gap-5 md:grid-cols-2">
                 <label className="rbac-label">
                   Date <span className="text-red-600">*</span>
@@ -220,7 +220,7 @@ export default function ReportFormContent({ reportId }: ReportFormContentProps) 
                     onChange={(value) =>
                       setForm((prev) => ({ ...prev, reportDate: value }))
                     }
-                    placeholder="Select report date"
+                    placeholder="DD/MM/YYYY"
                     className="rbac-input"
                   />
                 </label>
@@ -393,16 +393,23 @@ export default function ReportFormContent({ reportId }: ReportFormContentProps) 
               )}
             </div>
 
-            {note && <p className="rbac-note">{note}</p>}
-
+            </fieldset>
             <div className="rbac-actions">
               <button className="rbac-button" type="submit" disabled={!canSubmit}>
-                Save
+                {submitting ? (
+                  <span className="inline-flex items-center gap-2">
+                    <FaSpinner className="animate-spin" size={16} />
+                    Saving...
+                  </span>
+                ) : (
+                  "Save"
+                )}
               </button>
               <Link href="/dashboard/reports">
               <button
                 className="text-red-500"
                 type="button"
+                disabled={submitting}
               >
                 Cancel
               </button>
