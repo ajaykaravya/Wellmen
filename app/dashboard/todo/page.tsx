@@ -488,16 +488,7 @@ function TodoListContent() {
                 setPageIndex(0);
                 setFromDate(value);
               }}
-              placeholder="From date"
-              className="rbac-input-filter"
-            />
-            <CustomDatePicker
-              value={toDate}
-              onChange={(value) => {
-                setPageIndex(0);
-                setToDate(value);
-              }}
-              placeholder="To date"
+              placeholder="date"
               className="rbac-input-filter"
             />
             <button

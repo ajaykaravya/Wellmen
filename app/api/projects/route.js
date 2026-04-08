@@ -91,13 +91,19 @@ export async function GET(req) {
   }
 
   if (parsedFromDate || parsedToDate) {
-    where.startDate = {};
-    if (parsedFromDate) where.startDate.gte = parsedFromDate;
-    if (parsedToDate) {
-      const end = new Date(parsedToDate);
-      end.setHours(23, 59, 59, 999);
-      where.startDate.lte = end;
-    }
+    const filterStart = parsedFromDate
+      ? new Date(parsedFromDate.setHours(0, 0, 0, 0))
+      : null;
+    const filterEnd = parsedToDate
+      ? new Date(parsedToDate.setHours(23, 59, 59, 999))
+      : null;
+
+    const overlapConditions = [
+      { startDate: { lte: filterEnd || filterStart } },
+      { OR: [{ endDate: { gte: filterStart || filterEnd } }, { endDate: null }] },
+    ];
+
+    where.AND = overlapConditions;
   }
 
   const [total, projects] = await Promise.all([
