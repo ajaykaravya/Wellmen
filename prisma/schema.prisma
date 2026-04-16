@@ -8,16 +8,16 @@ datasource db {
 
 model User {
   id              String        @id @default(uuid())
-  firstName       String
-  lastName        String
+  email           String        @unique
+  createdAt       DateTime      @default(now())
   fullName        String
-  email           String?       @unique
-  mobileNumber    String        @unique
-  username        String?       @unique
   passwordHash    String
   roleId          String
-  createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+  username        String?       @unique
+  firstName       String
+  lastName        String
+  mobileNumber    String        @unique
   dailyReports    DailyReport[] @relation("DailyReportCreator")
   createdProjects Project[]     @relation("ProjectCreator")
   assignedTodos   Todo[]        @relation("TodoAssignee")
@@ -49,7 +49,7 @@ model Project {
   name          String
   address       String
   contactNumber String
-  email         String?
+  email         String
   startDate     DateTime
   endDate       DateTime?
   description   String?
@@ -101,6 +101,16 @@ model RolePermission {
   role         Role       @relation(fields: [roleId], references: [id])
 
   @@id([roleId, permissionId])
+}
+
+model Categories {
+  id        String   @id
+  category  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@unique([category, name])
 }
 
 enum TodoStatus {
