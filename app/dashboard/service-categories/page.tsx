@@ -10,13 +10,13 @@ import { toast } from "react-toastify";
 import { FaChevronLeft, FaChevronRight, FaEdit, FaTrash, FaSpinner } from "react-icons/fa";
 import Link from "next/link";
 
-type CategoryRow = {
+type ServiceCategoryRow = {
   id: string;
   name: string;
 };
 
-function CategoryListContent() {
-  const [categories, setCategories] = useState<CategoryRow[]>([]);
+function ServiceCategoryListContent() {
+  const [categories, setCategories] = useState<ServiceCategoryRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(10);
@@ -24,7 +24,7 @@ function CategoryListContent() {
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 400);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmTarget, setConfirmTarget] = useState<CategoryRow | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<ServiceCategoryRow | null>(null);
 
   const loadCategories = useCallback(async () => {
     setLoading(true);
@@ -35,10 +35,10 @@ function CategoryListContent() {
       });
       if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
 
-      const res = await fetch(`/api/categories?${params.toString()}`);
+      const res = await fetch(`/api/service-categories?${params.toString()}`);
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to load categories.");
+        toast.error(payload.error || "Failed to load service categories.");
         return;
       }
 
@@ -46,8 +46,8 @@ function CategoryListContent() {
       setCategories(Array.isArray(data?.data) ? data.data : []);
       setTotal(typeof data?.total === "number" ? data.total : 0);
     } catch (error) {
-      console.error("Failed to load categories", error);
-      toast.error("Failed to load categories.");
+      console.error("Failed to load service categories", error);
+      toast.error("Failed to load service categories.");
     } finally {
       setLoading(false);
     }
@@ -65,7 +65,7 @@ function CategoryListContent() {
     }
   }, [pageCount, pageIndex]);
 
-  const handleDeleteCategory = useCallback((row: CategoryRow) => {
+  const handleDeleteCategory = useCallback((row: ServiceCategoryRow) => {
     setConfirmTarget(row);
     setConfirmOpen(true);
   }, []);
@@ -73,26 +73,26 @@ function CategoryListContent() {
   const confirmDeleteCategory = useCallback(async () => {
     if (!confirmTarget) return;
     try {
-      const res = await fetch(`/api/categories/${confirmTarget.id}`, {
+      const res = await fetch(`/api/service-categories/${confirmTarget.id}`, {
         method: "DELETE",
       });
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to delete category.");
+        toast.error(payload.error || "Failed to delete service category.");
         return;
       }
       await loadCategories();
-      toast.success("Category deleted successfully.");
+      toast.success("Service category deleted successfully.");
     } catch (error) {
-      console.error("Failed to delete category", error);
-      toast.error("Failed to delete category.");
+      console.error("Failed to delete service category", error);
+      toast.error("Failed to delete service category.");
     } finally {
       setConfirmOpen(false);
       setConfirmTarget(null);
     }
   }, [confirmTarget, loadCategories]);
 
-  const columns = useMemo<ColumnDef<CategoryRow>[]>(
+  const columns = useMemo<ColumnDef<ServiceCategoryRow>[]>(
     () => [
       {
         header: "Name",
@@ -104,7 +104,7 @@ function CategoryListContent() {
         id: "action",
         cell: ({ row }) => (
           <div className="rbac-inline-actions flex gap-4">
-            <Link href={`/dashboard/project-categories/${row.original.id}`}>
+            <Link href={`/dashboard/service-categories/${row.original.id}`}>
               <button className="rbac-link" type="button">
                 <FaEdit />
               </button>
@@ -136,10 +136,10 @@ function CategoryListContent() {
       <section className="rbac-section rbac-container">
         <div className="rbac-card">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="rbac-title-lg">Project work Categories</h3>
-            <Link href="/dashboard/project-categories/new">
+            <h3 className="rbac-title-lg">Service work Categories</h3>
+            <Link href="/dashboard/service-categories/new">
               <button className="rbac-button" type="button">
-                Add Project Category
+                Add Service Category
               </button>
             </Link>
           </div>
@@ -200,7 +200,7 @@ function CategoryListContent() {
                   {!loading && categories.length === 0 && (
                     <tr>
                       <td colSpan={columns.length} className="px-4 py-3 text-sm text-slate-500">
-                        No categories found.
+                        No service categories found.
                       </td>
                     </tr>
                   )}
@@ -229,7 +229,7 @@ function CategoryListContent() {
                 </div>
               )}
               {!loading && categories.length === 0 && (
-                <div className="rbac-card py-4 text-sm text-slate-500">No categories found.</div>
+                <div className="rbac-card py-4 text-sm text-slate-500">No service categories found.</div>
               )}
               {!loading &&
                 categories.map((category) => (
@@ -239,7 +239,7 @@ function CategoryListContent() {
                         <h4 className="text-sm font-semibold">{category.name}</h4>
                       </div>
                       <div className="flex gap-2">
-                        <Link href={`/dashboard/project-categories/${category.id}`}>
+                        <Link href={`/dashboard/service-categories/${category.id}`}>
                           <button className="rbac-link" type="button">
                             <FaEdit />
                           </button>
@@ -260,43 +260,43 @@ function CategoryListContent() {
 
           <div className="mt-4 flex flex-wrap items-center justify-end gap-3 text-sm">
             <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2">
-              <button
-                className="change-button change-button-secondary"
-                type="button"
-                onClick={() => setPageIndex((prev) => Math.max(prev - 1, 0))}
-                disabled={pageIndex === 0}
-              >
-                <FaChevronLeft size={20} />
-              </button>
-              <span>
-                Page {pageIndex + 1} of {pageCount}
-              </span>
-              <button
-                className="change-button change-button-secondary"
-                type="button"
-                onClick={() => setPageIndex((prev) => Math.min(prev + 1, pageCount - 1))}
-                disabled={pageIndex + 1 >= pageCount}
-              >
-                <FaChevronRight size={20} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  className="change-button change-button-secondary"
+                  type="button"
+                  onClick={() => setPageIndex((prev) => Math.max(prev - 1, 0))}
+                  disabled={pageIndex === 0}
+                >
+                  <FaChevronLeft size={20} />
+                </button>
+                <span>
+                  Page {pageIndex + 1} of {pageCount}
+                </span>
+                <button
+                  className="change-button change-button-secondary"
+                  type="button"
+                  onClick={() => setPageIndex((prev) => Math.min(prev + 1, pageCount - 1))}
+                  disabled={pageIndex + 1 >= pageCount}
+                >
+                  <FaChevronRight size={20} />
+                </button>
               </div>
               <div>
-            <select
-              className="rbac-input rbac-select"
-              value={pageSize}
-              onChange={(event) => {
-                setPageIndex(0);
-                setPageSize(Number(event.target.value));
-              }}
-            >
-              {[5, 10, 20, 30].map((size) => (
-                <option key={size} value={size}>
-                  Show {size}
-                </option>
-              ))}
-            </select>
-            </div>
+                <select
+                  className="rbac-input rbac-select"
+                  value={pageSize}
+                  onChange={(event) => {
+                    setPageIndex(0);
+                    setPageSize(Number(event.target.value));
+                  }}
+                >
+                  {[5, 10, 20, 30].map((size) => (
+                    <option key={size} value={size}>
+                      Show {size}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
         </div>
@@ -304,7 +304,7 @@ function CategoryListContent() {
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Delete category?"
+        title="Delete service category?"
         description={
           confirmTarget
             ? `Delete "${confirmTarget.name}"? This action cannot be undone.`
@@ -322,10 +322,10 @@ function CategoryListContent() {
   );
 }
 
-export default function CategoriesPage() {
+export default function ServiceCategoriesPage() {
   return (
     <DashboardShell requireAdmin>
-      <CategoryListContent />
+      <ServiceCategoryListContent />
     </DashboardShell>
   );
 }

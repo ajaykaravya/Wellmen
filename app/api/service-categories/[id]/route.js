@@ -5,9 +5,8 @@ import { requireRole } from "@/lib/rbac";
 const resolveId = async (params) => String((await params)?.id || "").trim();
 
 const parsePayload = (body) => {
-  const category = String(body.category || "").trim();
   const name = String(body.name || "").trim();
-  return { category, name };
+  return { name };
 };
 
 export async function GET(req, { params }) {
@@ -16,12 +15,12 @@ export async function GET(req, { params }) {
 
   const id = await resolveId(params);
   if (!id) {
-    return NextResponse.json({ error: "Category id is required." }, { status: 400 });
+    return NextResponse.json({ error: "Service category id is required." }, { status: 400 });
   }
 
   const category = await prisma.categories.findUnique({ where: { id } });
-  if (!category || category.category !== "PROJECT_WORK") {
-    return NextResponse.json({ error: "Category not found." }, { status: 404 });
+  if (!category || category.category !== "SERVICE_WORK") {
+    return NextResponse.json({ error: "Service category not found." }, { status: 404 });
   }
 
   return NextResponse.json({
@@ -38,40 +37,27 @@ export async function PUT(req, { params }) {
 
   const id = await resolveId(params);
   if (!id) {
-    return NextResponse.json({ error: "Category id is required." }, { status: 400 });
+    return NextResponse.json({ error: "Service category id is required." }, { status: 400 });
   }
 
   const body = await req.json();
   const payload = parsePayload(body);
-
   if (!payload.name) {
     return NextResponse.json(
-      { error: "Name is required." },
-      { status: 400 },
-    );
-  }
-
-  if (payload.category && payload.category !== "PROJECT_WORK") {
-    return NextResponse.json(
-      {
-        error:
-          "Project work categories must be updated from the Project work Categories module.",
-      },
+      { error: "Category name is required." },
       { status: 400 },
     );
   }
 
   const existing = await prisma.categories.findUnique({ where: { id } });
-  if (!existing || existing.category !== "PROJECT_WORK") {
-    return NextResponse.json({ error: "Category not found." }, { status: 404 });
+  if (!existing || existing.category !== "SERVICE_WORK") {
+    return NextResponse.json({ error: "Service category not found." }, { status: 404 });
   }
 
   try {
     const category = await prisma.categories.update({
       where: { id },
-      data: {
-        name: payload.name,
-      },
+      data: { name: payload.name },
     });
 
     return NextResponse.json({
@@ -81,9 +67,9 @@ export async function PUT(req, { params }) {
       createdAt: category.createdAt,
     });
   } catch (error) {
-    console.error("Failed to update category", error);
+    console.error("Failed to update service category", error);
     return NextResponse.json(
-      { error: "Failed to update category." },
+      { error: "Failed to update service category." },
       { status: 500 },
     );
   }
@@ -95,12 +81,12 @@ export async function DELETE(req, { params }) {
 
   const id = await resolveId(params);
   if (!id) {
-    return NextResponse.json({ error: "Category id is required." }, { status: 400 });
+    return NextResponse.json({ error: "Service category id is required." }, { status: 400 });
   }
 
   const existing = await prisma.categories.findUnique({ where: { id } });
-  if (!existing || existing.category !== "PROJECT_WORK") {
-    return NextResponse.json({ error: "Category not found." }, { status: 404 });
+  if (!existing || existing.category !== "SERVICE_WORK") {
+    return NextResponse.json({ error: "Service category not found." }, { status: 404 });
   }
 
   await prisma.categories.delete({ where: { id } });

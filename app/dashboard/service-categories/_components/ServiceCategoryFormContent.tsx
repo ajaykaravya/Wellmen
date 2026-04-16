@@ -7,22 +7,22 @@ import { toast } from "react-toastify";
 import Loading from "../../../components/Loading";
 import Link from "next/link";
 
-type OfficeCategoryFormState = {
+type ServiceCategoryFormState = {
   name: string;
 };
 
-type OfficeCategoryFormContentProps = {
+type ServiceCategoryFormContentProps = {
   categoryId?: string;
 };
 
-export default function OfficeCategoryFormContent({ categoryId }: OfficeCategoryFormContentProps) {
+export default function ServiceCategoryFormContent({ categoryId }: ServiceCategoryFormContentProps) {
   const router = useRouter();
-  const [form, setForm] = useState<OfficeCategoryFormState>({
+  const [form, setForm] = useState<ServiceCategoryFormState>({
     name: "",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<keyof OfficeCategoryFormState, string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof ServiceCategoryFormState, string>>>({});
   const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => {
@@ -33,17 +33,17 @@ export default function OfficeCategoryFormContent({ categoryId }: OfficeCategory
       }
 
       try {
-        const res = await fetch(`/api/office-categories/${categoryId}`);
+        const res = await fetch(`/api/service-categories/${categoryId}`);
         if (!res.ok) {
-          setNote("Failed to load office category.");
+          setNote("Failed to load service category.");
           return;
         }
 
         const data = await res.json();
         setForm({ name: data.name || "" });
       } catch (error) {
-        console.error("Failed to load office category", error);
-        setNote("Failed to load office category.");
+        console.error("Failed to load service category", error);
+        setNote("Failed to load service category.");
       } finally {
         setLoading(false);
       }
@@ -56,7 +56,7 @@ export default function OfficeCategoryFormContent({ categoryId }: OfficeCategory
     event.preventDefault();
     setNote(null);
 
-    const newErrors: Partial<Record<keyof OfficeCategoryFormState, string>> = {};
+    const newErrors: Partial<Record<keyof ServiceCategoryFormState, string>> = {};
     if (!form.name.trim()) newErrors.name = "Category name is required.";
 
     setErrors(newErrors);
@@ -66,25 +66,25 @@ export default function OfficeCategoryFormContent({ categoryId }: OfficeCategory
 
     try {
       setSaving(true);
-      const res = await fetch(categoryId ? `/api/office-categories/${categoryId}` : "/api/office-categories", {
+      const res = await fetch(categoryId ? `/api/service-categories/${categoryId}` : "/api/service-categories", {
         method: categoryId ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category: "OFFICE_WORK", name: form.name.trim() }),
+        body: JSON.stringify({ category: "SERVICE_WORK", name: form.name.trim() }),
       });
 
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
-        const errorMessage = payload.error || "Failed to save office category.";
+        const errorMessage = payload.error || "Failed to save service category.";
         setNote(errorMessage);
         toast.error(errorMessage);
         return;
       }
 
-      toast.success(`Office category ${categoryId ? "updated" : "created"} successfully.`);
-      router.push("/dashboard/office-categories");
+      toast.success(`Service category ${categoryId ? "updated" : "created"} successfully.`);
+      router.push("/dashboard/service-categories");
     } catch (error) {
-      console.error("Failed to save office category", error);
-      setNote("Failed to save office category.");
+      console.error("Failed to save service category", error);
+      setNote("Failed to save service category.");
     } finally {
       setSaving(false);
     }
@@ -101,7 +101,7 @@ export default function OfficeCategoryFormContent({ categoryId }: OfficeCategory
     <section className="rbac-section rbac-container">
       <div className="rbac-card">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="rbac-title-lg">{categoryId ? "Edit Office Category" : "Add New Office Category"}</h3>
+          <h3 className="rbac-title-lg">{categoryId ? "Edit Service Category" : "Add New Service Category"}</h3>
         </div>
 
         <form className="rbac-form" onSubmit={handleSubmit}>
@@ -131,7 +131,7 @@ export default function OfficeCategoryFormContent({ categoryId }: OfficeCategory
                 "Save"
               )}
             </button>
-            <Link href="/dashboard/office-categories">
+            <Link href="/dashboard/service-categories">
               <button className="text-red-500" type="button" disabled={saving}>
                 Cancel
               </button>

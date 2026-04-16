@@ -13,6 +13,21 @@ const parseStatus = (value) => {
   return null;
 };
 
+const parseDate = (value) => {
+  if (!value) return null;
+
+  const ddmmyyyyMatch = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (ddmmyyyyMatch) {
+    const [, day, month, year] = ddmmyyyyMatch;
+    const date = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
+    if (!Number.isNaN(date.getTime())) return date;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
+};
+
 const parseProjectId = (value) => String(value || "").trim();
 
 export async function GET(req, { params }) {
@@ -84,8 +99,8 @@ export async function PUT(req, { params }) {
     );
   }
 
-  const parsedDate = new Date(startDate);
-  if (Number.isNaN(parsedDate.getTime())) {
+  const parsedDate = parseDate(startDate);
+  if (!parsedDate) {
     return NextResponse.json({ error: "Invalid start date." }, { status: 400 });
   }
 

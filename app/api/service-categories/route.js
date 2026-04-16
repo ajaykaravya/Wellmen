@@ -3,9 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
 
 const parsePayload = (body) => {
-  const category = String(body.category || "").trim();
   const name = String(body.name || "").trim();
-  return { category, name };
+  return { name };
 };
 
 export async function GET(req) {
@@ -22,19 +21,16 @@ export async function GET(req) {
       ? Math.min(pageSizeParam, 100)
       : 10;
 
-  let where = { category: "PROJECT_WORK" };
-  if (query) {
-    where = {
-      AND: [
-        { category: "PROJECT_WORK" },
-        {
-          OR: [
-            { name: { contains: query, mode: "insensitive" } },
-          ],
-        },
-      ],
-    };
-  }
+  const where = query
+    ? {
+        AND: [
+          { category: "SERVICE_WORK" },
+          {
+            OR: [{ name: { contains: query, mode: "insensitive" } }],
+          },
+        ],
+      }
+    : { category: "SERVICE_WORK" };
 
   const [total, categories] = await Promise.all([
     prisma.categories?.count({ where }),
@@ -69,17 +65,7 @@ export async function POST(req) {
 
   if (!payload.name) {
     return NextResponse.json(
-      { error: "Name is required." },
-      { status: 400 },
-    );
-  }
-
-  if (payload.category && payload.category !== "PROJECT_WORK") {
-    return NextResponse.json(
-      {
-        error:
-          "Project work categories must be created from the Project work Categories module.",
-      },
+      { error: "Category name is required." },
       { status: 400 },
     );
   }
@@ -87,7 +73,7 @@ export async function POST(req) {
   try {
     const category = await prisma.categories.create({
       data: {
-        category: "PROJECT_WORK",
+        category: "SERVICE_WORK",
         name: payload.name,
       },
     });
@@ -102,9 +88,9 @@ export async function POST(req) {
       { status: 201 },
     );
   } catch (error) {
-    console.error("Failed to create category", error);
+    console.error("Failed to create service category", error);
     return NextResponse.json(
-      { error: "Failed to create category." },
+      { error: "Failed to create service category." },
       { status: 500 },
     );
   }

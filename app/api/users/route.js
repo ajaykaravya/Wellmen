@@ -65,9 +65,9 @@ export async function POST(req) {
   const roleId = String(body.roleId || "").trim();
   const roleName = String(body.roleName || "").trim();
 
-  if (!firstName || !lastName || !email || !mobileNumber || !password) {
+  if (!firstName || !lastName || !mobileNumber || !password) {
     return NextResponse.json(
-      { error: "firstName, lastName, email, mobileNumber, and password are required." },
+      { error: "firstName, lastName, mobileNumber, and password are required." },
       { status: 400 }
     );
   }

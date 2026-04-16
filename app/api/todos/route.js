@@ -168,8 +168,8 @@ export async function POST(req) {
     );
   }
 
-  const parsedDate = new Date(startDate);
-  if (Number.isNaN(parsedDate.getTime())) {
+  const parsedDate = parseDate(startDate);
+  if (!parsedDate) {
     return NextResponse.json({ error: "Invalid start date." }, { status: 400 });
   }
 

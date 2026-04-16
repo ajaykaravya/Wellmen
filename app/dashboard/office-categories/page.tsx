@@ -12,7 +12,6 @@ import Link from "next/link";
 
 type OfficeCategoryRow = {
   id: string;
-  category: string;
   name: string;
 };
 
@@ -95,11 +94,6 @@ function OfficeCategoryListContent() {
 
   const columns = useMemo<ColumnDef<OfficeCategoryRow>[]>(
     () => [
-      {
-        header: "Category",
-        accessorKey: "category",
-        cell: (info) => <span className="rbac-muted">{String(info.getValue() || "")}</span>,
-      },
       {
         header: "Name",
         accessorKey: "name",
@@ -243,7 +237,6 @@ function OfficeCategoryListContent() {
                     <div className="mb-2 flex items-center justify-between">
                       <div>
                         <h4 className="text-sm font-semibold">{category.name}</h4>
-                        <p className="text-xs text-slate-500">{category.category}</p>
                       </div>
                       <div className="flex gap-2">
                         <Link href={`/dashboard/office-categories/${category.id}`}>

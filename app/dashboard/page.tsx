@@ -8,7 +8,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { ColumnDef } from "@tanstack/table-core";
-import { formatToDDMMYYYY } from "@/lib/dateUtils";
+import { formatToDDMMYYYY, getTodayInputDate } from "@/lib/dateUtils";
 import { toast } from "react-toastify";
 import DashboardShell, {
   useDashboardContext,
@@ -90,12 +90,6 @@ type AdminReportRow = {
   videoUrl: string | null;
 };
 
-const getTodayInputDate = () => {
-  const now = new Date();
-  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 10);
-};
-
 const shiftInputDate = (value: string, diffDays: number) => {
   let base: Date;
   if (value) {
@@ -151,7 +145,7 @@ function OverviewContent() {
     try {
       const today = getTodayInputDate();
       const endpoint = isAdmin ? "/api/todos" : "/api/my-todos";
-      const res = await fetch(`${endpoint}?date=${today}&page=1&pageSize=10`);
+      const res = await fetch(`${endpoint}?fromDate=${today}&page=1&pageSize=10`);
       if (!res.ok) return;
 
       const data = await res.json();
@@ -174,7 +168,7 @@ function OverviewContent() {
     setAdminLoading(true);
     try {
       const params = new URLSearchParams({
-        date: adminDate,
+        fromDate: adminDate,
         page: "1",
         pageSize: "50",
       });
@@ -201,7 +195,7 @@ function OverviewContent() {
     setUserReportsLoading(true);
     try {
       const today = getTodayInputDate();
-      const res = await fetch(`/api/reports?date=${today}&page=1&pageSize=20`);
+      const res = await fetch(`/api/reports?fromDate=${today}&page=1&pageSize=20`);
       if (!res.ok) return;
       const data = await res.json();
       setUserReports(Array.isArray(data?.data) ? data.data : []);

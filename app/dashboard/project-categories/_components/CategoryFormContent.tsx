@@ -19,7 +19,7 @@ type CategoryFormContentProps = {
 export default function CategoryFormContent({ categoryId }: CategoryFormContentProps) {
   const router = useRouter();
   const [form, setForm] = useState<CategoryFormState>({
-    category: "",
+    category: "PROJECT_WORK",
     name: "",
   });
   const [loading, setLoading] = useState(true);
@@ -62,7 +62,7 @@ export default function CategoryFormContent({ categoryId }: CategoryFormContentP
 
     const newErrors: Partial<Record<keyof CategoryFormState, string>> = {};
     if (!form.category.trim()) newErrors.category = "Category is required.";
-    if (!form.name.trim()) newErrors.name = "Category name is required.";
+    if (!form.name.trim()) newErrors.name = "Name is required.";
 
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) {
@@ -75,7 +75,7 @@ export default function CategoryFormContent({ categoryId }: CategoryFormContentP
         method: categoryId ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          category: form.category.trim(),
+          category: form.category.trim() || "PROJECT_WORK",
           name: form.name.trim(),
         }),
       });
@@ -109,21 +109,11 @@ export default function CategoryFormContent({ categoryId }: CategoryFormContentP
     <section className="rbac-section rbac-container">
       <div className="rbac-card">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="rbac-title-lg">{categoryId ? "Edit Category" : "Add New Category"}</h3>
+          <h3 className="rbac-title-lg">{categoryId ? "Edit Project Category" : "Add New Project Category"}</h3>
         </div>
 
         <form className="rbac-form" onSubmit={handleSubmit}>
           <fieldset disabled={saving} className={saving ? "opacity-70 pointer-events-none" : ""}>
-            <label className="rbac-label">
-              Category <span className="text-red-600">*</span>
-              <input
-                className="rbac-input mb-2"
-                placeholder="Category"
-                value={form.category}
-                onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
-              />
-            </label>
-
             <label className="rbac-label">
               Name <span className="text-red-600">*</span>
               <input
@@ -149,7 +139,7 @@ export default function CategoryFormContent({ categoryId }: CategoryFormContentP
                 "Save"
               )}
             </button>
-            <Link href="/dashboard/project- categories">
+            <Link href="/dashboard/project-categories">
               <button className="text-red-500" type="button" disabled={saving}>
                 Cancel
               </button>

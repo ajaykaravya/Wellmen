@@ -27,7 +27,8 @@ type MenuKey =
   | "todo"
   | "projects"
   | "projectcategories"
-  | "officeCategories";
+  | "officeCategories"
+  | "serviceCategories";
 
 type DashboardContextValue = {
   user: SessionUser | null;
@@ -66,12 +67,14 @@ const routeByMenu: Record<MenuKey, string> = {
   projects: "/dashboard/projects",
   projectcategories: "/dashboard/project-categories",
   officeCategories: "/dashboard/office-categories",
+  serviceCategories: "/dashboard/service-categories",
 };
 
 const getActiveMenu = (pathname: string): MenuKey => {
   if (pathname.startsWith("/dashboard/users")) return "users";
   if (pathname.startsWith("/dashboard/office-categories")) return "officeCategories";
   if (pathname.startsWith("/dashboard/project-categories")) return "projectcategories";
+  if (pathname.startsWith("/dashboard/service-categories")) return "serviceCategories";
   if (pathname.startsWith("/dashboard/projects")) return "projects";
   if (pathname.startsWith("/dashboard/todo")) return "todo";
   if (pathname.startsWith("/dashboard/roles")) return "roles";
@@ -162,6 +165,7 @@ export default function DashboardShell({
       items.push({ key: "projects", label: "Projects" });
       items.push({ key: "projectcategories", label: "Project work Categories" });
       items.push({ key: "officeCategories", label: "Office work Categories" });
+      items.push({ key: "serviceCategories", label: "Service work Categories" });
     }
     items.push({ key: "todo", label: "To-Do" });
     items.push({ key: "reports", label: "Reporting" });
