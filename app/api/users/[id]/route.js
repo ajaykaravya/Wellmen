@@ -70,6 +70,7 @@ export async function PUT(req, { params }) {
   const mobileNumber = String(body.mobileNumber || "").trim();
   const password = String(body.password || "");
   const roleId = String(body.roleId || "").trim();
+  const roleName = String(body.roleName || "").trim();
 
   try {
     const existing = await prisma.user.findUnique({
@@ -79,7 +80,12 @@ export async function PUT(req, { params }) {
     if (!existing) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
-    if (existing.role?.name === "Admin" && auth.user.id !== id) {
+
+    if (
+      existing.role?.name === "Admin" &&
+      auth.user.id !== id &&
+      !canEditAll
+    ) {
       return NextResponse.json(
         { error: "Admin accounts can only be updated in My Profile." },
         { status: 403 }
@@ -94,35 +100,22 @@ export async function PUT(req, { params }) {
     if (firstName || lastName) {
       data.fullName = `${resolvedFirstName} ${resolvedLastName}`.trim();
     }
-    if (email) data.email = email;
+    if (body.email !== undefined) data.email = email || null;
     if (mobileNumber) data.mobileNumber = mobileNumber;
     if (password) data.passwordHash = await hashPassword(password);
 
-    if (roleId) {
+    if (roleId || roleName) {
       if (!auth.permissions.includes("assign_roles")) {
         return NextResponse.json({ error: "Forbidden." }, { status: 403 });
       }
-      const role = await prisma.role.findUnique({ where: { id: roleId } });
+      const role = await prisma.role.findFirst({
+        where: roleId ? { id: roleId } : { name: roleName },
+      });
       if (!role) {
         return NextResponse.json({ error: "Role not found." }, { status: 400 });
       }
-      // if (pin && role.name !== "Employee") {
-      //   return NextResponse.json(
-      //     { error: "PIN login is allowed for Employee role only." },
-      //     { status: 400 }
-      //   );
-      // }
-      data.roleId = roleId;
+      data.roleId = role.id;
     }
-
-    // if (pin && !roleId) {
-    //   if (existing?.role?.name !== "Employee") {
-    //     return NextResponse.json(
-    //       { error: "PIN login is allowed for Employee role only." },
-    //       { status: 400 }
-    //     );
-    //   }
-    // }
 
     const user = await prisma.user.update({
       where: { id },
