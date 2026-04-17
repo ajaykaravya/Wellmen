@@ -6,7 +6,7 @@ const parseStatus = (value) => {
   const normalized = String(value || "").toUpperCase();
   if (normalized === "TODO") return "TODO";
   if (normalized === "IN_PROGRESS") return "IN_PROGRESS";
-  if (normalized === "DONE") return "DONE";
+  if (normalized === "COMPLETED") return "COMPLETED";
   if (normalized === "ON_HOLD") return "ON_HOLD";
 
   return null;
@@ -164,7 +164,7 @@ export async function POST(req) {
   if (!title || !startDate) {
     return NextResponse.json(
       { error: "Task title and start date are required." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -176,14 +176,22 @@ export async function POST(req) {
   if (assigneeId) {
     const exists = await prisma.user.findUnique({ where: { id: assigneeId } });
     if (!exists) {
-      return NextResponse.json({ error: "Assignee not found." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Assignee not found." },
+        { status: 400 },
+      );
     }
   }
 
   if (projectId) {
-    const exists = await prisma.project.findUnique({ where: { id: projectId } });
+    const exists = await prisma.project.findUnique({
+      where: { id: projectId },
+    });
     if (!exists) {
-      return NextResponse.json({ error: "Project not found." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Project not found." },
+        { status: 400 },
+      );
     }
   }
 
@@ -225,6 +233,6 @@ export async function POST(req) {
         : null,
       createdAt: todo.createdAt,
     },
-    { status: 201 }
+    { status: 201 },
   );
 }

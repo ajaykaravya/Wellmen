@@ -8,7 +8,7 @@ const parseStatus = (value) => {
   const normalized = String(value || "").toUpperCase();
   if (normalized === "TODO") return "TODO";
   if (normalized === "IN_PROGRESS") return "IN_PROGRESS";
-  if (normalized === "DONE") return "DONE";
+  if (normalized === "COMPLETED") return "COMPLETED";
   if (normalized === "ON_HOLD") return "ON_HOLD";
   return null;
 };
@@ -45,7 +45,10 @@ async function loadAllowedTodo(req, params) {
   if (!id) {
     return {
       ok: false,
-      res: NextResponse.json({ error: "Todo id is required." }, { status: 400 }),
+      res: NextResponse.json(
+        { error: "Todo id is required." },
+        { status: 400 },
+      ),
     };
   }
 
@@ -114,9 +117,14 @@ export async function PUT(req, { params }) {
   }
 
   if (projectId) {
-    const exists = await prisma.project.findUnique({ where: { id: projectId } });
+    const exists = await prisma.project.findUnique({
+      where: { id: projectId },
+    });
     if (!exists) {
-      return NextResponse.json({ error: "Project not found." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Project not found." },
+        { status: 400 },
+      );
     }
   }
 
@@ -167,7 +175,9 @@ export async function PATCH(req, { params }) {
   const startDate =
     typeof body.startDate === "string" ? body.startDate.trim() : undefined;
   const projectId =
-    typeof body.projectId === "string" ? parseProjectId(body.projectId) : undefined;
+    typeof body.projectId === "string"
+      ? parseProjectId(body.projectId)
+      : undefined;
 
   const data = {};
 
@@ -204,9 +214,14 @@ export async function PATCH(req, { params }) {
     }
     if (typeof projectId === "string") {
       if (projectId) {
-        const exists = await prisma.project.findUnique({ where: { id: projectId } });
+        const exists = await prisma.project.findUnique({
+          where: { id: projectId },
+        });
         if (!exists) {
-          return NextResponse.json({ error: "Project not found." }, { status: 400 });
+          return NextResponse.json(
+            { error: "Project not found." },
+            { status: 400 },
+          );
         }
       }
       data.projectId = projectId || null;
@@ -214,7 +229,10 @@ export async function PATCH(req, { params }) {
   }
 
   if (Object.keys(data).length === 0) {
-    return NextResponse.json({ error: "No updates provided." }, { status: 400 });
+    return NextResponse.json(
+      { error: "No updates provided." },
+      { status: 400 },
+    );
   }
 
   const todo = await prisma.todo.update({

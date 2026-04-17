@@ -3,13 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
 import { requireAnyPermission, requireAuth } from "@/lib/rbac";
 
-const resolveId = async (params) =>
-  String((await params)?.id || "").trim();
+const resolveId = async (params) => String((await params)?.id || "").trim();
 
 export async function GET(req, { params }) {
   const id = await resolveId(params);
   if (!id) {
-    return NextResponse.json({ error: "User id is required." }, { status: 400 });
+    return NextResponse.json(
+      { error: "User id is required." },
+      { status: 400 },
+    );
   }
 
   const authGate = await requireAuth(req);
@@ -45,7 +47,10 @@ export async function GET(req, { params }) {
 export async function PUT(req, { params }) {
   const id = await resolveId(params);
   if (!id) {
-    return NextResponse.json({ error: "User id is required." }, { status: 400 });
+    return NextResponse.json(
+      { error: "User id is required." },
+      { status: 400 },
+    );
   }
 
   const authGate = await requireAuth(req);
@@ -66,7 +71,9 @@ export async function PUT(req, { params }) {
 
   const firstName = String(body.firstName || "").trim();
   const lastName = String(body.lastName || "").trim();
-  const email = String(body.email || "").trim().toLowerCase();
+  const email = String(body.email || "")
+    .trim()
+    .toLowerCase();
   const mobileNumber = String(body.mobileNumber || "").trim();
   const password = String(body.password || "");
   const roleId = String(body.roleId || "").trim();
@@ -81,14 +88,10 @@ export async function PUT(req, { params }) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
 
-    if (
-      existing.role?.name === "Admin" &&
-      auth.user.id !== id &&
-      !canEditAll
-    ) {
+    if (existing.role?.name === "Admin" && auth.user.id !== id && !canEditAll) {
       return NextResponse.json(
         { error: "Admin accounts can only be updated in My Profile." },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -102,7 +105,16 @@ export async function PUT(req, { params }) {
     }
     if (body.email !== undefined) data.email = email || null;
     if (mobileNumber) data.mobileNumber = mobileNumber;
-    if (password) data.passwordHash = await hashPassword(password);
+    if (password) {
+      // Validate password format: exactly 4 digits
+      if (!/^\d{4}$/.test(password)) {
+        return NextResponse.json(
+          { error: "Password must be exactly 4 digits." },
+          { status: 400 },
+        );
+      }
+      data.passwordHash = await hashPassword(password);
+    }
 
     if (roleId || roleName) {
       if (!auth.permissions.includes("assign_roles")) {
@@ -138,7 +150,7 @@ export async function PUT(req, { params }) {
     if (error?.code === "P2002") {
       return NextResponse.json(
         { error: "Email or mobile number already exists." },
-        { status: 409 }
+        { status: 409 },
       );
     }
     return NextResponse.json(
@@ -146,7 +158,7 @@ export async function PUT(req, { params }) {
         error: "Failed to update user.",
         ...(isDev ? { details: String(error?.message || error) } : {}),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -154,7 +166,10 @@ export async function PUT(req, { params }) {
 export async function DELETE(req, { params }) {
   const id = await resolveId(params);
   if (!id) {
-    return NextResponse.json({ error: "User id is required." }, { status: 400 });
+    return NextResponse.json(
+      { error: "User id is required." },
+      { status: 400 },
+    );
   }
 
   const gate = await requireAnyPermission(req, [
@@ -173,7 +188,7 @@ export async function DELETE(req, { params }) {
   if (existing.role?.name === "Admin") {
     return NextResponse.json(
       { error: "Admin accounts cannot be deleted." },
-      { status: 403 }
+      { status: 403 },
     );
   }
 

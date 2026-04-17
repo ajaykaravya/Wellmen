@@ -50,7 +50,7 @@ ChartJS.register(
   Legend,
 );
 
-type TodoStatus = "TODO" | "IN_PROGRESS" | "ON_HOLD" | "DONE";
+type TodoStatus = "TODO" | "IN_PROGRESS" | "ON_HOLD" | "COMPLETED";
 
 type TodoRow = {
   id: string;
@@ -93,7 +93,7 @@ type AdminReportRow = {
 const shiftInputDate = (value: string, diffDays: number) => {
   let base: Date;
   if (value) {
-    const parts = value.split('/');
+    const parts = value.split("/");
     if (parts.length === 3) {
       const day = parseInt(parts[0], 10);
       const month = parseInt(parts[1], 10) - 1;
@@ -109,8 +109,8 @@ const shiftInputDate = (value: string, diffDays: number) => {
   if (Number.isNaN(base.getTime())) return getTodayInputDate();
   base.setDate(base.getDate() + diffDays);
 
-  const day = base.getDate().toString().padStart(2, '0');
-  const month = (base.getMonth() + 1).toString().padStart(2, '0');
+  const day = base.getDate().toString().padStart(2, "0");
+  const month = (base.getMonth() + 1).toString().padStart(2, "0");
   const year = base.getFullYear();
   return `${day}/${month}/${year}`;
 };
@@ -145,7 +145,9 @@ function OverviewContent() {
     try {
       const today = getTodayInputDate();
       const endpoint = isAdmin ? "/api/todos" : "/api/my-todos";
-      const res = await fetch(`${endpoint}?fromDate=${today}&page=1&pageSize=10`);
+      const res = await fetch(
+        `${endpoint}?fromDate=${today}&page=1&pageSize=10`,
+      );
       if (!res.ok) return;
 
       const data = await res.json();
@@ -195,7 +197,9 @@ function OverviewContent() {
     setUserReportsLoading(true);
     try {
       const today = getTodayInputDate();
-      const res = await fetch(`/api/reports?fromDate=${today}&page=1&pageSize=20`);
+      const res = await fetch(
+        `/api/reports?fromDate=${today}&page=1&pageSize=20`,
+      );
       if (!res.ok) return;
       const data = await res.json();
       setUserReports(Array.isArray(data?.data) ? data.data : []);
@@ -442,7 +446,9 @@ function OverviewContent() {
     (task) => task.status === "IN_PROGRESS",
   ).length;
   const todoTodo = todos.filter((task) => task.status === "TODO").length;
-  const todoDone = todos.filter((task) => task.status === "DONE").length;
+  const todoCompleted = todos.filter(
+    (task) => task.status === "COMPLETED",
+  ).length;
 
   const chartOptions = {
     responsive: true,
@@ -501,11 +507,11 @@ function OverviewContent() {
     todoTodo,
   ]);
   const doneChart = statsChartData([
-    todoDone * 0.2,
-    todoDone * 0.35,
-    todoDone * 0.45,
-    todoDone * 0.75,
-    todoDone,
+    todoCompleted * 0.2,
+    todoCompleted * 0.35,
+    todoCompleted * 0.45,
+    todoCompleted * 0.75,
+    todoCompleted,
   ]);
 
   const isModalDirty =
@@ -569,7 +575,7 @@ function OverviewContent() {
             </div>
             <div>
               <p className="text-xs uppercase text-slate-500">Completed</p>
-              <p className="text-2xl sm:text-3xl font-bold">{todoDone}</p>
+              <p className="text-2xl sm:text-3xl font-bold">{todoCompleted}</p>
             </div>
           </div>
         </div>
@@ -617,7 +623,10 @@ function OverviewContent() {
                           className="px-4 py-3 text-sm text-slate-500"
                         >
                           <div className="flex items-center justify-center">
-                            <FaSpinner className="animate-spin mr-2" size={16} />
+                            <FaSpinner
+                              className="animate-spin mr-2"
+                              size={16}
+                            />
                           </div>
                         </td>
                       </tr>
@@ -664,36 +673,39 @@ function OverviewContent() {
                   </div>
                 )}
                 {!loading && todos.length === 0 && (
-                  <div className="rbac-card py-4 text-sm text-slate-500">No tasks for today</div>
+                  <div className="rbac-card py-4 text-sm text-slate-500">
+                    No tasks for today
+                  </div>
                 )}
-                {!loading && todos.map((task) => (
-                  <div key={task.id} className="rbac-card p-4">
-                    <p className="text-xs uppercase text-slate-500">
-                      {task.title}
-                    </p>
-                    <p className="text-sm text-slate-700">
-                      {task.description || "No description"}
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      Status: {task.status.replaceAll("_", " ")}
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      Start: {formatToDDMMYYYY(task.startDate)}
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      Comments: {task.comments || "-"}
-                    </p>
-                     <div className="mt-2 flex gap-2  justify-end">
-                    <button
-                      className="rbac-button rbac-button-secondary"
-                      type="button"
-                      onClick={() => setModalOpen(true)}
-                    >
-                      Update
-                    </button>
-                  </div>
-                  </div>
-                ))}
+                {!loading &&
+                  todos.map((task) => (
+                    <div key={task.id} className="rbac-card p-4">
+                      <p className="text-xs uppercase text-slate-500">
+                        {task.title}
+                      </p>
+                      <p className="text-sm text-slate-700">
+                        {task.description || "No description"}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        Status: {task.status.replaceAll("_", " ")}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        Start: {formatToDDMMYYYY(task.startDate)}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        Comments: {task.comments || "-"}
+                      </p>
+                      <div className="mt-2 flex gap-2  justify-end">
+                        <button
+                          className="rbac-button rbac-button-secondary"
+                          type="button"
+                          onClick={() => setModalOpen(true)}
+                        >
+                          Update
+                        </button>
+                      </div>
+                    </div>
+                  ))}
               </div>
             </div>
           </div>
@@ -768,7 +780,10 @@ function OverviewContent() {
                               className="px-4 py-3 text-sm text-slate-500"
                             >
                               <div className="flex items-center justify-center">
-                                <FaSpinner className="animate-spin mr-2" size={16} />
+                                <FaSpinner
+                                  className="animate-spin mr-2"
+                                  size={16}
+                                />
                               </div>
                             </td>
                           </tr>
@@ -985,7 +1000,7 @@ function OverviewContent() {
                   <option value="TODO">To do</option>
                   <option value="IN_PROGRESS">In progress</option>
                   <option value="ON_HOLD">On hold</option>
-                  <option value="DONE">Done</option>
+                  <option value="COMPLETED">Completed</option>
                 </select>
               </label>
             </div>

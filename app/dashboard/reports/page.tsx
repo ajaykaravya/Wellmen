@@ -23,7 +23,7 @@ import {
 } from "react-icons/fa";
 import Link from "next/link";
 
-type ReportStatus = "TODO" | "IN_PROGRESS" | "DONE" | "ON_HOLD";
+type ReportStatus = "TODO" | "IN_PROGRESS" | "COMPLETED" | "ON_HOLD";
 
 type ProjectOption = {
   id: string;
@@ -381,7 +381,7 @@ function ReportingListContent() {
               <option value="TODO">To do</option>
               <option value="IN_PROGRESS">In progress</option>
               <option value="ON_HOLD">On hold</option>
-              <option value="DONE">Done</option>
+              <option value="COMPLETED">Completed</option>
             </select>
 
             {isAdmin && (

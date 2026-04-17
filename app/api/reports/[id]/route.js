@@ -11,7 +11,7 @@ const parseStatus = (value) => {
   const normalized = String(value || "").toUpperCase();
   if (normalized === "TODO") return "TODO";
   if (normalized === "IN_PROGRESS") return "IN_PROGRESS";
-  if (normalized === "DONE") return "DONE";
+  if (normalized === "COMPLETED") return "COMPLETED";
   if (normalized === "ON_HOLD") return "ON_HOLD";
   return null;
 };
@@ -61,7 +61,10 @@ async function loadAllowedReport(req, params) {
   if (!id) {
     return {
       ok: false,
-      res: NextResponse.json({ error: "Report id is required." }, { status: 400 }),
+      res: NextResponse.json(
+        { error: "Report id is required." },
+        { status: 400 },
+      ),
     };
   }
 
@@ -125,12 +128,20 @@ export async function PUT(req, { params }) {
     }
 
     if (!parsedDate) {
-      return NextResponse.json({ error: "Invalid report date." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid report date." },
+        { status: 400 },
+      );
     }
 
-    const project = await prisma.project.findUnique({ where: { id: projectId } });
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+    });
     if (!project) {
-      return NextResponse.json({ error: "Project not found." }, { status: 404 });
+      return NextResponse.json(
+        { error: "Project not found." },
+        { status: 404 },
+      );
     }
 
     const existingImages = parseJsonArray(form.get("existingImages"));
@@ -144,7 +155,8 @@ export async function PUT(req, { params }) {
     const imageUrls = [...existingImages, ...newImages];
 
     const videoInput = form.get("video");
-    const videoFile = videoInput instanceof File && videoInput.size > 0 ? videoInput : null;
+    const videoFile =
+      videoInput instanceof File && videoInput.size > 0 ? videoInput : null;
 
     let videoUrl = loaded.report.videoUrl || null;
     if (videoFile) {
@@ -178,7 +190,10 @@ export async function PUT(req, { params }) {
   } catch (error) {
     console.error("PUT /api/reports/[id] failed", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to update report." },
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to update report.",
+      },
       { status: 500 },
     );
   }

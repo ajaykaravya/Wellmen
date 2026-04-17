@@ -38,10 +38,7 @@ export default function LoginPage() {
   }, []);
 
   const isMobileValid = (mobileNumber: string) => /^\d{10}$/.test(mobileNumber);
-  const isPasswordValid = (password: string) =>
-    password.length >= 6 &&
-    /[A-Z]/.test(password) &&
-    /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password);
+  const isPasswordValid = (password: string) => /^\d{4}$/.test(password);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -61,7 +58,7 @@ export default function LoginPage() {
     }
 
     if (!isPasswordValid(form.password)) {
-      setNote("Password must be at least 6 chars, include one uppercase letter and one special character.");
+      setNote("Password must be exactly 4 digits.");
       setLoading(false);
       return;
     }
@@ -70,11 +67,11 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            mobileNumber: form.mobileNumber,
-            password: form.password,
-          }),
-        });
+        body: JSON.stringify({
+          mobileNumber: form.mobileNumber,
+          password: form.password,
+        }),
+      });
 
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
@@ -98,11 +95,9 @@ export default function LoginPage() {
     setSetupLoading(true);
 
     const isEmailValid = (email: string) => /\S+@\S+\.\S+/.test(email);
-    const isMobileValid = (mobileNumber: string) => /^\d{10}$/.test(mobileNumber);
-    const isPasswordValid = (password: string) =>
-      password.length >= 6 &&
-      /[A-Z]/.test(password) &&
-      /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password);
+    const isMobileValid = (mobileNumber: string) =>
+      /^\d{10}$/.test(mobileNumber);
+    const isPasswordValid = (password: string) => /^\d{4}$/.test(password);
 
     if (
       !setupForm.firstName.trim() ||
@@ -110,7 +105,9 @@ export default function LoginPage() {
       !setupForm.email.trim() ||
       !setupForm.mobileNumber.trim()
     ) {
-      setSetupNote("First name, last name, email, and mobile number are required.");
+      setSetupNote(
+        "First name, last name, email, and mobile number are required.",
+      );
       setSetupLoading(false);
       return;
     }
@@ -128,7 +125,7 @@ export default function LoginPage() {
     }
 
     if (!isPasswordValid(setupForm.password)) {
-      setSetupNote("Password must be at least 6 chars, include one uppercase and one special character.");
+      setSetupNote("Password must be exactly 4 digits.");
       setSetupLoading(false);
       return;
     }
@@ -260,7 +257,7 @@ export default function LoginPage() {
                       password: event.target.value,
                     }))
                   }
-                  placeholder="Minimum 6 characters"
+                  placeholder="4 digits"
                 />
               </label>
               <label className="text-sm font-semibold text-slate-700">
@@ -288,14 +285,18 @@ export default function LoginPage() {
                 type="submit"
                 disabled={setupLoading}
               >
-                {setupLoading && <FaSpinner className="animate-spin mr-2" size={14} />}
+                {setupLoading && (
+                  <FaSpinner className="animate-spin mr-2" size={14} />
+                )}
                 Create Admin
               </button>
             </form>
           </section>
         ) : (
           <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl">
-            <div className="flex justify-center"><img src="/images/logo.svg" alt="WellMen" /></div>
+            <div className="flex justify-center">
+              <img src="/images/logo.svg" alt="WellMen" />
+            </div>
             <div className="flex items-center justify-between mt-5">
               <p className="text-xs font-semibold tracking-[0.3em] uppercase text-[#2596be]">
                 Sign In
@@ -327,22 +328,25 @@ export default function LoginPage() {
                   className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 focus:border-blue-500 focus:outline-none"
                   value={form.password}
                   onChange={(event) =>
-                    setForm((prev) => ({ ...prev, password: event.target.value }))
+                    setForm((prev) => ({
+                      ...prev,
+                      password: event.target.value,
+                    }))
                   }
                   placeholder="Enter your password"
                 />
               </label>
               {note && (
-                <p className="rounded-xl px-4 text-sm text-red-500">
-                  {note}
-                </p>
+                <p className="rounded-xl px-4 text-sm text-red-500">{note}</p>
               )}
               <button
                 className="mt-2 rounded-full bg-[#2596be] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-200 transition hover:bg-[#1e7ca5] flex items-center justify-center disabled:opacity-50"
                 type="submit"
                 disabled={loading}
               >
-                {loading && <FaSpinner className="animate-spin mr-2" size={14} />}
+                {loading && (
+                  <FaSpinner className="animate-spin mr-2" size={14} />
+                )}
                 Continue
               </button>
             </form>

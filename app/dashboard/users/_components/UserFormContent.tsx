@@ -25,7 +25,9 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
   const [formLoading, setFormLoading] = useState(Boolean(userId));
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState<string | null>(null);
-  const [errors, setErrors] = useState<Partial<Record<keyof UserFormState, string>>>({});
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof UserFormState, string>>
+  >({});
   const [form, setForm] = useState<UserFormState>({
     firstName: "",
     lastName: "",
@@ -70,10 +72,7 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
   }, [userId]);
 
   const isEmailValid = (email: string) => /\S+@\S+\.\S+/.test(email);
-  const isPasswordValid = (password: string) =>
-    password.length >= 6 &&
-    /[A-Z]/.test(password) &&
-    /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password);
+  const isPasswordValid = (password: string) => /^\d{4}$/.test(password);
   const isMobileValid = (mobile: string) => /^\d{10}$/.test(mobile);
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -90,14 +89,15 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
     if (!form.mobileNumber.trim()) {
       newErrors.mobileNumber = "Mobile number is required.";
     } else if (!isMobileValid(form.mobileNumber.trim())) {
-      newErrors.mobileNumber = "Mobile number must be 10 digits and numbers only.";
+      newErrors.mobileNumber =
+        "Mobile number must be 10 digits and numbers only.";
     }
 
     if (!userId && !form.password) {
       newErrors.password = "Password is required.";
     } else if (form.password) {
       if (!isPasswordValid(form.password)) {
-        newErrors.password = "Password must be at least 6 chars, include one uppercase, one special char.";
+        newErrors.password = "Password must be exactly 4 digits.";
       }
     }
 
@@ -127,9 +127,11 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
         return;
       }
 
-      toast.success(userId ? "User updated successfully" : "User added successfully");
+      toast.success(
+        userId ? "User updated successfully" : "User added successfully",
+      );
       router.push("/dashboard/users");
-    } catch (error:any) {
+    } catch (error: any) {
       toast.error(error || "Failed to save user");
     } finally {
       setSaving(false);
@@ -148,120 +150,132 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
       <section className="rbac-section rbac-container">
         <div className="rbac-card">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="rbac-title-lg">{userId ? "Edit User" : "Add New User"}</h3>
+            <h3 className="rbac-title-lg">
+              {userId ? "Edit User" : "Add New User"}
+            </h3>
           </div>
           <form className="rbac-form" onSubmit={handleSubmit}>
-            <fieldset disabled={saving} className={saving ? "opacity-70 pointer-events-none" : ""}>
+            <fieldset
+              disabled={saving}
+              className={saving ? "opacity-70 pointer-events-none" : ""}
+            >
               <div className="">
-              <label className="rbac-label">
-                First name <span className="text-red-600">*</span>
-                <input
-                  className="rbac-input mb-2"
-                  placeholder="First name"
-                  value={form.firstName}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      firstName: event.target.value,
-                    }))
-                  }
-                />
+                <label className="rbac-label">
+                  First name <span className="text-red-600">*</span>
+                  <input
+                    className="rbac-input mb-2"
+                    placeholder="First name"
+                    value={form.firstName}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        firstName: event.target.value,
+                      }))
+                    }
+                  />
                 </label>
-              {errors.firstName && (
-                <p className="text-sm text-red-600 mb-2">{errors.firstName}</p>
-              )}
-              <label className="rbac-label mt-5">
-                Last name <span className="text-red-600">*</span>
-                <input
-                  className="rbac-input mb-2"
-                  placeholder="Last name"
-                  value={form.lastName}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      lastName: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              {errors.lastName && (
-                <p className="text-sm text-red-600 mt-1">{errors.lastName}</p>
-              )}
-              <label className="rbac-label">
-                Email
-                <input
-                  className="rbac-input mb-2"
-                  placeholder="Email"
-                  value={form.email}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      email: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              {errors.email && (
-                <p className="text-sm text-red-600 mb-2">{errors.email}</p>
-              )}
-              <label className="rbac-label">
-                Mobile number <span className="text-red-600">*</span>
-                <input
-                  inputMode="tel"
-                  className="rbac-input mb-2"
-                  placeholder="Mobile number"
-                  value={form.mobileNumber}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      mobileNumber: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              {errors.mobileNumber && (
-                <p className="text-sm text-red-600 mb-2">{errors.mobileNumber}</p>
-              )}
-              <label className="rbac-label mt-5">
-                Password {userId ? "" : <span className="text-red-600">*</span>}
-                <input
-                  type="password"
-                  className="rbac-input mb-2"
-                  placeholder={userId ? "New password (optional)" : "Password"}
-                  value={form.password}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      password: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              {errors.password && (
-                <p className="text-sm text-red-600 mb-2">{errors.password}</p>
-              )}
-              <label className="rbac-label mt-5">
-                Role <span className="text-red-600">*</span>
-                <select
-                  className="rbac-input rbac-select"
-                  value={form.roleName}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      roleName: event.target.value,
-                    }))
-                  }
-                >
-                  <option value="Admin">Admin</option>
-                  <option value="HR Admin">HR Admin</option>
-                  <option value="Manager">Manager</option>
-                  <option value="Employee">Employee</option>
-                </select>
-              </label>
-              {errors.roleName && (
-                <p className="text-sm text-red-600 mb-2">{errors.roleName}</p>
-              )}
-            </div>
+                {errors.firstName && (
+                  <p className="text-sm text-red-600 mb-2">
+                    {errors.firstName}
+                  </p>
+                )}
+                <label className="rbac-label mt-5">
+                  Last name <span className="text-red-600">*</span>
+                  <input
+                    className="rbac-input mb-2"
+                    placeholder="Last name"
+                    value={form.lastName}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        lastName: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                {errors.lastName && (
+                  <p className="text-sm text-red-600 mt-1">{errors.lastName}</p>
+                )}
+                <label className="rbac-label">
+                  Email
+                  <input
+                    className="rbac-input mb-2"
+                    placeholder="Email"
+                    value={form.email}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        email: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                {errors.email && (
+                  <p className="text-sm text-red-600 mb-2">{errors.email}</p>
+                )}
+                <label className="rbac-label">
+                  Mobile number <span className="text-red-600">*</span>
+                  <input
+                    inputMode="tel"
+                    className="rbac-input mb-2"
+                    placeholder="Mobile number"
+                    value={form.mobileNumber}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        mobileNumber: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                {errors.mobileNumber && (
+                  <p className="text-sm text-red-600 mb-2">
+                    {errors.mobileNumber}
+                  </p>
+                )}
+                <label className="rbac-label mt-5">
+                  Password{" "}
+                  {userId ? "" : <span className="text-red-600">*</span>}
+                  <input
+                    type="password"
+                    className="rbac-input mb-2"
+                    placeholder={
+                      userId ? "New password (optional)" : "Password"
+                    }
+                    value={form.password}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        password: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                {errors.password && (
+                  <p className="text-sm text-red-600 mb-2">{errors.password}</p>
+                )}
+                <label className="rbac-label mt-5">
+                  Role <span className="text-red-600">*</span>
+                  <select
+                    className="rbac-input rbac-select"
+                    value={form.roleName}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        roleName: event.target.value,
+                      }))
+                    }
+                  >
+                    <option value="Admin">Admin</option>
+                    <option value="HR Admin">HR Admin</option>
+                    <option value="Manager">Manager</option>
+                    <option value="Employee">Employee</option>
+                  </select>
+                </label>
+                {errors.roleName && (
+                  <p className="text-sm text-red-600 mb-2">{errors.roleName}</p>
+                )}
+              </div>
             </fieldset>
             <div className="rbac-actions">
               <button className="rbac-button" type="submit" disabled={saving}>
@@ -275,9 +289,13 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
                 )}
               </button>
               <Link href="/dashboard/users">
-              <button className="text-red-500" type="button" disabled={saving}>
-                Cancel
-              </button>
+                <button
+                  className="text-red-500"
+                  type="button"
+                  disabled={saving}
+                >
+                  Cancel
+                </button>
               </Link>
             </div>
           </form>

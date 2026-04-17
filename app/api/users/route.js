@@ -59,7 +59,9 @@ export async function POST(req) {
   const firstName = String(body.firstName || "").trim();
   const lastName = String(body.lastName || "").trim();
   const fullName = `${firstName} ${lastName}`.trim();
-  const email = String(body.email || "").trim().toLowerCase();
+  const email = String(body.email || "")
+    .trim()
+    .toLowerCase();
   const mobileNumber = String(body.mobileNumber || "").trim();
   const password = String(body.password || "");
   const roleId = String(body.roleId || "").trim();
@@ -67,8 +69,18 @@ export async function POST(req) {
 
   if (!firstName || !lastName || !mobileNumber || !password) {
     return NextResponse.json(
-      { error: "firstName, lastName, mobileNumber, and password are required." },
-      { status: 400 }
+      {
+        error: "firstName, lastName, mobileNumber, and password are required.",
+      },
+      { status: 400 },
+    );
+  }
+
+  // Validate password format: exactly 4 digits
+  if (!/^\d{4}$/.test(password)) {
+    return NextResponse.json(
+      { error: "Password must be exactly 4 digits." },
+      { status: 400 },
     );
   }
 
@@ -127,14 +139,14 @@ export async function POST(req) {
         role: user.role?.name || null,
         createdAt: user.createdAt,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("POST /api/users failed", error);
     if (error?.code === "P2002") {
       return NextResponse.json(
         { error: "Email or mobile number already exists." },
-        { status: 409 }
+        { status: 409 },
       );
     }
     return NextResponse.json(
@@ -142,7 +154,7 @@ export async function POST(req) {
         error: "Failed to create user.",
         ...(isDev ? { details: String(error?.message || error) } : {}),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

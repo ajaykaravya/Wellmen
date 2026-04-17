@@ -8,7 +8,7 @@ const parseStatus = (value) => {
   const normalized = String(value || "").toUpperCase();
   if (normalized === "TODO") return "TODO";
   if (normalized === "IN_PROGRESS") return "IN_PROGRESS";
-  if (normalized === "DONE") return "DONE";
+  if (normalized === "COMPLETED") return "COMPLETED";
   if (normalized === "ON_HOLD") return "ON_HOLD";
   return null;
 };
@@ -19,7 +19,11 @@ const parseDate = (value) => {
   const ddmmyyyyMatch = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (ddmmyyyyMatch) {
     const [, day, month, year] = ddmmyyyyMatch;
-    const date = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
+    const date = new Date(
+      parseInt(year, 10),
+      parseInt(month, 10) - 1,
+      parseInt(day, 10),
+    );
     if (!Number.isNaN(date.getTime())) return date;
   }
 
@@ -36,7 +40,10 @@ export async function GET(req, { params }) {
 
   const id = await resolveId(params);
   if (!id) {
-    return NextResponse.json({ error: "Todo id is required." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Todo id is required." },
+      { status: 400 },
+    );
   }
 
   const todo = await prisma.todo.findUnique({
@@ -80,7 +87,10 @@ export async function PUT(req, { params }) {
 
   const id = await resolveId(params);
   if (!id) {
-    return NextResponse.json({ error: "Todo id is required." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Todo id is required." },
+      { status: 400 },
+    );
   }
 
   const body = await req.json();
@@ -95,7 +105,7 @@ export async function PUT(req, { params }) {
   if (!title || !startDate) {
     return NextResponse.json(
       { error: "Task title and start date are required." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -107,14 +117,22 @@ export async function PUT(req, { params }) {
   if (assigneeId) {
     const exists = await prisma.user.findUnique({ where: { id: assigneeId } });
     if (!exists) {
-      return NextResponse.json({ error: "Assignee not found." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Assignee not found." },
+        { status: 400 },
+      );
     }
   }
 
   if (projectId) {
-    const exists = await prisma.project.findUnique({ where: { id: projectId } });
+    const exists = await prisma.project.findUnique({
+      where: { id: projectId },
+    });
     if (!exists) {
-      return NextResponse.json({ error: "Project not found." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Project not found." },
+        { status: 400 },
+      );
     }
   }
 
@@ -164,7 +182,10 @@ export async function DELETE(req, { params }) {
 
   const id = await resolveId(params);
   if (!id) {
-    return NextResponse.json({ error: "Todo id is required." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Todo id is required." },
+      { status: 400 },
+    );
   }
 
   const existing = await prisma.todo.findUnique({ where: { id } });

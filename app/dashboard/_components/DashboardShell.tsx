@@ -26,6 +26,7 @@ type MenuKey =
   | "profile"
   | "todo"
   | "projects"
+  | "masterData"
   | "projectcategories"
   | "officeCategories"
   | "serviceCategories";
@@ -65,6 +66,7 @@ const routeByMenu: Record<MenuKey, string> = {
   profile: "/dashboard/profile",
   todo: "/dashboard/todo",
   projects: "/dashboard/projects",
+  masterData: "/dashboard/master-data",
   projectcategories: "/dashboard/project-categories",
   officeCategories: "/dashboard/office-categories",
   serviceCategories: "/dashboard/service-categories",
@@ -72,9 +74,12 @@ const routeByMenu: Record<MenuKey, string> = {
 
 const getActiveMenu = (pathname: string): MenuKey => {
   if (pathname.startsWith("/dashboard/users")) return "users";
-  if (pathname.startsWith("/dashboard/office-categories")) return "officeCategories";
-  if (pathname.startsWith("/dashboard/project-categories")) return "projectcategories";
-  if (pathname.startsWith("/dashboard/service-categories")) return "serviceCategories";
+  if (pathname.startsWith("/dashboard/office-categories"))
+    return "officeCategories";
+  if (pathname.startsWith("/dashboard/project-categories"))
+    return "projectcategories";
+  if (pathname.startsWith("/dashboard/service-categories"))
+    return "serviceCategories";
   if (pathname.startsWith("/dashboard/projects")) return "projects";
   if (pathname.startsWith("/dashboard/todo")) return "todo";
   if (pathname.startsWith("/dashboard/roles")) return "roles";
@@ -110,9 +115,20 @@ export default function DashboardShell({
   );
   const [navOpen, setNavOpen] = useState(false);
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
+  const [masterDataExpanded, setMasterDataExpanded] = useState(false);
 
   const isAdmin = user?.role === "Admin";
   const displayName = user ? `${user.firstName} ${user.lastName}`.trim() : "";
+
+  const activeMenu = useMemo(() => getActiveMenu(pathname), [pathname]);
+
+  const isMasterDataActive = useMemo(() => {
+    return [
+      "projectcategories",
+      "officeCategories",
+      "serviceCategories",
+    ].includes(activeMenu);
+  }, [activeMenu]);
 
   useEffect(() => {
     const loadSession = async () => {
@@ -155,17 +171,34 @@ export default function DashboardShell({
     }
   }, [loading, requireAdmin, isAdmin, router]);
 
+  useEffect(() => {
+    // Auto-expand Master Data section when on category pages
+    if (isMasterDataActive && !masterDataExpanded) {
+      setMasterDataExpanded(true);
+    }
+  }, [isMasterDataActive, masterDataExpanded]);
+
   const menuItems = useMemo(() => {
-    const items: { key: MenuKey; label: string }[] = [
-      { key: "dashboard", label: "Dashboard" },
-    ];
+    const items: {
+      key: MenuKey;
+      label: string;
+      hasDropdown?: boolean;
+      dropdownItems?: { key: MenuKey; label: string }[];
+    }[] = [{ key: "dashboard", label: "Dashboard" }];
 
     if (isAdmin) {
       items.push({ key: "users", label: "Users" });
       items.push({ key: "projects", label: "Projects" });
-      items.push({ key: "projectcategories", label: "Project work Categories" });
-      items.push({ key: "officeCategories", label: "Office work Categories" });
-      items.push({ key: "serviceCategories", label: "Service work Categories" });
+      items.push({
+        key: "masterData",
+        label: "Master Data",
+        hasDropdown: true,
+        dropdownItems: [
+          { key: "projectcategories", label: "Project work Categories" },
+          { key: "officeCategories", label: "Office work Categories" },
+          { key: "serviceCategories", label: "Service work Categories" },
+        ],
+      });
     }
     items.push({ key: "todo", label: "To-Do" });
     items.push({ key: "reports", label: "Reporting" });
@@ -173,8 +206,6 @@ export default function DashboardShell({
     items.push({ key: "profile", label: "My Profile" });
     return items;
   }, [isAdmin]);
-
-  const activeMenu = useMemo(() => getActiveMenu(pathname), [pathname]);
 
   const handleLogout = async () => {
     try {
@@ -223,26 +254,68 @@ export default function DashboardShell({
           </div>
 
           <nav className="rbac-nav">
-            {menuItems.map((item) => (
-              <Link
-                key={item.key}
-                href={routeByMenu[item.key]}
-                className={`rbac-nav-item ${
-                  activeMenu === item.key ? "active" : ""
-                }`}
-                onClick={() => setNavOpen(false)}
-                prefetch={true}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {menuItems.map((item) => {
+              if (item.hasDropdown && item.dropdownItems) {
+                return (
+                  <div key={item.key}>
+                    <button
+                      className={`rbac-nav-item w-full text-left flex items-center justify-between ${
+                        isMasterDataActive ? "active" : ""
+                      }`}
+                      onClick={() => setMasterDataExpanded(!masterDataExpanded)}
+                    >
+                      {item.label}
+                      <span
+                        className={`ml-2 transition-transform ${masterDataExpanded ? "rotate-90" : ""}`}
+                      >
+                        ▶
+                      </span>
+                    </button>
+                    {masterDataExpanded && (
+                      <div className="ml-4 space-y-1">
+                        {item.dropdownItems.map((dropdownItem) => (
+                          <Link
+                            key={dropdownItem.key}
+                            href={routeByMenu[dropdownItem.key]}
+                            className={`rbac-nav-item block text-sm ${
+                              activeMenu === dropdownItem.key ? "active" : ""
+                            }`}
+                            onClick={() => setNavOpen(false)}
+                            prefetch={true}
+                          >
+                            {dropdownItem.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              return (
+                <Link
+                  key={item.key}
+                  href={routeByMenu[item.key]}
+                  className={`rbac-nav-item ${
+                    activeMenu === item.key ? "active" : ""
+                  }`}
+                  onClick={() => setNavOpen(false)}
+                  prefetch={true}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </nav>
 
           <div className="rbac-profile">
             <p className="rbac-label">Signed in</p>
             <p className="rbac-name">{displayName}</p>
             <p className="rbac-email">{user?.email}</p>
-            <button className="rbac-logout" onClick={() => setConfirmLogoutOpen(true)}>
+            <button
+              className="rbac-logout"
+              onClick={() => setConfirmLogoutOpen(true)}
+            >
               Logout
             </button>
           </div>
@@ -275,13 +348,7 @@ export default function DashboardShell({
               <span />
             </button>
           </div>
-          <div className="">
-            {loading ? (
-              <Loading />
-            ) : (
-              children
-            )}
-          </div>
+          <div className="">{loading ? <Loading /> : children}</div>
         </section>
       </main>
     </DashboardContext.Provider>

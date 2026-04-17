@@ -6,7 +6,7 @@ const parseStatus = (value) => {
   const normalized = String(value || "").toUpperCase();
   if (normalized === "PENDING") return "PENDING";
   if (normalized === "IN_PROGRESS") return "IN_PROGRESS";
-  if (normalized === "DONE") return "DONE";
+  if (normalized === "COMPLETED") return "COMPLETED";
   if (normalized === "ON_HOLD") return "ON_HOLD";
   return null;
 };
@@ -100,7 +100,9 @@ export async function GET(req) {
 
     const overlapConditions = [
       { startDate: { lte: filterEnd || filterStart } },
-      { OR: [{ endDate: { gte: filterStart || filterEnd } }, { endDate: null }] },
+      {
+        OR: [{ endDate: { gte: filterStart || filterEnd } }, { endDate: null }],
+      },
     ];
 
     where.AND = overlapConditions;

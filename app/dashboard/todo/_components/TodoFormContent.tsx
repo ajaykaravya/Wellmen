@@ -27,7 +27,7 @@ type TodoFormState = {
   description: string;
   comments: string;
   startDate: string;
-  status: "TODO" | "IN_PROGRESS" | "ON_HOLD" | "DONE";
+  status: "TODO" | "IN_PROGRESS" | "ON_HOLD" | "COMPLETED";
   projectId: string;
   assigneeId: string;
 };
@@ -48,7 +48,9 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
   const [users, setUsers] = useState<UserOption[]>([]);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [note, setNote] = useState<string | null>(null);
-  const [errors, setErrors] = useState<Partial<Record<keyof TodoFormState, string>>>({});
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof TodoFormState, string>>
+  >({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<TodoFormState>({
@@ -164,140 +166,155 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
       <section className="rbac-section rbac-container">
         <div className="rbac-card">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="rbac-title-lg">{todoId ? "Edit Todo" : "Add New Todo"}</h3>
+            <h3 className="rbac-title-lg">
+              {todoId ? "Edit Todo" : "Add New Todo"}
+            </h3>
           </div>
           <form className="rbac-form" onSubmit={handleSubmit}>
-            <fieldset disabled={saving} className={saving ? "opacity-70 pointer-events-none" : ""}>
+            <fieldset
+              disabled={saving}
+              className={saving ? "opacity-70 pointer-events-none" : ""}
+            >
               <div>
-
-              <label className="rbac-label">
-                Project <span className="text-red-600">*</span>
-                <select
-                  className="rbac-input rbac-select mb-2"
-                  value={form.projectId}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      projectId: event.target.value,
-                    }))
-                  }
-                >
-                  <option value="">No project</option>
-                  {projects.map((project) => (
-                    <option key={project.id} value={project.id}>
-                      {project.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {errors.projectId && (
-                <p className="text-sm text-red-600 mb-2">{errors.projectId}</p>
-              )}
-
-              {isAdmin && (
-                <label className="rbac-label mt-5">
-                  Assign
+                <label className="rbac-label">
+                  Project <span className="text-red-600">*</span>
                   <select
                     className="rbac-input rbac-select mb-2"
-                    value={form.assigneeId}
+                    value={form.projectId}
                     onChange={(event) =>
                       setForm((prev) => ({
                         ...prev,
-                        assigneeId: event.target.value,
+                        projectId: event.target.value,
                       }))
                     }
                   >
-                    <option value="">Unassigned</option>
-                    {users.map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.firstName} {user.lastName} · {user.role || "User"}
+                    <option value="">No project</option>
+                    {projects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
                       </option>
                     ))}
                   </select>
                 </label>
-              )}
+                {errors.projectId && (
+                  <p className="text-sm text-red-600 mb-2">
+                    {errors.projectId}
+                  </p>
+                )}
 
-              <label className="rbac-label">
-                Task title <span className="text-red-600">*</span>
-                <input
-                  className="rbac-input mb-2"
-                  placeholder="Task title"
-                  value={form.title}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, title: event.target.value }))
-                  }
-                />
-              </label>
-              {errors.title && (
-                <p className="text-sm text-red-600 mb-2">{errors.title}</p>
-              )}
+                {isAdmin && (
+                  <label className="rbac-label mt-5">
+                    Assign
+                    <select
+                      className="rbac-input rbac-select mb-2"
+                      value={form.assigneeId}
+                      onChange={(event) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          assigneeId: event.target.value,
+                        }))
+                      }
+                    >
+                      <option value="">Unassigned</option>
+                      {users.map((user) => (
+                        <option key={user.id} value={user.id}>
+                          {user.firstName} {user.lastName} ·{" "}
+                          {user.role || "User"}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
 
-              <label className="rbac-label">
-                Description
-                <textarea
-                  className="rbac-input"
-                  rows={4}
-                  placeholder="Task details"
-                  value={form.description}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      description: event.target.value,
-                    }))
-                  }
-                />
-              </label>
+                <label className="rbac-label">
+                  Task title <span className="text-red-600">*</span>
+                  <input
+                    className="rbac-input mb-2"
+                    placeholder="Task title"
+                    value={form.title}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        title: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                {errors.title && (
+                  <p className="text-sm text-red-600 mb-2">{errors.title}</p>
+                )}
 
-              <label className="rbac-label mt-3">
-                Comments
-                <textarea
-                  className="rbac-input"
-                  rows={3}
-                  placeholder="Enter comments"
-                  value={form.comments}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, comments: event.target.value }))
-                  }
-                />
-              </label>
+                <label className="rbac-label">
+                  Description
+                  <textarea
+                    className="rbac-input"
+                    rows={4}
+                    placeholder="Task details"
+                    value={form.description}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        description: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
 
-              <label className="rbac-label mt-5">
-                Date <span className="text-red-600">*</span>
-                <CustomDatePicker
-                  value={form.startDate}
-                  onChange={(value) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      startDate: value,
-                    }))
-                  }
-                  placeholder="DD/MM/YYYY"
-                  className="rbac-input mb-2"
-                />
-              </label>
-              {errors.startDate && (
-                <p className="text-sm text-red-600 mb-2">{errors.startDate}</p>
-              )}
+                <label className="rbac-label mt-3">
+                  Comments
+                  <textarea
+                    className="rbac-input"
+                    rows={3}
+                    placeholder="Enter comments"
+                    value={form.comments}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        comments: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
 
-              <label className="rbac-label">
-                Status
-                <select
-                  className="rbac-input rbac-select"
-                  value={form.status}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      status: event.target.value as TodoFormState["status"],
-                    }))
-                  }
-                >
-                  <option value="TODO">To do</option>
-                  <option value="IN_PROGRESS">In progress</option>
-                  <option value="ON_HOLD">On hold</option>
-                  <option value="DONE">Done</option>
-                </select>
-              </label>
-            </div>
+                <label className="rbac-label mt-5">
+                  Date <span className="text-red-600">*</span>
+                  <CustomDatePicker
+                    value={form.startDate}
+                    onChange={(value) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        startDate: value,
+                      }))
+                    }
+                    placeholder="DD/MM/YYYY"
+                    className="rbac-input mb-2"
+                  />
+                </label>
+                {errors.startDate && (
+                  <p className="text-sm text-red-600 mb-2">
+                    {errors.startDate}
+                  </p>
+                )}
+
+                <label className="rbac-label">
+                  Status
+                  <select
+                    className="rbac-input rbac-select"
+                    value={form.status}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        status: event.target.value as TodoFormState["status"],
+                      }))
+                    }
+                  >
+                    <option value="TODO">To do</option>
+                    <option value="IN_PROGRESS">In progress</option>
+                    <option value="ON_HOLD">On hold</option>
+                    <option value="COMPLETED">Completed</option>
+                  </select>
+                </label>
+              </div>
             </fieldset>
 
             <div className="rbac-actions">

@@ -10,7 +10,7 @@ import Loading from "../../../components/Loading";
 import Link from "next/link";
 import { getTodayInputDate, formatToDDMMYYYY } from "@/lib/dateUtils";
 
-type ReportStatus = "TODO" | "IN_PROGRESS" | "DONE" | "ON_HOLD";
+type ReportStatus = "TODO" | "IN_PROGRESS" | "COMPLETED" | "ON_HOLD";
 
 type ProjectOption = {
   id: string;
@@ -47,14 +47,18 @@ const formatDateForInput = (value?: string) => {
   return formatted === "-" ? "" : formatted;
 };
 
-export default function ReportFormContent({ reportId }: ReportFormContentProps) {
+export default function ReportFormContent({
+  reportId,
+}: ReportFormContentProps) {
   const router = useRouter();
   const { setNavOpen, isAdmin } = useDashboardContext();
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [note, setNote] = useState<string | null>(null);
-  const [errors, setErrors] = useState<Partial<Record<keyof ReportFormState, string>>>({});
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof ReportFormState, string>>
+  >({});
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [existingVideoUrl, setExistingVideoUrl] = useState<string | null>(null);
   const [removeVideo, setRemoveVideo] = useState(false);
@@ -99,7 +103,9 @@ export default function ReportFormContent({ reportId }: ReportFormContentProps) 
               description: report.description || "",
               status: report.status || "TODO",
             });
-            setExistingImages(Array.isArray(report.imageUrls) ? report.imageUrls : []);
+            setExistingImages(
+              Array.isArray(report.imageUrls) ? report.imageUrls : [],
+            );
             setExistingVideoUrl(report.videoUrl || null);
           }
         }
@@ -124,7 +130,14 @@ export default function ReportFormContent({ reportId }: ReportFormContentProps) 
       !!form.description.trim() &&
       !isCreateBlocked &&
       !submitting,
-    [form.description, form.projectId, form.reportDate, form.title, isCreateBlocked, submitting],
+    [
+      form.description,
+      form.projectId,
+      form.reportDate,
+      form.title,
+      isCreateBlocked,
+      submitting,
+    ],
   );
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -132,7 +145,9 @@ export default function ReportFormContent({ reportId }: ReportFormContentProps) 
     setNote(null);
 
     if (isCreateBlocked) {
-      setNote("Admin cannot add reporting. You can edit existing reporting only.");
+      setNote(
+        "Admin cannot add reporting. You can edit existing reporting only.",
+      );
       return;
     }
 
@@ -140,7 +155,8 @@ export default function ReportFormContent({ reportId }: ReportFormContentProps) 
     if (!form.reportDate) newErrors.reportDate = "Date is required.";
     if (!form.projectId) newErrors.projectId = "Project is required.";
     if (!form.title.trim()) newErrors.title = "Title is required.";
-    if (!form.description.trim()) newErrors.description = "Description is required.";
+    if (!form.description.trim())
+      newErrors.description = "Description is required.";
 
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) {
@@ -185,7 +201,9 @@ export default function ReportFormContent({ reportId }: ReportFormContentProps) 
         return;
       }
 
-      toast.success(`Reporting ${reportId ? "updated" : "created"} successfully.`);
+      toast.success(
+        `Reporting ${reportId ? "updated" : "created"} successfully.`,
+      );
       router.push("/dashboard/reports");
     } catch (error) {
       console.error("Failed to save report", error);
@@ -207,195 +225,226 @@ export default function ReportFormContent({ reportId }: ReportFormContentProps) 
       <section className="rbac-section rbac-container">
         <div className="rbac-card">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="rbac-title-lg">{reportId ? "Edit Report" : "Add New Report"}</h3>
+            <h3 className="rbac-title-lg">
+              {reportId ? "Edit Report" : "Add New Report"}
+            </h3>
           </div>
           <form className="rbac-form" onSubmit={handleSubmit}>
-            <fieldset disabled={submitting} className={submitting ? "opacity-70 pointer-events-none" : ""}>
+            <fieldset
+              disabled={submitting}
+              className={submitting ? "opacity-70 pointer-events-none" : ""}
+            >
               <div>
-              <div className="grid gap-5 md:grid-cols-2">
-                <label className="rbac-label">
-                  Date <span className="text-red-600">*</span>
-                  <CustomDatePicker
-                    value={form.reportDate}
-                    onChange={(value) =>
-                      setForm((prev) => ({ ...prev, reportDate: value }))
-                    }
-                    placeholder="DD/MM/YYYY"
+                <div className="grid gap-5 md:grid-cols-2">
+                  <label className="rbac-label">
+                    Date <span className="text-red-600">*</span>
+                    <CustomDatePicker
+                      value={form.reportDate}
+                      onChange={(value) =>
+                        setForm((prev) => ({ ...prev, reportDate: value }))
+                      }
+                      placeholder="DD/MM/YYYY"
+                      className="rbac-input"
+                    />
+                  </label>
+                  {errors.reportDate && (
+                    <p className="text-sm text-red-600 mt-1">
+                      {errors.reportDate}
+                    </p>
+                  )}
+
+                  <label className="rbac-label">
+                    Project <span className="text-red-600">*</span>
+                    <select
+                      className="rbac-input rbac-select"
+                      value={form.projectId}
+                      onChange={(event) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          projectId: event.target.value,
+                        }))
+                      }
+                    >
+                      {projects.length === 0 && (
+                        <option value="">No project available</option>
+                      )}
+                      {projects.map((project) => (
+                        <option key={project.id} value={project.id}>
+                          {project.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <label className="rbac-label mt-5">
+                  Title <span className="text-red-600">*</span>
+                  <input
                     className="rbac-input"
-                  />
-                </label>
-                {errors.reportDate && (
-                  <p className="text-sm text-red-600 mt-1">{errors.reportDate}</p>
-                )}
-
-                <label className="rbac-label">
-                  Project <span className="text-red-600">*</span>
-                  <select
-                    className="rbac-input rbac-select"
-                    value={form.projectId}
-                    onChange={(event) =>
-                      setForm((prev) => ({ ...prev, projectId: event.target.value }))
-                    }
-                  >
-                    {projects.length === 0 && <option value="">No project available</option>}
-                    {projects.map((project) => (
-                      <option key={project.id} value={project.id}>
-                        {project.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-
-              <label className="rbac-label mt-5">
-                Title <span className="text-red-600">*</span>
-                <input
-                  className="rbac-input"
-                  placeholder="Work summary title"
-                  value={form.title}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, title: event.target.value }))
-                  }
-                />
-              </label>
-              {errors.title && (
-                <p className="text-sm text-red-600 mt-1">{errors.title}</p>
-              )}
-
-              <label className="rbac-label mt-5">
-                Description <span className="text-red-600">*</span>
-                <textarea
-                  className="rbac-input"
-                  rows={4}
-                  placeholder="Detailed description"
-                  value={form.description}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, description: event.target.value }))
-                  }
-                />
-              </label>
-              {errors.description && (
-                <p className="text-sm text-red-600 mt-1">{errors.description}</p>
-              )}
-
-              <div className="grid gap-5 mt-5 md:grid-cols-2">
-                <label className="rbac-label">
-                  Status
-                  <select
-                    className="rbac-input rbac-select"
-                    value={form.status}
+                    placeholder="Work summary title"
+                    value={form.title}
                     onChange={(event) =>
                       setForm((prev) => ({
                         ...prev,
-                        status: event.target.value as ReportStatus,
+                        title: event.target.value,
                       }))
-                    }
-                  >
-                    <option value="TODO">To do</option>
-                    <option value="IN_PROGRESS">In progress</option>
-                    <option value="ON_HOLD">On hold</option>
-                    <option value="DONE">Done</option>
-                  </select>
-                </label>
-
-                <label className="rbac-label">
-                  Upload images
-                  <input
-                    className="rbac-input"
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={(event) =>
-                      setImageFiles(Array.from(event.target.files || []))
                     }
                   />
                 </label>
-              </div>
+                {errors.title && (
+                  <p className="text-sm text-red-600 mt-1">{errors.title}</p>
+                )}
 
-              {existingImages.length > 0 && (
-                <div className="mt-4 rounded-xl border border-slate-200 p-3">
-                  <p className="text-sm font-medium text-slate-700">Existing images</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {existingImages.map((url) => (
-                      <div
-                        key={url}
-                        className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-2 py-1"
-                      >
-                        <a
-                          className="rbac-link"
-                          href={url}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {url.split("/").pop()}
-                        </a>
-                        <button
-                          className="rbac-link danger"
-                          type="button"
-                          onClick={() =>
-                            setExistingImages((prev) => prev.filter((item) => item !== url))
-                          }
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <label className="rbac-label mt-5">
-                Upload video
-                <input
-                  className="rbac-input"
-                  type="file"
-                  accept="video/*"
-                  onChange={(event) => {
-                    const file = event.target.files?.[0] || null;
-                    setVideoFile(file);
-                    if (file) setRemoveVideo(false);
-                  }}
-                />
-              </label>
-
-              {existingVideoUrl && !videoFile && (
-                <div className="mt-3 rounded-xl border border-slate-200 p-3">
-                  <p className="text-sm text-slate-700">
-                    Existing video:{" "}
-                    <a
-                      className="rbac-link"
-                      href={existingVideoUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {existingVideoUrl.split("/").pop()}
-                    </a>
+                <label className="rbac-label mt-5">
+                  Description <span className="text-red-600">*</span>
+                  <textarea
+                    className="rbac-input"
+                    rows={4}
+                    placeholder="Detailed description"
+                    value={form.description}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        description: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                {errors.description && (
+                  <p className="text-sm text-red-600 mt-1">
+                    {errors.description}
                   </p>
-                  <label className="mt-2 inline-flex items-center gap-2 text-sm text-slate-600">
+                )}
+
+                <div className="grid gap-5 mt-5 md:grid-cols-2">
+                  <label className="rbac-label">
+                    Status
+                    <select
+                      className="rbac-input rbac-select"
+                      value={form.status}
+                      onChange={(event) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          status: event.target.value as ReportStatus,
+                        }))
+                      }
+                    >
+                      <option value="TODO">To do</option>
+                      <option value="IN_PROGRESS">In progress</option>
+                      <option value="ON_HOLD">On hold</option>
+                      <option value="COMPLETED">Completed</option>
+                    </select>
+                  </label>
+
+                  <label className="rbac-label">
+                    Upload images
                     <input
-                      type="checkbox"
-                      checked={removeVideo}
-                      onChange={(event) => setRemoveVideo(event.target.checked)}
+                      className="rbac-input"
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(event) =>
+                        setImageFiles(Array.from(event.target.files || []))
+                      }
                     />
-                    Remove existing video
                   </label>
                 </div>
-              )}
 
-              {imageFiles.length > 0 && (
-                <p className="mt-3 text-sm text-slate-600">
-                  {imageFiles.length} image file(s) selected.
-                </p>
-              )}
+                {existingImages.length > 0 && (
+                  <div className="mt-4 rounded-xl border border-slate-200 p-3">
+                    <p className="text-sm font-medium text-slate-700">
+                      Existing images
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {existingImages.map((url) => (
+                        <div
+                          key={url}
+                          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-2 py-1"
+                        >
+                          <a
+                            className="rbac-link"
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {url.split("/").pop()}
+                          </a>
+                          <button
+                            className="rbac-link danger"
+                            type="button"
+                            onClick={() =>
+                              setExistingImages((prev) =>
+                                prev.filter((item) => item !== url),
+                              )
+                            }
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-              {videoFile && (
-                <p className="mt-2 text-sm text-slate-600">Selected video: {videoFile.name}</p>
-              )}
-            </div>
+                <label className="rbac-label mt-5">
+                  Upload video
+                  <input
+                    className="rbac-input"
+                    type="file"
+                    accept="video/*"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] || null;
+                      setVideoFile(file);
+                      if (file) setRemoveVideo(false);
+                    }}
+                  />
+                </label>
 
+                {existingVideoUrl && !videoFile && (
+                  <div className="mt-3 rounded-xl border border-slate-200 p-3">
+                    <p className="text-sm text-slate-700">
+                      Existing video:{" "}
+                      <a
+                        className="rbac-link"
+                        href={existingVideoUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {existingVideoUrl.split("/").pop()}
+                      </a>
+                    </p>
+                    <label className="mt-2 inline-flex items-center gap-2 text-sm text-slate-600">
+                      <input
+                        type="checkbox"
+                        checked={removeVideo}
+                        onChange={(event) =>
+                          setRemoveVideo(event.target.checked)
+                        }
+                      />
+                      Remove existing video
+                    </label>
+                  </div>
+                )}
+
+                {imageFiles.length > 0 && (
+                  <p className="mt-3 text-sm text-slate-600">
+                    {imageFiles.length} image file(s) selected.
+                  </p>
+                )}
+
+                {videoFile && (
+                  <p className="mt-2 text-sm text-slate-600">
+                    Selected video: {videoFile.name}
+                  </p>
+                )}
+              </div>
             </fieldset>
             <div className="rbac-actions">
-              <button className="rbac-button" type="submit" disabled={!canSubmit}>
+              <button
+                className="rbac-button"
+                type="submit"
+                disabled={!canSubmit}
+              >
                 {submitting ? (
                   <span className="inline-flex items-center gap-2">
                     <FaSpinner className="animate-spin" size={16} />
@@ -406,13 +455,13 @@ export default function ReportFormContent({ reportId }: ReportFormContentProps) 
                 )}
               </button>
               <Link href="/dashboard/reports">
-              <button
-                className="text-red-500"
-                type="button"
-                disabled={submitting}
-              >
-                Cancel
-              </button>
+                <button
+                  className="text-red-500"
+                  type="button"
+                  disabled={submitting}
+                >
+                  Cancel
+                </button>
               </Link>
             </div>
           </form>

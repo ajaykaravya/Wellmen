@@ -117,19 +117,19 @@ enum TodoStatus {
   TODO
   IN_PROGRESS
   ON_HOLD
-  DONE
+  COMPLETED
 }
 
 enum ProjectStatus {
   PENDING
   IN_PROGRESS
-  DONE
+  COMPLETED
   ON_HOLD
 }
 
 enum ReportingStatus {
   TODO
   IN_PROGRESS
-  DONE
+  COMPLETED
   ON_HOLD
 }

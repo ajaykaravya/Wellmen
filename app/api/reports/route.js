@@ -9,7 +9,7 @@ const parseStatus = (value) => {
   const normalized = String(value || "").toUpperCase();
   if (normalized === "TODO") return "TODO";
   if (normalized === "IN_PROGRESS") return "IN_PROGRESS";
-  if (normalized === "DONE") return "DONE";
+  if (normalized === "COMPLETED") return "COMPLETED";
   if (normalized === "ON_HOLD") return "ON_HOLD";
   return null;
 };
@@ -184,19 +184,28 @@ export async function POST(req) {
     }
 
     if (!parsedDate) {
-      return NextResponse.json({ error: "Invalid report date." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid report date." },
+        { status: 400 },
+      );
     }
 
-    const project = await prisma.project.findUnique({ where: { id: projectId } });
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+    });
     if (!project) {
-      return NextResponse.json({ error: "Project not found." }, { status: 404 });
+      return NextResponse.json(
+        { error: "Project not found." },
+        { status: 404 },
+      );
     }
 
     const imageFiles = form
       .getAll("images")
       .filter((value) => value instanceof File && value.size > 0);
     const videoInput = form.get("video");
-    const videoFile = videoInput instanceof File && videoInput.size > 0 ? videoInput : null;
+    const videoFile =
+      videoInput instanceof File && videoInput.size > 0 ? videoInput : null;
 
     const [imageUrls, videoUrl] = await Promise.all([
       saveReportImages(imageFiles),
@@ -227,7 +236,10 @@ export async function POST(req) {
   } catch (error) {
     console.error("POST /api/reports failed", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to create report." },
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to create report.",
+      },
       { status: 500 },
     );
   }

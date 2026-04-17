@@ -11,10 +11,16 @@ import DashboardShell, {
 import ConfirmDialog from "../../components/ConfirmDialog";
 import CustomDatePicker from "../../components/CustomDatePicker";
 import { toast } from "react-toastify";
-import { FaChevronLeft, FaChevronRight, FaEdit, FaTrash, FaSpinner } from "react-icons/fa";
+import {
+  FaChevronLeft,
+  FaChevronRight,
+  FaEdit,
+  FaTrash,
+  FaSpinner,
+} from "react-icons/fa";
 import Link from "next/link";
 
-type TodoStatus = "TODO" | "IN_PROGRESS" | "ON_HOLD" | "DONE";
+type TodoStatus = "TODO" | "IN_PROGRESS" | "ON_HOLD" | "COMPLETED";
 
 type UserOption = {
   id: string;
@@ -261,7 +267,9 @@ function TodoListContent() {
         cell: (info) => {
           const value = String(info.getValue() || "");
           return (
-            <span className="rbac-muted">{value ? formatToDDMMYYYY(value) : "-"}</span>
+            <span className="rbac-muted">
+              {value ? formatToDDMMYYYY(value) : "-"}
+            </span>
           );
         },
       },
@@ -300,12 +308,9 @@ function TodoListContent() {
         cell: ({ row }) => (
           <div className="rbac-inline-actions flex gap-4">
             <Link href={`/dashboard/todo/${row.original.id}`}>
-            <button
-              className="rbac-link"
-              type="button"
-            >
-                  <FaEdit />
-            </button>
+              <button className="rbac-link" type="button">
+                <FaEdit />
+              </button>
             </Link>
             <button
               className="rbac-link danger"
@@ -344,7 +349,9 @@ function TodoListContent() {
         cell: (info) => {
           const value = String(info.getValue() || "");
           return (
-            <span className="rbac-muted">{value ? formatToDDMMYYYY(value) : "-"}</span>
+            <span className="rbac-muted">
+              {value ? formatToDDMMYYYY(value) : "-"}
+            </span>
           );
         },
       },
@@ -371,35 +378,36 @@ function TodoListContent() {
           const canManage = !!row.original.canManage;
           return (
             <div className="rbac-inline-actions flex gap-4">
-            {canManage && (
-              <>
-              <Link href={`/dashboard/todo/${row.original.id}`}>
-                <button
-                className="rbac-link"
-                type="button"
-                disabled={!canManage}
-                title={"Edit"}
-              >
-                <FaEdit />
-              </button>
-              </Link>
-              <button
-                className="rbac-link danger"
-                type="button"
-                onClick={() => handleDeleteTodo(row.original)}
-                disabled={!canManage}
-                title={"Delete"}
-              >
-                <FaTrash />
-              </button>
-              </>)}
+              {canManage && (
+                <>
+                  <Link href={`/dashboard/todo/${row.original.id}`}>
+                    <button
+                      className="rbac-link"
+                      type="button"
+                      disabled={!canManage}
+                      title={"Edit"}
+                    >
+                      <FaEdit />
+                    </button>
+                  </Link>
+                  <button
+                    className="rbac-link danger"
+                    type="button"
+                    onClick={() => handleDeleteTodo(row.original)}
+                    disabled={!canManage}
+                    title={"Delete"}
+                  >
+                    <FaTrash />
+                  </button>
+                </>
+              )}
               <button
                 className="rbac-button rbac-button-secondary"
                 type="button"
                 onClick={() => openModal(row.original)}
               >
-                  Update
-                  </button>
+                Update
+              </button>
             </div>
           );
         },
@@ -430,16 +438,13 @@ function TodoListContent() {
       <section className="rbac-section rbac-container">
         <div className="rbac-card">
           <div className="flex justify-between items-center">
-          <h3 className="rbac-title-lg">Todo's List</h3>
-          <Link href="/dashboard/todo/new">
-           <button
-          className="rbac-button"
-          type="button"
-        >
-          Add Todo
-        </button>
-        </Link>
-</div>
+            <h3 className="rbac-title-lg">Todo's List</h3>
+            <Link href="/dashboard/todo/new">
+              <button className="rbac-button" type="button">
+                Add Todo
+              </button>
+            </Link>
+          </div>
           <div className="mt-4 flex flex-wrap gap-3">
             <input
               className="rbac-input-filter"
@@ -463,7 +468,7 @@ function TodoListContent() {
               <option value="TODO">To do</option>
               <option value="IN_PROGRESS">In progress</option>
               <option value="ON_HOLD">On hold</option>
-              <option value="DONE">Done</option>
+              <option value="COMPLETED">Completed</option>
             </select>
             {isAdmin && (
               <select
@@ -555,7 +560,10 @@ function TodoListContent() {
                   )}
                   {!loading &&
                     table.getRowModel().rows.map((row, index) => (
-                      <tr key={row.id} className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                      <tr
+                        key={row.id}
+                        className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}
+                      >
                         {row.getVisibleCells().map((cell) => (
                           <td
                             key={cell.id}
@@ -580,83 +588,119 @@ function TodoListContent() {
                 </div>
               )}
               {!loading && todos.length === 0 && (
-                <div className="rbac-card py-4 text-sm text-slate-500">No tasks found.</div>
-              )}
-              {!loading && todos.map((todo) => (
-                <div key={todo.id} className="rbac-card p-4">
-                  <div className="mb-2 flex items-center justify-between">
-                    <div>
-                      <h4 className="text-sm font-semibold">{todo.title}</h4>
-                      <p className="text-xs text-slate-500">{todo.description || "No description"}</p>
-                    </div>
-                   {(isAdmin || todo.canManage) && (<div className="flex gap-2">
-                      <Link href={`/dashboard/todo/${todo.id}`}>
-                        <button className="rbac-link" type="button" title="Edit"><FaEdit /></button>
-                      </Link>
-                      <button className="rbac-link danger" type="button" onClick={() => handleDeleteTodo(todo)} title="Delete"><FaTrash /></button>
-                    </div> )}
-                  </div>
-                  <div className="grid gap-1 text-sm">
-                    <p><strong>Date:</strong> {todo.startDate ? formatToDDMMYYYY(todo.startDate) : "-"}</p>
-                    <p><strong>Status:</strong> {todo.status.replaceAll("_", " ")}</p>
-                    <p><strong>Comments:</strong> {todo.comments || "-"}</p>
-                     <p><strong>Assignee:</strong> {todo.assignee ? `${todo.assignee.firstName} ${todo.assignee.lastName}` : "Unassigned"}</p>
-                  </div>
-              {!isAdmin  &&    <div className="mt-2 flex gap-2  justify-end">
-                    <button
-                      className="rbac-button rbac-button-secondary"
-                      type="button"
-                      onClick={() => openModal(todo)}
-                    >
-                      Update
-                    </button>
-                  </div>}
+                <div className="rbac-card py-4 text-sm text-slate-500">
+                  No tasks found.
                 </div>
-              ))}
+              )}
+              {!loading &&
+                todos.map((todo) => (
+                  <div key={todo.id} className="rbac-card p-4">
+                    <div className="mb-2 flex items-center justify-between">
+                      <div>
+                        <h4 className="text-sm font-semibold">{todo.title}</h4>
+                        <p className="text-xs text-slate-500">
+                          {todo.description || "No description"}
+                        </p>
+                      </div>
+                      {(isAdmin || todo.canManage) && (
+                        <div className="flex gap-2">
+                          <Link href={`/dashboard/todo/${todo.id}`}>
+                            <button
+                              className="rbac-link"
+                              type="button"
+                              title="Edit"
+                            >
+                              <FaEdit />
+                            </button>
+                          </Link>
+                          <button
+                            className="rbac-link danger"
+                            type="button"
+                            onClick={() => handleDeleteTodo(todo)}
+                            title="Delete"
+                          >
+                            <FaTrash />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    <div className="grid gap-1 text-sm">
+                      <p>
+                        <strong>Date:</strong>{" "}
+                        {todo.startDate
+                          ? formatToDDMMYYYY(todo.startDate)
+                          : "-"}
+                      </p>
+                      <p>
+                        <strong>Status:</strong>{" "}
+                        {todo.status.replaceAll("_", " ")}
+                      </p>
+                      <p>
+                        <strong>Comments:</strong> {todo.comments || "-"}
+                      </p>
+                      <p>
+                        <strong>Assignee:</strong>{" "}
+                        {todo.assignee
+                          ? `${todo.assignee.firstName} ${todo.assignee.lastName}`
+                          : "Unassigned"}
+                      </p>
+                    </div>
+                    {!isAdmin && (
+                      <div className="mt-2 flex gap-2  justify-end">
+                        <button
+                          className="rbac-button rbac-button-secondary"
+                          type="button"
+                          onClick={() => openModal(todo)}
+                        >
+                          Update
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
             </div>
           </div>
 
           <div className="mt-4 flex flex-wrap items-center justify-end gap-3 text-sm">
-           
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2">
-              <button
-                className="change-button change-button-secondary"
-                type="button"
-                onClick={() => setPageIndex((prev) => Math.max(prev - 1, 0))}
-                disabled={pageIndex === 0}
-              >
-                <FaChevronLeft size={20}/>
-              </button>
-               <span >
-              Page {pageIndex + 1} of {pageCount}
-            </span>
-              <button
-                className="change-button change-button-secondary"
-                type="button"
-                onClick={() =>
-                  setPageIndex((prev) => Math.min(prev + 1, pageCount - 1))
-                }
-                disabled={pageIndex + 1 >= pageCount}
-              >
-                <FaChevronRight size={20}/>
-              </button>
+                <button
+                  className="change-button change-button-secondary"
+                  type="button"
+                  onClick={() => setPageIndex((prev) => Math.max(prev - 1, 0))}
+                  disabled={pageIndex === 0}
+                >
+                  <FaChevronLeft size={20} />
+                </button>
+                <span>
+                  Page {pageIndex + 1} of {pageCount}
+                </span>
+                <button
+                  className="change-button change-button-secondary"
+                  type="button"
+                  onClick={() =>
+                    setPageIndex((prev) => Math.min(prev + 1, pageCount - 1))
+                  }
+                  disabled={pageIndex + 1 >= pageCount}
+                >
+                  <FaChevronRight size={20} />
+                </button>
               </div>
               <div>
-              <select
-                className="rbac-input rbac-select"
-                value={pageSize}
-                onChange={(event) => {
-                  setPageIndex(0);
-                  setPageSize(Number(event.target.value));
-                }}
-              >
-                {[5, 10, 20, 30].map((size) => (
-                  <option key={size} value={size}>
-                    Show {size}
-                  </option>
-                ))}
-              </select>
+                <select
+                  className="rbac-input rbac-select"
+                  value={pageSize}
+                  onChange={(event) => {
+                    setPageIndex(0);
+                    setPageSize(Number(event.target.value));
+                  }}
+                >
+                  {[5, 10, 20, 30].map((size) => (
+                    <option key={size} value={size}>
+                      Show {size}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
@@ -702,7 +746,7 @@ function TodoListContent() {
                   <option value="TODO">To do</option>
                   <option value="IN_PROGRESS">In progress</option>
                   <option value="ON_HOLD">On hold</option>
-                  <option value="DONE">Done</option>
+                  <option value="COMPLETED">Completed</option>
                 </select>
               </label>
             </div>

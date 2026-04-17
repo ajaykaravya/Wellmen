@@ -9,10 +9,16 @@ import DashboardShell from "../_components/DashboardShell";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import CustomDatePicker from "../../components/CustomDatePicker";
 import { toast } from "react-toastify";
-import { FaChevronLeft, FaChevronRight, FaEdit, FaTrash, FaSpinner } from "react-icons/fa";
+import {
+  FaChevronLeft,
+  FaChevronRight,
+  FaEdit,
+  FaTrash,
+  FaSpinner,
+} from "react-icons/fa";
 import Link from "next/link";
 
-type ProjectStatus = "PENDING" | "IN_PROGRESS" | "DONE" | "ON_HOLD";
+type ProjectStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "ON_HOLD";
 
 type ProjectRow = {
   id: string;
@@ -163,19 +169,16 @@ function ProjectListContent() {
         cell: ({ row }) => (
           <div className="rbac-inline-actions flex gap-4">
             <Link href={`/dashboard/projects/${row.original.id}`}>
-            <button
-              className="rbac-link"
-              type="button"
-            >
-                  <FaEdit />
-            </button>
+              <button className="rbac-link" type="button">
+                <FaEdit />
+              </button>
             </Link>
             <button
               className="rbac-link danger"
               type="button"
               onClick={() => handleDeleteProject(row.original)}
             >
-                  <FaTrash />
+              <FaTrash />
             </button>
           </div>
         ),
@@ -193,20 +196,18 @@ function ProjectListContent() {
   });
 
   return (
-    <>      <section className="rbac-section rbac-container">
+    <>
+      {" "}
+      <section className="rbac-section rbac-container">
         <div className="rbac-card">
           <div className="flex justify-between item-center">
-
-          <h3 className="rbac-title-lg">Projects List</h3>
-          <Link href="/dashboard/projects/new">
-          <button
-          className="rbac-button"
-          type="button"
-        >
-          Add Project
-        </button>
-        </Link>
-</div>
+            <h3 className="rbac-title-lg">Projects List</h3>
+            <Link href="/dashboard/projects/new">
+              <button className="rbac-button" type="button">
+                Add Project
+              </button>
+            </Link>
+          </div>
           <div className="my-4 flex flex-wrap gap-2 ">
             <input
               className="rbac-input-filter"
@@ -229,7 +230,7 @@ function ProjectListContent() {
               <option value="">All status</option>
               <option value="PENDING">Pending</option>
               <option value="IN_PROGRESS">In progress</option>
-              <option value="DONE">Done</option>
+              <option value="COMPLETED">Completed</option>
               <option value="ON_HOLD">On hold</option>
             </select>
             <CustomDatePicker
@@ -313,7 +314,10 @@ function ProjectListContent() {
                   )}
                   {!loading &&
                     table.getRowModel().rows.map((row, index) => (
-                      <tr key={row.id} className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                      <tr
+                        key={row.id}
+                        className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}
+                      >
                         {row.getVisibleCells().map((cell) => (
                           <td
                             key={cell.id}
@@ -339,81 +343,111 @@ function ProjectListContent() {
                 </div>
               )}
               {!loading && projects.length === 0 && (
-                <div className="rbac-card py-4 text-sm text-slate-500">No projects found.</div>
-              )}
-              {!loading && projects.map((project) => (
-                <div key={project.id} className="rbac-card p-4">
-                  <div className="mb-2 flex items-center justify-between">
-                    <div>
-                      <h4 className="text-sm font-semibold">{project.name}</h4>
-                      <p className="text-xs text-slate-500">{project.address}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Link href={`/dashboard/projects/${project.id}`}>
-                        <button className="rbac-link" type="button"><FaEdit /></button>
-                      </Link>
-                      <button className="rbac-link danger" type="button" onClick={() => handleDeleteProject(project)}><FaTrash /></button>
-                    </div>
-                  </div>
-                  <div className="grid gap-1 text-sm">
-                    <p><strong>Contact:</strong> {project.contactNumber}</p>
-                    <p><strong>Email:</strong> {project.email}</p>
-                    <p><strong>Start:</strong> {project.startDate ? formatToDDMMYYYY(project.startDate) : "-"}</p>
-                    <p><strong>End:</strong> {project.endDate ? formatToDDMMYYYY(project.endDate) : "-"}</p>
-                    <p><strong>Status:</strong> {project.status.replaceAll("_", " ")}</p>
-                  </div>
+                <div className="rbac-card py-4 text-sm text-slate-500">
+                  No projects found.
                 </div>
-              ))}
+              )}
+              {!loading &&
+                projects.map((project) => (
+                  <div key={project.id} className="rbac-card p-4">
+                    <div className="mb-2 flex items-center justify-between">
+                      <div>
+                        <h4 className="text-sm font-semibold">
+                          {project.name}
+                        </h4>
+                        <p className="text-xs text-slate-500">
+                          {project.address}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Link href={`/dashboard/projects/${project.id}`}>
+                          <button className="rbac-link" type="button">
+                            <FaEdit />
+                          </button>
+                        </Link>
+                        <button
+                          className="rbac-link danger"
+                          type="button"
+                          onClick={() => handleDeleteProject(project)}
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid gap-1 text-sm">
+                      <p>
+                        <strong>Contact:</strong> {project.contactNumber}
+                      </p>
+                      <p>
+                        <strong>Email:</strong> {project.email}
+                      </p>
+                      <p>
+                        <strong>Start:</strong>{" "}
+                        {project.startDate
+                          ? formatToDDMMYYYY(project.startDate)
+                          : "-"}
+                      </p>
+                      <p>
+                        <strong>End:</strong>{" "}
+                        {project.endDate
+                          ? formatToDDMMYYYY(project.endDate)
+                          : "-"}
+                      </p>
+                      <p>
+                        <strong>Status:</strong>{" "}
+                        {project.status.replaceAll("_", " ")}
+                      </p>
+                    </div>
+                  </div>
+                ))}
             </div>
           </div>
 
           <div className="mt-4 flex flex-wrap items-center justify-end gap-3 text-sm">
-           
             <div className="flex items-center gap-2">
               <div className="flex flex-wrap items-center gap-2">
-              <button
-                className="change-button change-button-secondary"
-                type="button"
-                onClick={() => setPageIndex((prev) => Math.max(prev - 1, 0))}
-                disabled={pageIndex === 0}
-              >
-                <FaChevronLeft size={20}/>
-              </button>
-               <span>
-              Page {pageIndex + 1} of {pageCount}
-            </span>
-              <button
-                className="change-button change-button-secondary"
-                type="button"
-                onClick={() =>
-                  setPageIndex((prev) => Math.min(prev + 1, pageCount - 1))
-                }
-                disabled={pageIndex + 1 >= pageCount}
-              >
-                <FaChevronRight size={20}/>
-              </button>
+                <button
+                  className="change-button change-button-secondary"
+                  type="button"
+                  onClick={() => setPageIndex((prev) => Math.max(prev - 1, 0))}
+                  disabled={pageIndex === 0}
+                >
+                  <FaChevronLeft size={20} />
+                </button>
+                <span>
+                  Page {pageIndex + 1} of {pageCount}
+                </span>
+                <button
+                  className="change-button change-button-secondary"
+                  type="button"
+                  onClick={() =>
+                    setPageIndex((prev) => Math.min(prev + 1, pageCount - 1))
+                  }
+                  disabled={pageIndex + 1 >= pageCount}
+                >
+                  <FaChevronRight size={20} />
+                </button>
               </div>
               <div>
-              <select
-                className="rbac-input rbac-select"
-                value={pageSize}
-                onChange={(event) => {
-                  setPageIndex(0);
-                  setPageSize(Number(event.target.value));
-                }}
-              >
-                {[5, 10, 20, 30].map((size) => (
-                  <option key={size} value={size}>
-                    Show {size}
-                  </option>
-                ))}
-              </select>
+                <select
+                  className="rbac-input rbac-select"
+                  value={pageSize}
+                  onChange={(event) => {
+                    setPageIndex(0);
+                    setPageSize(Number(event.target.value));
+                  }}
+                >
+                  {[5, 10, 20, 30].map((size) => (
+                    <option key={size} value={size}>
+                      Show {size}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
         </div>
       </section>
-
       <ConfirmDialog
         open={confirmOpen}
         title="Delete project?"
