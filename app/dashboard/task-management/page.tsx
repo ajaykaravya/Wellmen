@@ -36,6 +36,9 @@ type TodoRow = {
   comments?: string | null;
   startDate: string;
   status: TodoStatus;
+  type: "PROJECT" | "OFFICE" | "SERVICE";
+  categoryId?: string | null;
+  categoryName?: string | null;
   projectId?: string | null;
   projectName?: string;
   createdById?: string | null;
@@ -54,8 +57,21 @@ type TodoUpdateDraft = {
   status: TodoStatus;
 };
 
+const formatTaskType = (value?: string | null) => {
+  switch (value) {
+    case "PROJECT":
+      return "Project Work";
+    case "OFFICE":
+      return "Office Work";
+    case "SERVICE":
+      return "Service Work";
+    default:
+      return value ? value.replaceAll("_", " ") : "-";
+  }
+};
+
 function TodoListContent() {
-  const { setNavOpen, isAdmin } = useDashboardContext();
+  const { isAdmin } = useDashboardContext();
   const [todos, setTodos] = useState<TodoRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
@@ -64,6 +80,8 @@ function TodoListContent() {
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 400);
   const [statusFilter, setStatusFilter] = useState("");
+  const [taskTypeFilter, setTaskTypeFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [assigneeFilter, setAssigneeFilter] = useState("");
@@ -105,6 +123,8 @@ function TodoListContent() {
 
       if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
       if (statusFilter) params.set("status", statusFilter);
+      if (taskTypeFilter) params.set("type", taskTypeFilter);
+      if (categoryFilter.trim()) params.set("category", categoryFilter.trim());
       if (fromDate) params.set("fromDate", fromDate);
       if (toDate) params.set("toDate", toDate);
       if (isAdmin && assigneeFilter) params.set("assigneeId", assigneeFilter);
@@ -117,7 +137,7 @@ function TodoListContent() {
       setTodos(Array.isArray(data?.data) ? data.data : []);
       setTotal(typeof data?.total === "number" ? data.total : 0);
     } catch (error) {
-      console.error("Failed to load todos", error);
+      console.error("Failed to load tasks", error);
     } finally {
       setLoading(false);
     }
@@ -128,6 +148,8 @@ function TodoListContent() {
     pageIndex,
     pageSize,
     debouncedQuery,
+    taskTypeFilter,
+    categoryFilter,
     statusFilter,
     toDate,
   ]);
@@ -147,7 +169,7 @@ function TodoListContent() {
   const handleDeleteTodo = useCallback(
     (row: TodoRow) => {
       if (!isAdmin && !row.canManage) {
-        toast.error("You can only delete todos created by you.");
+        toast.error("You can only delete tasks created by you.");
         return;
       }
       setConfirmTarget(row);
@@ -188,11 +210,11 @@ function TodoListContent() {
           ),
         );
 
-        toast.success("Todo updated successfully.");
+        toast.success("Task updated successfully.");
         return true;
       } catch (error) {
-        console.error("Failed to update todo", error);
-        toast.error("Failed to update todo.");
+        console.error("Failed to update task", error);
+        toast.error("Failed to update task.");
         return false;
       } finally {
         setSavingId(null);
@@ -229,15 +251,15 @@ function TodoListContent() {
 
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to delete todo.");
+        toast.error(payload.error || "Failed to delete task.");
         return;
       }
 
       await loadTodos();
-      toast.success("Todo deleted successfully.");
+      toast.success("Task deleted successfully.");
     } catch (error) {
-      console.error("Failed to delete todo", error);
-      toast.error("Failed to delete todo.");
+      console.error("Failed to delete task", error);
+      toast.error("Failed to delete task.");
     } finally {
       setConfirmOpen(false);
       setConfirmTarget(null);
@@ -247,16 +269,27 @@ function TodoListContent() {
   const adminColumns = useMemo<ColumnDef<TodoRow>[]>(
     () => [
       {
-        header: "Task Title",
-        accessorKey: "title",
-        cell: (info) => (
-          <span className="rbac-muted">{String(info.getValue() || "")}</span>
-        ),
-      },
-      {
         header: "Description",
         accessorKey: "description",
         size: 600,
+        cell: (info) => (
+          <span className="rbac-muted">{String(info.getValue() || "-")}</span>
+        ),
+      },
+      {
+        header: "Task Type",
+        accessorKey: "type",
+        size: 700,
+        cell: (info) => (
+          <span className="rbac-muted">
+            {formatTaskType(String(info.getValue() || ""))}
+          </span>
+        ),
+      },
+      {
+        header: "Category",
+        accessorKey: "categoryName",
+        size: 700,
         cell: (info) => (
           <span className="rbac-muted">{String(info.getValue() || "-")}</span>
         ),
@@ -307,7 +340,7 @@ function TodoListContent() {
         id: "action",
         cell: ({ row }) => (
           <div className="rbac-inline-actions flex gap-4">
-            <Link href={`/dashboard/todo/${row.original.id}`}>
+            <Link href={`/dashboard/task-management/${row.original.id}`}>
               <button className="rbac-link" type="button">
                 <FaEdit />
               </button>
@@ -329,15 +362,26 @@ function TodoListContent() {
   const employeeColumns = useMemo<ColumnDef<TodoRow>[]>(
     () => [
       {
-        header: "Task Name",
-        accessorKey: "title",
+        header: "Description",
+        accessorKey: "description",
+        size: 700,
         cell: (info) => (
-          <span className="rbac-muted">{String(info.getValue() || "")}</span>
+          <span className="rbac-muted">{String(info.getValue() || "-")}</span>
         ),
       },
       {
-        header: "Description",
-        accessorKey: "description",
+        header: "Task Type",
+        accessorKey: "type",
+        size: 700,
+        cell: (info) => (
+          <span className="rbac-muted">
+            {formatTaskType(String(info.getValue() || ""))}
+          </span>
+        ),
+      },
+      {
+        header: "Category",
+        accessorKey: "categoryName",
         size: 700,
         cell: (info) => (
           <span className="rbac-muted">{String(info.getValue() || "-")}</span>
@@ -380,7 +424,7 @@ function TodoListContent() {
             <div className="rbac-inline-actions flex gap-4">
               {canManage && (
                 <>
-                  <Link href={`/dashboard/todo/${row.original.id}`}>
+                  <Link href={`/dashboard/task-management/${row.original.id}`}>
                     <button
                       className="rbac-link"
                       type="button"
@@ -413,7 +457,7 @@ function TodoListContent() {
         },
       },
     ],
-    [handleDeleteTodo],
+    [handleDeleteTodo, openModal],
   );
 
   const columns = isAdmin ? adminColumns : employeeColumns;
@@ -438,10 +482,10 @@ function TodoListContent() {
       <section className="rbac-section rbac-container">
         <div className="rbac-card">
           <div className="flex justify-between items-center">
-            <h3 className="rbac-title-lg">Todo's List</h3>
-            <Link href="/dashboard/todo/new">
+            <h3 className="rbac-title-lg">Task Management</h3>
+            <Link href="/dashboard/task-management/new">
               <button className="rbac-button" type="button">
-                Add Todo
+                Add Task
               </button>
             </Link>
           </div>
@@ -449,7 +493,7 @@ function TodoListContent() {
             <input
               className="rbac-input-filter"
               type="text"
-              placeholder="Search task name or description"
+              placeholder="Search..."
               value={query}
               onChange={(event) => {
                 setPageIndex(0);
@@ -469,6 +513,19 @@ function TodoListContent() {
               <option value="IN_PROGRESS">In progress</option>
               <option value="ON_HOLD">On hold</option>
               <option value="COMPLETED">Completed</option>
+            </select>
+            <select
+              className="rbac-input-filter rbac-select"
+              value={taskTypeFilter}
+              onChange={(event) => {
+                setPageIndex(0);
+                setTaskTypeFilter(event.target.value);
+              }}
+            >
+              <option value="">All task types</option>
+              <option value="PROJECT">Project Work</option>
+              <option value="OFFICE">Office Work</option>
+              <option value="SERVICE">Service Work</option>
             </select>
             {isAdmin && (
               <select
@@ -503,6 +560,8 @@ function TodoListContent() {
                 setPageIndex(0);
                 setQuery("");
                 setStatusFilter("");
+                setTaskTypeFilter("");
+                setCategoryFilter("");
                 setAssigneeFilter("");
                 setFromDate("");
                 setToDate("");
@@ -597,14 +656,13 @@ function TodoListContent() {
                   <div key={todo.id} className="rbac-card p-4">
                     <div className="mb-2 flex items-center justify-between">
                       <div>
-                        <h4 className="text-sm font-semibold">{todo.title}</h4>
                         <p className="text-xs text-slate-500">
                           {todo.description || "No description"}
                         </p>
                       </div>
                       {(isAdmin || todo.canManage) && (
                         <div className="flex gap-2">
-                          <Link href={`/dashboard/todo/${todo.id}`}>
+                          <Link href={`/dashboard/task-management/${todo.id}`}>
                             <button
                               className="rbac-link"
                               type="button"
@@ -775,7 +833,7 @@ function TodoListContent() {
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Delete todo?"
+        title="Delete task?"
         description={
           confirmTarget
             ? `Delete "${confirmTarget.title}"? This action cannot be undone.`

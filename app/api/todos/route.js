@@ -28,6 +28,38 @@ const parseDate = (value) => {
 };
 
 const parseProjectId = (value) => String(value || "").trim();
+const taskTypeToCategory = {
+  PROJECT: "PROJECT_WORK",
+  OFFICE: "OFFICE_WORK",
+  SERVICE: "SERVICE_WORK",
+};
+
+const validateCategoryForType = async (type, categoryId) => {
+  const category = await prisma.categories.findUnique({
+    where: { id: categoryId },
+  });
+
+  if (!category) {
+    return { ok: false, error: "Category not found." };
+  }
+
+  const expectedCategory = taskTypeToCategory[type];
+  if (expectedCategory && category.category !== expectedCategory) {
+    return {
+      ok: false,
+      error: "Category does not match the selected task type.",
+    };
+  }
+
+  return { ok: true, category };
+};
+
+const ensureEndDateIsValid = (startDate, endDate) => {
+  if (endDate && endDate < startDate) {
+    return "End date cannot be earlier than start date.";
+  }
+  return null;
+};
 
 export async function GET(req) {
   const gate = await requireRole(req, ["Admin"]);
@@ -41,6 +73,10 @@ export async function GET(req) {
   const toDate = searchParams.get("toDate");
   const assigneeId = String(searchParams.get("assigneeId") || "").trim();
   const projectId = parseProjectId(searchParams.get("projectId"));
+  const type = String(searchParams.get("type") || "").trim();
+  const priority = String(searchParams.get("priority") || "").trim();
+  const categoryId = String(searchParams.get("categoryId") || "").trim();
+  const category = String(searchParams.get("category") || "").trim();
   const pageParam = Number(searchParams.get("page") || "1");
   const pageSizeParam = Number(searchParams.get("pageSize") || "10");
   const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
@@ -53,8 +89,8 @@ export async function GET(req) {
 
   if (q) {
     where.OR = [
-      { title: { contains: q, mode: "insensitive" } },
       { description: { contains: q, mode: "insensitive" } },
+      { category: { name: { contains: q, mode: "insensitive" } } },
     ];
   }
 
@@ -68,6 +104,24 @@ export async function GET(req) {
 
   if (projectId) {
     where.projectId = projectId;
+  }
+
+  if (type) {
+    where.type = type;
+  }
+
+  if (priority) {
+    where.priority = priority.toUpperCase();
+  }
+
+  if (categoryId) {
+    where.categoryId = categoryId;
+  }
+
+  if (category) {
+    where.category = {
+      name: { contains: category, mode: "insensitive" },
+    };
   }
 
   const parsedFromDate = parseDate(fromDate);
@@ -112,6 +166,7 @@ export async function GET(req) {
       include: {
         assignee: { include: { role: true } },
         project: { select: { id: true, name: true } },
+        category: { select: { id: true, name: true, category: true } },
       },
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -120,13 +175,26 @@ export async function GET(req) {
 
   const data = todos.map((todo) => ({
     id: todo.id,
-    title: todo.title,
     description: todo.description,
     startDate: todo.startDate,
+    endDate: todo.endDate || null,
     status: todo.status,
     projectId: todo.projectId,
     projectName: todo.project?.name || "-",
     comments: todo.comments,
+    type: todo.type,
+    priority: todo.priority,
+    categoryId: todo.categoryId,
+    categoryName: todo.category?.name || "-",
+    categoryType: todo.category?.category || null,
+    category: todo.category
+      ? {
+          id: todo.category.id,
+          name: todo.category.name,
+          category: todo.category.category,
+        }
+      : null,
+    subCategory: todo.subCategory || null,
     assignee: todo.assignee
       ? {
           id: todo.assignee.id,
@@ -153,24 +221,70 @@ export async function POST(req) {
   if (!gate.ok) return gate.res;
 
   const body = await req.json();
-  const title = String(body.title || "").trim();
   const description = String(body.description || "").trim();
   const comments = String(body.comments || "").trim();
   const startDate = String(body.startDate || "").trim();
+  const endDate = String(body.endDate || "").trim();
   const status = parseStatus(body.status) || "TODO";
   const assigneeId = String(body.assigneeId || "").trim();
   const projectId = parseProjectId(body.projectId);
+  const type = String(body.type || "")
+    .trim()
+    .toUpperCase();
+  const priority = String(body.priority || "medium").toUpperCase();
+  const categoryId = String(body.categoryId || "").trim();
+  const subCategory = String(body.subCategory || "").trim();
 
-  if (!title || !startDate) {
+  if (!startDate) {
     return NextResponse.json(
-      { error: "Task title and start date are required." },
+      { error: "Start date is required." },
       { status: 400 },
     );
   }
 
-  const parsedDate = parseDate(startDate);
-  if (!parsedDate) {
+  if (!type) {
+    return NextResponse.json(
+      { error: "Task type is required." },
+      { status: 400 },
+    );
+  }
+
+  if (!categoryId) {
+    return NextResponse.json(
+      { error: "Category is required." },
+      { status: 400 },
+    );
+  }
+
+  if (type === "service" && !subCategory) {
+    return NextResponse.json(
+      { error: "Sub category is required for service tasks." },
+      { status: 400 },
+    );
+  }
+
+  if (categoryId) {
+    const categoryCheck = await validateCategoryForType(type, categoryId);
+    if (!categoryCheck.ok) {
+      return NextResponse.json(
+        { error: categoryCheck.error },
+        { status: 400 },
+      );
+    }
+  }
+
+  const parsedStartDate = parseDate(startDate);
+  if (!parsedStartDate) {
     return NextResponse.json({ error: "Invalid start date." }, { status: 400 });
+  }
+
+  const parsedEndDate = endDate ? parseDate(endDate) : null;
+  if (endDate && !parsedEndDate) {
+    return NextResponse.json({ error: "Invalid end date." }, { status: 400 });
+  }
+  const endDateError = ensureEndDateIsValid(parsedStartDate, parsedEndDate);
+  if (endDateError) {
+    return NextResponse.json({ error: endDateError }, { status: 400 });
   }
 
   if (assigneeId) {
@@ -195,44 +309,61 @@ export async function POST(req) {
     }
   }
 
-  const todo = await prisma.todo.create({
-    data: {
-      title,
-      description: description || null,
-      comments: comments || null,
-      startDate: parsedDate,
-      status,
-      projectId: projectId || null,
-      assigneeId: assigneeId || null,
-      createdById: gate.auth?.user?.id || null,
-    },
-    include: {
-      assignee: { include: { role: true } },
-      project: { select: { id: true, name: true } },
-    },
-  });
-
-  return NextResponse.json(
-    {
-      id: todo.id,
-      title: todo.title,
-      description: todo.description,
-      comments: todo.comments,
-      startDate: todo.startDate,
-      status: todo.status,
-      projectId: todo.projectId,
-      projectName: todo.project?.name || "-",
-      assignee: todo.assignee
-        ? {
-            id: todo.assignee.id,
-            firstName: todo.assignee.firstName,
-            lastName: todo.assignee.lastName,
-            mobileNumber: todo.assignee.mobileNumber,
-            role: todo.assignee.role?.name || null,
-          }
-        : null,
-      createdAt: todo.createdAt,
-    },
-    { status: 201 },
-  );
+  try {
+    const todo = await prisma.todo.create({
+      data: {
+        description: description || null,
+        comments: comments || null,
+        startDate: parsedStartDate,
+        endDate: parsedEndDate || null,
+        status,
+        projectId: projectId || null,
+        assigneeId: assigneeId || null,
+        createdById: gate.auth?.user?.id || null,
+        type,
+        priority,
+        categoryId,
+        subCategory: type === "service" ? subCategory : null,
+      },
+      include: {
+        assignee: { include: { role: true } },
+        project: { select: { id: true, name: true } },
+        category: { select: { id: true, name: true, category: true } },
+      },
+    });
+    return NextResponse.json(
+      {
+        id: todo.id,
+        description: todo.description,
+        comments: todo.comments,
+        startDate: todo.startDate,
+        status: todo.status,
+        projectId: todo.projectId,
+        projectName: todo.project?.name || "-",
+        type: todo.type,
+        priority: todo.priority,
+        categoryId: todo.categoryId,
+        categoryName: todo.category?.name || "-",
+        categoryType: todo.category?.category || null,
+        subCategory: todo.subCategory,
+        assignee: todo.assignee
+          ? {
+              id: todo.assignee.id,
+              firstName: todo.assignee.firstName,
+              lastName: todo.assignee.lastName,
+              mobileNumber: todo.assignee.mobileNumber,
+              role: todo.assignee.role?.name || null,
+            }
+          : null,
+        createdAt: todo.createdAt,
+      },
+      { status: 201 },
+    );
+  } catch (error) {
+    console.error("Error creating todo:", error);
+    return NextResponse.json(
+      { error: "An error occurred while creating the task." },
+      { status: 500 },
+    );
+  }
 }

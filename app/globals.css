@@ -683,7 +683,6 @@ button,
 }
 
 .rbac-heading {
-  margin-top: 10px;
   line-height: 1.2;
   color: var(--ink);
   word-wrap: break-word;

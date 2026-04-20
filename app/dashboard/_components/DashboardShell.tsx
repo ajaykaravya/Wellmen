@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import Loading from "../../components/Loading";
+import { FaChevronRight } from "react-icons/fa";
 
 type SessionUser = {
   id: string;
@@ -24,7 +25,7 @@ type MenuKey =
   | "reports"
   | "team"
   | "profile"
-  | "todo"
+  | "task-management"
   | "projects"
   | "masterData"
   | "projectcategories"
@@ -64,7 +65,7 @@ const routeByMenu: Record<MenuKey, string> = {
   reports: "/dashboard/reports",
   team: "/dashboard/team",
   profile: "/dashboard/profile",
-  todo: "/dashboard/todo",
+  "task-management": "/dashboard/task-management",
   projects: "/dashboard/projects",
   masterData: "/dashboard/master-data",
   projectcategories: "/dashboard/project-categories",
@@ -81,7 +82,8 @@ const getActiveMenu = (pathname: string): MenuKey => {
   if (pathname.startsWith("/dashboard/service-categories"))
     return "serviceCategories";
   if (pathname.startsWith("/dashboard/projects")) return "projects";
-  if (pathname.startsWith("/dashboard/todo")) return "todo";
+  if (pathname.startsWith("/dashboard/task-management"))
+    return "task-management";
   if (pathname.startsWith("/dashboard/roles")) return "roles";
   if (pathname.startsWith("/dashboard/permissions")) return "permissions";
   if (pathname.startsWith("/dashboard/reports")) return "reports";
@@ -200,7 +202,7 @@ export default function DashboardShell({
         ],
       });
     }
-    items.push({ key: "todo", label: "To-Do" });
+    items.push({ key: "task-management", label: "Task Management" });
     items.push({ key: "reports", label: "Reporting" });
 
     items.push({ key: "profile", label: "My Profile" });
@@ -268,7 +270,7 @@ export default function DashboardShell({
                       <span
                         className={`ml-2 transition-transform ${masterDataExpanded ? "rotate-90" : ""}`}
                       >
-                        ▶
+                        <FaChevronRight size={20} />
                       </span>
                     </button>
                     {masterDataExpanded && (

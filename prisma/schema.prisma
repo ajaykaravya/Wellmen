@@ -27,20 +27,28 @@ model User {
 
 model Todo {
   id          String     @id @default(uuid())
-  title       String
   description String?
   comments    String?
   startDate   DateTime
+  endDate     DateTime?
   status      TodoStatus @default(TODO)
   projectId   String?
   assigneeId  String?
+  type         TaskType
+  priority     Priority
+  categoryId   String
+  subCategory  String?
   createdById String?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+  category    Categories @relation(fields: [categoryId], references: [id])
   assignee    User?      @relation("TodoAssignee", fields: [assigneeId], references: [id])
   createdBy   User?      @relation("TodoCreator", fields: [createdById], references: [id])
   project     Project?   @relation(fields: [projectId], references: [id])
 
+  @@index([type])
+  @@index([priority])
+  @@index([categoryId])
   @@index([projectId])
 }
 
@@ -110,6 +118,8 @@ model Categories {
   createdAt DateTime @default(now())
   updatedAt DateTime
 
+  todos     Todo[]
+
   @@unique([category, name])
 }
 
@@ -132,4 +142,16 @@ enum ReportingStatus {
   IN_PROGRESS
   COMPLETED
   ON_HOLD
+}
+
+enum TaskType {
+  PROJECT
+  OFFICE
+  SERVICE
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
 }

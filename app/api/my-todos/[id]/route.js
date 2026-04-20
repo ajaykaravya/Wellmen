@@ -21,14 +21,51 @@ const parseDate = (value) => {
 };
 
 const parseProjectId = (value) => String(value || "").trim();
+const taskTypeToCategory = {
+  PROJECT: "PROJECT_WORK",
+  OFFICE: "OFFICE_WORK",
+  SERVICE: "SERVICE_WORK",
+};
+
+const validateCategoryForType = async (type, categoryId) => {
+  const category = await prisma.categories.findUnique({
+    where: { id: categoryId },
+  });
+
+  if (!category) {
+    return { ok: false, error: "Category not found." };
+  }
+
+  const expectedCategory = taskTypeToCategory[type];
+  if (expectedCategory && category.category !== expectedCategory) {
+    return {
+      ok: false,
+      error: "Category does not match the selected task type.",
+    };
+  }
+
+  return { ok: true, category };
+};
+
+const ensureEndDateIsValid = (startDate, endDate) => {
+  if (endDate && endDate < startDate) {
+    return "End date cannot be earlier than start date.";
+  }
+  return null;
+};
 
 const serializeTodo = (todo, userId) => ({
   id: todo.id,
-  title: todo.title,
   description: todo.description,
   comments: todo.comments,
   startDate: todo.startDate,
+  endDate: todo.endDate || null,
   status: todo.status,
+  priority: todo.priority,
+  type: todo.type,
+  categoryId: todo.categoryId,
+  categoryName: todo.category?.name || "-",
+  categoryType: todo.category?.category || null,
   assigneeId: todo.assigneeId,
   projectId: todo.projectId,
   projectName: todo.project?.name || "-",
@@ -54,7 +91,10 @@ async function loadAllowedTodo(req, params) {
 
   const todo = await prisma.todo.findUnique({
     where: { id },
-    include: { project: { select: { id: true, name: true } } },
+    include: {
+      project: { select: { id: true, name: true } },
+      category: { select: { id: true, name: true, category: true } },
+    },
   });
   if (!todo) {
     return {
@@ -97,23 +137,69 @@ export async function PUT(req, { params }) {
   }
 
   const body = await req.json();
-  const title = String(body.title || "").trim();
   const description = String(body.description || "").trim();
   const comments = String(body.comments || "").trim();
   const startDate = String(body.startDate || "").trim();
+  const endDate = String(body.endDate || "").trim();
   const status = parseStatus(body.status) || "TODO";
   const projectId = parseProjectId(body.projectId);
+  const type = String(body.type || "")
+    .trim()
+    .toUpperCase();
+  const priority = String(body.priority || "medium").toUpperCase();
+  const categoryId = String(body.categoryId || "").trim();
+  const subCategory = String(body.subCategory || "").trim();
   const parsedDate = parseDate(startDate);
 
-  if (!title || !startDate) {
+  if (!startDate) {
     return NextResponse.json(
-      { error: "Task title and start date are required." },
+      { error: "Start date is required." },
       { status: 400 },
     );
   }
 
   if (!parsedDate) {
     return NextResponse.json({ error: "Invalid start date." }, { status: 400 });
+  }
+
+  if (!type) {
+    return NextResponse.json(
+      { error: "Task type is required." },
+      { status: 400 },
+    );
+  }
+
+  if (!categoryId) {
+    return NextResponse.json(
+      { error: "Category is required." },
+      { status: 400 },
+    );
+  }
+
+  if (type === "SERVICE" && !subCategory) {
+    return NextResponse.json(
+      { error: "Sub category is required for service tasks." },
+      { status: 400 },
+    );
+  }
+
+  if (categoryId) {
+    const categoryCheck = await validateCategoryForType(type, categoryId);
+    if (!categoryCheck.ok) {
+      return NextResponse.json(
+        { error: categoryCheck.error },
+        { status: 400 },
+      );
+    }
+  }
+
+  const parsedEndDate = endDate ? parseDate(endDate) : null;
+  if (endDate && !parsedEndDate) {
+    return NextResponse.json({ error: "Invalid end date." }, { status: 400 });
+  }
+  const endDateError = ensureEndDateIsValid(parsedDate, parsedEndDate);
+  if (endDateError) {
+    return NextResponse.json({ error: endDateError }, { status: 400 });
   }
 
   if (projectId) {
@@ -131,14 +217,21 @@ export async function PUT(req, { params }) {
   const todo = await prisma.todo.update({
     where: { id: loaded.todo.id },
     data: {
-      title,
       description: description || null,
       comments: comments || null,
       startDate: parsedDate,
+      endDate: parsedEndDate || null,
       status,
       projectId: projectId || null,
+      type,
+      priority,
+      categoryId,
+      subCategory: type === "SERVICE" ? subCategory : null,
     },
-    include: { project: { select: { id: true, name: true } } },
+    include: {
+      project: { select: { id: true, name: true } },
+      category: { select: { id: true, name: true, category: true } },
+    },
   });
 
   return NextResponse.json(serializeTodo(todo, loaded.userId));
@@ -153,7 +246,6 @@ export async function PATCH(req, { params }) {
 
   if (isLimitedUser) {
     const triedRestrictedField =
-      typeof body.title === "string" ||
       typeof body.description === "string" ||
       typeof body.startDate === "string" ||
       typeof body.projectId === "string";
@@ -170,7 +262,6 @@ export async function PATCH(req, { params }) {
     typeof body.comments === "string" ? body.comments.trim() : undefined;
   const description =
     typeof body.description === "string" ? body.description.trim() : undefined;
-  const title = typeof body.title === "string" ? body.title.trim() : undefined;
   const status = parseStatus(body.status);
   const startDate =
     typeof body.startDate === "string" ? body.startDate.trim() : undefined;
@@ -192,15 +283,6 @@ export async function PATCH(req, { params }) {
   if (!isLimitedUser) {
     if (typeof description === "string") {
       data.description = description || null;
-    }
-    if (typeof title === "string") {
-      if (!title) {
-        return NextResponse.json(
-          { error: "Task title cannot be empty." },
-          { status: 400 },
-        );
-      }
-      data.title = title;
     }
     if (typeof startDate === "string") {
       const parsedDate = parseDate(startDate);

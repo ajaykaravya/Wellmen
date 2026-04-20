@@ -13,7 +13,6 @@ import { toast } from "react-toastify";
 import DashboardShell, {
   useDashboardContext,
 } from "./_components/DashboardShell";
-import Loading from "../components/Loading";
 import CustomDatePicker from "../components/CustomDatePicker";
 import {
   FaChevronLeft,
@@ -36,7 +35,6 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import { Line, Bar } from "react-chartjs-2";
 import { FaListCheck } from "react-icons/fa6";
 
 ChartJS.register(
@@ -59,6 +57,9 @@ type TodoRow = {
   comments: string | null;
   startDate: string;
   status: TodoStatus;
+  type: "PROJECT" | "OFFICE" | "SERVICE";
+  projectName?: string | null;
+  categoryName?: string | null;
   assignee: {
     id: string;
     firstName: string;
@@ -90,6 +91,30 @@ type AdminReportRow = {
   videoUrl: string | null;
 };
 
+type TaskTableCardProps = {
+  title: string;
+  rows: TodoRow[];
+  loading: boolean;
+  columns: ColumnDef<TodoRow>[];
+  meta: OverviewTableMeta;
+  emptyLabel: string;
+  addTaskType: TodoRow["type"];
+  onUpdate?: (row: TodoRow) => void;
+};
+
+const formatTaskTypeLabel = (type: TodoRow["type"]) => {
+  switch (type) {
+    case "PROJECT":
+      return "Project Work";
+    case "OFFICE":
+      return "Office Work";
+    case "SERVICE":
+      return "Service Work";
+    default:
+      return type;
+  }
+};
+
 const shiftInputDate = (value: string, diffDays: number) => {
   let base: Date;
   if (value) {
@@ -115,6 +140,162 @@ const shiftInputDate = (value: string, diffDays: number) => {
   return `${day}/${month}/${year}`;
 };
 
+function TaskTableCard({
+  title,
+  rows,
+  loading,
+  columns,
+  meta,
+  emptyLabel,
+  addTaskType,
+  onUpdate,
+}: TaskTableCardProps) {
+  const table = useReactTable({
+    data: rows,
+    columns,
+    meta,
+    getCoreRowModel: getCoreRowModel(),
+  });
+
+  return (
+    <div className="rbac-card">
+      <div className="flex justify-between items-center">
+        <h3 className="rbac-title-lg">{title}</h3>
+        <Link href={`/dashboard/task-management/new?type=${addTaskType}`}>
+          <button className="rbac-button" type="button">
+            Add Task
+          </button>
+        </Link>
+      </div>
+
+      <div className="mt-4">
+        <div className="hidden md:block overflow-x-auto">
+          <table className="min-w-full border border-slate-200 border-separate border-spacing-0">
+            <thead className="bg-slate-50">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <th
+                      key={header.id}
+                      className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200"
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+            <tbody>
+              {loading && (
+                <tr>
+                  <td
+                    colSpan={columns.length}
+                    className="px-4 py-3 text-sm text-slate-500"
+                  >
+                    <div className="flex items-center justify-center">
+                      <FaSpinner className="animate-spin mr-2" size={16} />
+                    </div>
+                  </td>
+                </tr>
+              )}
+              {!loading && rows.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={columns.length}
+                    className="px-4 py-3 text-sm text-slate-500"
+                  >
+                    {emptyLabel}
+                  </td>
+                </tr>
+              )}
+              {!loading &&
+                table.getRowModel().rows.map((row, index) => (
+                  <tr
+                    key={row.original.id}
+                    className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <td
+                        key={cell.id}
+                        className="px-4 py-3 text-sm border-b border-slate-100"
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="md:hidden space-y-3">
+          {loading && (
+            <div className="flex items-center justify-center py-4">
+              <FaSpinner className="animate-spin mr-2" size={16} />
+            </div>
+          )}
+          {!loading && rows.length === 0 && (
+            <div className="rbac-card py-4 text-sm text-slate-500">
+              {emptyLabel}
+            </div>
+          )}
+          {!loading &&
+            rows.map((task) => (
+              <div key={task.id} className="rbac-card p-4">
+                <p className="text-xs uppercase text-slate-500">
+                  {formatTaskTypeLabel(task.type)}
+                </p>
+                <p className="text-sm text-slate-700">
+                  {task.description || "No description"}
+                </p>
+                {"categoryName" in task && (
+                  <p className="text-sm text-slate-500">
+                    Category: {task.categoryName || "-"}
+                  </p>
+                )}
+                {task.projectName && (
+                  <p className="text-sm text-slate-500">
+                    Project: {task.projectName}
+                  </p>
+                )}
+                <p className="text-sm text-slate-500">
+                  Status: {task.status.replaceAll("_", " ")}
+                </p>
+                <p className="text-sm text-slate-500">
+                  Start: {formatToDDMMYYYY(task.startDate)}
+                </p>
+                {"comments" in task && (
+                  <p className="text-sm text-slate-500">
+                    Comments: {task.comments || "-"}
+                  </p>
+                )}
+                <div className="mt-2 flex gap-2 justify-end">
+                  {onUpdate && (
+                    <button
+                      className="rbac-button rbac-button-secondary"
+                      type="button"
+                      onClick={() => meta.openUpdateModal(task)}
+                    >
+                      Update
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function OverviewContent() {
   const { user, isAdmin } = useDashboardContext();
   const displayName = user ? `${user.firstName} ${user.lastName}`.trim() : "";
@@ -138,6 +319,19 @@ function OverviewContent() {
   const [reportViewLoading, setReportViewLoading] = useState(false);
   const [reportViewData, setReportViewData] = useState<AdminReportRow | null>(
     null,
+  );
+
+  const projectTasks = useMemo(
+    () => todos.filter((task) => task.type === "PROJECT"),
+    [todos],
+  );
+  const officeTasks = useMemo(
+    () => todos.filter((task) => task.type === "OFFICE"),
+    [todos],
+  );
+  const serviceTasks = useMemo(
+    () => todos.filter((task) => task.type === "SERVICE"),
+    [todos],
   );
 
   const loadTodayTodos = useCallback(async () => {
@@ -308,16 +502,9 @@ function OverviewContent() {
     [savingId, openUpdateModal],
   );
 
-  const columns = useMemo<ColumnDef<TodoRow>[]>(() => {
+  const projectColumns = useMemo<ColumnDef<TodoRow>[]>(() => {
     if (isAdmin) {
       return [
-        {
-          header: "Task Title",
-          accessorKey: "title",
-          cell: (info) => (
-            <span className="rbac-muted">{String(info.getValue() || "")}</span>
-          ),
-        },
         {
           header: "Description",
           accessorKey: "description",
@@ -326,6 +513,14 @@ function OverviewContent() {
             <span className="rbac-muted">
               {row.original.description || "-"}
             </span>
+          ),
+        },
+        {
+          header: "Category",
+          accessorKey: "categoryName",
+          size: 700,
+          cell: (info) => (
+            <span className="rbac-muted">{String(info.getValue() || "-")}</span>
           ),
         },
         {
@@ -359,26 +554,10 @@ function OverviewContent() {
             );
           },
         },
-        {
-          header: "Assignee Role",
-          id: "assigneeRole",
-          cell: ({ row }) => (
-            <span className="rbac-muted">
-              {row.original.assignee?.role || "-"}
-            </span>
-          ),
-        },
       ];
     }
 
     return [
-      {
-        header: "Task Title",
-        accessorKey: "title",
-        cell: (info) => (
-          <span className="rbac-muted">{String(info.getValue() || "")}</span>
-        ),
-      },
       {
         header: "Description",
         accessorKey: "description",
@@ -433,13 +612,6 @@ function OverviewContent() {
       },
     ];
   }, [isAdmin]);
-
-  const table = useReactTable({
-    data: todos,
-    columns,
-    meta: tableMeta,
-    getCoreRowModel: getCoreRowModel(),
-  });
 
   const todoTotal = todos.length;
   const todoInProgress = todos.filter(
@@ -527,13 +699,15 @@ function OverviewContent() {
           <h1 className="rbac-heading text-md sm:text-2xl font-medium">
             Welcome back, {displayName}
           </h1>
-          <span className="text-xs sm:text-sm text-slate-500">
+          <span className="text-xs sm:text-sm text-slate-500 sm:block hidden">
             Role-based workspace tailored for {user?.role || "your role"}.
           </span>
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
-          <div className="rbac-role px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-slate-200 bg-slate-50">
-            <p className="rbac-label text-[10px] sm:text-xs">Role</p>
+        <div className="flex flex-wrap items-center justify-end">
+          <div className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 bg-slate-50">
+            <p className="rbac-label text-[10px] sm:text-xs sm:block hidden">
+              Role
+            </p>
             <p className="rbac-role-name text-xs sm:text-sm">
               {user?.role || "Unknown"}
             </p>
@@ -582,381 +756,293 @@ function OverviewContent() {
       </section>
 
       <section className="rbac-section mt-4 rbac-container">
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="rbac-card">
-            <div className="flex justify-between items-center">
-              <h3 className="rbac-title-lg">Today's tasks</h3>
-              <Link href="/dashboard/todo/new">
-                <button className="rbac-button" type="button">
-                  Add Todo
-                </button>
-              </Link>
-            </div>
-
-            <div className="mt-4">
-              <div className="hidden md:block overflow-x-auto">
-                <table className="min-w-full border border-slate-200 border-separate border-spacing-0">
-                  <thead className="bg-slate-50">
-                    {table.getHeaderGroups().map((headerGroup) => (
-                      <tr key={headerGroup.id}>
-                        {headerGroup.headers.map((header) => (
-                          <th
-                            key={header.id}
-                            className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200"
-                          >
-                            {header.isPlaceholder
-                              ? null
-                              : flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext(),
-                                )}
-                          </th>
-                        ))}
-                      </tr>
-                    ))}
-                  </thead>
-                  <tbody>
-                    {loading && (
-                      <tr>
-                        <td
-                          colSpan={columns.length}
-                          className="px-4 py-3 text-sm text-slate-500"
-                        >
-                          <div className="flex items-center justify-center">
-                            <FaSpinner
-                              className="animate-spin mr-2"
-                              size={16}
-                            />
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                    {!loading && todos.length === 0 && (
-                      <tr>
-                        <td
-                          colSpan={columns.length}
-                          className="px-4 py-3 text-sm text-slate-500"
-                        >
-                          No tasks for today
-                        </td>
-                      </tr>
-                    )}
-                    {!loading &&
-                      table.getRowModel().rows.map((row, index) => (
-                        <tr
-                          key={row.original.id}
-                          className={
-                            index % 2 === 0 ? "bg-white" : "bg-slate-50"
-                          }
-                        >
-                          {row.getVisibleCells().map((cell) => (
-                            <td
-                              key={cell.id}
-                              className="px-4 py-3 text-sm border-b border-slate-100"
-                            >
-                              {flexRender(
-                                cell.column.columnDef.cell,
-                                cell.getContext(),
-                              )}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="md:hidden space-y-3">
-                {loading && (
-                  <div className="flex items-center justify-center py-4">
-                    <FaSpinner className="animate-spin mr-2" size={16} />
-                  </div>
-                )}
-                {!loading && todos.length === 0 && (
-                  <div className="rbac-card py-4 text-sm text-slate-500">
-                    No tasks for today
-                  </div>
-                )}
-                {!loading &&
-                  todos.map((task) => (
-                    <div key={task.id} className="rbac-card p-4">
-                      <p className="text-xs uppercase text-slate-500">
-                        {task.title}
-                      </p>
-                      <p className="text-sm text-slate-700">
-                        {task.description || "No description"}
-                      </p>
-                      <p className="text-sm text-slate-500">
-                        Status: {task.status.replaceAll("_", " ")}
-                      </p>
-                      <p className="text-sm text-slate-500">
-                        Start: {formatToDDMMYYYY(task.startDate)}
-                      </p>
-                      <p className="text-sm text-slate-500">
-                        Comments: {task.comments || "-"}
-                      </p>
-                      <div className="mt-2 flex gap-2  justify-end">
-                        <button
-                          className="rbac-button rbac-button-secondary"
-                          type="button"
-                          onClick={() => setModalOpen(true)}
-                        >
-                          Update
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
+        <div className="grid gap-4">
+          <div className="flex justify-between items-center">
+            <h3 className="rbac-title-lg">Today&apos;s tasks</h3>
           </div>
 
-          <div className="rbac-card">
-            <div className="flex justify-between items-center">
-              <h3 className="rbac-title-lg">
-                {isAdmin ? "Employees reporting" : "Today's reporting"}
-              </h3>
-              {!isAdmin && (
-                <Link href="/dashboard/reports/new">
-                  <button className="rbac-button" type="button">
-                    Add Reporting
-                  </button>
-                </Link>
-              )}
-            </div>
-
-            {isAdmin ? (
-              <div className="mt-4">
-                <div className="flex flex-wrap items-center justify-end gap-2">
-                  <button
-                    className="change-button change-button-secondary bg-slate-200 p-2 rounded-md"
-                    type="button"
-                    onClick={() =>
-                      setAdminDate((prev) => shiftInputDate(prev, -1))
-                    }
-                  >
-                    <FaChevronLeft size={15} />
-                  </button>
-                  <CustomDatePicker
-                    value={adminDate}
-                    onChange={setAdminDate}
-                    placeholder="Select date"
-                    className="date-input"
-                  />
-                  <button
-                    className="change-button change-button-secondary bg-slate-200 p-2 rounded-md"
-                    type="button"
-                    onClick={() =>
-                      setAdminDate((prev) => shiftInputDate(prev, 1))
-                    }
-                  >
-                    <FaChevronRight size={15} />
-                  </button>
+          <div className="grid gap-4 xl:grid-cols-2">
+            <TaskTableCard
+              title="Project Work"
+              rows={projectTasks}
+              loading={loading}
+              columns={projectColumns}
+              meta={tableMeta}
+              emptyLabel="No project work tasks for today"
+              addTaskType="PROJECT"
+              onUpdate={isAdmin ? undefined : openUpdateModal}
+            />
+            <TaskTableCard
+              title="Office Work"
+              rows={officeTasks}
+              loading={loading}
+              columns={projectColumns}
+              meta={tableMeta}
+              emptyLabel="No office work tasks for today"
+              addTaskType="OFFICE"
+              onUpdate={isAdmin ? undefined : openUpdateModal}
+            />
+            <TaskTableCard
+              title="Service Work"
+              rows={serviceTasks}
+              loading={loading}
+              columns={projectColumns}
+              meta={tableMeta}
+              emptyLabel="No service work tasks for today"
+              addTaskType="SERVICE"
+              onUpdate={isAdmin ? undefined : openUpdateModal}
+            />
+            <div className="grid gap-4">
+              <div className="rbac-card">
+                <div className="flex justify-between items-center">
+                  <h3 className="rbac-title-lg">
+                    {isAdmin ? "Employees reporting" : "Today's reporting"}
+                  </h3>
+                  {!isAdmin && (
+                    <Link href="/dashboard/reports/new">
+                      <button className="rbac-button" type="button">
+                        Add Reporting
+                      </button>
+                    </Link>
+                  )}
                 </div>
 
-                <div className="mt-4">
-                  <div className="hidden md:block overflow-x-auto">
-                    <table className="min-w-full border border-slate-200 border-separate border-spacing-0">
-                      <thead className="bg-slate-50">
-                        <tr>
-                          <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] px-4 py-3 border-b border-slate-200">
-                            Project
-                          </th>
-                          <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] px-4 py-3 border-b border-slate-200">
-                            Title
-                          </th>
-                          <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] px-4 py-3 border-b border-slate-200">
-                            Description
-                          </th>
-                          <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] px-4 py-3 border-b border-slate-200">
-                            Action
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {adminLoading && (
-                          <tr>
-                            <td
-                              colSpan={4}
-                              className="px-4 py-3 text-sm text-slate-500"
-                            >
-                              <div className="flex items-center justify-center">
-                                <FaSpinner
-                                  className="animate-spin mr-2"
-                                  size={16}
-                                />
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                        {!adminLoading && adminReports.length === 0 && (
-                          <tr>
-                            <td
-                              colSpan={4}
-                              className="px-4 py-3 text-sm text-slate-500"
-                            >
-                              No reporting found for selected date.
-                            </td>
-                          </tr>
-                        )}
-                        {!adminLoading &&
-                          adminReports.map((report, index) => (
-                            <tr
-                              key={report.id}
-                              className={
-                                index % 2 === 0 ? "bg-white" : "bg-slate-50"
-                              }
-                            >
-                              <td className="px-4 py-3 text-sm border-b border-slate-100">
-                                {report.projectName}
-                              </td>
-                              <td className="px-4 py-3 text-sm border-b border-slate-100">
-                                {report.title}
-                              </td>
-                              <td className="px-4 py-3 text-sm border-b border-slate-100">
-                                {report.description}
-                              </td>
-                              <td className="px-4 py-3 text-sm border-b border-slate-100">
-                                <button
-                                  className="rbac-link"
-                                  type="button"
-                                  onClick={() => openReportView(report)}
-                                >
-                                  <FaEye size={15} />
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                      </tbody>
-                    </table>
-                  </div>
+                {isAdmin ? (
+                  <div className="mt-4">
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      <button
+                        className="change-button change-button-secondary bg-slate-200 p-2 rounded-md"
+                        type="button"
+                        onClick={() =>
+                          setAdminDate((prev) => shiftInputDate(prev, -1))
+                        }
+                      >
+                        <FaChevronLeft size={15} />
+                      </button>
+                      <CustomDatePicker
+                        value={adminDate}
+                        onChange={setAdminDate}
+                        placeholder="Select date"
+                        className="date-input"
+                      />
+                      <button
+                        className="change-button change-button-secondary bg-slate-200 p-2 rounded-md"
+                        type="button"
+                        onClick={() =>
+                          setAdminDate((prev) => shiftInputDate(prev, 1))
+                        }
+                      >
+                        <FaChevronRight size={15} />
+                      </button>
+                    </div>
 
-                  <div className="md:hidden space-y-3">
-                    {adminReports.map((report) => (
-                      <div key={report.id} className="rbac-card p-4">
-                        <p className="text-xs uppercase text-slate-500">
-                          {report.projectName}
-                        </p>
-                        <p className="text-sm font-semibold">{report.title}</p>
-                        <p className="text-sm text-slate-700">
-                          {report.description}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          {formatToDDMMYYYY(report.reportDate)}
-                        </p>
-                        <div className="flex justify-end">
-                          <button
-                            className="rbac-link mt-2"
-                            type="button"
-                            onClick={() => openReportView(report)}
-                          >
-                            <FaEye size={15} />
-                          </button>
+                    <div className="mt-4">
+                      <div className="hidden md:block overflow-x-auto">
+                        <table className="min-w-full border border-slate-200 border-separate border-spacing-0">
+                          <thead className="bg-slate-50">
+                            <tr>
+                              <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] px-4 py-3 border-b border-slate-200">
+                                Project
+                              </th>
+                              <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] px-4 py-3 border-b border-slate-200">
+                                Description
+                              </th>
+                              <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] px-4 py-3 border-b border-slate-200">
+                                Action
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {adminLoading && (
+                              <tr>
+                                <td
+                                  colSpan={4}
+                                  className="px-4 py-3 text-sm text-slate-500"
+                                >
+                                  <div className="flex items-center justify-center">
+                                    <FaSpinner
+                                      className="animate-spin mr-2"
+                                      size={16}
+                                    />
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                            {!adminLoading && adminReports.length === 0 && (
+                              <tr>
+                                <td
+                                  colSpan={4}
+                                  className="px-4 py-3 text-sm text-slate-500"
+                                >
+                                  No reporting found for selected date.
+                                </td>
+                              </tr>
+                            )}
+                            {!adminLoading &&
+                              adminReports.map((report, index) => (
+                                <tr
+                                  key={report.id}
+                                  className={
+                                    index % 2 === 0 ? "bg-white" : "bg-slate-50"
+                                  }
+                                >
+                                  <td className="px-4 py-3 text-sm border-b border-slate-100">
+                                    {report.projectName}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm border-b border-slate-100">
+                                    {report.title}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm border-b border-slate-100">
+                                    {report.description}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm border-b border-slate-100">
+                                    <button
+                                      className="rbac-link"
+                                      type="button"
+                                      onClick={() => openReportView(report)}
+                                    >
+                                      <FaEye size={15} />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className="md:hidden space-y-3">
+                        {adminReports.map((report) => (
+                          <div key={report.id} className="rbac-card p-4">
+                            <p className="text-xs uppercase text-slate-500">
+                              {report.projectName}
+                            </p>
+                            <p className="text-sm font-semibold">
+                              {report.title}
+                            </p>
+                            <p className="text-sm text-slate-700">
+                              {report.description}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {formatToDDMMYYYY(report.reportDate)}
+                            </p>
+                            <div className="flex justify-end">
+                              <button
+                                className="rbac-link mt-2"
+                                type="button"
+                                onClick={() => openReportView(report)}
+                              >
+                                <FaEye size={15} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-4">
+                    {userReportsLoading && (
+                      <div className="flex items-center justify-center py-4">
+                        <FaSpinner className="animate-spin mr-2" size={16} />
+                      </div>
+                    )}
+                    {!userReportsLoading && userReports.length === 0 && (
+                      <p>No reporting found for today.</p>
+                    )}
+                    {!userReportsLoading && userReports.length > 0 && (
+                      <div>
+                        <div className="hidden md:block overflow-x-auto">
+                          <table className="min-w-full border border-slate-200 border-separate border-spacing-0">
+                            <thead className="bg-slate-50">
+                              <tr>
+                                <th className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200">
+                                  Date
+                                </th>
+                                <th className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200">
+                                  Project
+                                </th>
+                                <th className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200">
+                                  Title
+                                </th>
+                                <th className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200">
+                                  Status
+                                </th>
+                                <th className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200">
+                                  Action
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {userReports.map((report, index) => (
+                                <tr
+                                  key={report.id}
+                                  className={
+                                    index % 2 === 0 ? "bg-white" : "bg-slate-50"
+                                  }
+                                >
+                                  <td className="px-4 py-3 text-sm border-b border-slate-100">
+                                    {formatToDDMMYYYY(report.reportDate)}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm border-b border-slate-100">
+                                    {report.projectName || "-"}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm border-b border-slate-100">
+                                    {report.title || "-"}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm border-b border-slate-100">
+                                    {report.status.replaceAll("_", " ")}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm border-b border-slate-100">
+                                    <button
+                                      className="rbac-link"
+                                      type="button"
+                                      onClick={() => openReportView(report)}
+                                    >
+                                      View
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        <div className="md:hidden space-y-3">
+                          {userReports.map((report) => (
+                            <div key={report.id} className="rbac-card p-4">
+                              <p className="text-xs uppercase text-slate-500">
+                                {formatToDDMMYYYY(report.reportDate)}
+                              </p>
+                              <p className="text-sm font-semibold">
+                                {report.projectName || "-"}
+                              </p>
+                              <p className="text-sm text-slate-700">
+                                {report.title || "-"}
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                {report.status.replaceAll("_", " ")}
+                              </p>
+                              <button
+                                className="rbac-link mt-2"
+                                type="button"
+                                onClick={() => openReportView(report)}
+                              >
+                                View
+                              </button>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="mt-4">
-                {userReportsLoading && (
-                  <div className="flex items-center justify-center py-4">
-                    <FaSpinner className="animate-spin mr-2" size={16} />
-                  </div>
-                )}
-                {!userReportsLoading && userReports.length === 0 && (
-                  <p>No reporting found for today.</p>
-                )}
-                {!userReportsLoading && userReports.length > 0 && (
-                  <div>
-                    <div className="hidden md:block overflow-x-auto">
-                      <table className="min-w-full border border-slate-200 border-separate border-spacing-0">
-                        <thead className="bg-slate-50">
-                          <tr>
-                            <th className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200">
-                              Date
-                            </th>
-                            <th className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200">
-                              Project
-                            </th>
-                            <th className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200">
-                              Title
-                            </th>
-                            <th className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200">
-                              Status
-                            </th>
-                            <th className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200">
-                              Action
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {userReports.map((report, index) => (
-                            <tr
-                              key={report.id}
-                              className={
-                                index % 2 === 0 ? "bg-white" : "bg-slate-50"
-                              }
-                            >
-                              <td className="px-4 py-3 text-sm border-b border-slate-100">
-                                {formatToDDMMYYYY(report.reportDate)}
-                              </td>
-                              <td className="px-4 py-3 text-sm border-b border-slate-100">
-                                {report.projectName || "-"}
-                              </td>
-                              <td className="px-4 py-3 text-sm border-b border-slate-100">
-                                {report.title || "-"}
-                              </td>
-                              <td className="px-4 py-3 text-sm border-b border-slate-100">
-                                {report.status.replaceAll("_", " ")}
-                              </td>
-                              <td className="px-4 py-3 text-sm border-b border-slate-100">
-                                <button
-                                  className="rbac-link"
-                                  type="button"
-                                  onClick={() => openReportView(report)}
-                                >
-                                  View
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <div className="md:hidden space-y-3">
-                      {userReports.map((report) => (
-                        <div key={report.id} className="rbac-card p-4">
-                          <p className="text-xs uppercase text-slate-500">
-                            {formatToDDMMYYYY(report.reportDate)}
-                          </p>
-                          <p className="text-sm font-semibold">
-                            {report.projectName || "-"}
-                          </p>
-                          <p className="text-sm text-slate-700">
-                            {report.title || "-"}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {report.status.replaceAll("_", " ")}
-                          </p>
-                          <button
-                            className="rbac-link mt-2"
-                            type="button"
-                            onClick={() => openReportView(report)}
-                          >
-                            View
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+                    )}
                   </div>
                 )}
               </div>
-            )}
+            </div>
           </div>
         </div>
       </section>
+
+      <section className=""></section>
 
       {modalOpen && !isAdmin && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
