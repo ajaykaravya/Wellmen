@@ -8,6 +8,7 @@ import Loading from "../../../components/Loading";
 import { getTodayInputDate, formatToDDMMYYYY } from "@/lib/dateUtils";
 import { useDashboardContext } from "../../_components/DashboardShell";
 import CustomDatePicker from "../../../components/CustomDatePicker";
+import { ButtonGroup } from "../../_components/ButtonGroup";
 
 type UserOption = {
   id: string;
@@ -207,7 +208,9 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
         setForm((prev) => {
           const currentCategoryId = prev.categoryId || "";
           const stillValid = Array.isArray(data?.data)
-            ? data.data.some((category: CategoryOption) => category.id === currentCategoryId)
+            ? data.data.some(
+                (category: CategoryOption) => category.id === currentCategoryId,
+              )
             : false;
 
           return {
@@ -333,28 +336,14 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
               {todoId ? "Edit Task" : "Add New Task"}
             </h3>
           </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">
-              Select Task Type
-            </label>
-
-            <div className="flex gap-3">
-              {taskTypeOptions.map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => setTaskType(item.key)}
-                  className={`px-3 py-1 rounded-lg border transition-all
-          ${
-            taskType === item.key
-              ? "bg-blue-600 text-white border-blue-600 shadow-md"
-              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
-          }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
+          <div>
+            <ButtonGroup
+              title="Select Task Type"
+              selected={taskType}
+              options={taskTypeOptions}
+              onSelect={(value) => setTaskType(value)}
+              required
+            />
           </div>
           <form className="rbac-form" onSubmit={handleSubmit}>
             <fieldset
@@ -416,28 +405,15 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
                 )}
 
                 {taskType === "service" && (
-                  <>
-                    <label className="rbac-label">
-                      Sub Category <span className="text-red-600">*</span>
-                    </label>
-                    <div className="flex gap-3">
-                      {serviceSubCategoryOptions.map((item) => (
-                        <button
-                          key={item.key}
-                          type="button"
-                          onClick={() => setSubCategories(item.key)}
-                          className={`px-3 py-1 rounded-lg border transition-all
-          ${
-            subCategories === item.key
-              ? "bg-blue-600 text-white border-blue-600 shadow-md"
-              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
-          }`}
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                    </div>
-                  </>
+                  <div className="mt-4">
+                    <ButtonGroup
+                      title="Sub Category"
+                      selected={subCategories || null}
+                      options={serviceSubCategoryOptions}
+                      onSelect={(value) => setSubCategories(value)}
+                      required
+                    />
+                  </div>
                 )}
 
                 {isAdmin && (
@@ -464,29 +440,17 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
                   </label>
                 )}
 
-                <label className="block text-sm mb-2">
-                  Select Priority <span className="text-red-600">*</span>
-                </label>
-
-                <div className="flex gap-3">
-                  {priorityOptions.map((item) => (
-                    <button
-                      key={item.key}
-                      type="button"
-                      onClick={() => setPriority(item.key)}
-                      className={`px-4 py-1 rounded-lg border transition-all
-          ${
-            priority === item.key
-              ? "bg-blue-600 text-white border-blue-600 shadow-md"
-              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
-          }`}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
+                <div className="mt-4">
+                  <ButtonGroup
+                    title="Select Priority"
+                    selected={priority}
+                    options={priorityOptions}
+                    onSelect={(value) => setPriority(value)}
+                    required
+                  />
                 </div>
 
-                <label className="rbac-label">
+                <label className="rbac-label mt-4">
                   Description
                   <textarea
                     className="rbac-input"
@@ -575,7 +539,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
                   </select>
                 </label>
               </div>
-              </fieldset>
+            </fieldset>
 
             {note && (
               <p className="mt-3 text-sm text-red-600" role="alert">

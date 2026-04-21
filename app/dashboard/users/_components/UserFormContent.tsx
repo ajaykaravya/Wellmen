@@ -16,6 +16,11 @@ type UserFormState = {
   roleName: string;
 };
 
+type Role = {
+  id: string;
+  name: string;
+};
+
 type UserFormContentProps = {
   userId?: string;
 };
@@ -25,6 +30,8 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
   const [formLoading, setFormLoading] = useState(Boolean(userId));
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [rolesLoading, setRolesLoading] = useState(true);
   const [errors, setErrors] = useState<
     Partial<Record<keyof UserFormState, string>>
   >({});
@@ -70,6 +77,25 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
 
     loadUser();
   }, [userId]);
+
+  useEffect(() => {
+    const loadRoles = async () => {
+      try {
+        const res = await fetch("/api/roles");
+        if (!res.ok) throw new Error("Failed to fetch roles");
+
+        const data = await res.json();
+        setRoles(data);
+      } catch (error) {
+        console.error("Failed to load roles", error);
+        toast.error("Failed to load roles");
+      } finally {
+        setRolesLoading(false);
+      }
+    };
+
+    loadRoles();
+  }, []);
 
   const isEmailValid = (email: string) => /\S+@\S+\.\S+/.test(email);
   const isPasswordValid = (password: string) => /^\d{4}$/.test(password);
@@ -266,10 +292,19 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
                       }))
                     }
                   >
-                    <option value="Admin">Admin</option>
-                    <option value="HR Admin">HR Admin</option>
-                    <option value="Manager">Manager</option>
-                    <option value="Employee">Employee</option>
+                    <option value="">Select Role</option>
+
+                    {rolesLoading ? (
+                      <option disabled>Loading roles...</option>
+                    ) : roles.length === 0 ? (
+                      <option disabled>No roles found</option>
+                    ) : (
+                      roles.map((role) => (
+                        <option key={role.id} value={role.name}>
+                          {role.name}
+                        </option>
+                      ))
+                    )}
                   </select>
                 </label>
                 {errors.roleName && (

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { flexRender, useReactTable } from "@tanstack/react-table";
 import { ColumnDef, getCoreRowModel } from "@tanstack/table-core";
+import { useSearchParams } from "next/navigation";
 import { formatToDDMMYYYY } from "@/lib/dateUtils";
 import useDebounce from "@/app/hooks/useDebounce";
 import DashboardShell, {
@@ -72,6 +73,14 @@ const formatTaskType = (value?: string | null) => {
 
 function TodoListContent() {
   const { isAdmin } = useDashboardContext();
+  const searchParams = useSearchParams();
+  const taskTypeFromQuery = (() => {
+    const value = searchParams.get("type");
+    if (value === "PROJECT" || value === "OFFICE" || value === "SERVICE") {
+      return value;
+    }
+    return "";
+  })();
   const [todos, setTodos] = useState<TodoRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
@@ -80,7 +89,7 @@ function TodoListContent() {
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 400);
   const [statusFilter, setStatusFilter] = useState("");
-  const [taskTypeFilter, setTaskTypeFilter] = useState("");
+  const [taskTypeFilter, setTaskTypeFilter] = useState(taskTypeFromQuery);
   const [categoryFilter, setCategoryFilter] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -88,6 +97,11 @@ function TodoListContent() {
   const [assignees, setAssignees] = useState<UserOption[]>([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<TodoRow | null>(null);
+
+  useEffect(() => {
+    setTaskTypeFilter(taskTypeFromQuery);
+    setPageIndex(0);
+  }, [taskTypeFromQuery]);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTarget, setModalTarget] = useState<TodoRow | null>(null);

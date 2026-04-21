@@ -830,13 +830,6 @@ button,
   box-sizing: border-box;
 }
 
-@media (max-width: 640px) {
-  .date-input {
-    width: 30%;
-    max-width: 180px;
-  }
-}
-
 .rbac-input:focus,
 .rbac-input-filter:focus {
   outline: 2px solid var(--brand);

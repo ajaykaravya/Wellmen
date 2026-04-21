@@ -5,13 +5,13 @@ import { saveReportImages, saveReportVideo } from "./_utils/upload";
 
 export const runtime = "nodejs";
 
-const parseStatus = (value) => {
-  const normalized = String(value || "").toUpperCase();
-  if (normalized === "TODO") return "TODO";
-  if (normalized === "IN_PROGRESS") return "IN_PROGRESS";
-  if (normalized === "COMPLETED") return "COMPLETED";
-  if (normalized === "ON_HOLD") return "ON_HOLD";
-  return null;
+const resolveReportingCategory = async (categoryId) => {
+  if (!categoryId) return null;
+  const category = await prisma.categories.findUnique({
+    where: { id: categoryId },
+  });
+  if (!category || category.category !== "REPORTING_WORK") return null;
+  return category;
 };
 
 const parseDate = (value) => {
@@ -34,9 +34,9 @@ const serializeReport = (report, userId, isAdmin) => ({
   reportDate: report.reportDate,
   projectId: report.projectId,
   projectName: report.project?.name || "-",
-  title: report.title,
+  categoryId: report.categoryId || null,
+  categoryName: report.category?.name || "-",
   description: report.description,
-  status: report.status,
   imageUrls: Array.isArray(report.imageUrls) ? report.imageUrls : [],
   videoUrl: report.videoUrl || null,
   createdById: report.createdById,
@@ -60,7 +60,6 @@ export async function GET(req) {
   const q = String(searchParams.get("q") || "").trim();
   const projectId = String(searchParams.get("projectId") || "").trim();
   const employeeId = String(searchParams.get("employeeId") || "").trim();
-  const status = parseStatus(searchParams.get("status"));
   const date = searchParams.get("date");
   const fromDate = searchParams.get("fromDate");
   const toDate = searchParams.get("toDate");
@@ -78,9 +77,9 @@ export async function GET(req) {
 
   if (q) {
     where.OR = [
-      { title: { contains: q, mode: "insensitive" } },
       { description: { contains: q, mode: "insensitive" } },
       { project: { name: { contains: q, mode: "insensitive" } } },
+      { category: { name: { contains: q, mode: "insensitive" } } },
       { createdBy: { firstName: { contains: q, mode: "insensitive" } } },
       { createdBy: { lastName: { contains: q, mode: "insensitive" } } },
     ];
@@ -92,10 +91,6 @@ export async function GET(req) {
 
   if (isAdmin && employeeId) {
     where.createdById = employeeId;
-  }
-
-  if (status) {
-    where.status = status;
   }
 
   const parsedFromDate = parseDate(fromDate);
@@ -136,6 +131,7 @@ export async function GET(req) {
       where,
       include: {
         project: { select: { name: true } },
+        category: { select: { name: true } },
         createdBy: { select: { firstName: true, lastName: true } },
       },
       orderBy: [{ reportDate: "desc" }, { createdAt: "desc" }],
@@ -169,15 +165,15 @@ export async function POST(req) {
     const form = await req.formData();
     const reportDate = getText(form, "reportDate");
     const projectId = getText(form, "projectId");
-    const title = getText(form, "title");
+    const categoryId = getText(form, "categoryId");
     const description = getText(form, "description");
-    const status = parseStatus(form.get("status")) || "TODO";
     const parsedDate = parseDate(reportDate);
 
-    if (!reportDate || !projectId || !title || !description) {
+    if (!reportDate || !projectId || !categoryId || !description) {
       return NextResponse.json(
         {
-          error: "Report date, project, title and description are required.",
+          error:
+            "Report date, project, reporting category and description are required.",
         },
         { status: 400 },
       );
@@ -200,6 +196,14 @@ export async function POST(req) {
       );
     }
 
+    const category = await resolveReportingCategory(categoryId);
+    if (!category) {
+      return NextResponse.json(
+        { error: "Reporting category not found." },
+        { status: 404 },
+      );
+    }
+
     const imageFiles = form
       .getAll("images")
       .filter((value) => value instanceof File && value.size > 0);
@@ -216,15 +220,15 @@ export async function POST(req) {
       data: {
         reportDate: parsedDate,
         projectId,
-        title,
+        categoryId,
         description,
-        status,
         imageUrls,
         videoUrl,
         createdById: gate.auth?.user?.id || null,
       },
       include: {
         project: { select: { name: true } },
+        category: { select: { name: true } },
         createdBy: { select: { firstName: true, lastName: true } },
       },
     });

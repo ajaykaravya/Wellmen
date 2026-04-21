@@ -26,11 +26,13 @@ type MenuKey =
   | "team"
   | "profile"
   | "task-management"
+  | "query-management"
   | "projects"
   | "masterData"
   | "projectcategories"
   | "officeCategories"
-  | "serviceCategories";
+  | "serviceCategories"
+  | "reportingCategories";
 
 type DashboardContextValue = {
   user: SessionUser | null;
@@ -66,11 +68,13 @@ const routeByMenu: Record<MenuKey, string> = {
   team: "/dashboard/team",
   profile: "/dashboard/profile",
   "task-management": "/dashboard/task-management",
+  "query-management": "/dashboard/query-management",
   projects: "/dashboard/projects",
   masterData: "/dashboard/master-data",
   projectcategories: "/dashboard/project-categories",
   officeCategories: "/dashboard/office-categories",
   serviceCategories: "/dashboard/service-categories",
+  reportingCategories: "/dashboard/reporting-categories",
 };
 
 const getActiveMenu = (pathname: string): MenuKey => {
@@ -81,9 +85,13 @@ const getActiveMenu = (pathname: string): MenuKey => {
     return "projectcategories";
   if (pathname.startsWith("/dashboard/service-categories"))
     return "serviceCategories";
+  if (pathname.startsWith("/dashboard/reporting-categories"))
+    return "reportingCategories";
   if (pathname.startsWith("/dashboard/projects")) return "projects";
   if (pathname.startsWith("/dashboard/task-management"))
     return "task-management";
+  if (pathname.startsWith("/dashboard/query-management"))
+    return "query-management";
   if (pathname.startsWith("/dashboard/roles")) return "roles";
   if (pathname.startsWith("/dashboard/permissions")) return "permissions";
   if (pathname.startsWith("/dashboard/reports")) return "reports";
@@ -102,9 +110,7 @@ export default function DashboardShell({
   requireAdmin = false,
 }: DashboardShellProps) {
   const parentContext = useContext(DashboardContext);
-  if (parentContext) {
-    return <>{children}</>;
-  }
+  const isNestedShell = Boolean(parentContext);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -129,10 +135,13 @@ export default function DashboardShell({
       "projectcategories",
       "officeCategories",
       "serviceCategories",
+      "reportingCategories",
     ].includes(activeMenu);
   }, [activeMenu]);
 
   useEffect(() => {
+    if (isNestedShell) return;
+
     const loadSession = async () => {
       if (cachedSession) {
         setUser(cachedSession.user);
@@ -164,21 +173,23 @@ export default function DashboardShell({
     };
 
     loadSession();
-  }, [router]);
+  }, [isNestedShell, router]);
 
   useEffect(() => {
+    if (isNestedShell) return;
     if (loading) return;
     if (requireAdmin && !isAdmin) {
       router.replace("/dashboard");
     }
-  }, [loading, requireAdmin, isAdmin, router]);
+  }, [isNestedShell, loading, requireAdmin, isAdmin, router]);
 
   useEffect(() => {
+    if (isNestedShell) return;
     // Auto-expand Master Data section when on category pages
     if (isMasterDataActive && !masterDataExpanded) {
       setMasterDataExpanded(true);
     }
-  }, [isMasterDataActive, masterDataExpanded]);
+  }, [isNestedShell, isMasterDataActive, masterDataExpanded]);
 
   const menuItems = useMemo(() => {
     const items: {
@@ -199,15 +210,21 @@ export default function DashboardShell({
           { key: "projectcategories", label: "Project work Categories" },
           { key: "officeCategories", label: "Office work Categories" },
           { key: "serviceCategories", label: "Service work Categories" },
+          { key: "reportingCategories", label: "Reporting work Categories" },
         ],
       });
     }
     items.push({ key: "task-management", label: "Task Management" });
+    items.push({ key: "query-management", label: "Query Management" });
     items.push({ key: "reports", label: "Reporting" });
 
     items.push({ key: "profile", label: "My Profile" });
     return items;
   }, [isAdmin]);
+
+  if (isNestedShell) {
+    return <>{children}</>;
+  }
 
   const handleLogout = async () => {
     try {

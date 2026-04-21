@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
+import { getAuthContext } from "@/lib/auth";
 
 const resolveId = async (params) => String((await params)?.id || "").trim();
 
@@ -10,17 +11,26 @@ const parsePayload = (body) => {
 };
 
 export async function GET(req, { params }) {
-  const gate = await requireRole(req, ["Admin"]);
-  if (!gate.ok) return gate.res;
+  const auth = await getAuthContext(req);
+
+  if (!auth) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const id = await resolveId(params);
   if (!id) {
-    return NextResponse.json({ error: "Office category id is required." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Office category id is required." },
+      { status: 400 },
+    );
   }
 
   const category = await prisma.categories.findUnique({ where: { id } });
   if (!category || category.category !== "OFFICE_WORK") {
-    return NextResponse.json({ error: "Office category not found." }, { status: 404 });
+    return NextResponse.json(
+      { error: "Office category not found." },
+      { status: 404 },
+    );
   }
 
   return NextResponse.json({
@@ -37,7 +47,10 @@ export async function PUT(req, { params }) {
 
   const id = await resolveId(params);
   if (!id) {
-    return NextResponse.json({ error: "Office category id is required." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Office category id is required." },
+      { status: 400 },
+    );
   }
 
   const body = await req.json();
@@ -51,7 +64,10 @@ export async function PUT(req, { params }) {
 
   const existing = await prisma.categories.findUnique({ where: { id } });
   if (!existing || existing.category !== "OFFICE_WORK") {
-    return NextResponse.json({ error: "Office category not found." }, { status: 404 });
+    return NextResponse.json(
+      { error: "Office category not found." },
+      { status: 404 },
+    );
   }
 
   try {
@@ -81,12 +97,18 @@ export async function DELETE(req, { params }) {
 
   const id = await resolveId(params);
   if (!id) {
-    return NextResponse.json({ error: "Office category id is required." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Office category id is required." },
+      { status: 400 },
+    );
   }
 
   const existing = await prisma.categories.findUnique({ where: { id } });
   if (!existing || existing.category !== "OFFICE_WORK") {
-    return NextResponse.json({ error: "Office category not found." }, { status: 404 });
+    return NextResponse.json(
+      { error: "Office category not found." },
+      { status: 404 },
+    );
   }
 
   await prisma.categories.delete({ where: { id } });

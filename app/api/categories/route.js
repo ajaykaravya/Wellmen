@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
+import { getAuthContext } from "@/lib/auth";
 
 const parsePayload = (body) => {
   const category = String(body.category || "").trim();
@@ -9,8 +10,11 @@ const parsePayload = (body) => {
 };
 
 export async function GET(req) {
-  const gate = await requireRole(req, ["Admin"]);
-  if (!gate.ok) return gate.res;
+  const auth = await getAuthContext(req);
+
+  if (!auth) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const { searchParams } = new URL(req.url);
   const query = String(searchParams.get("q") || "").trim();
@@ -28,9 +32,7 @@ export async function GET(req) {
       AND: [
         { category: "PROJECT_WORK" },
         {
-          OR: [
-            { name: { contains: query, mode: "insensitive" } },
-          ],
+          OR: [{ name: { contains: query, mode: "insensitive" } }],
         },
       ],
     };
@@ -68,10 +70,7 @@ export async function POST(req) {
   const payload = parsePayload(body);
 
   if (!payload.name) {
-    return NextResponse.json(
-      { error: "Name is required." },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Name is required." }, { status: 400 });
   }
 
   if (payload.category && payload.category !== "PROJECT_WORK") {

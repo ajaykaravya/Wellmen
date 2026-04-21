@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
+import { getAuthContext } from "@/lib/auth";
 
 const resolveId = async (params) => String((await params)?.id || "").trim();
 
@@ -11,12 +12,18 @@ const parsePayload = (body) => {
 };
 
 export async function GET(req, { params }) {
-  const gate = await requireRole(req, ["Admin"]);
-  if (!gate.ok) return gate.res;
+  const auth = await getAuthContext(req);
+
+  if (!auth) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const id = await resolveId(params);
   if (!id) {
-    return NextResponse.json({ error: "Category id is required." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Category id is required." },
+      { status: 400 },
+    );
   }
 
   const category = await prisma.categories.findUnique({ where: { id } });
@@ -38,17 +45,17 @@ export async function PUT(req, { params }) {
 
   const id = await resolveId(params);
   if (!id) {
-    return NextResponse.json({ error: "Category id is required." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Category id is required." },
+      { status: 400 },
+    );
   }
 
   const body = await req.json();
   const payload = parsePayload(body);
 
   if (!payload.name) {
-    return NextResponse.json(
-      { error: "Name is required." },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Name is required." }, { status: 400 });
   }
 
   if (payload.category && payload.category !== "PROJECT_WORK") {
@@ -95,7 +102,10 @@ export async function DELETE(req, { params }) {
 
   const id = await resolveId(params);
   if (!id) {
-    return NextResponse.json({ error: "Category id is required." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Category id is required." },
+      { status: 400 },
+    );
   }
 
   const existing = await prisma.categories.findUnique({ where: { id } });

@@ -23,8 +23,6 @@ import {
 } from "react-icons/fa";
 import Link from "next/link";
 
-type ReportStatus = "TODO" | "IN_PROGRESS" | "COMPLETED" | "ON_HOLD";
-
 type ProjectOption = {
   id: string;
   name: string;
@@ -43,9 +41,9 @@ type ReportRow = {
   reportDate: string;
   projectId: string;
   projectName: string;
-  title: string;
+  categoryId: string | null;
+  categoryName: string;
   description: string;
-  status: ReportStatus;
   imageUrls: string[];
   videoUrl: string | null;
   createdById: string | null;
@@ -55,7 +53,7 @@ type ReportRow = {
 
 function ReportingListContent() {
   const router = useRouter();
-  const { setNavOpen, isAdmin } = useDashboardContext();
+  const { isAdmin } = useDashboardContext();
   const [reports, setReports] = useState<ReportRow[]>([]);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [employees, setEmployees] = useState<UserOption[]>([]);
@@ -67,7 +65,6 @@ function ReportingListContent() {
   const debouncedQuery = useDebounce(query, 400);
   const [projectFilter, setProjectFilter] = useState("");
   const [employeeFilter, setEmployeeFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -116,7 +113,6 @@ function ReportingListContent() {
 
       if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
       if (projectFilter) params.set("projectId", projectFilter);
-      if (statusFilter) params.set("status", statusFilter);
       if (isAdmin && employeeFilter) params.set("employeeId", employeeFilter);
       if (fromDate) params.set("fromDate", fromDate);
       if (toDate) params.set("toDate", toDate);
@@ -255,17 +251,8 @@ function ReportingListContent() {
         ),
       },
       {
-        header: "Status",
-        accessorKey: "status",
-        cell: (info) => (
-          <span className="rbac-muted">
-            {String(info.getValue() || "").replaceAll("_", " ")}
-          </span>
-        ),
-      },
-      {
-        header: "Title",
-        accessorKey: "title",
+        header: "Reporting Category",
+        accessorKey: "categoryName",
         size: 300,
         cell: (info) => (
           <span className="rbac-muted">{String(info.getValue() || "-")}</span>
@@ -345,7 +332,7 @@ function ReportingListContent() {
             <input
               className="rbac-input-filter"
               type="text"
-              placeholder="Search title, description"
+              placeholder="Search category, description"
               value={query}
               onChange={(event) => {
                 setPageIndex(0);
@@ -367,21 +354,6 @@ function ReportingListContent() {
                   {project.name}
                 </option>
               ))}
-            </select>
-
-            <select
-              className="rbac-input-filter rbac-select"
-              value={statusFilter}
-              onChange={(event) => {
-                setPageIndex(0);
-                setStatusFilter(event.target.value);
-              }}
-            >
-              <option value="">All status</option>
-              <option value="TODO">To do</option>
-              <option value="IN_PROGRESS">In progress</option>
-              <option value="ON_HOLD">On hold</option>
-              <option value="COMPLETED">Completed</option>
             </select>
 
             {isAdmin && (
@@ -523,7 +495,7 @@ function ReportingListContent() {
                     <div className="mb-2 flex items-center justify-between">
                       <div>
                         <h4 className="text-sm font-semibold">
-                          {report.title}
+                          {report.categoryName}
                         </h4>
                         <p className="text-xs text-slate-500">
                           {report.projectName} •{" "}
@@ -565,10 +537,6 @@ function ReportingListContent() {
                           {report.createdByName || "-"}
                         </p>
                       )}
-                      <p>
-                        <strong>Status:</strong>{" "}
-                        {report.status.replaceAll("_", " ")}
-                      </p>
                       <p>
                         <strong>Description:</strong>{" "}
                         {report.description || "-"}
@@ -630,7 +598,7 @@ function ReportingListContent() {
         title="Delete reporting?"
         description={
           confirmTarget
-            ? `Delete "${confirmTarget.title}"? This action cannot be undone.`
+            ? `Delete reporting in "${confirmTarget.categoryName}"? This action cannot be undone.`
             : "This action cannot be undone."
         }
         confirmLabel="Delete"
@@ -684,17 +652,14 @@ function ReportingListContent() {
                     <strong>Employee:</strong> {viewData.createdByName || "-"}
                   </p>
                   <p className="text-sm ">
-                    <strong>Status:</strong>{" "}
-                    {String(viewData.status || "").replaceAll("_", " ")}
+                    <strong>Reporting Category:</strong>{" "}
+                    {viewData.categoryName || "-"}
                   </p>
                 </div>
 
-                <p className="text-sm ">
-                  <strong>Title:</strong> {viewData.title}
-                </p>
-                <p className="text-sm  whitespace-pre-wrap">
-                  <strong>Description:</strong> {viewData.description}
-                </p>
+                  <p className="text-sm  whitespace-pre-wrap">
+                    <strong>Description:</strong> {viewData.description}
+                  </p>
 
                 <div>
                   {viewData.imageUrls?.length > 0 && (

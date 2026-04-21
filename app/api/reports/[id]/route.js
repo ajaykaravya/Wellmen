@@ -7,13 +7,13 @@ export const runtime = "nodejs";
 
 const resolveId = async (params) => String((await params)?.id || "").trim();
 
-const parseStatus = (value) => {
-  const normalized = String(value || "").toUpperCase();
-  if (normalized === "TODO") return "TODO";
-  if (normalized === "IN_PROGRESS") return "IN_PROGRESS";
-  if (normalized === "COMPLETED") return "COMPLETED";
-  if (normalized === "ON_HOLD") return "ON_HOLD";
-  return null;
+const resolveReportingCategory = async (categoryId) => {
+  if (!categoryId) return null;
+  const category = await prisma.categories.findUnique({
+    where: { id: categoryId },
+  });
+  if (!category || category.category !== "REPORTING_WORK") return null;
+  return category;
 };
 
 const parseDate = (value) => {
@@ -40,9 +40,9 @@ const serializeReport = (report, userId, isAdmin) => ({
   reportDate: report.reportDate,
   projectId: report.projectId,
   projectName: report.project?.name || "-",
-  title: report.title,
+  categoryId: report.categoryId || null,
+  categoryName: report.category?.name || "-",
   description: report.description,
-  status: report.status,
   imageUrls: Array.isArray(report.imageUrls) ? report.imageUrls : [],
   videoUrl: report.videoUrl || null,
   createdById: report.createdById,
@@ -72,6 +72,7 @@ async function loadAllowedReport(req, params) {
     where: { id },
     include: {
       project: { select: { name: true } },
+      category: { select: { name: true } },
       createdBy: { select: { firstName: true, lastName: true } },
     },
   });
@@ -115,14 +116,16 @@ export async function PUT(req, { params }) {
 
     const reportDate = String(form.get("reportDate") || "").trim();
     const projectId = String(form.get("projectId") || "").trim();
-    const title = String(form.get("title") || "").trim();
+    const categoryId = String(form.get("categoryId") || "").trim();
     const description = String(form.get("description") || "").trim();
-    const status = parseStatus(form.get("status")) || "TODO";
     const parsedDate = parseDate(reportDate);
 
-    if (!reportDate || !projectId || !title || !description) {
+    if (!reportDate || !projectId || !categoryId || !description) {
       return NextResponse.json(
-        { error: "Report date, project, title and description are required." },
+        {
+          error:
+            "Report date, project, reporting category and description are required.",
+        },
         { status: 400 },
       );
     }
@@ -140,6 +143,14 @@ export async function PUT(req, { params }) {
     if (!project) {
       return NextResponse.json(
         { error: "Project not found." },
+        { status: 404 },
+      );
+    }
+
+    const category = await resolveReportingCategory(categoryId);
+    if (!category) {
+      return NextResponse.json(
+        { error: "Reporting category not found." },
         { status: 404 },
       );
     }
@@ -172,14 +183,14 @@ export async function PUT(req, { params }) {
       data: {
         reportDate: parsedDate,
         projectId,
-        title,
+        categoryId,
         description,
-        status,
         imageUrls,
         videoUrl,
       },
       include: {
         project: { select: { name: true } },
+        category: { select: { name: true } },
         createdBy: { select: { firstName: true, lastName: true } },
       },
     });

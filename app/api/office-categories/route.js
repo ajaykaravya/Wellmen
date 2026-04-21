@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
+import { getAuthContext } from "@/lib/auth";
 
 const parsePayload = (body) => {
   const name = String(body.name || "").trim();
@@ -8,8 +9,11 @@ const parsePayload = (body) => {
 };
 
 export async function GET(req) {
-  const gate = await requireRole(req, ["Admin"]);
-  if (!gate.ok) return gate.res;
+  const auth = await getAuthContext(req);
+
+  if (!auth) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const { searchParams } = new URL(req.url);
   const query = String(searchParams.get("q") || "").trim();
@@ -23,16 +27,14 @@ export async function GET(req) {
 
   const where = { category: "OFFICE_WORK" };
   if (query) {
-    where.OR = [
-      { name: { contains: query, mode: "insensitive" } },
-    ];
+    where.OR = [{ name: { contains: query, mode: "insensitive" } }];
   }
 
   const [total, categories] = await Promise.all([
     prisma.categories?.count({ where }),
     prisma.categories?.findMany({
       where,
-      orderBy: { createdAt: "desc" }    ,
+      orderBy: { createdAt: "desc" },
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),

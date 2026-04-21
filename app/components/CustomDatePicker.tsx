@@ -32,14 +32,22 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     const ddmmyyyyMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (ddmmyyyyMatch) {
       const [, day, month, year] = ddmmyyyyMatch;
-      const date = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
+      const date = new Date(
+        parseInt(year, 10),
+        parseInt(month, 10) - 1,
+        parseInt(day, 10),
+      );
       if (!isNaN(date.getTime())) return date;
     }
 
     const yyyymmddMatch = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
     if (yyyymmddMatch) {
       const [, year, month, day] = yyyymmddMatch;
-      const date = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
+      const date = new Date(
+        parseInt(year, 10),
+        parseInt(month, 10) - 1,
+        parseInt(day, 10),
+      );
       if (!isNaN(date.getTime())) return date;
     }
 
@@ -47,7 +55,9 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     return Number.isNaN(fallback.getTime()) ? null : fallback;
   };
 
-  const [selectedDate, setSelectedDate] = useState<Date | null>(() => parseDateValue(value));
+  const [selectedDate, setSelectedDate] = useState<Date | null>(() =>
+    parseDateValue(value),
+  );
 
   const [isOpen, setIsOpen] = useState(false);
   const datePickerRef = useRef<DatePicker>(null);
@@ -64,12 +74,12 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   const handleDateChange = (date: Date | null) => {
     setSelectedDate(date);
     if (date) {
-      const day = date.getDate().toString().padStart(2, '0');
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const day = date.getDate().toString().padStart(2, "0");
+      const month = (date.getMonth() + 1).toString().padStart(2, "0");
       const year = date.getFullYear();
       onChange(`${day}/${month}/${year}`);
     } else {
-      onChange('');
+      onChange("");
     }
     setIsOpen(false);
   };
@@ -88,8 +98,8 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   };
 
   const displayValue = selectedDate
-    ? `${selectedDate.getDate().toString().padStart(2, '0')}/${(selectedDate.getMonth() + 1).toString().padStart(2, '0')}/${selectedDate.getFullYear()}`
-    : value || '';
+    ? `${selectedDate.getDate().toString().padStart(2, "0")}/${(selectedDate.getMonth() + 1).toString().padStart(2, "0")}/${selectedDate.getFullYear()}`
+    : value || "";
 
   return (
     <div className="relative">
@@ -101,7 +111,7 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
           onClick={handleInputClick}
           placeholder={placeholder}
           disabled={disabled}
-          className={`lg:w-full w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10 ${className} ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white cursor-pointer'}`}
+          className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10 ${className} ${disabled ? "bg-gray-100 cursor-not-allowed" : "bg-white cursor-pointer"}`}
         />
         <FaCalendarAlt
           className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"

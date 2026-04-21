@@ -21,12 +21,18 @@ const createClient = () =>
 
 const existing = globalForPrisma.prisma
 
-// In dev, if schema changed and global client was created earlier,
-// recreate the client so new model delegates (e.g. dailyReport) exist.
-const hasReportingModel =
-  existing && typeof (existing as unknown as Record<string, unknown>).dailyReport !== "undefined"
+// In dev, if schema changed and the cached client predates a model addition,
+// recreate it so new delegates (e.g. dailyReport, queryManagement) exist.
+const cachedClientHasModel = (client: PrismaClient | undefined) => {
+  if (!client) return false
+  const delegates = client as unknown as Record<string, unknown>
+  return (
+    typeof delegates.dailyReport !== "undefined" &&
+    typeof delegates.queryManagement !== "undefined"
+  )
+}
 
-export const prisma = existing && hasReportingModel ? existing : createClient()
+export const prisma = cachedClientHasModel(existing) ? existing : createClient()
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma

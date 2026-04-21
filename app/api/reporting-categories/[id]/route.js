@@ -6,8 +6,9 @@ import { getAuthContext } from "@/lib/auth";
 const resolveId = async (params) => String((await params)?.id || "").trim();
 
 const parsePayload = (body) => {
+  const category = String(body.category || "").trim();
   const name = String(body.name || "").trim();
-  return { name };
+  return { category, name };
 };
 
 export async function GET(req, { params }) {
@@ -20,15 +21,15 @@ export async function GET(req, { params }) {
   const id = await resolveId(params);
   if (!id) {
     return NextResponse.json(
-      { error: "Service category id is required." },
+      { error: "Reporting category id is required." },
       { status: 400 },
     );
   }
 
   const category = await prisma.categories.findUnique({ where: { id } });
-  if (!category || category.category !== "SERVICE_WORK") {
+  if (!category || category.category !== "REPORTING_WORK") {
     return NextResponse.json(
-      { error: "Service category not found." },
+      { error: "Reporting category not found." },
       { status: 404 },
     );
   }
@@ -48,7 +49,7 @@ export async function PUT(req, { params }) {
   const id = await resolveId(params);
   if (!id) {
     return NextResponse.json(
-      { error: "Service category id is required." },
+      { error: "Reporting category id is required." },
       { status: 400 },
     );
   }
@@ -62,10 +63,20 @@ export async function PUT(req, { params }) {
     );
   }
 
-  const existing = await prisma.categories.findUnique({ where: { id } });
-  if (!existing || existing.category !== "SERVICE_WORK") {
+  if (payload.category && payload.category !== "REPORTING_WORK") {
     return NextResponse.json(
-      { error: "Service category not found." },
+      {
+        error:
+          "Reporting work categories must be updated from the Reporting work Categories module.",
+      },
+      { status: 400 },
+    );
+  }
+
+  const existing = await prisma.categories.findUnique({ where: { id } });
+  if (!existing || existing.category !== "REPORTING_WORK") {
+    return NextResponse.json(
+      { error: "Reporting category not found." },
       { status: 404 },
     );
   }
@@ -73,7 +84,9 @@ export async function PUT(req, { params }) {
   try {
     const category = await prisma.categories.update({
       where: { id },
-      data: { name: payload.name },
+      data: {
+        name: payload.name,
+      },
     });
 
     return NextResponse.json({
@@ -83,9 +96,9 @@ export async function PUT(req, { params }) {
       createdAt: category.createdAt,
     });
   } catch (error) {
-    console.error("Failed to update service category", error);
+    console.error("Failed to update reporting category", error);
     return NextResponse.json(
-      { error: "Failed to update service category." },
+      { error: "Failed to update reporting category." },
       { status: 500 },
     );
   }
@@ -98,15 +111,15 @@ export async function DELETE(req, { params }) {
   const id = await resolveId(params);
   if (!id) {
     return NextResponse.json(
-      { error: "Service category id is required." },
+      { error: "Reporting category id is required." },
       { status: 400 },
     );
   }
 
   const existing = await prisma.categories.findUnique({ where: { id } });
-  if (!existing || existing.category !== "SERVICE_WORK") {
+  if (!existing || existing.category !== "REPORTING_WORK") {
     return NextResponse.json(
-      { error: "Service category not found." },
+      { error: "Reporting category not found." },
       { status: 404 },
     );
   }

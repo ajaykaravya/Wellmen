@@ -22,6 +22,7 @@ model User {
   createdProjects Project[]     @relation("ProjectCreator")
   assignedTodos   Todo[]        @relation("TodoAssignee")
   createdTodos    Todo[]        @relation("TodoCreator")
+  queryManagements QueryManagement[] @relation("QueryCreatedBy")
   role            Role          @relation(fields: [roleId], references: [id])
 }
 
@@ -68,15 +69,15 @@ model Project {
   dailyReports  DailyReport[]
   createdBy     User?         @relation("ProjectCreator", fields: [createdById], references: [id])
   todos         Todo[]
+  queryManagements QueryManagement[]
 }
 
 model DailyReport {
   id          String          @id @default(uuid())
   reportDate  DateTime
   projectId   String
-  title       String
+  categoryId  String?
   description String
-  status      ReportingStatus @default(TODO)
   imageUrls   Json?
   videoUrl    String?
   createdById String?
@@ -84,9 +85,11 @@ model DailyReport {
   updatedAt   DateTime        @updatedAt
   createdBy   User?           @relation("DailyReportCreator", fields: [createdById], references: [id])
   project     Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  category    Categories?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   @@index([createdById, reportDate])
   @@index([projectId, reportDate])
+  @@index([categoryId])
 }
 
 model Role {
@@ -112,15 +115,36 @@ model RolePermission {
 }
 
 model Categories {
-  id        String   @id
+  id        String   @id @default(uuid())
   category  String
   name      String
   createdAt DateTime @default(now())
-  updatedAt DateTime
+  updatedAt DateTime @default(now()) @updatedAt
 
   todos     Todo[]
+  reports   DailyReport[]
 
   @@unique([category, name])
+}
+
+model QueryManagement {
+  id          String       @id @default(uuid())
+  projectId   String
+  category    QueryCategory
+  description String
+  status      QueryStatus  @default(PENDING)
+  priority    Priority
+  createdById String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy   User?        @relation("QueryCreatedBy", fields: [createdById], references: [id])
+
+  @@index([projectId])
+  @@index([category])
+  @@index([status])
+  @@index([priority])
+  @@index([createdById])
 }
 
 enum TodoStatus {
@@ -137,13 +161,6 @@ enum ProjectStatus {
   ON_HOLD
 }
 
-enum ReportingStatus {
-  TODO
-  IN_PROGRESS
-  COMPLETED
-  ON_HOLD
-}
-
 enum TaskType {
   PROJECT
   OFFICE
@@ -154,4 +171,15 @@ enum Priority {
   LOW
   MEDIUM
   HIGH
+}
+
+enum QueryCategory {
+  REMARKS
+  URGENCY
+  DECISION_PENDING
+}
+
+enum QueryStatus {
+  PENDING
+  COMPLETED
 }
