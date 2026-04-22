@@ -2,11 +2,24 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { flexRender, useReactTable, ColumnDef, getCoreRowModel } from "@tanstack/react-table";
-import DashboardShell, { useDashboardContext } from "../_components/DashboardShell";
+import {
+  flexRender,
+  useReactTable,
+  ColumnDef,
+  getCoreRowModel,
+} from "@tanstack/react-table";
+import DashboardShell, {
+  useDashboardContext,
+} from "../_components/DashboardShell";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import { toast } from "react-toastify";
-import { FaChevronLeft, FaChevronRight, FaEdit, FaTrash, FaSpinner } from "react-icons/fa";
+import {
+  FaChevronLeft,
+  FaChevronRight,
+  FaEdit,
+  FaTrash,
+  FaSpinner,
+} from "react-icons/fa";
 import Link from "next/link";
 
 type UserRow = {
@@ -34,7 +47,7 @@ function UsersContent() {
     setLoading(true);
     try {
       const res = await fetch(
-        `/api/users?page=${pageIndex + 1}&pageSize=${pageSize}`
+        `/api/users?page=${pageIndex + 1}&pageSize=${pageSize}`,
       );
       if (!res.ok) return;
       const data = await res.json();
@@ -87,7 +100,7 @@ function UsersContent() {
       {
         header: "Name",
         accessorKey: "firstName",
-        cell: ({row}:any) => (
+        cell: ({ row }: any) => (
           <span className="rbac-muted">
             {row.original?.firstName} {row.original?.lastName}
           </span>
@@ -96,21 +109,25 @@ function UsersContent() {
       {
         header: "Mobile number",
         accessorKey: "mobileNumber",
-        cell: (info:any) => (
-          <span className="rbac-muted">{(info.getValue() as string) || "-"}</span>
+        cell: (info: any) => (
+          <span className="rbac-muted">
+            {(info.getValue() as string) || "-"}
+          </span>
         ),
       },
       {
         header: "Role",
         accessorKey: "role",
-        cell: (info:any) => (
-          <span className="rbac-muted">{(info.getValue() as string) || "-"}</span>
+        cell: (info: any) => (
+          <span className="rbac-muted">
+            {(info.getValue() as string) || "-"}
+          </span>
         ),
       },
       {
         header: "Action",
         id: "action",
-        cell: ({ row }:any) => (
+        cell: ({ row }: any) => (
           <div className="rbac-inline-actions flex gap-4">
             {row.original.id !== user?.id && (
               <>
@@ -134,7 +151,7 @@ function UsersContent() {
         ),
       },
     ],
-    [handleEditUser, handleDeleteUser]
+    [handleEditUser, handleDeleteUser],
   );
 
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
@@ -152,23 +169,20 @@ function UsersContent() {
       <section className="rbac-section rbac-container">
         <div className="rbac-card">
           <div className="flex justify-between items-center">
-          <h3 className="rbac-title-lg">Users List</h3>
-          <Link href="/dashboard/users/new">
-          <button
-          className="rbac-button"
-          type="button"
-        >
-          Create user
-        </button>
-        </Link>
-        </div>
+            <h3 className="rbac-title-lg">Users List</h3>
+            <Link href="/dashboard/users/new">
+              <button className="rbac-button" type="button">
+                Create user
+              </button>
+            </Link>
+          </div>
           <div className="mt-4">
             <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full border border-slate-200 border-separate border-spacing-0">
                 <thead className="bg-slate-50">
-                  {table.getHeaderGroups().map((headerGroup:any) => (
+                  {table.getHeaderGroups().map((headerGroup: any) => (
                     <tr key={headerGroup.id}>
-                      {headerGroup.headers.map((header:any) => (
+                      {headerGroup.headers.map((header: any) => (
                         <th
                           key={header.id}
                           className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200"
@@ -177,7 +191,7 @@ function UsersContent() {
                             ? null
                             : flexRender(
                                 header.column.columnDef.header,
-                                header.getContext()
+                                header.getContext(),
                               )}
                         </th>
                       ))}
@@ -187,7 +201,10 @@ function UsersContent() {
                 <tbody>
                   {loading && (
                     <tr>
-                      <td colSpan={columns.length} className="px-4 py-3 text-sm text-slate-500">
+                      <td
+                        colSpan={columns.length}
+                        className="px-4 py-3 text-sm text-slate-500"
+                      >
                         <div className="flex items-center justify-center">
                           <FaSpinner className="animate-spin mr-2" size={16} />
                         </div>
@@ -196,19 +213,28 @@ function UsersContent() {
                   )}
                   {!loading && users.length === 0 && (
                     <tr>
-                      <td colSpan={columns.length} className="px-4 py-3 text-sm text-slate-500">
+                      <td
+                        colSpan={columns.length}
+                        className="px-4 py-3 text-sm text-slate-500"
+                      >
                         No users found.
                       </td>
                     </tr>
                   )}
                   {!loading &&
-                    table.getRowModel().rows.map((row:any, index:number) => (
-                      <tr key={row.id} className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}>
-                        {row.getVisibleCells().map((cell:any) => (
-                          <td key={cell.id} className="px-4 py-3 text-sm border-b border-slate-100">
+                    table.getRowModel().rows.map((row: any, index: number) => (
+                      <tr
+                        key={row.id}
+                        className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}
+                      >
+                        {row.getVisibleCells().map((cell: any) => (
+                          <td
+                            key={cell.id}
+                            className="px-4 py-3 text-sm border-b border-slate-100"
+                          >
                             {flexRender(
                               cell.column.columnDef.cell,
-                              cell.getContext()
+                              cell.getContext(),
                             )}
                           </td>
                         ))}
@@ -225,82 +251,90 @@ function UsersContent() {
                 </div>
               )}
               {!loading && users.length === 0 && (
-                <div className="rbac-card py-4 text-sm text-slate-500">No users found.</div>
-              )}
-              {!loading && users.map((user) => (
-                <div key={user.id} className="rbac-card p-4">
-                  <div className="mb-2 flex items-center justify-between">
-                    <div>
-                      <h4 className="text-sm font-semibold">{user.firstName} {user.lastName}</h4>
-                      <p className="text-xs text-slate-500">{user.email}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        className="rbac-link"
-                        type="button"
-                        onClick={() => handleEditUser(user)}
-                      >
-                        <FaEdit />
-                      </button>
-                      <button
-                        className="rbac-link danger"
-                        type="button"
-                        onClick={() => handleDeleteUser(user)}
-                      >
-                        <FaTrash />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="grid gap-1 text-sm">
-                    <p><strong>Mobile:</strong> {user.mobileNumber || "-"}</p>
-                    <p><strong>Role:</strong> {user.role || "-"}</p>
-                  </div>
+                <div className="rbac-card py-4 text-sm text-slate-500">
+                  No users found.
                 </div>
-              ))}
+              )}
+              {!loading &&
+                users.map((user) => (
+                  <div key={user.id} className="rbac-card p-4">
+                    <div className="mb-2 flex items-center justify-between">
+                      <div>
+                        <h4 className="text-sm font-semibold">
+                          {user.firstName} {user.lastName}
+                        </h4>
+                        <p className="text-xs text-slate-500">{user.email}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          className="rbac-link"
+                          type="button"
+                          onClick={() => handleEditUser(user)}
+                        >
+                          <FaEdit />
+                        </button>
+                        <button
+                          className="rbac-link danger"
+                          type="button"
+                          onClick={() => handleDeleteUser(user)}
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid gap-1 text-sm">
+                      <p>
+                        <strong>Mobile:</strong> {user.mobileNumber || "-"}
+                      </p>
+                      <p>
+                        <strong>Role:</strong> {user.role || "-"}
+                      </p>
+                    </div>
+                  </div>
+                ))}
             </div>
           </div>
 
           <div className="mt-4 flex flex-wrap items-center justify-end gap-3 text-sm">
-           
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2">
-              <button
-                className="change-button change-button-secondary"
-                type="button"
-                onClick={() => setPageIndex((prev) => Math.max(prev - 1, 0))}
-                disabled={pageIndex === 0}
-              >
-                <FaChevronLeft size={20}/>
-              </button>
-               <span>
-              Page {pageIndex + 1} of {pageCount}
-            </span>
-              <button
-                className="change-button change-button-secondary"
-                type="button"
-                onClick={() =>
-                  setPageIndex((prev) => Math.min(prev + 1, pageCount - 1))
-                }
-                disabled={pageIndex + 1 >= pageCount}
-              >
-                <FaChevronRight size={20}/>
-              </button>
+                <button
+                  className="change-button change-button-secondary"
+                  type="button"
+                  onClick={() => setPageIndex((prev) => Math.max(prev - 1, 0))}
+                  disabled={pageIndex === 0}
+                >
+                  <FaChevronLeft size={20} />
+                </button>
+                <span>
+                  Page {pageIndex + 1} of {pageCount}
+                </span>
+                <button
+                  className="change-button change-button-secondary"
+                  type="button"
+                  onClick={() =>
+                    setPageIndex((prev) => Math.min(prev + 1, pageCount - 1))
+                  }
+                  disabled={pageIndex + 1 >= pageCount}
+                >
+                  <FaChevronRight size={20} />
+                </button>
               </div>
               <div>
-              <select
-                className="rbac-input rbac-select"
-                value={pageSize}
-                onChange={(event) => {
-                  setPageIndex(0);
-                  setPageSize(Number(event.target.value));
-                }}
-              >
-                {[5, 10, 20, 30].map((size) => (
-                  <option key={size} value={size}>
-                    Show {size} 
-                  </option>
-                ))}
-              </select>
+                <select
+                  className="rbac-input rbac-select rbac-pagination"
+                  value={pageSize}
+                  onChange={(event) => {
+                    setPageIndex(0);
+                    setPageSize(Number(event.target.value));
+                  }}
+                >
+                  {[5, 10, 20, 30].map((size) => (
+                    <option key={size} value={size}>
+                      Show {size}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>

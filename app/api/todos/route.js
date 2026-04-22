@@ -80,6 +80,7 @@ export async function GET(req) {
   const pageParam = Number(searchParams.get("page") || "1");
   const pageSizeParam = Number(searchParams.get("pageSize") || "10");
   const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+  const includePendingOld = searchParams.get("includePendingOld") === "true";
   const pageSize =
     Number.isFinite(pageSizeParam) && pageSizeParam > 0
       ? Math.min(pageSizeParam, 100)
@@ -133,7 +134,38 @@ export async function GET(req) {
     return NextResponse.json({ error: "Invalid toDate." }, { status: 400 });
   }
 
-  if (parsedFromDate || parsedToDate) {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+
+  if (includePendingOld) {
+    where.OR = [
+      {
+        // ✅ Today's tasks
+        startDate: {
+          gte: todayStart,
+          lte: todayEnd,
+        },
+      },
+      {
+        // ✅ Old tasks NOT completed
+        AND: [
+          {
+            startDate: {
+              lt: todayStart,
+            },
+          },
+          {
+            status: {
+              not: "COMPLETED",
+            },
+          },
+        ],
+      },
+    ];
+  } else if (parsedFromDate || parsedToDate) {
     where.startDate = {};
     if (parsedFromDate) {
       where.startDate.gte = parsedFromDate;
@@ -266,10 +298,7 @@ export async function POST(req) {
   if (categoryId) {
     const categoryCheck = await validateCategoryForType(type, categoryId);
     if (!categoryCheck.ok) {
-      return NextResponse.json(
-        { error: categoryCheck.error },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: categoryCheck.error }, { status: 400 });
     }
   }
 
@@ -323,7 +352,7 @@ export async function POST(req) {
         type,
         priority,
         categoryId,
-        subCategory: type === "service" ? subCategory : null,
+        subCategory: type === "SERVICE" ? subCategory : null,
       },
       include: {
         assignee: { include: { role: true } },

@@ -246,7 +246,7 @@ function QueryListContent() {
     <>
       <section className="rbac-section rbac-container">
         <div className="rbac-card">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex justify-between items-center">
             <h3 className="rbac-title-lg">Query Management</h3>
             <Link href="/dashboard/query-management/new">
               <button className="rbac-button" type="button">
@@ -441,7 +441,7 @@ function QueryListContent() {
               </div>
               <div>
                 <select
-                  className="rbac-input rbac-select"
+                  className="rbac-input rbac-select rbac-pagination"
                   value={pageSize}
                   onChange={(event) => {
                     setPageIndex(0);

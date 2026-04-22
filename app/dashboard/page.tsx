@@ -557,13 +557,13 @@ function OverviewContent() {
     [query],
   );
 
-  const loadTodayTodos = useCallback(async () => {
+  const loadTodos = useCallback(async () => {
     setLoading(true);
     try {
       const today = getTodayInputDate();
       const endpoint = isAdmin ? "/api/todos" : "/api/my-todos";
       const res = await fetch(
-        `${endpoint}?fromDate=${today}&page=1&pageSize=10`,
+        `${endpoint}?fromDate=${today}&includePendingOld=true&page=1&pageSize=10`,
       );
       if (!res.ok) return;
 
@@ -578,8 +578,8 @@ function OverviewContent() {
   }, [isAdmin]);
 
   useEffect(() => {
-    loadTodayTodos();
-  }, [loadTodayTodos]);
+    loadTodos();
+  }, [loadTodos]);
 
   const loadQuery = useCallback(async () => {
     try {

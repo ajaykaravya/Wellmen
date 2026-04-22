@@ -7,7 +7,13 @@ import DashboardShell from "../_components/DashboardShell";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import useDebounce from "@/app/hooks/useDebounce";
 import { toast } from "react-toastify";
-import { FaChevronLeft, FaChevronRight, FaEdit, FaTrash, FaSpinner } from "react-icons/fa";
+import {
+  FaChevronLeft,
+  FaChevronRight,
+  FaEdit,
+  FaTrash,
+  FaSpinner,
+} from "react-icons/fa";
 import Link from "next/link";
 
 type CategoryRow = {
@@ -97,7 +103,9 @@ function CategoryListContent() {
       {
         header: "Name",
         accessorKey: "name",
-        cell: (info) => <span className="rbac-muted">{String(info.getValue() || "")}</span>,
+        cell: (info) => (
+          <span className="rbac-muted">{String(info.getValue() || "")}</span>
+        ),
       },
       {
         header: "Action",
@@ -181,7 +189,10 @@ function CategoryListContent() {
                         >
                           {header.isPlaceholder
                             ? null
-                            : flexRender(header.column.columnDef.header, header.getContext())}
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext(),
+                              )}
                         </th>
                       ))}
                     </tr>
@@ -190,7 +201,10 @@ function CategoryListContent() {
                 <tbody>
                   {loading && (
                     <tr>
-                      <td colSpan={columns.length} className="px-4 py-3 text-sm text-slate-500">
+                      <td
+                        colSpan={columns.length}
+                        className="px-4 py-3 text-sm text-slate-500"
+                      >
                         <div className="flex items-center justify-center">
                           <FaSpinner className="animate-spin mr-2" size={16} />
                         </div>
@@ -199,21 +213,30 @@ function CategoryListContent() {
                   )}
                   {!loading && categories.length === 0 && (
                     <tr>
-                      <td colSpan={columns.length} className="px-4 py-3 text-sm text-slate-500">
+                      <td
+                        colSpan={columns.length}
+                        className="px-4 py-3 text-sm text-slate-500"
+                      >
                         No categories found.
                       </td>
                     </tr>
                   )}
                   {!loading &&
                     table.getRowModel().rows.map((row, index) => (
-                      <tr key={row.id} className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                      <tr
+                        key={row.id}
+                        className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}
+                      >
                         {row.getVisibleCells().map((cell) => (
                           <td
                             key={cell.id}
                             style={{ width: cell.column.getSize() }}
                             className="px-4 py-3 text-sm border-b border-slate-100"
                           >
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext(),
+                            )}
                           </td>
                         ))}
                       </tr>
@@ -229,17 +252,23 @@ function CategoryListContent() {
                 </div>
               )}
               {!loading && categories.length === 0 && (
-                <div className="rbac-card py-4 text-sm text-slate-500">No categories found.</div>
+                <div className="rbac-card py-4 text-sm text-slate-500">
+                  No categories found.
+                </div>
               )}
               {!loading &&
                 categories.map((category) => (
                   <div key={category.id} className="rbac-card p-4">
                     <div className="mb-2 flex items-center justify-between">
                       <div>
-                        <h4 className="text-sm font-semibold">{category.name}</h4>
+                        <h4 className="text-sm font-semibold">
+                          {category.name}
+                        </h4>
                       </div>
                       <div className="flex gap-2">
-                        <Link href={`/dashboard/project-categories/${category.id}`}>
+                        <Link
+                          href={`/dashboard/project-categories/${category.id}`}
+                        >
                           <button className="rbac-link" type="button">
                             <FaEdit />
                           </button>
@@ -260,43 +289,45 @@ function CategoryListContent() {
 
           <div className="mt-4 flex flex-wrap items-center justify-end gap-3 text-sm">
             <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2">
-              <button
-                className="change-button change-button-secondary"
-                type="button"
-                onClick={() => setPageIndex((prev) => Math.max(prev - 1, 0))}
-                disabled={pageIndex === 0}
-              >
-                <FaChevronLeft size={20} />
-              </button>
-              <span>
-                Page {pageIndex + 1} of {pageCount}
-              </span>
-              <button
-                className="change-button change-button-secondary"
-                type="button"
-                onClick={() => setPageIndex((prev) => Math.min(prev + 1, pageCount - 1))}
-                disabled={pageIndex + 1 >= pageCount}
-              >
-                <FaChevronRight size={20} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  className="change-button change-button-secondary"
+                  type="button"
+                  onClick={() => setPageIndex((prev) => Math.max(prev - 1, 0))}
+                  disabled={pageIndex === 0}
+                >
+                  <FaChevronLeft size={20} />
+                </button>
+                <span>
+                  Page {pageIndex + 1} of {pageCount}
+                </span>
+                <button
+                  className="change-button change-button-secondary"
+                  type="button"
+                  onClick={() =>
+                    setPageIndex((prev) => Math.min(prev + 1, pageCount - 1))
+                  }
+                  disabled={pageIndex + 1 >= pageCount}
+                >
+                  <FaChevronRight size={20} />
+                </button>
               </div>
               <div>
-            <select
-              className="rbac-input rbac-select"
-              value={pageSize}
-              onChange={(event) => {
-                setPageIndex(0);
-                setPageSize(Number(event.target.value));
-              }}
-            >
-              {[5, 10, 20, 30].map((size) => (
-                <option key={size} value={size}>
-                  Show {size}
-                </option>
-              ))}
-            </select>
-            </div>
+                <select
+                  className="rbac-input rbac-select rbac-pagination"
+                  value={pageSize}
+                  onChange={(event) => {
+                    setPageIndex(0);
+                    setPageSize(Number(event.target.value));
+                  }}
+                >
+                  {[5, 10, 20, 30].map((size) => (
+                    <option key={size} value={size}>
+                      Show {size}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
         </div>

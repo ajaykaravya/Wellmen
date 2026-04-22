@@ -574,7 +574,7 @@ function ReportingListContent() {
               </div>
               <div>
                 <select
-                  className="rbac-input rbac-select"
+                  className="rbac-input rbac-select rbac-pagination"
                   value={pageSize}
                   onChange={(event) => {
                     setPageIndex(0);
@@ -657,9 +657,9 @@ function ReportingListContent() {
                   </p>
                 </div>
 
-                  <p className="text-sm  whitespace-pre-wrap">
-                    <strong>Description:</strong> {viewData.description}
-                  </p>
+                <p className="text-sm  whitespace-pre-wrap">
+                  <strong>Description:</strong> {viewData.description}
+                </p>
 
                 <div>
                   {viewData.imageUrls?.length > 0 && (

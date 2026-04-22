@@ -430,7 +430,7 @@ function ProjectListContent() {
               </div>
               <div>
                 <select
-                  className="rbac-input rbac-select"
+                  className="rbac-input rbac-select rbac-pagination"
                   value={pageSize}
                   onChange={(event) => {
                     setPageIndex(0);

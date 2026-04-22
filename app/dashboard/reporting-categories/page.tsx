@@ -262,10 +262,14 @@ function ReportingCategoryListContent() {
                   <div key={category.id} className="rbac-card p-4">
                     <div className="mb-2 flex items-center justify-between">
                       <div>
-                        <h4 className="text-sm font-semibold">{category.name}</h4>
+                        <h4 className="text-sm font-semibold">
+                          {category.name}
+                        </h4>
                       </div>
                       <div className="flex gap-2">
-                        <Link href={`/dashboard/reporting-categories/${category.id}`}>
+                        <Link
+                          href={`/dashboard/reporting-categories/${category.id}`}
+                        >
                           <button className="rbac-link" type="button">
                             <FaEdit />
                           </button>
@@ -311,7 +315,7 @@ function ReportingCategoryListContent() {
               </div>
               <div>
                 <select
-                  className="rbac-input rbac-select"
+                  className="rbac-input rbac-select rbac-pagination"
                   value={pageSize}
                   onChange={(event) => {
                     setPageIndex(0);
