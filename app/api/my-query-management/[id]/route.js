@@ -1,17 +1,25 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/rbac";
+import { getAuthContext } from "@/lib/auth";
 import { parsePayload, serializeQuery } from "@/lib/queryManagement";
 
 const resolveId = async (params) => String((await params)?.id || "").trim();
 
-export async function GET(req, { params }) {
-  const gate = await requireRole(req, ["Admin"]);
-  if (!gate.ok) return gate.res;
+async function loadAllowedQuery(req, params) {
+  const auth = await getAuthContext(req);
+  if (!auth) {
+    return {
+      ok: false,
+      res: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+    };
+  }
 
   const id = await resolveId(params);
   if (!id) {
-    return NextResponse.json({ error: "Query id is required." }, { status: 400 });
+    return {
+      ok: false,
+      res: NextResponse.json({ error: "Query id is required." }, { status: 400 }),
+    };
   }
 
   const query = await prisma.queryManagement.findUnique({
@@ -23,20 +31,35 @@ export async function GET(req, { params }) {
   });
 
   if (!query) {
-    return NextResponse.json({ error: "Query not found." }, { status: 404 });
+    return {
+      ok: false,
+      res: NextResponse.json({ error: "Query not found." }, { status: 404 }),
+    };
   }
 
-  return NextResponse.json(serializeQuery(query, gate.auth?.user?.id || ""));
+  const userId = auth.user?.id || "";
+  const isAdmin = auth.role === "Admin";
+  const isOwner = query.createdById === userId;
+
+  if (!isAdmin && !isOwner) {
+    return {
+      ok: false,
+      res: NextResponse.json({ error: "Forbidden." }, { status: 403 }),
+    };
+  }
+
+  return { ok: true, auth, query, userId, isAdmin, isOwner };
+}
+
+export async function GET(req, { params }) {
+  const loaded = await loadAllowedQuery(req, params);
+  if (!loaded.ok) return loaded.res;
+  return NextResponse.json(serializeQuery(loaded.query, loaded.userId));
 }
 
 export async function PUT(req, { params }) {
-  const gate = await requireRole(req, ["Admin"]);
-  if (!gate.ok) return gate.res;
-
-  const id = await resolveId(params);
-  if (!id) {
-    return NextResponse.json({ error: "Query id is required." }, { status: 400 });
-  }
+  const loaded = await loadAllowedQuery(req, params);
+  if (!loaded.ok) return loaded.res;
 
   const body = await req.json();
   const payload = parsePayload(body);
@@ -68,7 +91,7 @@ export async function PUT(req, { params }) {
 
   try {
     const query = await prisma.queryManagement.update({
-      where: { id },
+      where: { id: loaded.query.id },
       data: {
         projectId: payload.projectId,
         category: payload.category,
@@ -82,7 +105,7 @@ export async function PUT(req, { params }) {
       },
     });
 
-    return NextResponse.json(serializeQuery(query, gate.auth?.user?.id || ""));
+    return NextResponse.json(serializeQuery(query, loaded.userId));
   } catch (error) {
     console.error("Failed to update query", error);
     return NextResponse.json(
@@ -93,19 +116,9 @@ export async function PUT(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
-  const gate = await requireRole(req, ["Admin"]);
-  if (!gate.ok) return gate.res;
+  const loaded = await loadAllowedQuery(req, params);
+  if (!loaded.ok) return loaded.res;
 
-  const id = await resolveId(params);
-  if (!id) {
-    return NextResponse.json({ error: "Query id is required." }, { status: 400 });
-  }
-
-  const existing = await prisma.queryManagement.findUnique({ where: { id } });
-  if (!existing) {
-    return NextResponse.json({ error: "Query not found." }, { status: 404 });
-  }
-
-  await prisma.queryManagement.delete({ where: { id } });
+  await prisma.queryManagement.delete({ where: { id: loaded.query.id } });
   return NextResponse.json({ ok: true });
 }

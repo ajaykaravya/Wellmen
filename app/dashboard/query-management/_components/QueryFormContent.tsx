@@ -28,6 +28,10 @@ type QueryFormState = {
 
 type QueryFormContentProps = {
   queryId?: string;
+  apiBase?: string;
+  returnPath?: string;
+  title?: string;
+  submitLabel?: string;
 };
 
 const categoryOptions: Array<{
@@ -50,7 +54,13 @@ const priorityOptions: Array<{ key: PriorityLevel; label: string }> = [
   { key: "HIGH", label: "High" },
 ];
 
-export default function QueryFormContent({ queryId }: QueryFormContentProps) {
+export default function QueryFormContent({
+  queryId,
+  apiBase = "/api/query-management",
+  returnPath = "/dashboard/query-management",
+  title,
+  submitLabel,
+}: QueryFormContentProps) {
   const router = useRouter();
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,7 +83,7 @@ export default function QueryFormContent({ queryId }: QueryFormContentProps) {
         const [projectsRes, queryRes] = await Promise.all([
           fetch("/api/projects/options"),
           queryId
-            ? fetch(`/api/query-management/${queryId}`)
+            ? fetch(`${apiBase}/${queryId}`)
             : Promise.resolve(null),
         ]);
 
@@ -103,7 +113,7 @@ export default function QueryFormContent({ queryId }: QueryFormContentProps) {
     };
 
     loadData();
-  }, [queryId]);
+  }, [apiBase, queryId]);
 
   const selectedProject = useMemo(
     () => projects.find((project) => project.id === form.projectId) || null,
@@ -136,7 +146,7 @@ export default function QueryFormContent({ queryId }: QueryFormContentProps) {
     try {
       setSaving(true);
       const res = await fetch(
-        queryId ? `/api/query-management/${queryId}` : "/api/query-management",
+        queryId ? `${apiBase}/${queryId}` : apiBase,
         {
           method: queryId ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
@@ -159,7 +169,7 @@ export default function QueryFormContent({ queryId }: QueryFormContentProps) {
       }
 
       toast.success(`Query ${queryId ? "updated" : "created"} successfully.`);
-      router.push("/dashboard/query-management");
+      router.push(returnPath);
     } catch (error) {
       console.error("Failed to save query", error);
       setNote("Failed to save query.");
@@ -181,7 +191,7 @@ export default function QueryFormContent({ queryId }: QueryFormContentProps) {
       <div className="rbac-card">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <h3 className="rbac-title-lg">
-            {queryId ? "Edit Query" : "Add New Query"}
+            {title || (queryId ? "Edit Query" : "Add New Query")}
           </h3>
         </div>
 
@@ -280,10 +290,10 @@ export default function QueryFormContent({ queryId }: QueryFormContentProps) {
                   Saving...
                 </span>
               ) : (
-                "Save"
+                submitLabel || "Save"
               )}
             </button>
-            <Link href="/dashboard/query-management">
+            <Link href={returnPath}>
               <button className="text-red-500" type="button" disabled={saving}>
                 Cancel
               </button>

@@ -1,12 +1,21 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/rbac";
-import { parsePayload, parseCategory, parseStatus, parsePriority, serializeQuery } from "@/lib/queryManagement";
+import { getAuthContext } from "@/lib/auth";
+import {
+  parseCategory,
+  parseStatus,
+  parsePriority,
+  parsePayload,
+  serializeQuery,
+} from "@/lib/queryManagement";
 
 export async function GET(req) {
-  const gate = await requireRole(req, ["Admin"]);
-  if (!gate.ok) return gate.res;
+  const auth = await getAuthContext(req);
+  if (!auth) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
+  const userId = auth.user?.id || "";
   const { searchParams } = new URL(req.url);
   const q = String(searchParams.get("q") || "").trim();
   const category = parseCategory(searchParams.get("category"));
@@ -20,13 +29,17 @@ export async function GET(req) {
       ? Math.min(pageSizeParam, 100)
       : 10;
 
-  const where = {};
+  const where = {
+    createdById: userId,
+  };
+
   if (q) {
     where.OR = [
       { description: { contains: q, mode: "insensitive" } },
       { project: { name: { contains: q, mode: "insensitive" } } },
     ];
   }
+
   if (category) where.category = category;
   if (status) where.status = status;
   if (priority) where.priority = priority;
@@ -46,7 +59,7 @@ export async function GET(req) {
   ]);
 
   return NextResponse.json({
-    data: queries.map((query) => serializeQuery(query, gate.auth?.user?.id || "")),
+    data: queries.map((query) => serializeQuery(query, userId)),
     page,
     pageSize,
     total,
@@ -55,11 +68,14 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  const gate = await requireRole(req, ["Admin"]);
-  if (!gate.ok) return gate.res;
+  const auth = await getAuthContext(req);
+  if (!auth) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const body = await req.json();
   const payload = parsePayload(body);
+  const userId = auth.user?.id || null;
 
   if (
     !payload.projectId ||
@@ -94,7 +110,7 @@ export async function POST(req) {
         description: payload.description,
         status: payload.status,
         priority: payload.priority,
-        createdById: gate.auth?.user?.id || null,
+        createdById: userId,
       },
       include: {
         project: { select: { name: true } },
@@ -102,10 +118,9 @@ export async function POST(req) {
       },
     });
 
-    return NextResponse.json(
-      serializeQuery(query, gate.auth?.user?.id || ""),
-      { status: 201 },
-    );
+    return NextResponse.json(serializeQuery(query, userId || ""), {
+      status: 201,
+    });
   } catch (error) {
     console.error("Failed to create query", error);
     return NextResponse.json(

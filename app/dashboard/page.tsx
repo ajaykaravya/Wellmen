@@ -121,6 +121,7 @@ type QueryTableCardProps = {
   columns: ColumnDef<QueryRow>[];
   meta: OverviewTableMeta;
   emptyLabel: string;
+  viewAllHref: string;
   onUpdate?: (row: QueryRow) => void;
 };
 
@@ -361,6 +362,7 @@ function QueryTableCard({
   columns,
   meta,
   emptyLabel,
+  viewAllHref,
 }: QueryTableCardProps) {
   const [collapsed, setCollapsed] = useState(true);
   const table = useReactTable({
@@ -376,7 +378,7 @@ function QueryTableCard({
         <div className="flex items-center justify-between gap-2 w-full">
           <h3 className="rbac-title-lg w-full">{title}</h3>
           <div className="flex items-center gap-2 justify-end w-full">
-            <Link href="/dashboard/query-management?status=PENDING">
+            <Link href={viewAllHref}>
               <button
                 className="rbac-button rbac-button-secondary"
                 type="button"
@@ -539,6 +541,8 @@ function OverviewContent() {
     null,
   );
 
+  const [collapsed, setCollapsed] = useState(true);
+
   const projectTasks = useMemo(
     () => todos.filter((task) => task.type === "PROJECT"),
     [todos],
@@ -583,7 +587,10 @@ function OverviewContent() {
 
   const loadQuery = useCallback(async () => {
     try {
-      const res = await fetch(`/api/query-management`);
+      const endpoint = isAdmin
+        ? "/api/query-management"
+        : "/api/my-query-management";
+      const res = await fetch(endpoint);
       if (!res.ok) return;
 
       const data = await res.json();
@@ -592,7 +599,7 @@ function OverviewContent() {
     } catch (error) {
       console.error("Failed to load query", error);
     }
-  }, []);
+  }, [isAdmin]);
 
   useEffect(() => {
     loadQuery();
@@ -1042,6 +1049,11 @@ function OverviewContent() {
           columns={queryColumns}
           meta={tableMeta}
           emptyLabel="No project work tasks for today"
+          viewAllHref={
+            isAdmin
+              ? "/dashboard/query-management?status=PENDING"
+              : "/dashboard/my-query-management?status=PENDING"
+          }
         />
       </section>
       <section className="rbac-section mt-4 rbac-container">
@@ -1141,10 +1153,23 @@ function OverviewContent() {
                         </button>
                       </Link>
                     )}
+                    <button
+                      className="change-button change-button-secondary bg-slate-200 px-3 py-2 rounded-md"
+                      type="button"
+                      onClick={() => setCollapsed((prev) => !prev)}
+                      aria-expanded={!collapsed}
+                    >
+                      <FaChevronRight
+                        className={`transition-transform duration-200 ${collapsed ? "" : "rotate-90"}`}
+                        size={14}
+                      />
+                    </button>
                   </div>
 
                   {isAdmin ? (
-                    <div className="mt-4">
+                    <div
+                      className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${collapsed ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none" : "mt-4 max-h-[4000px] opacity-100 translate-y-0"}`}
+                    >
                       <div className="flex flex-wrap items-center justify-end gap-2">
                         <button
                           className="change-button change-button-secondary bg-slate-200 p-2 rounded-md"
@@ -1278,7 +1303,9 @@ function OverviewContent() {
                       </div>
                     </div>
                   ) : (
-                    <div className="mt-4">
+                    <div
+                      className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${collapsed ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none" : "mt-4 max-h-[4000px] opacity-100 translate-y-0"}`}
+                    >
                       {userReportsLoading && (
                         <div className="flex items-center justify-center py-4">
                           <FaSpinner className="animate-spin mr-2" size={16} />

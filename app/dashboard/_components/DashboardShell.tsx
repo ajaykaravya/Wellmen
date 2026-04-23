@@ -27,6 +27,7 @@ type MenuKey =
   | "profile"
   | "task-management"
   | "query-management"
+  | "my-query-management"
   | "projects"
   | "masterData"
   | "projectcategories"
@@ -69,6 +70,7 @@ const routeByMenu: Record<MenuKey, string> = {
   profile: "/dashboard/profile",
   "task-management": "/dashboard/task-management",
   "query-management": "/dashboard/query-management",
+  "my-query-management": "/dashboard/my-query-management",
   projects: "/dashboard/projects",
   masterData: "/dashboard/master-data",
   projectcategories: "/dashboard/project-categories",
@@ -92,6 +94,8 @@ const getActiveMenu = (pathname: string): MenuKey => {
     return "task-management";
   if (pathname.startsWith("/dashboard/query-management"))
     return "query-management";
+  if (pathname.startsWith("/dashboard/my-query-management"))
+    return "my-query-management";
   if (pathname.startsWith("/dashboard/roles")) return "roles";
   if (pathname.startsWith("/dashboard/permissions")) return "permissions";
   if (pathname.startsWith("/dashboard/reports")) return "reports";
@@ -215,7 +219,11 @@ export default function DashboardShell({
       });
     }
     items.push({ key: "task-management", label: "Task Management" });
-    items.push({ key: "query-management", label: "Query Management" });
+    items.push(
+      isAdmin
+        ? { key: "query-management", label: "Query Management" }
+        : { key: "my-query-management", label: "My Query Management" },
+    );
     items.push({ key: "reports", label: "Reporting" });
 
     items.push({ key: "profile", label: "My Profile" });
