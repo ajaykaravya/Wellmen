@@ -4,7 +4,7 @@ const config: CapacitorConfig = {
   appId: 'com.example.app',
   appName: 'wellman',
   webDir: 'out',
-   server: {
+  server: {
     url: 'https://nextjs-capacitor-puce.vercel.app/', // 👈 YOUR LIVE URL
     cleartext: false
   }
