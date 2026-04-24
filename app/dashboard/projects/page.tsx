@@ -157,11 +157,15 @@ function ProjectListContent() {
       {
         header: "Status",
         accessorKey: "status",
-        cell: (info) => (
-          <span className="rbac-muted">
-            {String(info.getValue() || "").replaceAll("_", " ")}
-          </span>
-        ),
+        cell: (info) => {
+          const value = String(info.getValue() || "")
+            .replaceAll("_", " ")
+            .toLowerCase();
+
+          const formatted = value.charAt(0).toUpperCase() + value.slice(1);
+
+          return <span className="rbac-muted">{formatted}</span>;
+        },
       },
       {
         header: "Action",
@@ -451,11 +455,7 @@ function ProjectListContent() {
       <ConfirmDialog
         open={confirmOpen}
         title="Delete project?"
-        description={
-          confirmTarget
-            ? `Delete "${confirmTarget.name}"? This action cannot be undone.`
-            : "This action cannot be undone."
-        }
+        description="Are you sure you want to delete?"
         confirmLabel="Delete"
         cancelLabel="Cancel"
         onConfirm={confirmDeleteProject}

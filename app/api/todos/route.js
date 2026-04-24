@@ -288,6 +288,17 @@ export async function POST(req) {
     );
   }
 
+  if (!assigneeId) {
+    return NextResponse.json(
+      { error: "Assignee is required." },
+      { status: 400 },
+    );
+  }
+
+  if (!status) {
+    return NextResponse.json({ error: "Status is required." }, { status: 400 });
+  }
+
   if (type === "service" && !subCategory) {
     return NextResponse.json(
       { error: "Sub category is required for service tasks." },

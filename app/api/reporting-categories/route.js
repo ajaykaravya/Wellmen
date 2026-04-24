@@ -103,6 +103,12 @@ export async function POST(req) {
       { status: 201 },
     );
   } catch (error) {
+    if (error.code === "P2002") {
+      return NextResponse.json(
+        { error: "A category with this name already exists." },
+        { status: 400 },
+      );
+    }
     console.error("Failed to create reporting category", error);
     return NextResponse.json(
       { error: "Failed to create reporting category." },

@@ -243,7 +243,8 @@ export default function ProjectFormContent({
                     Mobile number <span className="text-red-600">*</span>
                     <input
                       className="rbac-input mb-2"
-                      placeholder="Contact number"
+                      placeholder="Mobile number"
+                      maxLength={10}
                       value={form.contactNumber}
                       onChange={(event) =>
                         setForm((prev) => ({
@@ -310,7 +311,7 @@ export default function ProjectFormContent({
                   </label>
                 </div>
                 <label className="rbac-label">
-                  Status
+                  Status <span className="text-red-600">*</span>
                   <select
                     className="rbac-input rbac-select mb-2"
                     value={form.status}

@@ -113,7 +113,7 @@ function ServiceCategoryListContent() {
         header: "Action",
         id: "action",
         cell: ({ row }) => (
-          <div className="rbac-inline-actions flex gap-4">
+          <div className="justify-end flex gap-4">
             <Link href={`/dashboard/service-categories/${row.original.id}`}>
               <button className="rbac-link" type="button">
                 <FaEdit />
@@ -187,7 +187,9 @@ function ServiceCategoryListContent() {
                         <th
                           key={header.id}
                           style={{ width: header.getSize() }}
-                          className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200"
+                          className={`text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200 ${
+                            header.id === "action" ? "text-right" : "text-left"
+                          }`}
                         >
                           {header.isPlaceholder
                             ? null
@@ -338,11 +340,7 @@ function ServiceCategoryListContent() {
       <ConfirmDialog
         open={confirmOpen}
         title="Delete service category?"
-        description={
-          confirmTarget
-            ? `Delete "${confirmTarget.name}"? This action cannot be undone.`
-            : "This action cannot be undone."
-        }
+        description="Are you sure you want to delete?"
         confirmLabel="Delete"
         cancelLabel="Cancel"
         onConfirm={confirmDeleteCategory}

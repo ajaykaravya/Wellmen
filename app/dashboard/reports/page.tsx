@@ -596,11 +596,7 @@ function ReportingListContent() {
       <ConfirmDialog
         open={confirmOpen}
         title="Delete reporting?"
-        description={
-          confirmTarget
-            ? `Delete reporting in "${confirmTarget.categoryName}"? This action cannot be undone.`
-            : "This action cannot be undone."
-        }
+        description="Are you sure you want to delete?"
         confirmLabel="Delete"
         cancelLabel="Cancel"
         onConfirm={confirmDelete}
