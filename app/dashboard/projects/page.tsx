@@ -216,7 +216,7 @@ function ProjectListContent() {
             <input
               className="rbac-input-filter"
               type="text"
-              placeholder="Search name, address or description"
+              placeholder="Search name, address or contact..."
               value={query}
               onChange={(event) => {
                 setPageIndex(0);

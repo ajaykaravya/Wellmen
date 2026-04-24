@@ -222,7 +222,9 @@ function UsersContent() {
             />
             <select
               className="rbac-input-filter rbac-select"
+              value={roleFilter}
               onChange={(event) => {
+                setPageIndex(0);
                 setRoleFilter(event.target.value);
               }}
             >
@@ -240,6 +242,7 @@ function UsersContent() {
               onClick={() => {
                 setPageIndex(0);
                 setQuery("");
+                setRoleFilter("");
               }}
             >
               Clear filters

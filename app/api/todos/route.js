@@ -62,7 +62,7 @@ const ensureEndDateIsValid = (startDate, endDate) => {
 };
 
 export async function GET(req) {
-  const gate = await requireRole(req, ["Admin"]);
+  const gate = await requireRole(req, ["Admin", "Manager"]);
   if (!gate.ok) return gate.res;
 
   const { searchParams } = new URL(req.url);
@@ -249,7 +249,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  const gate = await requireRole(req, ["Admin"]);
+  const gate = await requireRole(req, ["Admin", "Manager"]);
   if (!gate.ok) return gate.res;
 
   const body = await req.json();

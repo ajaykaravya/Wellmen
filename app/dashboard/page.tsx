@@ -1489,6 +1489,9 @@ function OverviewContent() {
                                   Project
                                 </th>
                                 <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] px-4 py-3 border-b border-slate-200">
+                                  Category
+                                </th>
+                                <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] px-4 py-3 border-b border-slate-200">
                                   Description
                                 </th>
                                 <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] px-4 py-3 border-b border-slate-200">

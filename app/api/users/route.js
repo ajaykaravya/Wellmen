@@ -5,7 +5,7 @@ import { requireAnyPermission, requireRole } from "@/lib/rbac";
 import { ensureDefaults } from "@/lib/seed";
 
 export async function GET(req) {
-  const gate = await requireRole(req, ["Admin"]);
+  const gate = await requireRole(req, ["Admin", "Manager"]);
   if (!gate.ok) return gate.res;
 
   const { searchParams } = new URL(req.url);
@@ -103,7 +103,7 @@ export async function POST(req) {
   if (isBootstrap) {
     await ensureDefaults();
   } else {
-    const gate = await requireRole(req, ["Admin"]);
+    const gate = await requireRole(req, ["Admin", "Manager"]);
     if (!gate.ok) return gate.res;
   }
 

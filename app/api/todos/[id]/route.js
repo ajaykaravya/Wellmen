@@ -67,7 +67,7 @@ const ensureEndDateIsValid = (startDate, endDate) => {
 };
 
 export async function GET(req, { params }) {
-  const gate = await requireRole(req, ["Admin"]);
+  const gate = await requireRole(req, ["Admin", "Manager"]);
   if (!gate.ok) return gate.res;
 
   const id = await resolveId(params);
@@ -126,7 +126,7 @@ export async function GET(req, { params }) {
 }
 
 export async function PUT(req, { params }) {
-  const gate = await requireRole(req, ["Admin"]);
+  const gate = await requireRole(req, ["Admin", "Manager"]);
   if (!gate.ok) return gate.res;
 
   const id = await resolveId(params);
@@ -183,10 +183,7 @@ export async function PUT(req, { params }) {
   if (categoryId) {
     const categoryCheck = await validateCategoryForType(type, categoryId);
     if (!categoryCheck.ok) {
-      return NextResponse.json(
-        { error: categoryCheck.error },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: categoryCheck.error }, { status: 400 });
     }
   }
 
@@ -283,7 +280,7 @@ export async function PUT(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
-  const gate = await requireRole(req, ["Admin"]);
+  const gate = await requireRole(req, ["Admin", "Manager"]);
   if (!gate.ok) return gate.res;
 
   const id = await resolveId(params);

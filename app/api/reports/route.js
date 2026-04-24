@@ -54,7 +54,7 @@ export async function GET(req) {
   if (!gate.ok) return gate.res;
 
   const userId = gate.auth?.user?.id || "";
-  const isAdmin = gate.auth?.role === "Admin";
+  const isAdmin = gate.auth?.role === "Admin" || gate.auth?.role === "Manager";
 
   const { searchParams } = new URL(req.url);
   const q = String(searchParams.get("q") || "").trim();
@@ -153,10 +153,13 @@ export async function POST(req) {
   const gate = await requireAuth(req);
   if (!gate.ok) return gate.res;
 
-  const isAdmin = gate.auth?.role === "Admin";
+  const isAdmin = gate.auth?.role === "Admin" || gate.auth?.role === "Manager";
   if (isAdmin) {
     return NextResponse.json(
-      { error: "Admin cannot add reporting. Only users can create reporting." },
+      {
+        error:
+          "Admin and Manager cannot add reporting. Only users can create reporting.",
+      },
       { status: 403 },
     );
   }

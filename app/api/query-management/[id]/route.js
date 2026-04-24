@@ -6,12 +6,15 @@ import { parsePayload, serializeQuery } from "@/lib/queryManagement";
 const resolveId = async (params) => String((await params)?.id || "").trim();
 
 export async function GET(req, { params }) {
-  const gate = await requireRole(req, ["Admin"]);
+  const gate = await requireRole(req, ["Admin", "Manager"]);
   if (!gate.ok) return gate.res;
 
   const id = await resolveId(params);
   if (!id) {
-    return NextResponse.json({ error: "Query id is required." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Query id is required." },
+      { status: 400 },
+    );
   }
 
   const query = await prisma.queryManagement.findUnique({
@@ -30,12 +33,15 @@ export async function GET(req, { params }) {
 }
 
 export async function PUT(req, { params }) {
-  const gate = await requireRole(req, ["Admin"]);
+  const gate = await requireRole(req, ["Admin", "Manager"]);
   if (!gate.ok) return gate.res;
 
   const id = await resolveId(params);
   if (!id) {
-    return NextResponse.json({ error: "Query id is required." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Query id is required." },
+      { status: 400 },
+    );
   }
 
   const body = await req.json();
@@ -93,12 +99,15 @@ export async function PUT(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
-  const gate = await requireRole(req, ["Admin"]);
+  const gate = await requireRole(req, ["Admin", "Manager"]);
   if (!gate.ok) return gate.res;
 
   const id = await resolveId(params);
   if (!id) {
-    return NextResponse.json({ error: "Query id is required." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Query id is required." },
+      { status: 400 },
+    );
   }
 
   const existing = await prisma.queryManagement.findUnique({ where: { id } });

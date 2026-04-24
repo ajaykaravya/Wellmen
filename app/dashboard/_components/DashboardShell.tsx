@@ -129,7 +129,7 @@ export default function DashboardShell({
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
   const [masterDataExpanded, setMasterDataExpanded] = useState(false);
 
-  const isAdmin = user?.role === "Admin";
+  const isAdmin = user?.role === "Admin" || user?.role === "Manager";
   const displayName = user ? `${user.firstName} ${user.lastName}`.trim() : "";
 
   const activeMenu = useMemo(() => getActiveMenu(pathname), [pathname]);

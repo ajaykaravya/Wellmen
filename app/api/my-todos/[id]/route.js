@@ -103,7 +103,7 @@ async function loadAllowedTodo(req, params) {
     };
   }
 
-  const isAdmin = gate.auth?.role === "Admin";
+  const isAdmin = gate.auth?.role === "Admin" || gate.auth?.role === "Manager";
   const userId = gate.auth?.user?.id || "";
   const canRead = todo.assigneeId === userId;
   const canManage = todo.createdById === userId;
@@ -186,10 +186,7 @@ export async function PUT(req, { params }) {
   if (categoryId) {
     const categoryCheck = await validateCategoryForType(type, categoryId);
     if (!categoryCheck.ok) {
-      return NextResponse.json(
-        { error: categoryCheck.error },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: categoryCheck.error }, { status: 400 });
     }
   }
 

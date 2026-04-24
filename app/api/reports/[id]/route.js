@@ -84,7 +84,7 @@ async function loadAllowedReport(req, params) {
     };
   }
 
-  const isAdmin = gate.auth?.role === "Admin";
+  const isAdmin = gate.auth?.role === "Admin" || gate.auth?.role === "Manager";
   const userId = gate.auth?.user?.id || "";
   const canManage = report.createdById === userId;
 
