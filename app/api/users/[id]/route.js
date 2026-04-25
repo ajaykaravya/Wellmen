@@ -185,9 +185,9 @@ export async function DELETE(req, { params }) {
   if (!existing) {
     return NextResponse.json({ error: "User not found." }, { status: 404 });
   }
-  if (existing.role?.name === "Admin") {
+  if (existing.role?.name === "Admin" || existing.role?.name === "Manager") {
     return NextResponse.json(
-      { error: "Admin accounts cannot be deleted." },
+      { error: "Admin and Manager accounts cannot be deleted." },
       { status: 403 },
     );
   }

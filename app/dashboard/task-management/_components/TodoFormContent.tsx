@@ -39,6 +39,8 @@ type TodoFormState = {
   projectId: string;
   categoryId: string;
   assigneeId: string;
+  taskType: TaskType | "";
+  subCategory: ServiceSubCategory | "";
 };
 
 type TodoFormContentProps = {
@@ -49,6 +51,8 @@ type TaskType = "project" | "office" | "service";
 type PriorityLevel = "low" | "medium" | "high";
 type ServiceSubCategory = "amc" | "warranty" | "without-warranty";
 
+type FormErrorKey = keyof TodoFormState | "taskType" | "subCategory";
+
 const categoryApiMap = {
   project: "/api/categories",
   office: "/api/office-categories",
@@ -56,9 +60,9 @@ const categoryApiMap = {
 } as const;
 
 const taskTypeOptions: Array<{ key: TaskType; label: string }> = [
-  { key: "project", label: "Project Work" },
-  { key: "office", label: "Office Work" },
-  { key: "service", label: "Service Work" },
+  { key: "project", label: "Project" },
+  { key: "office", label: "Office" },
+  { key: "service", label: "Service" },
 ];
 
 const priorityOptions: Array<{ key: PriorityLevel; label: string }> = [
@@ -110,16 +114,12 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
   const [users, setUsers] = useState<UserOption[]>([]);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
-  const [subCategories, setSubCategories] = useState<ServiceSubCategory | "">(
-    "",
-  );
   const [note, setNote] = useState<string | null>(null);
-  const [errors, setErrors] = useState<
-    Partial<Record<keyof TodoFormState, string>>
-  >({});
+  const [errors, setErrors] = useState<Partial<Record<FormErrorKey, string>>>(
+    {},
+  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [taskType, setTaskType] = useState<TaskType | null>(null);
   const [priority, setPriority] = useState<PriorityLevel>("medium");
   const [form, setForm] = useState<TodoFormState>({
     description: "",
@@ -130,6 +130,8 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
     projectId: "",
     categoryId: "",
     assigneeId: "",
+    taskType: "",
+    subCategory: "",
   });
 
   useEffect(() => {
@@ -164,17 +166,12 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
             projectId: todo.projectId || "",
             categoryId: todo.categoryId || "",
             assigneeId: todo.assigneeId || "",
+            taskType: todo.type ? todo.type.toLowerCase() : "",
+            subCategory: todo.subCategory || "",
           });
-          if (todo.type) {
-            setTaskType(todo.type.toLowerCase());
-          }
 
           if (todo.priority) {
             setPriority(todo.priority.toLowerCase());
-          }
-
-          if (todo.subCategory) {
-            setSubCategories(todo.subCategory);
           }
         }
       } catch (error) {
@@ -188,18 +185,23 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
   }, [isAdmin, todoId]);
 
   useEffect(() => {
-    if (todoId || taskType) return;
+    if (todoId || form.taskType) return;
     const initialType = resolveTaskTypeFromQuery(searchParams.get("type"));
     if (initialType) {
-      setTaskType(initialType);
+      setForm((prev) => ({
+        ...prev,
+        taskType: initialType,
+      }));
     }
-  }, [searchParams, taskType, todoId]);
+  }, [searchParams, form.taskType, todoId]);
+
+  const selectedTaskType = form.taskType || null;
 
   useEffect(() => {
-    if (!taskType) return;
+    if (!selectedTaskType) return;
     const fetchCategories = async () => {
       try {
-        const res = await fetch(categoryApiMap[taskType]);
+        const res = await fetch(categoryApiMap[selectedTaskType]);
         if (!res.ok) throw new Error("Failed to fetch categories");
 
         const data = await res.json();
@@ -225,26 +227,27 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
     };
 
     fetchCategories();
-  }, [taskType]);
+  }, [selectedTaskType]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setNote(null);
 
-    if (!taskType) {
-      setNote("Please select task type.");
-      return;
+    const newErrors: Partial<Record<FormErrorKey, string>> = {};
+    if (!form.taskType) {
+      newErrors.taskType = "Task type is required.";
     }
 
-    if (taskType === "service" && !subCategories) {
-      setNote("Please select sub category.");
-      return;
+    if (form.taskType === "service" && !form.subCategory) {
+      newErrors.subCategory = "Sub category is required.";
     }
 
-    const newErrors: Partial<Record<keyof TodoFormState, string>> = {};
     if (!form.startDate) newErrors.startDate = "Start date is required.";
     if (!form.projectId.trim()) newErrors.projectId = "Project is required.";
     if (!form.categoryId.trim()) newErrors.categoryId = "Category is required.";
+    if (isAdmin && !form.assigneeId.trim()) {
+      newErrors.assigneeId = "Assignee is required.";
+    }
     if (form.endDate) {
       const startDate = parseDateInput(form.startDate);
       const endDate = parseDateInput(form.endDate);
@@ -256,7 +259,6 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
         newErrors.endDate = "End date cannot be earlier than start date.";
       }
     }
-    // if (isAdmin && !form.assigneeId.trim()) newErrors.assigneeId = "Assignee is required for admins.";
 
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) {
@@ -271,20 +273,20 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
       status: form.status,
       projectId: form.projectId,
       categoryId: form.categoryId,
-      type: taskType.toUpperCase(),
+      type: form.taskType.toUpperCase(),
       priority: priority.toUpperCase(),
       ...(isAdmin ? { assigneeId: form.assigneeId } : {}),
     };
 
-    if (taskType === "service") {
-      basePayload.subCategory = subCategories;
+    if (form.taskType === "service") {
+      basePayload.subCategory = form.subCategory;
     }
 
-    if (taskType === "office") {
+    if (form.taskType === "office") {
       basePayload.isOfficeTask = true;
     }
 
-    if (taskType === "project") {
+    if (form.taskType === "project") {
       basePayload.isProjectTask = true;
     }
 
@@ -314,11 +316,11 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
   };
 
   const filteredProjects = useMemo(() => {
-    if (taskType === "project") {
+    if (selectedTaskType === "project") {
       return projects.filter((p) => p.status === "IN_PROGRESS");
     }
     return projects;
-  }, [projects, taskType]);
+  }, [projects, selectedTaskType]);
 
   if (loading)
     return (
@@ -336,16 +338,26 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
               {todoId ? "Edit Task" : "Add New Task"}
             </h3>
           </div>
-          <div>
-            <ButtonGroup
-              title="Select Task Type"
-              selected={taskType}
-              options={taskTypeOptions}
-              onSelect={(value) => setTaskType(value)}
-              required
-            />
-          </div>
           <form className="rbac-form" onSubmit={handleSubmit}>
+            <div>
+              <ButtonGroup
+                title="Select Task Work Type"
+                selected={selectedTaskType}
+                options={taskTypeOptions}
+                onSelect={(value) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    taskType: value,
+                    categoryId: "",
+                    subCategory: "",
+                  }))
+                }
+                required
+              />
+              {errors.taskType && (
+                <p className="text-sm text-red-600 mb-2">{errors.taskType}</p>
+              )}
+            </div>
             <fieldset
               disabled={saving}
               className={saving ? "opacity-70 pointer-events-none" : ""}
@@ -382,7 +394,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
                   <select
                     className="rbac-input rbac-select mb-2"
                     value={form.categoryId}
-                    disabled={!taskType}
+                    disabled={!selectedTaskType}
                     onChange={(event) =>
                       setForm((prev) => ({
                         ...prev,
@@ -404,21 +416,31 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
                   </p>
                 )}
 
-                {taskType === "service" && (
+                {selectedTaskType === "service" && (
                   <div className="mt-4">
                     <ButtonGroup
                       title="Sub Category"
-                      selected={subCategories || null}
+                      selected={form.subCategory || null}
                       options={serviceSubCategoryOptions}
-                      onSelect={(value) => setSubCategories(value)}
+                      onSelect={(value) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          subCategory: value,
+                        }))
+                      }
                       required
                     />
+                    {errors.subCategory && (
+                      <p className="text-sm text-red-600 mb-2">
+                        {errors.subCategory}
+                      </p>
+                    )}
                   </div>
                 )}
 
                 {isAdmin && (
                   <label className="rbac-label mt-5">
-                    Select User
+                    Select User <span className="text-red-600">*</span>
                     <select
                       className="rbac-input rbac-select mb-2"
                       value={form.assigneeId}
@@ -437,6 +459,11 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
                         </option>
                       ))}
                     </select>
+                    {errors.assigneeId && (
+                      <p className="text-sm text-red-600 mb-2">
+                        {errors.assigneeId}
+                      </p>
+                    )}
                   </label>
                 )}
 

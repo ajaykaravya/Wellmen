@@ -130,24 +130,6 @@ export default function ReportFormContent({
 
   const isCreateBlocked = isAdmin && !reportId;
 
-  const canSubmit = useMemo(
-    () =>
-      !!form.reportDate &&
-      !!form.projectId &&
-      !!form.categoryId &&
-      !!form.description.trim() &&
-      !isCreateBlocked &&
-      !submitting,
-    [
-      form.categoryId,
-      form.description,
-      form.projectId,
-      form.reportDate,
-      isCreateBlocked,
-      submitting,
-    ],
-  );
-
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setNote(null);
@@ -162,15 +144,12 @@ export default function ReportFormContent({
     const newErrors: Partial<Record<keyof ReportFormState, string>> = {};
     if (!form.reportDate) newErrors.reportDate = "Date is required.";
     if (!form.projectId) newErrors.projectId = "Project is required.";
-    if (!form.categoryId) newErrors.categoryId = "Reporting category is required.";
+    if (!form.categoryId)
+      newErrors.categoryId = "Reporting category is required.";
     if (!form.description.trim())
       newErrors.description = "Description is required.";
 
     setErrors(newErrors);
-    if (Object.keys(newErrors).length > 0) {
-      setNote("Please fix the highlighted fields.");
-      return;
-    }
 
     const payload = new FormData();
     payload.append("reportDate", form.reportDate);
@@ -287,31 +266,33 @@ export default function ReportFormContent({
                   </p>
                 )}
 
-                <label className="rbac-label">
-                  Reporting Category <span className="text-red-600">*</span>
-                  <select
-                    className="rbac-input rbac-select"
-                    value={form.categoryId}
-                    onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        categoryId: event.target.value,
-                      }))
-                    }
-                  >
-                    <option value="">Select reporting category</option>
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                {errors.categoryId && (
-                  <p className="text-sm text-red-600 mt-1">
-                    {errors.categoryId}
-                  </p>
-                )}
+                <div>
+                  <label className="rbac-label">
+                    Reporting Category <span className="text-red-600">*</span>
+                    <select
+                      className="rbac-input rbac-select"
+                      value={form.categoryId}
+                      onChange={(event) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          categoryId: event.target.value,
+                        }))
+                      }
+                    >
+                      <option value="">Select reporting category</option>
+                      {categories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {errors.categoryId && (
+                    <p className="text-sm text-red-600 mt-1">
+                      {errors.categoryId}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <label className="rbac-label mt-5">
@@ -437,13 +418,11 @@ export default function ReportFormContent({
               )}
             </fieldset>
 
-            {note && <p className="text-sm text-red-600 mt-4">{note}</p>}
-
             <div className="rbac-actions">
               <button
                 className="rbac-button"
                 type="submit"
-                disabled={!canSubmit}
+                disabled={submitting}
               >
                 {submitting ? (
                   <span className="inline-flex items-center gap-2">

@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
-import { parsePayload, parseCategory, parseStatus, parsePriority, serializeQuery } from "@/lib/queryManagement";
+import {
+  parsePayload,
+  parseCategory,
+  parseStatus,
+  parsePriority,
+  serializeQuery,
+} from "@/lib/queryManagement";
 
 export async function GET(req) {
-  const gate = await requireRole(req, ["Admin"]);
+  const gate = await requireRole(req, ["Admin", "Manager"]);
   if (!gate.ok) return gate.res;
 
   const { searchParams } = new URL(req.url);
@@ -46,7 +52,9 @@ export async function GET(req) {
   ]);
 
   return NextResponse.json({
-    data: queries.map((query) => serializeQuery(query, gate.auth?.user?.id || "")),
+    data: queries.map((query) =>
+      serializeQuery(query, gate.auth?.user?.id || ""),
+    ),
     page,
     pageSize,
     total,
@@ -55,7 +63,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  const gate = await requireRole(req, ["Admin"]);
+  const gate = await requireRole(req, ["Admin", "Manager"]);
   if (!gate.ok) return gate.res;
 
   const body = await req.json();
@@ -102,10 +110,9 @@ export async function POST(req) {
       },
     });
 
-    return NextResponse.json(
-      serializeQuery(query, gate.auth?.user?.id || ""),
-      { status: 201 },
-    );
+    return NextResponse.json(serializeQuery(query, gate.auth?.user?.id || ""), {
+      status: 201,
+    });
   } catch (error) {
     console.error("Failed to create query", error);
     return NextResponse.json(

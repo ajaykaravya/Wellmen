@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
 
 export async function GET(req) {
-  const gate = await requireRole(req, ["Admin"]);
+  const gate = await requireRole(req, ["Admin", "Manager"]);
   if (!gate.ok) return gate.res;
 
   const users = await prisma.user.findMany({
@@ -18,6 +18,6 @@ export async function GET(req) {
       lastName: user.lastName,
       mobileNumber: user.mobileNumber,
       role: user.role?.name || null,
-    }))
+    })),
   );
 }

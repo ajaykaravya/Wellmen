@@ -41,7 +41,7 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
     email: "",
     mobileNumber: "",
     password: "",
-    roleName: "Employee",
+    roleName: "",
   });
 
   useEffect(() => {
@@ -246,6 +246,7 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
                     className="rbac-input mb-2"
                     placeholder="Mobile number"
                     value={form.mobileNumber}
+                    maxLength={10}
                     onChange={(event) =>
                       setForm((prev) => ({
                         ...prev,

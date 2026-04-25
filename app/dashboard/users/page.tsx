@@ -21,6 +21,7 @@ import {
   FaSpinner,
 } from "react-icons/fa";
 import Link from "next/link";
+import useDebounce from "@/app/hooks/useDebounce";
 
 type UserRow = {
   id: string;
@@ -31,24 +32,39 @@ type UserRow = {
   role?: string | null;
 };
 
+type Role = {
+  id: string;
+  name: string;
+};
+
 function UsersContent() {
   const router = useRouter();
   const { isAdmin, setNavOpen, user } = useDashboardContext();
   const [users, setUsers] = useState<UserRow[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [roleFilter, setRoleFilter] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<UserRow | null>(null);
   const [loading, setLoading] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
+  const [query, setQuery] = useState("");
+  const debouncedQuery = useDebounce(query, 400);
 
   const loadUsers = async () => {
     if (!isAdmin) return;
     setLoading(true);
     try {
-      const res = await fetch(
-        `/api/users?page=${pageIndex + 1}&pageSize=${pageSize}`,
-      );
+      const params = new URLSearchParams({
+        page: String(pageIndex + 1),
+        pageSize: String(pageSize),
+      });
+
+      if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
+      if (roleFilter) params.set("role", roleFilter);
+
+      const res = await fetch(`/api/users?${params.toString()}`);
       if (!res.ok) return;
       const data = await res.json();
       setUsers(Array.isArray(data?.data) ? data.data : []);
@@ -62,7 +78,24 @@ function UsersContent() {
 
   useEffect(() => {
     loadUsers();
-  }, [isAdmin, pageIndex, pageSize]);
+  }, [isAdmin, pageIndex, pageSize, debouncedQuery, roleFilter]);
+
+  useEffect(() => {
+    const loadRoles = async () => {
+      try {
+        const res = await fetch("/api/roles");
+        if (!res.ok) throw new Error("Failed to fetch roles");
+
+        const data = await res.json();
+        setRoles(data);
+      } catch (error) {
+        console.error("Failed to load roles", error);
+        toast.error("Failed to load roles");
+      }
+    };
+
+    loadRoles();
+  }, []);
 
   const handleEditUser = (row: UserRow) => {
     router.push(`/dashboard/users/${row.id}`);
@@ -172,9 +205,48 @@ function UsersContent() {
             <h3 className="rbac-title-lg">Users List</h3>
             <Link href="/dashboard/users/new">
               <button className="rbac-button" type="button">
-                Create user
+                Add user
               </button>
             </Link>
+          </div>
+          <div className="my-4 flex flex-wrap gap-2 ">
+            <input
+              className="rbac-input-filter"
+              type="text"
+              placeholder="Search name or mobile number..."
+              value={query}
+              onChange={(event) => {
+                setPageIndex(0);
+                setQuery(event.target.value);
+              }}
+            />
+            <select
+              className="rbac-input-filter rbac-select"
+              value={roleFilter}
+              onChange={(event) => {
+                setPageIndex(0);
+                setRoleFilter(event.target.value);
+              }}
+            >
+              <option value="">Select Role</option>
+
+              {roles.map((role) => (
+                <option key={role.id} value={role.name}>
+                  {role.name}
+                </option>
+              ))}
+            </select>
+            <button
+              className="rbac-button rbac-button-secondary"
+              type="button"
+              onClick={() => {
+                setPageIndex(0);
+                setQuery("");
+                setRoleFilter("");
+              }}
+            >
+              Clear filters
+            </button>
           </div>
           <div className="mt-4">
             <div className="hidden md:block overflow-x-auto">
@@ -343,11 +415,7 @@ function UsersContent() {
       <ConfirmDialog
         open={confirmOpen}
         title="Delete user?"
-        description={
-          confirmTarget
-            ? `Delete ${confirmTarget.firstName} ${confirmTarget.lastName}? This action cannot be undone.`
-            : "This action cannot be undone."
-        }
+        description="Are you sure you want to delete?"
         confirmLabel="Delete"
         cancelLabel="Cancel"
         onConfirm={confirmDeleteUser}

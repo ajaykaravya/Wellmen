@@ -18,7 +18,10 @@ async function loadAllowedQuery(req, params) {
   if (!id) {
     return {
       ok: false,
-      res: NextResponse.json({ error: "Query id is required." }, { status: 400 }),
+      res: NextResponse.json(
+        { error: "Query id is required." },
+        { status: 400 },
+      ),
     };
   }
 
@@ -38,7 +41,7 @@ async function loadAllowedQuery(req, params) {
   }
 
   const userId = auth.user?.id || "";
-  const isAdmin = auth.role === "Admin";
+  const isAdmin = auth.role === "Admin" || auth.role === "Manager";
   const isOwner = query.createdById === userId;
 
   if (!isAdmin && !isOwner) {

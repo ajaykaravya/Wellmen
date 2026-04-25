@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   flexRender,
   getCoreRowModel,
@@ -11,8 +12,10 @@ import { ColumnDef } from "@tanstack/table-core";
 import { formatToDDMMYYYY, getTodayInputDate } from "@/lib/dateUtils";
 import { toast } from "react-toastify";
 import DashboardShell, {
+  clearCachedSession,
   useDashboardContext,
 } from "./_components/DashboardShell";
+import ConfirmDialog from "../components/ConfirmDialog";
 import CustomDatePicker from "../components/CustomDatePicker";
 import {
   FaChevronLeft,
@@ -36,6 +39,16 @@ import {
   Legend,
 } from "chart.js";
 import { FaListCheck } from "react-icons/fa6";
+import {
+  Dialog,
+  DialogPanel,
+  DialogTitle,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuItems,
+} from "@headlessui/react";
+import { ChevronDownIcon } from "@heroicons/react/16/solid";
 
 ChartJS.register(
   CategoryScale,
@@ -517,6 +530,7 @@ function QueryTableCard({
 
 function OverviewContent() {
   const { user, isAdmin } = useDashboardContext();
+  const router = useRouter();
   const displayName = user ? `${user.firstName} ${user.lastName}`.trim() : "";
 
   const [todos, setTodos] = useState<TodoRow[]>([]);
@@ -542,6 +556,23 @@ function OverviewContent() {
   );
 
   const [collapsed, setCollapsed] = useState(true);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [changePasswordSubmitting, setChangePasswordSubmitting] =
+    useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordNotice, setPasswordNotice] = useState<{
+    type: "error" | "success";
+    message: string;
+  } | null>(null);
+  const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
+  const passwordsDoNotMatch =
+    !!passwordForm.newPassword &&
+    !!passwordForm.confirmPassword &&
+    passwordForm.newPassword !== passwordForm.confirmPassword;
 
   const projectTasks = useMemo(
     () => todos.filter((task) => task.type === "PROJECT"),
@@ -995,6 +1026,94 @@ function OverviewContent() {
       modalDraft.status !== modalTarget.status);
   const isModalSaving = savingId === modalTarget?.id;
 
+  const closeChangePasswordModal = useCallback(() => {
+    setChangePasswordOpen(false);
+    setChangePasswordSubmitting(false);
+    setPasswordForm({
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    });
+  }, []);
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      clearCachedSession();
+      router.push("/login");
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
+  }, [router]);
+
+  const handleChangePassword = useCallback(async () => {
+    const currentPassword = passwordForm.currentPassword.trim();
+    const newPassword = passwordForm.newPassword.trim();
+    const confirmPassword = passwordForm.confirmPassword.trim();
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordNotice({
+        type: "error",
+        message: "Please fill in all password fields.",
+      });
+      return;
+    }
+
+    if (!/^\d{4}$/.test(newPassword)) {
+      setPasswordNotice({
+        type: "error",
+        message: "New password must be exactly 4 digits.",
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordNotice({
+        type: "error",
+        message: "New password and confirm password must match.",
+      });
+      return;
+    }
+
+    setChangePasswordSubmitting(true);
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+          confirmPassword,
+        }),
+      });
+
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPasswordNotice({
+          type: "error",
+          message: payload.error || "Failed to change password.",
+        });
+        return;
+      }
+
+      setPasswordNotice({
+        type: "success",
+        message: "Password changed successfully.",
+      });
+      closeChangePasswordModal();
+    } catch (error) {
+      console.error("Failed to change password", error);
+      setPasswordNotice({
+        type: "error",
+        message: "Failed to change password.",
+      });
+    } finally {
+      setChangePasswordSubmitting(false);
+    }
+  }, [closeChangePasswordModal, passwordForm]);
+
   return (
     <>
       <header className="flex justify-between gap-3 z-50 bg-white border-b border-slate-200 p-4 sm:p-3 ">
@@ -1006,17 +1125,181 @@ function OverviewContent() {
             Role-based workspace tailored for {user?.role || "your role"}.
           </span>
         </div>
-        <div className="flex flex-wrap items-center justify-end">
-          <div className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 bg-slate-50">
-            <p className="rbac-label text-[10px] sm:text-xs sm:block hidden">
-              Role
-            </p>
-            <p className="rbac-role-name text-xs sm:text-sm">
-              {user?.role || "Unknown"}
-            </p>
-          </div>
-        </div>
+        <Menu
+          as="div"
+          className="relative flex flex-wrap items-center justify-end"
+        >
+          <MenuButton className="flex items-center gap-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-left transition-colors hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
+            <div>
+              <p className="rbac-label text-[10px] sm:text-xs sm:block hidden">
+                Role
+              </p>
+              <p className="rbac-role-name text-xs sm:text-sm">
+                {user?.role || "Unknown"}
+              </p>
+            </div>
+            <ChevronDownIcon className="h-4 w-4 text-slate-500" />
+          </MenuButton>
+
+          <MenuItems
+            anchor="bottom end"
+            className="z-50 mt-2 w-56 origin-top-right rounded-2xl border border-slate-200 bg-white p-1 shadow-lg outline-none transition duration-150 ease-out data-[closed]:scale-95 data-[closed]:opacity-0"
+          >
+            <MenuItem>
+              {({ focus }) => (
+                <button
+                  type="button"
+                  className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors ${
+                    focus ? "bg-slate-100 text-slate-900" : "text-slate-700"
+                  }`}
+                  onClick={() => {
+                    setPasswordNotice(null);
+                    setChangePasswordOpen(true);
+                  }}
+                >
+                  Change password
+                </button>
+              )}
+            </MenuItem>
+            <MenuItem>
+              {({ focus }) => (
+                <button
+                  type="button"
+                  className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors ${
+                    focus ? "bg-red-50 text-red-700" : "text-red-600"
+                  }`}
+                  onClick={() => setConfirmLogoutOpen(true)}
+                >
+                  Logout
+                </button>
+              )}
+            </MenuItem>
+          </MenuItems>
+        </Menu>
       </header>
+
+      <Dialog
+        open={changePasswordOpen}
+        onClose={closeChangePasswordModal}
+        className="relative z-50"
+      >
+        <div className="fixed inset-0 bg-black/40" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <DialogPanel className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <DialogTitle className="text-lg font-semibold text-slate-900">
+              Change password
+            </DialogTitle>
+            <p className="mt-1 text-sm text-slate-600">
+              Enter your current password and choose a new 4-digit password.
+            </p>
+
+            <div className="mt-5 space-y-4">
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-slate-700">
+                  Current password
+                </span>
+                <input
+                  type="password"
+                  maxLength={4}
+                  value={passwordForm.currentPassword}
+                  onChange={(event) =>
+                    setPasswordForm((prev) => ({
+                      ...prev,
+                      currentPassword: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-slate-400"
+                  placeholder="Enter current password"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-slate-700">
+                  New password
+                </span>
+                <input
+                  type="password"
+                  value={passwordForm.newPassword}
+                  onChange={(event) =>
+                    setPasswordForm((prev) => ({
+                      ...prev,
+                      newPassword: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-slate-400"
+                  placeholder="Enter 4-digit password"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-slate-700">
+                  Confirm password
+                </span>
+                <input
+                  type="password"
+                  value={passwordForm.confirmPassword}
+                  onChange={(event) =>
+                    setPasswordForm((prev) => ({
+                      ...prev,
+                      confirmPassword: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-slate-400"
+                  placeholder="Re-enter new password"
+                />
+              </label>
+
+              {passwordsDoNotMatch && (
+                <p className="text-sm text-rose-600">
+                  New password and confirm password must match.
+                </p>
+              )}
+
+              {passwordNotice && (
+                <div
+                  className={`rounded-xl px-3 py-2 text-sm ${
+                    passwordNotice.type === "success"
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "bg-rose-50 text-rose-700"
+                  }`}
+                >
+                  {passwordNotice.message}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                className="rbac-button rbac-button-secondary"
+                onClick={closeChangePasswordModal}
+                disabled={changePasswordSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="rbac-button"
+                onClick={handleChangePassword}
+                disabled={changePasswordSubmitting || passwordsDoNotMatch}
+              >
+                {changePasswordSubmitting ? "Saving..." : "Save password"}
+              </button>
+            </div>
+          </DialogPanel>
+        </div>
+      </Dialog>
+
+      <ConfirmDialog
+        open={confirmLogoutOpen}
+        title="Confirm logout"
+        description="Are you sure you want to logout?"
+        confirmLabel="Yes"
+        cancelLabel="No"
+        onConfirm={handleLogout}
+        onClose={() => setConfirmLogoutOpen(false)}
+      />
+
       <section className="rbac-section mt-4 rbac-container">
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
           <div className="rbac-card p-4 sm:p-6 flex items-center gap-4">
@@ -1204,6 +1487,9 @@ function OverviewContent() {
                               <tr>
                                 <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] px-4 py-3 border-b border-slate-200">
                                   Project
+                                </th>
+                                <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] px-4 py-3 border-b border-slate-200">
+                                  Category
                                 </th>
                                 <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] px-4 py-3 border-b border-slate-200">
                                   Description

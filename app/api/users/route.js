@@ -5,10 +5,12 @@ import { requireAnyPermission, requireRole } from "@/lib/rbac";
 import { ensureDefaults } from "@/lib/seed";
 
 export async function GET(req) {
-  const gate = await requireRole(req, ["Admin"]);
+  const gate = await requireRole(req, ["Admin", "Manager"]);
   if (!gate.ok) return gate.res;
 
   const { searchParams } = new URL(req.url);
+  const q = String(searchParams.get("q") || "").trim();
+  const roleName = String(searchParams.get("role") || "").trim();
   const pageParam = Number(searchParams.get("page") || "1");
   const pageSizeParam = Number(searchParams.get("pageSize") || "10");
   const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
@@ -20,6 +22,18 @@ export async function GET(req) {
   const where = {
     // Include all users, including admins
   };
+
+  if (q) {
+    where.OR = [
+      { firstName: { contains: q, mode: "insensitive" } },
+      { lastName: { contains: q, mode: "insensitive" } },
+      { mobileNumber: { contains: q, mode: "insensitive" } },
+    ];
+  }
+
+  if (roleName) {
+    where.role = { name: roleName };
+  }
 
   const [total, users] = await Promise.all([
     prisma.user.count({ where }),
@@ -89,7 +103,7 @@ export async function POST(req) {
   if (isBootstrap) {
     await ensureDefaults();
   } else {
-    const gate = await requireRole(req, ["Admin"]);
+    const gate = await requireRole(req, ["Admin", "Manager"]);
     if (!gate.ok) return gate.res;
   }
 

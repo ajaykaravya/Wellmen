@@ -96,6 +96,8 @@ export default function QueryListContent({
       ? (initialStatus as QueryStatus)
       : "";
   });
+  const [priorityFilter, setPriorityFilter] = useState<PriorityLevel | "">("");
+  const [categoryFilter, setCategoryFilter] = useState<QueryCategory | "">("");
   const debouncedQuery = useDebounce(query, 400);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<QueryRow | null>(null);
@@ -110,7 +112,8 @@ export default function QueryListContent({
 
       if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
       if (statusFilter) params.set("status", statusFilter);
-
+      if (priorityFilter) params.set("priority", priorityFilter);
+      if (categoryFilter) params.set("category", categoryFilter);
       const res = await fetch(`${apiBase}?${params.toString()}`);
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
@@ -127,7 +130,15 @@ export default function QueryListContent({
     } finally {
       setLoading(false);
     }
-  }, [apiBase, debouncedQuery, pageIndex, pageSize, statusFilter]);
+  }, [
+    apiBase,
+    debouncedQuery,
+    pageIndex,
+    pageSize,
+    statusFilter,
+    priorityFilter,
+    categoryFilter,
+  ]);
 
   useEffect(() => {
     loadQueries();
@@ -208,11 +219,15 @@ export default function QueryListContent({
       {
         header: "Status",
         accessorKey: "status",
-        cell: (info) => (
-          <span className="rbac-muted">
-            {statusLabel(String(info.getValue() || ""))}
-          </span>
-        ),
+        cell: (info) => {
+          const value = String(info.getValue() || "")
+            .replaceAll("_", " ")
+            .toLowerCase();
+
+          const formatted = value.charAt(0).toUpperCase() + value.slice(1);
+
+          return <span className="rbac-muted">{formatted}</span>;
+        },
       },
       {
         header: "Priority",
@@ -287,9 +302,35 @@ export default function QueryListContent({
                 setStatusFilter(event.target.value as QueryStatus | "");
               }}
             >
-              <option value="">All statuses</option>
+              <option value="">All status</option>
               <option value="PENDING">Pending</option>
               <option value="COMPLETED">Completed</option>
+            </select>
+            <select
+              className="rbac-input-filter rbac-select"
+              value={priorityFilter}
+              onChange={(event) => {
+                setPageIndex(0);
+                setPriorityFilter(event.target.value as PriorityLevel | "");
+              }}
+            >
+              <option value="">Priority</option>
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HIGH">High</option>
+            </select>
+            <select
+              className="rbac-input-filter rbac-select"
+              value={categoryFilter}
+              onChange={(event) => {
+                setPageIndex(0);
+                setCategoryFilter(event.target.value as QueryCategory | "");
+              }}
+            >
+              <option value="">Category</option>
+              <option value="REMARKS">Remarks</option>
+              <option value="DECISION_PENDING">Decision Pending</option>
+              <option value="URGENCY">Urgency</option>
             </select>
             <button
               className="rbac-button rbac-button-secondary"
@@ -476,11 +517,7 @@ export default function QueryListContent({
       <ConfirmDialog
         open={confirmOpen}
         title="Delete query?"
-        description={
-          confirmTarget
-            ? `Delete the query for "${confirmTarget.projectName}"? This action cannot be undone.`
-            : "This action cannot be undone."
-        }
+        description="Are you sure you want to delete?"
         confirmLabel="Delete"
         cancelLabel="Cancel"
         onConfirm={confirmDelete}
