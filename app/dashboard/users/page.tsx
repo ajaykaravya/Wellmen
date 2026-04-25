@@ -205,7 +205,7 @@ function UsersContent() {
             <h3 className="rbac-title-lg">Users List</h3>
             <Link href="/dashboard/users/new">
               <button className="rbac-button" type="button">
-                Add user
+                Add User
               </button>
             </Link>
           </div>
