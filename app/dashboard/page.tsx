@@ -19,6 +19,8 @@ import {
   FaHourglass,
   FaCheckCircle,
   FaSpinner,
+  FaMoon,
+  FaSun,
 } from "react-icons/fa";
 import Link from "next/link";
 import {
@@ -43,6 +45,7 @@ import {
   MenuItems,
 } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
+import { useThemeMode } from "../components/ThemeProvider";
 
 ChartJS.register(
   CategoryScale,
@@ -200,6 +203,7 @@ function TaskTableCard({
   onUpdate,
 }: TaskTableCardProps) {
   const [collapsed, setCollapsed] = useState(true);
+  const { theme } = useThemeMode();
 
   return (
     <div className="rbac-card">
@@ -213,7 +217,7 @@ function TaskTableCard({
               </button>
             </Link>
             <button
-              className="change-button change-button-secondary bg-slate-200 px-3 py-2 rounded-md"
+              className="change-button change-button-secondary px-3 py-2 rounded-md"
               type="button"
               onClick={() => setCollapsed((prev) => !prev)}
               aria-expanded={!collapsed}
@@ -239,14 +243,12 @@ function TaskTableCard({
             </div>
           )}
           {!loading && rows.length === 0 && (
-            <div className="rbac-card py-4 text-sm text-slate-500">
-              {emptyLabel}
-            </div>
+            <div className="rbac-card py-4 text-sm ">{emptyLabel}</div>
           )}
           {!loading &&
             rows.map((task) => (
               <div key={task.id} className="flex rbac-card p-4 sm:p-5">
-                <div className="w-full mt-3 grid gap-2 text-sm text-slate-600">
+                <div className="w-full mt-3 grid gap-2 text-sm">
                   {task.projectName && <p>{task.projectName}</p>}
                   {"categoryName" in task && <p>{task.categoryName || "-"}</p>}
                   {task.description && <p>{task.description}</p>}
@@ -259,7 +261,7 @@ function TaskTableCard({
                 </div>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <h4 className="mt-1 text-base font-semibold text-slate-900">
+                    <h4 className="mt-1 text-base font-semibold theme-text">
                       {task.title}
                     </h4>
                   </div>
@@ -297,6 +299,7 @@ function QueryTableCard({
   viewAllHref,
 }: QueryTableCardProps) {
   const [collapsed, setCollapsed] = useState(true);
+  const { theme } = useThemeMode();
 
   return (
     <div className="rbac-card">
@@ -313,14 +316,14 @@ function QueryTableCard({
               </button>
             </Link>
             <button
-              className="change-button change-button-secondary bg-slate-200 px-3 py-2 rounded-md"
+              className="change-button change-button-secondary px-3 py-2 rounded-md"
               type="button"
               onClick={() => setCollapsed((prev) => !prev)}
               aria-expanded={!collapsed}
               aria-label={`${collapsed ? "Expand" : "Collapse"} ${title}`}
             >
               <FaChevronRight
-                className={`transition-transform duration-200 ${collapsed ? "" : "rotate-90"}`}
+                className={`transition-transform duration-200 ${theme === "dark" ? "text-white" : "text-black"} ${collapsed ? "" : "rotate-90"}`}
                 size={14}
               />
             </button>
@@ -339,9 +342,7 @@ function QueryTableCard({
             </div>
           )}
           {!loading && rows.length === 0 && (
-            <div className="rbac-card py-4 text-sm text-slate-500">
-              {emptyLabel}
-            </div>
+            <div className="rbac-card py-4 text-sm">{emptyLabel}</div>
           )}
           {!loading &&
             rows.map((query) => (
@@ -362,7 +363,7 @@ function QueryTableCard({
                   </span>
                 </div>
 
-                <div className="mt-1 grid gap-2 text-sm text-slate-600">
+                <div className="mt-1 grid gap-2 text-sm">
                   <p>{query.description || "No description"}</p>
                   <p>
                     <span
@@ -372,8 +373,7 @@ function QueryTableCard({
                     </span>
                   </p>
                   <p>
-                    <span className="text-slate-700">By:</span>{" "}
-                    {query.createdByName || "-"}
+                    <span>By:</span> {query.createdByName || "-"}
                   </p>
                 </div>
               </div>
@@ -386,6 +386,7 @@ function QueryTableCard({
 
 function OverviewContent() {
   const { user, isAdmin } = useDashboardContext();
+  const { theme, toggleTheme } = useThemeMode();
   const router = useRouter();
   const displayName = user ? `${user.firstName} ${user.lastName}`.trim() : "";
 
@@ -809,20 +810,43 @@ function OverviewContent() {
 
   return (
     <>
-      <header className="flex justify-between gap-3 z-50 bg-white border-b border-slate-200 p-4 sm:p-3 ">
-        <div>
+      <header
+        className="flex justify-between gap-3 z-50 p-4 sm:p-3"
+        style={{
+          background: "var(--card)",
+          borderBottom: "1px solid var(--stroke)",
+        }}
+      >
+        <div className="w-full">
           <h1 className="rbac-heading text-lg sm:text-2xl font-medium">
             Welcome back, {displayName}
           </h1>
-          <span className="text-xs sm:text-sm text-slate-500 sm:block hidden">
+          <span className="text-xs sm:text-sm  sm:block hidden">
             Role-based workspace tailored for {user?.role || "your role"}.
           </span>
         </div>
         <Menu
           as="div"
-          className="relative flex flex-wrap items-center justify-end"
+          className="relative flex flex-wrap items-center justify-end gap-2 w-full"
         >
-          <MenuButton className="flex items-center gap-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-left transition-colors hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400/40">
+          <button
+            className="rbac-theme-toggle hidden xl:inline-flex"
+            type="button"
+            onClick={toggleTheme}
+            aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+            title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+          >
+            {theme === "light" ? <FaMoon size={14} /> : <FaSun size={14} />}
+          </button>
+          <MenuButton
+            className="flex items-center gap-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl text-left transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400/40"
+            style={{
+              background: "var(--input-bg)",
+              border: "1px solid var(--stroke)",
+              color: "var(--ink)",
+              width: "fit-content",
+            }}
+          >
             <div>
               <p className="rbac-label text-[10px] sm:text-xs sm:block hidden">
                 Role
@@ -831,19 +855,26 @@ function OverviewContent() {
                 {user?.role || "Unknown"}
               </p>
             </div>
-            <ChevronDownIcon className="h-4 w-4 text-slate-500" />
+            <ChevronDownIcon
+              className="h-4 w-4"
+              style={{ color: "var(--muted)" }}
+            />
           </MenuButton>
 
           <MenuItems
             anchor="bottom end"
-            className="z-50 mt-2 w-56 origin-top-right rounded-2xl border border-slate-200 bg-white p-1 shadow-lg outline-none transition duration-150 ease-out data-[closed]:scale-95 data-[closed]:opacity-0"
+            className="z-50 mt-2 w-56 origin-top-right rounded-2xl border p-1 shadow-lg outline-none transition duration-150 ease-out data-[closed]:scale-95 data-[closed]:opacity-0"
+            style={{
+              background: "var(--card)",
+              borderColor: "var(--stroke)",
+            }}
           >
             <MenuItem>
               {({ focus }) => (
                 <button
                   type="button"
                   className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors ${
-                    focus ? "bg-slate-100 text-slate-900" : "text-slate-700"
+                    focus ? "theme-button-secondary theme-text" : "theme-text-muted"
                   }`}
                   onClick={() => {
                     setPasswordNotice(null);
@@ -878,17 +909,17 @@ function OverviewContent() {
       >
         <div className="fixed inset-0 bg-black/40" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
-          <DialogPanel className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <DialogTitle className="text-lg font-semibold text-slate-900">
+          <DialogPanel className="theme-modal-surface w-full max-w-md rounded-2xl p-6 shadow-xl">
+            <DialogTitle className="text-lg font-semibold theme-text">
               Change password
             </DialogTitle>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1 text-sm theme-text-muted">
               Enter your current password and choose a new 4-digit password.
             </p>
 
             <div className="mt-5 space-y-4">
               <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">
+                <span className="mb-1 block text-sm font-medium theme-text">
                   Current password
                 </span>
                 <input
@@ -901,13 +932,13 @@ function OverviewContent() {
                       currentPassword: event.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-slate-400"
+                  className="theme-input w-full rounded-xl px-3 py-2 text-sm outline-none transition"
                   placeholder="Enter current password"
                 />
               </label>
 
               <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">
+                <span className="mb-1 block text-sm font-medium theme-text">
                   New password
                 </span>
                 <input
@@ -919,13 +950,13 @@ function OverviewContent() {
                       newPassword: event.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-slate-400"
+                  className="theme-input w-full rounded-xl px-3 py-2 text-sm outline-none transition"
                   placeholder="Enter 4-digit password"
                 />
               </label>
 
               <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">
+                <span className="mb-1 block text-sm font-medium theme-text">
                   Confirm password
                 </span>
                 <input
@@ -937,7 +968,7 @@ function OverviewContent() {
                       confirmPassword: event.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-slate-400"
+                  className="theme-input w-full rounded-xl px-3 py-2 text-sm outline-none transition"
                   placeholder="Re-enter new password"
                 />
               </label>
@@ -1002,9 +1033,7 @@ function OverviewContent() {
               <FaClock size={24} />
             </div>
             <div>
-              <p className="text-xs uppercase text-slate-500">
-                Pending Queries
-              </p>
+              <p className="text-xs uppercase">Pending Queries</p>
               <p className="text-2xl sm:text-3xl font-bold">{queryPending}</p>
             </div>
           </div>
@@ -1013,9 +1042,7 @@ function OverviewContent() {
               <FaCheckCircle size={24} />
             </div>
             <div>
-              <p className="text-xs uppercase text-slate-500">
-                Completed Query
-              </p>
+              <p className="text-xs uppercase">Completed Query</p>
               <p className="text-2xl sm:text-3xl font-bold">{queryCompleted}</p>
             </div>
           </div>
@@ -1039,7 +1066,7 @@ function OverviewContent() {
               <FaListCheck size={24} />
             </div>
             <div>
-              <p className="text-xs uppercase text-slate-500">Total Tasks</p>
+              <p className="text-xs uppercase">Total Tasks</p>
               <p className="text-2xl sm:text-3xl font-bold">{todoTotal}</p>
             </div>
           </div>
@@ -1048,7 +1075,7 @@ function OverviewContent() {
               <FaHourglass size={24} />
             </div>
             <div>
-              <p className="text-xs uppercase text-slate-500">In Progress</p>
+              <p className="text-xs uppercase">In Progress</p>
               <p className="text-2xl sm:text-3xl font-bold">{todoInProgress}</p>
             </div>
           </div>
@@ -1057,7 +1084,7 @@ function OverviewContent() {
               <FaClock size={24} />
             </div>
             <div>
-              <p className="text-xs uppercase text-slate-500">To Do</p>
+              <p className="text-xs uppercase">To Do</p>
               <p className="text-2xl sm:text-3xl font-bold">{todoTodo}</p>
             </div>
           </div>
@@ -1066,7 +1093,7 @@ function OverviewContent() {
               <FaCheckCircle size={24} />
             </div>
             <div>
-              <p className="text-xs uppercase text-slate-500">Completed</p>
+              <p className="text-xs uppercase">Completed</p>
               <p className="text-2xl sm:text-3xl font-bold">{todoCompleted}</p>
             </div>
           </div>
@@ -1121,7 +1148,7 @@ function OverviewContent() {
                       </Link>
                     )}
                     <button
-                      className="change-button change-button-secondary bg-slate-200 px-3 py-2 rounded-md"
+                      className="change-button change-button-secondary px-3 py-2 rounded-md"
                       type="button"
                       onClick={() => setCollapsed((prev) => !prev)}
                       aria-expanded={!collapsed}
@@ -1140,7 +1167,7 @@ function OverviewContent() {
                   >
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       <button
-                        className="change-button change-button-secondary bg-slate-200 p-2 rounded-md"
+                        className="change-button change-button-secondary p-2 rounded-md"
                         type="button"
                         onClick={() =>
                           setAdminDate((prev) => shiftInputDate(prev, -1))
@@ -1155,7 +1182,7 @@ function OverviewContent() {
                         className="date-input"
                       />
                       <button
-                        className="change-button change-button-secondary bg-slate-200 p-2 rounded-md"
+                        className="change-button change-button-secondary p-2 rounded-md"
                         type="button"
                         onClick={() =>
                           setAdminDate((prev) => shiftInputDate(prev, 1))
@@ -1172,7 +1199,7 @@ function OverviewContent() {
                         </div>
                       )}
                       {!adminLoading && adminReports.length === 0 && (
-                        <div className="rbac-card p-4 text-sm text-slate-500">
+                        <div className="rbac-card p-4 text-sm ">
                           No reporting found for selected date.
                         </div>
                       )}
@@ -1185,10 +1212,10 @@ function OverviewContent() {
                             >
                               <div className="flex flex-wrap items-start justify-between gap-3">
                                 <div>
-                                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                                  <p className="text-xs uppercase tracking-[0.2em]">
                                     {formatToDDMMYYYY(report.reportDate)}
                                   </p>
-                                  <h4 className="mt-1 text-base font-semibold text-slate-900">
+                                  <h4 className="mt-1 text-base font-semibold">
                                     {report.projectName}
                                   </h4>
                                 </div>
@@ -1201,7 +1228,7 @@ function OverviewContent() {
                                 </button>
                               </div>
 
-                              <div className="mt-3 grid gap-2 text-sm text-slate-600">
+                              <div className="mt-3 grid gap-2 text-sm">
                                 <p>{report.categoryName || "-"}</p>
                                 <p>{report.description}</p>
                               </div>
@@ -1221,7 +1248,7 @@ function OverviewContent() {
                       </div>
                     )}
                     {!userReportsLoading && userReports.length === 0 && (
-                      <div className="rbac-card p-4 text-sm text-slate-500">
+                      <div className="rbac-card p-4 text-sm ">
                         No reporting found for today.
                       </div>
                     )}
@@ -1231,10 +1258,10 @@ function OverviewContent() {
                           <div key={report.id} className="rbac-card p-4 sm:p-5">
                             <div className="flex flex-wrap items-start justify-between gap-3">
                               <div>
-                                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                                <p className="text-xs uppercase tracking-[0.2em] ">
                                   {formatToDDMMYYYY(report.reportDate)}
                                 </p>
-                                <h4 className="mt-1 text-base font-semibold text-slate-900">
+                                <h4 className="mt-1 text-base font-semibold">
                                   {report.projectName || "-"}
                                 </h4>
                               </div>
@@ -1247,9 +1274,9 @@ function OverviewContent() {
                               </button>
                             </div>
 
-                            <div className="mt-3 grid gap-2 text-sm text-slate-600">
+                            <div className="mt-3 grid gap-2 text-sm theme-text-muted">
                               <p>
-                                <span className="text-slate-700">
+                                <span className="theme-text">
                                   Reporting Category:
                                 </span>{" "}
                                 {report.categoryName || "-"}
@@ -1270,12 +1297,12 @@ function OverviewContent() {
       <section className=""></section>
 
       {modalOpen && !isAdmin && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="text-lg font-semibold text-slate-900">
+        <div className="theme-modal-overlay fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="theme-modal-surface w-full max-w-lg rounded-2xl p-6 shadow-xl">
+            <h2 className="text-lg font-semibold theme-text">
               Update task
             </h2>
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-2 text-sm theme-text-muted">
               Add your comments and choose a status before saving.
             </p>
 
@@ -1339,11 +1366,11 @@ function OverviewContent() {
       )}
 
       {reportViewOpen && isAdmin && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-4xl rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-auto">
+        <div className="theme-modal-overlay fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="theme-modal-surface w-full max-w-4xl rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-auto">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">
+                <h2 className="text-lg font-semibold theme-text">
                   Report details
                 </h2>
               </div>
@@ -1399,7 +1426,8 @@ function OverviewContent() {
                         {reportViewData.imageUrls.map((url) => (
                           <div
                             key={url}
-                            className="rounded-xl border border-slate-200 p-2"
+                            className="rounded-xl border p-2"
+                            style={{ borderColor: "var(--theme-border)" }}
                           >
                             <Image
                               src={url}
@@ -1429,7 +1457,10 @@ function OverviewContent() {
                       <p className="text-sm font-semibold text-slate-800">
                         Video
                       </p>
-                      <div className="mt-2 rounded-xl border border-slate-200 p-3">
+                      <div
+                        className="mt-2 rounded-xl border p-3"
+                        style={{ borderColor: "var(--theme-border)" }}
+                      >
                         <video
                           controls
                           className="w-full rounded-lg"

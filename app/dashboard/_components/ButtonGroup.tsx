@@ -43,7 +43,7 @@ export function ButtonGroup<T extends string | number>({
               className={
                 isSelected
                   ? "rbac-button"
-                  : "rbac-button rbac-button-secondary bg-slate-100"
+                  : "rbac-button rbac-button-secondary"
               }
             >
               {option.label}

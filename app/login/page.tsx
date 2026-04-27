@@ -176,21 +176,21 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 flex items-center justify-center px-6 py-10">
+    <main className="min-h-screen flex items-center justify-center px-6 py-10">
       <div className="">
         {needsSetup ? (
-          <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl">
+          <section className="theme-modal-surface rounded-3xl p-8 shadow-xl">
             <div className="flex items-center justify-between">
               <p className="text-xs font-semibold tracking-[0.3em] uppercase text-[#2596be]">
                 First-Time Setup
               </p>
-              <span className="text-xs text-slate-400">Create Admin</span>
+              <span className="text-xs theme-text-muted">Create Admin</span>
             </div>
             <form className="mt-6 grid gap-4" onSubmit={handleSetup}>
-              <label className="text-sm font-semibold text-slate-700">
+              <label className="text-sm font-semibold theme-text">
                 First name
                 <input
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 focus:border-[#2596be] focus:outline-none"
+                  className="theme-input mt-2 w-full rounded-xl px-4 py-3 focus:outline-none"
                   value={setupForm.firstName}
                   onChange={(event) =>
                     setSetupForm((prev) => ({
@@ -201,10 +201,10 @@ export default function LoginPage() {
                   placeholder="First name"
                 />
               </label>
-              <label className="text-sm font-semibold text-slate-700">
+              <label className="text-sm font-semibold theme-text">
                 Last name
                 <input
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 focus:border-blue-500 focus:outline-none"
+                  className="theme-input mt-2 w-full rounded-xl px-4 py-3 focus:outline-none"
                   value={setupForm.lastName}
                   onChange={(event) =>
                     setSetupForm((prev) => ({
@@ -215,11 +215,11 @@ export default function LoginPage() {
                   placeholder="Last name"
                 />
               </label>
-              <label className="text-sm font-semibold text-slate-700">
+              <label className="text-sm font-semibold theme-text">
                 Email
                 <input
                   type="email"
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 focus:border-[#2596be] focus:outline-none"
+                  className="theme-input mt-2 w-full rounded-xl px-4 py-3 focus:outline-none"
                   value={setupForm.email}
                   onChange={(event) =>
                     setSetupForm((prev) => ({
@@ -230,11 +230,11 @@ export default function LoginPage() {
                   placeholder="admin@company.com"
                 />
               </label>
-              <label className="text-sm font-semibold text-slate-700">
+              <label className="text-sm font-semibold theme-text">
                 Mobile number
                 <input
                   inputMode="tel"
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 focus:border-[#2596be] focus:outline-none"
+                  className="theme-input mt-2 w-full rounded-xl px-4 py-3 focus:outline-none"
                   value={setupForm.mobileNumber}
                   onChange={(event) =>
                     setSetupForm((prev) => ({
@@ -245,11 +245,11 @@ export default function LoginPage() {
                   placeholder="Mobile number"
                 />
               </label>
-              <label className="text-sm font-semibold text-slate-700">
+              <label className="text-sm font-semibold theme-text">
                 Password
                 <input
                   type="password"
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 focus:border-[#2596be] focus:outline-none"
+                  className="theme-input mt-2 w-full rounded-xl px-4 py-3 focus:outline-none"
                   value={setupForm.password}
                   onChange={(event) =>
                     setSetupForm((prev) => ({
@@ -260,11 +260,11 @@ export default function LoginPage() {
                   placeholder="4 digits"
                 />
               </label>
-              <label className="text-sm font-semibold text-slate-700">
+              <label className="text-sm font-semibold theme-text">
                 Confirm password
                 <input
                   type="password"
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 focus:border-[#2596be] focus:outline-none"
+                  className="theme-input mt-2 w-full rounded-xl px-4 py-3 focus:outline-none"
                   value={setupForm.confirmPassword}
                   onChange={(event) =>
                     setSetupForm((prev) => ({
@@ -293,7 +293,7 @@ export default function LoginPage() {
             </form>
           </section>
         ) : (
-          <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl">
+          <section className="theme-modal-surface rounded-3xl p-8 shadow-xl">
             <div className="flex justify-center">
               <img src="/images/logo.svg" alt="WellMen" />
             </div>
@@ -302,15 +302,15 @@ export default function LoginPage() {
                 Sign In
               </p>
             </div>
-            <p className="mt-3 text-sm text-slate-500">
+            <p className="mt-3 text-sm theme-text-muted">
               Use your mobile number and password to continue.
             </p>
             <form className="mt-4 grid gap-4" onSubmit={handleSubmit}>
-              <label className="text-sm font-semibold text-slate-700">
+              <label className="text-sm font-semibold theme-text">
                 Mobile number
                 <input
                   inputMode="tel"
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 focus:border-blue-500 focus:outline-none"
+                  className="theme-input mt-2 w-full rounded-xl px-4 py-3 focus:outline-none"
                   value={form.mobileNumber}
                   onChange={(event) =>
                     setForm((prev) => ({
@@ -321,11 +321,11 @@ export default function LoginPage() {
                   placeholder="Enter your mobile number"
                 />
               </label>
-              <label className="text-sm font-semibold text-slate-700">
+              <label className="text-sm font-semibold theme-text">
                 Password
                 <input
                   type="password"
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 focus:border-blue-500 focus:outline-none"
+                  className="theme-input mt-2 w-full rounded-xl px-4 py-3 focus:outline-none"
                   value={form.password}
                   onChange={(event) =>
                     setForm((prev) => ({
