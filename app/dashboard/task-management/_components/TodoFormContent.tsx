@@ -548,7 +548,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
                 )}
 
                 <label className="rbac-label">
-                  Status
+                  Status <span className="text-red-600">*</span>
                   <select
                     className="rbac-input rbac-select"
                     value={form.status}
