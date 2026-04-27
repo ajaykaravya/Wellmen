@@ -69,6 +69,7 @@ function ReportingListContent() {
   const [toDate, setToDate] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<ReportRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
   const [viewLoading, setViewLoading] = useState(false);
   const [viewData, setViewData] = useState<ReportRow | null>(null);
@@ -196,6 +197,7 @@ function ReportingListContent() {
 
   const confirmDelete = useCallback(async () => {
     if (!confirmTarget) return;
+    setDeleting(true);
 
     try {
       const res = await fetch(`/api/reports/${confirmTarget.id}`, {
@@ -214,6 +216,7 @@ function ReportingListContent() {
       console.error("Failed to delete reporting", error);
       toast.error("Failed to delete reporting.");
     } finally {
+      setDeleting(false);
       setConfirmOpen(false);
       setConfirmTarget(null);
     }
@@ -598,6 +601,8 @@ function ReportingListContent() {
         title="Delete reporting?"
         description="Are you sure you want to delete?"
         confirmLabel="Delete"
+        confirmLoading={deleting}
+        confirmLoadingLabel="Deleting..."
         cancelLabel="Cancel"
         onConfirm={confirmDelete}
         onClose={() => {

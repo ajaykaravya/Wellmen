@@ -33,6 +33,7 @@ function OfficeCategoryListContent() {
   const [confirmTarget, setConfirmTarget] = useState<OfficeCategoryRow | null>(
     null,
   );
+  const [deleting, setDeleting] = useState(false);
 
   const loadCategories = useCallback(async () => {
     setLoading(true);
@@ -80,6 +81,7 @@ function OfficeCategoryListContent() {
 
   const confirmDeleteCategory = useCallback(async () => {
     if (!confirmTarget) return;
+    setDeleting(true);
     try {
       const res = await fetch(`/api/office-categories/${confirmTarget.id}`, {
         method: "DELETE",
@@ -95,6 +97,7 @@ function OfficeCategoryListContent() {
       console.error("Failed to delete office category", error);
       toast.error("Failed to delete office category.");
     } finally {
+      setDeleting(false);
       setConfirmOpen(false);
       setConfirmTarget(null);
     }
@@ -342,6 +345,8 @@ function OfficeCategoryListContent() {
         title="Delete office category?"
         description="Are you sure you want to delete?"
         confirmLabel="Delete"
+        confirmLoading={deleting}
+        confirmLoadingLabel="Deleting..."
         cancelLabel="Cancel"
         onConfirm={confirmDeleteCategory}
         onClose={() => {

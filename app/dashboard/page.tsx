@@ -412,6 +412,7 @@ function OverviewContent() {
   );
 
   const [collapsed, setCollapsed] = useState(true);
+  const [logoutLoading, setLogoutLoading] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [changePasswordSubmitting, setChangePasswordSubmitting] =
     useState(false);
@@ -726,12 +727,15 @@ function OverviewContent() {
   }, []);
 
   const handleLogout = useCallback(async () => {
+    setLogoutLoading(true);
     try {
       await fetch("/api/auth/logout", { method: "POST" });
       clearCachedSession();
       router.push("/login");
     } catch (error) {
       console.error("Logout failed", error);
+    } finally {
+      setLogoutLoading(false);
     }
   }, [router]);
 
@@ -984,6 +988,8 @@ function OverviewContent() {
         title="Confirm logout"
         description="Are you sure you want to logout?"
         confirmLabel="Yes"
+        confirmLoading={logoutLoading}
+        confirmLoadingLabel="Logging out..."
         cancelLabel="No"
         onConfirm={handleLogout}
         onClose={() => setConfirmLogoutOpen(false)}

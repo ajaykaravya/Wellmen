@@ -45,6 +45,7 @@ function ProjectListContent() {
   const [toDate, setToDate] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<ProjectRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadProjects = useCallback(async () => {
     setLoading(true);
@@ -91,6 +92,7 @@ function ProjectListContent() {
 
   const confirmDeleteProject = useCallback(async () => {
     if (!confirmTarget) return;
+    setDeleting(true);
     try {
       const res = await fetch(`/api/projects/${confirmTarget.id}`, {
         method: "DELETE",
@@ -108,6 +110,7 @@ function ProjectListContent() {
       console.error("Failed to delete project", error);
       toast.error("Failed to delete project.");
     } finally {
+      setDeleting(false);
       setConfirmOpen(false);
       setConfirmTarget(null);
     }
@@ -457,6 +460,8 @@ function ProjectListContent() {
         title="Delete project?"
         description="Are you sure you want to delete?"
         confirmLabel="Delete"
+        confirmLoading={deleting}
+        confirmLoadingLabel="Deleting..."
         cancelLabel="Cancel"
         onConfirm={confirmDeleteProject}
         onClose={() => {

@@ -18,6 +18,14 @@ const resolveReportingCategory = async (categoryId) => {
 
 const parseDate = (value) => {
   if (!value) return null;
+
+  const ddmmyyyyMatch = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (ddmmyyyyMatch) {
+    const [, day, month, year] = ddmmyyyyMatch;
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    if (!Number.isNaN(date.getTime())) return date;
+  }
+
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
   return date;
@@ -119,6 +127,8 @@ export async function PUT(req, { params }) {
     const categoryId = String(form.get("categoryId") || "").trim();
     const description = String(form.get("description") || "").trim();
     const parsedDate = parseDate(reportDate);
+    console.log("Received report date:", reportDate);
+    console.log("Parsed report date:", parsedDate);
 
     if (!reportDate || !projectId || !categoryId || !description) {
       return NextResponse.json(
