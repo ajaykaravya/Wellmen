@@ -1,9 +1,12 @@
 "use client";
 
 import { ToastContainer } from "react-toastify";
+import { useThemeMode } from "./ThemeProvider";
 import "react-toastify/dist/ReactToastify.css";
 
 export default function ToastProvider() {
+  const { theme } = useThemeMode();
+
   return (
     <ToastContainer
       position="top-right"
@@ -13,7 +16,7 @@ export default function ToastProvider() {
       closeOnClick
       pauseOnHover
       draggable
-      theme="light"
+      theme={theme}
     />
   );
 }

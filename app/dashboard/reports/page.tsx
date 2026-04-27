@@ -414,7 +414,7 @@ function ReportingListContent() {
 
           <div className="mt-4">
             <div className="hidden md:block overflow-x-auto">
-              <table className="min-w-full border border-slate-200 border-separate border-spacing-0">
+              <table className="theme-table min-w-full border border-slate-200 border-separate border-spacing-0">
                 <thead className="bg-slate-50">
                   {table.getHeaderGroups().map((headerGroup) => (
                     <tr key={headerGroup.id}>
@@ -612,8 +612,8 @@ function ReportingListContent() {
       />
 
       {viewOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-4xl rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-auto">
+        <div className="theme-modal-overlay fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="theme-modal-surface w-full max-w-4xl rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-auto">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold ">Report details</h2>
@@ -670,7 +670,8 @@ function ReportingListContent() {
                         {viewData.imageUrls.map((url) => (
                           <div
                             key={url}
-                            className="rounded-xl border border-slate-200 p-2"
+                            className="rounded-xl border p-2"
+                            style={{ borderColor: "var(--theme-border)" }}
                           >
                             <Image
                               src={url}
@@ -698,7 +699,10 @@ function ReportingListContent() {
                   {viewData.videoUrl && (
                     <>
                       <p className="text-sm font-semibold ">Video</p>
-                      <div className="mt-2 rounded-xl border border-slate-200 p-3">
+                      <div
+                        className="mt-2 rounded-xl border p-3"
+                        style={{ borderColor: "var(--theme-border)" }}
+                      >
                         <video
                           controls
                           className="w-full rounded-lg"

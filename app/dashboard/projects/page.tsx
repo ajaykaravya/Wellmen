@@ -275,7 +275,7 @@ function ProjectListContent() {
 
           <div className="mt-4">
             <div className="hidden md:block overflow-x-auto">
-              <table className="min-w-full border border-slate-200 border-separate border-spacing-0">
+              <table className="theme-table min-w-full border border-slate-200 border-separate border-spacing-0">
                 <thead className="bg-slate-50">
                   {table.getHeaderGroups().map((headerGroup) => (
                     <tr key={headerGroup.id}>

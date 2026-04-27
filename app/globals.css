@@ -11,10 +11,101 @@
   --brand-soft: #67bed9;
   --accent: #11a36a;
   --card: #f7fbff;
+  --surface-2: #f0f6ff;
   --stroke: rgba(36, 90, 122, 0.18);
   --shadow: 0 16px 35px rgba(15, 23, 42, 0.12);
+  --header-bg: linear-gradient(130deg, #2596be 0%, #67bed9 100%);
+  --header-text: #ffffff;
+  --sidebar-bg: #ffffff;
+  --profile-bg: #f7f9ff;
+  --input-bg: #f8faff;
+  --input-text: #112a3c;
+  --input-border: rgba(13, 23, 38, 0.16);
+  --input-placeholder: #6b7280;
+  --button-secondary-bg: #ffffff;
+  --button-secondary-text: #1f7ea5;
+  --button-secondary-border: rgba(31, 107, 255, 0.3);
+  --nav-active-bg: #67bed9;
+  --nav-active-text: #ffffff;
+  --focus-ring: #2596be;
   --radius: 16px;
   --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", Segoe UI Symbol, "Noto Color Emoji";
+  --theme-page-bg: var(--bg);
+  --theme-page-bg-soft: var(--bg-soft);
+  --theme-surface: var(--card);
+  --theme-surface-2: var(--surface-2);
+  --theme-surface-inverse: #ffffff;
+  --theme-text: var(--ink);
+  --theme-text-muted: var(--muted);
+  --theme-border: var(--stroke);
+  --theme-border-strong: rgba(13, 23, 38, 0.16);
+  --theme-input-bg: var(--input-bg);
+  --theme-input-text: var(--input-text);
+  --theme-input-placeholder: var(--input-placeholder);
+  --theme-button-bg: var(--button-secondary-bg);
+  --theme-button-text: var(--button-secondary-text);
+  --theme-button-border: var(--button-secondary-border);
+  --theme-button-hover-bg: #edf4fb;
+  --theme-danger-bg: #fff1f2;
+  --theme-danger-text: #b42318;
+  --theme-success-bg: #ecfdf3;
+  --theme-success-text: #027a48;
+  --theme-warning-bg: #fff7ed;
+  --theme-warning-text: #b45309;
+  --theme-modal-overlay: rgba(15, 23, 42, 0.4);
+  --theme-glow-a: rgba(255, 255, 255, 0.8);
+  --theme-glow-b: rgba(216, 231, 255, 0.8);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #060f1b;
+  --bg-soft: #0b1627;
+  --ink: #e7eef8;
+  --muted: #9aacbf;
+  --card: #111d2d;
+  --surface-2: #162437;
+  --stroke: rgba(148, 163, 184, 0.22);
+  --shadow: 0 18px 40px rgba(2, 6, 23, 0.45);
+  --header-bg: linear-gradient(130deg, #10324a 0%, #1a4f72 100%);
+  --header-text: #f8fbff;
+  --sidebar-bg: #0d1624;
+  --profile-bg: #111c2b;
+  --input-bg: #101c2d;
+  --input-text: #e6eef8;
+  --input-border: rgba(148, 163, 184, 0.24);
+  --input-placeholder: #72839a;
+  --button-secondary-bg: #172638;
+  --button-secondary-text: #deebf9;
+  --button-secondary-border: rgba(148, 163, 184, 0.3);
+  --nav-active-bg: rgba(37, 150, 190, 0.3);
+  --nav-active-text: #ffffff;
+  --focus-ring: #67bed9;
+  --theme-page-bg: var(--bg);
+  --theme-page-bg-soft: var(--bg-soft);
+  --theme-surface: var(--card);
+  --theme-surface-2: var(--surface-2);
+  --theme-surface-inverse: #101826;
+  --theme-text: var(--ink);
+  --theme-text-muted: var(--muted);
+  --theme-border: var(--stroke);
+  --theme-border-strong: rgba(148, 163, 184, 0.24);
+  --theme-input-bg: var(--input-bg);
+  --theme-input-text: var(--input-text);
+  --theme-input-placeholder: var(--input-placeholder);
+  --theme-button-bg: var(--button-secondary-bg);
+  --theme-button-text: var(--button-secondary-text);
+  --theme-button-border: var(--button-secondary-border);
+  --theme-button-hover-bg: #1d2f44;
+  --theme-danger-bg: rgba(153, 27, 27, 0.3);
+  --theme-danger-text: #fecaca;
+  --theme-success-bg: rgba(6, 95, 70, 0.34);
+  --theme-success-text: #bbf7d0;
+  --theme-warning-bg: rgba(180, 83, 9, 0.3);
+  --theme-warning-text: #fed7aa;
+  --theme-modal-overlay: rgba(2, 6, 23, 0.7);
+  --theme-glow-a: rgba(52, 78, 112, 0.16);
+  --theme-glow-b: rgba(24, 53, 84, 0.2);
 }
 
 * {
@@ -29,9 +120,9 @@ body {
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   color: var(--ink);
   background:
-    radial-gradient(circle at 8% 8%, #ffffff 0%, transparent 45%),
-    radial-gradient(circle at 92% 12%, #d8e7ff 0%, transparent 42%),
-    linear-gradient(160deg, var(--bg) 0%, var(--bg-soft) 100%);
+    radial-gradient(circle at 8% 8%, var(--theme-glow-a) 0%, transparent 45%),
+    radial-gradient(circle at 92% 12%, var(--theme-glow-b) 0%, transparent 42%),
+    linear-gradient(160deg, var(--theme-page-bg) 0%, var(--theme-page-bg-soft) 100%);
 }
 
 .font-sans {
@@ -50,8 +141,9 @@ a {
 
   input, select, textarea {
       font-family: var(--font-sans) !important;
-    background-color: white;
-    border: 1px solid var(--stroke);
+    background-color: var(--input-bg);
+    color: var(--input-text);
+    border: 1px solid var(--input-border);
     padding: 8px 12px;
     border-radius: 8px;
   }
@@ -498,12 +590,12 @@ button,
 .rbac-shell {
   min-height: 100vh;
   display: flex;
-  background: #f5f7fb;
+  background: var(--bg);
 }
 
 .rbac-sidebar {
   width: 260px;
-  background: #ffffff;
+  background: var(--sidebar-bg);
   border-right: 1px solid var(--stroke);
   padding: 28px 24px;
   display: flex;
@@ -546,14 +638,14 @@ button,
   text-align: left;
   padding: 10px 14px;
   border-radius: 12px;
-  color: var(--brand-dark);
+  color: var(--ink);
   font-weight: 600;
   cursor: pointer;
 }
 
 .rbac-nav-item.active {
-  background: var(--brand-soft);
-  color: white;
+  background: var(--nav-active-bg);
+  color: var(--nav-active-text);
   box-shadow: 0 8px 16px rgba(31, 107, 255, 0.12);
 }
 
@@ -564,10 +656,179 @@ button,
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  border: 1px solid rgba(31, 107, 255, 0.18);
-  background: white;
-  color: var(--brand-dark);
+  border: 1px solid var(--button-secondary-border);
+  background: var(--button-secondary-bg);
+  color: var(--button-secondary-text);
   cursor: pointer;
+}
+
+.rbac-theme-toggle {
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--button-secondary-border);
+  background: var(--button-secondary-bg);
+  color: var(--button-secondary-text);
+  cursor: pointer;
+}
+
+.theme-surface {
+  background: var(--theme-surface);
+  color: var(--theme-text);
+  border: 1px solid var(--theme-border);
+}
+
+.theme-surface-2 {
+  background: var(--theme-surface-2);
+  color: var(--theme-text);
+  border: 1px solid var(--theme-border);
+}
+
+.theme-surface-inverse {
+  background: var(--theme-surface-inverse);
+  color: var(--theme-text);
+}
+
+.theme-text {
+  color: var(--theme-text);
+}
+
+.theme-text-muted {
+  color: var(--theme-text-muted);
+}
+
+.theme-input {
+  background: var(--theme-input-bg);
+  color: var(--theme-input-text);
+  border: 1px solid var(--theme-border-strong);
+}
+
+.theme-input::placeholder {
+  color: var(--theme-input-placeholder);
+}
+
+.theme-button-secondary {
+  background: var(--theme-button-bg);
+  color: var(--theme-button-text);
+  border: 1px solid var(--theme-button-border);
+}
+
+.theme-button-secondary:hover {
+  background: var(--theme-button-hover-bg);
+}
+
+.theme-modal-surface {
+  background: var(--theme-surface);
+  color: var(--theme-text);
+  border: 1px solid var(--theme-border);
+}
+
+.theme-modal-overlay {
+  background: var(--theme-modal-overlay);
+}
+
+.theme-status-success {
+  background: var(--theme-success-bg);
+  color: var(--theme-success-text);
+}
+
+.theme-status-warning {
+  background: var(--theme-warning-bg);
+  color: var(--theme-warning-text);
+}
+
+.theme-status-danger {
+  background: var(--theme-danger-bg);
+  color: var(--theme-danger-text);
+}
+
+.theme-table {
+  background: var(--theme-surface);
+  color: var(--theme-text);
+  border-color: var(--theme-border);
+}
+
+.theme-table thead {
+  background: var(--theme-surface-2);
+}
+
+.theme-table th {
+  color: var(--theme-text-muted);
+  border-bottom-color: var(--theme-border) !important;
+}
+
+.theme-table td {
+  color: var(--theme-text);
+  border-bottom-color: var(--theme-border) !important;
+}
+
+.theme-table tbody tr {
+  background: var(--theme-surface) !important;
+}
+
+.theme-table tbody tr:nth-child(even) {
+  background: var(--theme-surface-2) !important;
+}
+
+.theme-table tbody tr:hover {
+  background: rgba(37, 150, 190, 0.08) !important;
+}
+
+.theme-table .bg-white {
+  background: var(--theme-surface) !important;
+}
+
+.theme-table .bg-slate-50 {
+  background: var(--theme-surface-2) !important;
+}
+
+.theme-table .border-slate-100,
+.theme-table .border-slate-200 {
+  border-color: var(--theme-border) !important;
+}
+
+.theme-table .text-slate-500,
+.theme-table .text-slate-600 {
+  color: var(--theme-text-muted) !important;
+}
+
+.theme-table .text-slate-700,
+.theme-table .text-slate-800,
+.theme-table .text-slate-900 {
+  color: var(--theme-text) !important;
+}
+
+.react-datepicker {
+  background: var(--theme-surface-inverse);
+  border-color: var(--theme-border);
+  color: var(--theme-text);
+}
+
+.react-datepicker__header {
+  background: var(--theme-surface-2);
+  border-bottom-color: var(--theme-border);
+}
+
+.react-datepicker__current-month,
+.react-datepicker__day-name,
+.react-datepicker__day,
+.react-datepicker__time-name {
+  color: var(--theme-text);
+}
+
+.react-datepicker__day:hover,
+.react-datepicker__month-text:hover,
+.react-datepicker__quarter-text:hover,
+.react-datepicker__year-text:hover {
+  background: var(--theme-surface-2);
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background: var(--brand);
+  color: #ffffff;
 }
 
 .rbac-hamburger span {
@@ -585,9 +846,9 @@ button,
 
 .rbac-profile {
   margin-top: auto;
-  background: #f7f9ff;
+  background: var(--profile-bg);
   border-radius: 18px;
-  border: 1px solid rgba(31, 107, 255, 0.08);
+  border: 1px solid var(--stroke);
   padding: 16px;
   display: grid;
   gap: 6px;
@@ -612,9 +873,9 @@ button,
   width: 100%;
   padding: 8px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(31, 107, 255, 0.25);
-  background: white;
-  color: var(--brand-dark);
+  border: 1px solid var(--button-secondary-border);
+  background: var(--button-secondary-bg);
+  color: var(--button-secondary-text);
   font-weight: 600;
   cursor: pointer;
 }
@@ -642,7 +903,7 @@ button,
 
 .rbac-header {
   width: 100%;
-  background: linear-gradient(130deg, #2596be 0%, #67bed9 100%);
+  background: var(--header-bg);
   border-radius: 0;
   border: none;
   padding: 18px 22px;
@@ -654,13 +915,11 @@ button,
   flex-wrap: wrap;
   color: white;
   box-shadow: 0 4px 26px rgba(37, 150, 190, 0.2);
-  position: sticky;
-  top: 0;
   z-index: 60;
 }
 
 .rbac-header * {
-  color: white !important;
+  color: var(--header-text) !important;
 }
 
 .rbac-header .rbac-role {
@@ -672,7 +931,7 @@ button,
 .rbac-header .rbac-heading,
 .rbac-header .rbac-role-name,
 .rbac-header .rbac-label {
-  color: white !important;
+  color: var(--header-text) !important;
 }
 
 .rbac-eyebrow {
@@ -690,10 +949,10 @@ button,
 }
 
 .rbac-role {
-  background: #f5f7ff;
+  background: var(--surface-2);
   border-radius: 18px;
   padding: 14px 18px;
-  border: 1px solid rgba(31, 107, 255, 0.12);
+  border: 1px solid var(--stroke);
 }
 
 .rbac-role-name {
@@ -713,9 +972,9 @@ button,
 }
 
 .rbac-card {
-  background: white;
+  background: var(--card);
   border-radius: 18px;
-  border: 1px solid rgba(37, 150, 190, 0.2);
+  border: 1px solid var(--stroke);
   padding: 16px;
   transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
 }
@@ -805,8 +1064,9 @@ button,
 .rbac-input {
   padding: 12px 30px 12px 10px;
   border-radius: 8px;
-  border: 1px solid rgba(13, 23, 38, 0.16);
-  background: #f8faff;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--input-text);
   /* font-size: 1rem; */
   width: 100%;
 }
@@ -814,16 +1074,18 @@ button,
 .rbac-input-filter {
   padding: 8px;
   border-radius: 8px;
-  border: 1px solid rgba(13, 23, 38, 0.16);
-  background: #f8faff;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--input-text);
   /* font-size: 1rem; */
 }
 
 .date-input{
   padding: 5px;
   border-radius: 8px;
-  border: 1px solid rgba(13, 23, 38, 0.16);
-  background: #f8faff;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--input-text);
   font-size: 14px;
   width: min(100%, 220px);
   max-width: 220px;
@@ -832,43 +1094,43 @@ button,
 
 .rbac-input:focus,
 .rbac-input-filter:focus {
-  outline: 2px solid var(--brand);
+  outline: 2px solid var(--focus-ring);
   border-color: transparent;
 }
 
 .rbac-input::placeholder,
 .rbac-input-filter::placeholder,
 .date-input::placeholder {
-  color: #6b7280;
+  color: var(--input-placeholder);
   opacity: 1;
 }
 
 .rbac-input::-webkit-input-placeholder,
 .rbac-input-filter::-webkit-input-placeholder,
 .date-input::-webkit-input-placeholder {
-  color: #6b7280;
+  color: var(--input-placeholder);
   opacity: 1;
 }
 
 .rbac-input::-moz-placeholder,
 .rbac-input-filter::-moz-placeholder,
 .date-input::-moz-placeholder {
-  color: #6b7280;
+  color: var(--input-placeholder);
   opacity: 1;
 }
 
 .rbac-input:-ms-input-placeholder,
 .rbac-input-filter:-ms-input-placeholder,
 .date-input:-ms-input-placeholder {
-  color: #6b7280;
+  color: var(--input-placeholder);
   opacity: 1;
 }
 
 .rbac-select {
   padding: 8px 30px 8px 10px;
   appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, #5b6b82 50%),
-    linear-gradient(135deg, #5b6b82 50%, transparent 50%);
+  background-image: linear-gradient(45deg, transparent 50%, var(--input-placeholder) 50%),
+    linear-gradient(135deg, var(--input-placeholder) 50%, transparent 50%);
   background-position: calc(100% - 18px) calc(50% - 3px),
     calc(100% - 12px) calc(50% - 3px);
   background-size: 6px 6px, 6px 6px;
@@ -907,9 +1169,9 @@ button,
 }
 
 .rbac-button-secondary {
-  background: white;
-  color: var(--brand-dark);
-  border: 1px solid rgba(31, 107, 255, 0.3);
+  background: var(--button-secondary-bg);
+  color: var(--button-secondary-text);
+  border: 1px solid var(--button-secondary-border);
   box-shadow: none;
 }
 
@@ -984,8 +1246,8 @@ button,
   margin-top: 16px;
   padding: 14px 16px;
   border-radius: 16px;
-  border: 1px dashed rgba(31, 107, 255, 0.2);
-  background: #f6f8ff;
+  border: 1px dashed var(--theme-border);
+  background: var(--theme-surface-2);
 }
 
 .rbac-profile-grid {
@@ -998,8 +1260,8 @@ button,
 .rbac-profile-item {
   padding: 14px 16px;
   border-radius: 16px;
-  background: #f6f8ff;
-  border: 1px solid rgba(31, 107, 255, 0.08);
+  background: var(--theme-surface-2);
+  border: 1px solid var(--theme-border);
 }
 
 @media (max-width: 1200px) {
@@ -1027,15 +1289,18 @@ button,
     display: none;
   }
 
+  .rbac-header .rbac-theme-toggle {
+    display: none;
+  }
+
   .rbac-mobile-topbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    position: sticky;
-    top: 0;
+    width: 100%;
     z-index: 35;
     padding: 0 0 12px;
-    background: #f5f7fb;
+    background: var(--bg);
   }
 
   .rbac-mobile-topbar .rbac-hamburger {

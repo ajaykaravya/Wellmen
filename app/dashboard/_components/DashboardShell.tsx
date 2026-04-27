@@ -5,7 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import Loading from "../../components/Loading";
-import { FaChevronRight } from "react-icons/fa";
+import { FaChevronRight, FaMoon, FaSun } from "react-icons/fa";
+import { useThemeMode } from "../../components/ThemeProvider";
 
 type SessionUser = {
   id: string;
@@ -129,6 +130,7 @@ export default function DashboardShell({
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [masterDataExpanded, setMasterDataExpanded] = useState(false);
+  const { theme, toggleTheme } = useThemeMode();
 
   const isAdmin = user?.role === "Admin" || user?.role === "Manager";
   const displayName = user ? `${user.firstName} ${user.lastName}`.trim() : "";
@@ -372,13 +374,24 @@ export default function DashboardShell({
                 <img src="/images/logo.svg" alt="WellMen" />
               </div>
             </Link>
-            <button
-              className="rbac-hamburger"
-              type="button"
-              onClick={() => setNavOpen(true)}
-            >
-              <span />
-            </button>
+            <div className="ml-auto flex items-center gap-2 justify-end">
+              <button
+                className="rbac-theme-toggle"
+                type="button"
+                onClick={toggleTheme}
+                aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+                title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+              >
+                {theme === "light" ? <FaMoon size={14} /> : <FaSun size={14} />}
+              </button>
+              <button
+                className="rbac-hamburger"
+                type="button"
+                onClick={() => setNavOpen(true)}
+              >
+                <span />
+              </button>
+            </div>
           </div>
           <div className="">{loading ? <Loading /> : children}</div>
         </section>
