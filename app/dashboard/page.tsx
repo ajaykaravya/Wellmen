@@ -3,12 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import {
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
-import { ColumnDef } from "@tanstack/table-core";
 import { formatToDDMMYYYY, getTodayInputDate } from "@/lib/dateUtils";
 import { toast } from "react-toastify";
 import DashboardShell, {
@@ -99,11 +93,6 @@ type TodoDraft = {
   status: TodoStatus;
 };
 
-type OverviewTableMeta = {
-  savingId: string | null;
-  openUpdateModal: (row: TodoRow) => void;
-};
-
 type AdminReportRow = {
   id: string;
   reportDate: string;
@@ -119,11 +108,8 @@ type TaskTableCardProps = {
   title: string;
   rows: TodoRow[];
   loading: boolean;
-  columns: ColumnDef<TodoRow>[];
-  meta: OverviewTableMeta;
   emptyLabel: string;
   addTaskType: TodoRow["type"];
-  showMoreType?: TodoRow["type"];
   onUpdate?: (row: TodoRow) => void;
 };
 
@@ -131,23 +117,52 @@ type QueryTableCardProps = {
   title: string;
   rows: QueryRow[];
   loading: boolean;
-  columns: ColumnDef<QueryRow>[];
-  meta: OverviewTableMeta;
   emptyLabel: string;
   viewAllHref: string;
-  onUpdate?: (row: QueryRow) => void;
 };
 
-const formatTaskTypeLabel = (type: TodoRow["type"]) => {
-  switch (type) {
-    case "PROJECT":
-      return "Project Work";
-    case "OFFICE":
-      return "Office Work";
-    case "SERVICE":
-      return "Service Work";
+const formatText = (text: string) => {
+  const formation = text.replaceAll("_", " ").toLowerCase();
+  const formatted = formation.charAt(0).toUpperCase() + formation.slice(1);
+  return formatted;
+};
+
+const getTaskStatusBadgeClass = (status: TodoStatus) => {
+  switch (status) {
+    case "TODO":
+      return "bg-amber-100 text-amber-800 ring-1 ring-amber-200";
+    case "IN_PROGRESS":
+      return "bg-blue-100 text-blue-800 ring-1 ring-blue-200";
+    case "ON_HOLD":
+      return "bg-orange-100 text-orange-800 ring-1 ring-orange-200";
+    case "COMPLETED":
+      return "bg-green-100 text-green-800 ring-1 ring-green-200";
     default:
-      return type;
+      return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
+  }
+};
+
+const getQueryStatusBadgeClass = (status: QueryRow["status"]) => {
+  switch (status) {
+    case "PENDING":
+      return "bg-rose-100 text-rose-800 ring-1 ring-rose-200";
+    case "COMPLETED":
+      return "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200";
+    default:
+      return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
+  }
+};
+
+const getQueryPriorityBadgeClass = (priority: QueryRow["priority"]) => {
+  switch (priority) {
+    case "LOW":
+      return "bg-amber-100 text-amber-800 ring-1 ring-amber-200";
+    case "MEDIUM":
+      return "bg-orange-100 text-orange-800 ring-1 ring-orange-200";
+    case "HIGH":
+      return "bg-red-100 text-red-800 ring-1 ring-red-200";
+    default:
+      return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
   }
 };
 
@@ -180,44 +195,23 @@ function TaskTableCard({
   title,
   rows,
   loading,
-  columns,
-  meta,
   emptyLabel,
   addTaskType,
-  showMoreType,
   onUpdate,
 }: TaskTableCardProps) {
   const [collapsed, setCollapsed] = useState(true);
-  const table = useReactTable({
-    data: rows,
-    columns,
-    meta,
-    getCoreRowModel: getCoreRowModel(),
-  });
 
   return (
     <div className="rbac-card">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center justify-between gap-2 w-full">
-          <h3 className="rbac-title-lg w-full">{title}</h3>
+          <h3 className="sm:text-base text-sm font-medium w-full">{title}</h3>
           <div className="flex items-center gap-2 justify-end w-full">
             <Link href={`/dashboard/task-management/new?type=${addTaskType}`}>
               <button className="rbac-button" type="button">
                 Add Task
               </button>
             </Link>
-            {/* {showMoreType && (
-            <Link href={`/dashboard/task-management?type=${showMoreType}`}>
-              <button
-                className="rbac-button rbac-button-secondary"
-                type="button"
-                aria-label={`Show more ${formatTaskTypeLabel(showMoreType)} tasks`}
-              >
-                Show More
-              </button>
-            </Link>
-          )} */}
-
             <button
               className="change-button change-button-secondary bg-slate-200 px-3 py-2 rounded-md"
               type="button"
@@ -238,74 +232,7 @@ function TaskTableCard({
         className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${collapsed ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none" : "mt-4 max-h-[4000px] opacity-100 translate-y-0"}`}
         aria-hidden={collapsed}
       >
-        <div className="hidden md:block overflow-x-auto">
-          <table className="min-w-full border border-slate-200 border-separate border-spacing-0">
-            <thead className="bg-slate-50">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200"
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody>
-              {loading && (
-                <tr>
-                  <td
-                    colSpan={columns.length}
-                    className="px-4 py-3 text-sm text-slate-500"
-                  >
-                    <div className="flex items-center justify-center">
-                      <FaSpinner className="animate-spin mr-2" size={16} />
-                    </div>
-                  </td>
-                </tr>
-              )}
-              {!loading && rows.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={columns.length}
-                    className="px-4 py-3 text-sm text-slate-500"
-                  >
-                    {emptyLabel}
-                  </td>
-                </tr>
-              )}
-              {!loading &&
-                table.getRowModel().rows.map((row, index) => (
-                  <tr
-                    key={row.original.id}
-                    className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <td
-                        key={cell.id}
-                        className="px-4 py-3 text-sm border-b border-slate-100"
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="md:hidden space-y-3">
+        <div className="space-y-3">
           {loading && (
             <div className="flex items-center justify-center py-4">
               <FaSpinner className="animate-spin mr-2" size={16} />
@@ -318,43 +245,37 @@ function TaskTableCard({
           )}
           {!loading &&
             rows.map((task) => (
-              <div key={task.id} className="rbac-card p-4">
-                {task.projectName && (
-                  <p className="text-sm text-slate-500">
-                    <span className="text-slate-700">Project:</span>{" "}
-                    {task.projectName}
-                  </p>
-                )}
-                {"categoryName" in task && (
-                  <p className="text-sm text-slate-500">
-                    <span className="text-slate-700">Category:</span>{" "}
-                    {task.categoryName || "-"}
-                  </p>
-                )}
-                <p className="text-sm text-slate-500">
-                  <span className="text-slate-700">Status:</span>{" "}
-                  {task.status.replaceAll("_", " ")}
-                </p>
-                <p className="text-sm text-slate-500">
-                  <span className="text-sm text-slate-700">Description:</span>{" "}
-                  {task.description || "No description"}
-                </p>
-                <p className="text-sm text-slate-500">
-                  <span className="text-slate-700">Start Date:</span>{" "}
-                  {formatToDDMMYYYY(task.startDate)}
-                </p>
-                {"comments" in task && (
-                  <p className="text-sm text-slate-500">
-                    <span className="text-slate-700">Comments:</span>{" "}
-                    {task.comments || "-"}
-                  </p>
-                )}
-                <div className="mt-2 flex gap-2 justify-end">
+              <div key={task.id} className="flex rbac-card p-4 sm:p-5">
+                <div className="w-full mt-3 grid gap-2 text-sm text-slate-600">
+                  {task.projectName && <p>{task.projectName}</p>}
+                  {"categoryName" in task && <p>{task.categoryName || "-"}</p>}
+                  {task.description && <p>{task.description}</p>}
+                  {"comments" in task && <p>{task.comments || "-"}</p>}
+                  {task.assignee && (
+                    <p>
+                      {task.assignee.firstName} {task.assignee.lastName}
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h4 className="mt-1 text-base font-semibold text-slate-900">
+                      {task.title}
+                    </h4>
+                  </div>
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] w-max ${getTaskStatusBadgeClass(task.status)}`}
+                  >
+                    {formatText(task.status)}
+                  </span>
+                </div>
+
+                <div className="mt-4 flex gap-2 justify-end">
                   {onUpdate && (
                     <button
                       className="rbac-button rbac-button-secondary"
                       type="button"
-                      onClick={() => meta.openUpdateModal(task)}
+                      onClick={() => onUpdate(task)}
                     >
                       Update
                     </button>
@@ -372,24 +293,16 @@ function QueryTableCard({
   title,
   rows,
   loading,
-  columns,
-  meta,
   emptyLabel,
   viewAllHref,
 }: QueryTableCardProps) {
   const [collapsed, setCollapsed] = useState(true);
-  const table = useReactTable({
-    data: rows,
-    columns,
-    meta,
-    getCoreRowModel: getCoreRowModel(),
-  });
 
   return (
     <div className="rbac-card">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center justify-between gap-2 w-full">
-          <h3 className="rbac-title-lg w-full">{title}</h3>
+          <h3 className="sm:text-base text-sm font-medium w-full">{title}</h3>
           <div className="flex items-center gap-2 justify-end w-full">
             <Link href={viewAllHref}>
               <button
@@ -419,74 +332,7 @@ function QueryTableCard({
         className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${collapsed ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none" : "mt-4 max-h-[4000px] opacity-100 translate-y-0"}`}
         aria-hidden={collapsed}
       >
-        <div className="hidden md:block overflow-x-auto">
-          <table className="min-w-full border border-slate-200 border-separate border-spacing-0">
-            <thead className="bg-slate-50">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200"
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody>
-              {loading && (
-                <tr>
-                  <td
-                    colSpan={columns.length}
-                    className="px-4 py-3 text-sm text-slate-500"
-                  >
-                    <div className="flex items-center justify-center">
-                      <FaSpinner className="animate-spin mr-2" size={16} />
-                    </div>
-                  </td>
-                </tr>
-              )}
-              {!loading && rows.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={columns.length}
-                    className="px-4 py-3 text-sm text-slate-500"
-                  >
-                    {emptyLabel}
-                  </td>
-                </tr>
-              )}
-              {!loading &&
-                table.getRowModel().rows.map((row, index) => (
-                  <tr
-                    key={row.original.id}
-                    className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <td
-                        key={cell.id}
-                        className="px-4 py-3 text-sm border-b border-slate-100"
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="md:hidden space-y-3">
+        <div className="space-y-3">
           {loading && (
             <div className="flex items-center justify-center py-4">
               <FaSpinner className="animate-spin mr-2" size={16} />
@@ -499,27 +345,37 @@ function QueryTableCard({
           )}
           {!loading &&
             rows.map((query) => (
-              <div key={query.id} className="rbac-card p-4">
-                {query.projectName && (
-                  <p className="text-sm text-slate-500">
-                    <span className="text-slate-700">Project:</span>{" "}
-                    {query.projectName}
+              <div key={query.id} className="rbac-card p-4 sm:p-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold ">
+                      {query.projectName || "Project"}
+                    </p>
+                    <h4 className="mt-1 text-base">
+                      {query.category ? formatText(query.category) : "Query"}
+                    </h4>
+                  </div>
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] ${getQueryStatusBadgeClass(query.status)}`}
+                  >
+                    {formatText(query.status)}
+                  </span>
+                </div>
+
+                <div className="mt-1 grid gap-2 text-sm text-slate-600">
+                  <p>{query.description || "No description"}</p>
+                  <p>
+                    <span
+                      className={`inline-flex rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] ${getQueryPriorityBadgeClass(query.priority)}`}
+                    >
+                      {formatText(query.priority)}
+                    </span>
                   </p>
-                )}
-                {"category" in query && (
-                  <p className="text-sm text-slate-500">
-                    <span className="text-slate-700">Category:</span>{" "}
-                    {query.category || "-"}
+                  <p>
+                    <span className="text-slate-700">By:</span>{" "}
+                    {query.createdByName || "-"}
                   </p>
-                )}
-                <p className="text-sm text-slate-500">
-                  <span className="text-slate-700">Status:</span>{" "}
-                  {query.status.replaceAll("_", " ")}
-                </p>
-                <p className="text-sm text-slate-500">
-                  <span className="text-sm text-slate-700">Description:</span>{" "}
-                  {query.description || "No description"}
-                </p>
+                </div>
               </div>
             ))}
         </div>
@@ -771,177 +627,6 @@ function OverviewContent() {
     const ok = await handleSave(modalTarget, modalDraft);
     if (ok) closeUpdateModal();
   }, [closeUpdateModal, handleSave, modalDraft, modalTarget]);
-
-  const tableMeta = useMemo<OverviewTableMeta>(
-    () => ({
-      savingId,
-      openUpdateModal,
-    }),
-    [savingId, openUpdateModal],
-  );
-
-  const projectColumns = useMemo<ColumnDef<TodoRow>[]>(() => {
-    if (isAdmin) {
-      return [
-        {
-          header: "Description",
-          accessorKey: "description",
-          size: 500,
-          cell: ({ row }) => (
-            <span className="rbac-muted">
-              {row.original.description || "-"}
-            </span>
-          ),
-        },
-        {
-          header: "Category",
-          accessorKey: "categoryName",
-          size: 700,
-          cell: (info) => (
-            <span className="rbac-muted">{String(info.getValue() || "-")}</span>
-          ),
-        },
-        {
-          header: "Start Date",
-          accessorKey: "startDate",
-          cell: (info) => {
-            const value = String(info.getValue() || "");
-            return value ? formatToDDMMYYYY(value) : "-";
-          },
-        },
-        {
-          header: "Status",
-          accessorKey: "status",
-          cell: (info) => {
-            const value = String(info.getValue() || "")
-              .replaceAll("_", " ")
-              .toLowerCase();
-
-            const formatted = value.charAt(0).toUpperCase() + value.slice(1);
-
-            return <span className="rbac-muted">{formatted}</span>;
-          },
-        },
-        {
-          header: "Assignee",
-          id: "assignee",
-          cell: ({ row }) => {
-            const assignee = row.original.assignee;
-            if (!assignee)
-              return <span className="rbac-muted">Unassigned</span>;
-            return (
-              <span className="rbac-muted">
-                {assignee.firstName} {assignee.lastName}
-              </span>
-            );
-          },
-        },
-      ];
-    }
-
-    return [
-      {
-        header: "Description",
-        accessorKey: "description",
-        size: 500,
-        cell: ({ row }) => (
-          <span className="rbac-muted">{row.original.description || "-"}</span>
-        ),
-      },
-      {
-        header: "Comments",
-        id: "comments",
-        size: 500,
-        cell: ({ row }) => (
-          <span className="rbac-muted">{row.original.comments || "-"}</span>
-        ),
-      },
-      {
-        header: "Start Date",
-        accessorKey: "startDate",
-        cell: (info) => {
-          const value = String(info.getValue() || "");
-          return value ? formatToDDMMYYYY(value) : "-";
-        },
-      },
-      {
-        header: "Status",
-        accessorKey: "status",
-        cell: ({ row }) => (
-          <span className="rbac-muted">
-            {String(row.original.status || "").replaceAll("_", " ")}
-          </span>
-        ),
-      },
-      {
-        header: "Action",
-        id: "action",
-        cell: ({ row, table }) => {
-          const meta = table.options.meta as OverviewTableMeta;
-          const isSaving = meta?.savingId === row.original.id;
-
-          return (
-            <button
-              className="rbac-button rbac-button-secondary"
-              type="button"
-              onClick={() => meta?.openUpdateModal(row.original)}
-              disabled={isSaving}
-            >
-              {"Update"}
-            </button>
-          );
-        },
-      },
-    ];
-  }, [isAdmin]);
-
-  const queryColumns = useMemo<ColumnDef<QueryRow>[]>(() => {
-    return [
-      {
-        header: "Description",
-        accessorKey: "description",
-        size: 500,
-        cell: ({ row }) => (
-          <span className="rbac-muted">{row.original.description || "-"}</span>
-        ),
-      },
-      {
-        header: "Category",
-        accessorKey: "category",
-        size: 700,
-        cell: (info) => (
-          <span className="rbac-muted">{String(info.getValue() || "-")}</span>
-        ),
-      },
-      {
-        header: "Status",
-        accessorKey: "status",
-        cell: ({ row }) => (
-          <span className="rbac-muted">
-            {String(row.original.status || "").replaceAll("_", " ")}
-          </span>
-        ),
-      },
-      {
-        header: "Priority",
-        accessorKey: "priority",
-        cell: ({ row }) => (
-          <span className="rbac-muted">
-            {String(row.original.priority || "").replaceAll("_", " ")}
-          </span>
-        ),
-      },
-      {
-        header: "Created By",
-        accessorKey: "createdByName",
-        cell: ({ row }) => (
-          <span className="rbac-muted">
-            {row.original.createdByName || "-"}
-          </span>
-        ),
-      },
-    ];
-  }, []);
 
   const todoTotal = todos.length;
   const todoInProgress = todos.filter(
@@ -1333,9 +1018,7 @@ function OverviewContent() {
           title="Pending Queries"
           rows={pendingQuery}
           loading={loading}
-          columns={queryColumns}
-          meta={tableMeta}
-          emptyLabel="No project work tasks for today"
+          emptyLabel="No pending queries for today"
           viewAllHref={
             isAdmin
               ? "/dashboard/query-management?status=PENDING"
@@ -1390,49 +1073,40 @@ function OverviewContent() {
             <h3 className="rbac-title-lg">Today&apos;s tasks</h3>
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-2">
-            <div className="flex flex-col gap-4">
-              <TaskTableCard
-                title="Project Work"
-                rows={projectTasks}
-                loading={loading}
-                columns={projectColumns}
-                meta={tableMeta}
-                emptyLabel="No project work tasks for today"
-                addTaskType="PROJECT"
-                showMoreType="PROJECT"
-                onUpdate={isAdmin ? undefined : openUpdateModal}
-              />
-              <TaskTableCard
-                title="Office Work"
-                rows={officeTasks}
-                loading={loading}
-                columns={projectColumns}
-                meta={tableMeta}
-                emptyLabel="No office work tasks for today"
-                addTaskType="OFFICE"
-                showMoreType="OFFICE"
-                onUpdate={isAdmin ? undefined : openUpdateModal}
-              />
-            </div>
-            <div className="flex flex-col gap-4">
-              <TaskTableCard
-                title="Service Work"
-                rows={serviceTasks}
-                loading={loading}
-                columns={projectColumns}
-                meta={tableMeta}
-                emptyLabel="No service work tasks for today"
-                addTaskType="SERVICE"
-                showMoreType="SERVICE"
-                onUpdate={isAdmin ? undefined : openUpdateModal}
-              />
-              <div className="grid gap-4">
-                <div className="rbac-card">
-                  <div className="flex justify-between items-center">
-                    <h3 className="rbac-title-lg">
-                      {isAdmin ? "Employees reporting" : "Today's reporting"}
-                    </h3>
+          <div className="flex flex-col gap-4">
+            <TaskTableCard
+              title="Project Work"
+              rows={projectTasks}
+              loading={loading}
+              emptyLabel="No project work tasks for today"
+              addTaskType="PROJECT"
+              onUpdate={isAdmin ? undefined : openUpdateModal}
+            />
+            <TaskTableCard
+              title="Office Work"
+              rows={officeTasks}
+              loading={loading}
+              emptyLabel="No office work tasks for today"
+              addTaskType="OFFICE"
+              onUpdate={isAdmin ? undefined : openUpdateModal}
+            />
+          </div>
+          <div className="flex flex-col gap-4">
+            <TaskTableCard
+              title="Service Work"
+              rows={serviceTasks}
+              loading={loading}
+              emptyLabel="No service work tasks for today"
+              addTaskType="SERVICE"
+              onUpdate={isAdmin ? undefined : openUpdateModal}
+            />
+            <div className="grid gap-4">
+              <div className="rbac-card">
+                <div className="flex items-center justify-between gap-2 w-full">
+                  <h3 className="sm:text-base text-sm font-medium w-full">
+                    {isAdmin ? "Employees reporting" : "Today's reporting"}
+                  </h3>
+                  <div className="flex items-center gap-2 justify-end w-full">
                     {!isAdmin && (
                       <Link href="/dashboard/reports/new">
                         <button className="rbac-button" type="button">
@@ -1452,242 +1126,135 @@ function OverviewContent() {
                       />
                     </button>
                   </div>
+                </div>
 
-                  {isAdmin ? (
-                    <div
-                      className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${collapsed ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none" : "mt-4 max-h-[4000px] opacity-100 translate-y-0"}`}
-                    >
-                      <div className="flex flex-wrap items-center justify-end gap-2">
-                        <button
-                          className="change-button change-button-secondary bg-slate-200 p-2 rounded-md"
-                          type="button"
-                          onClick={() =>
-                            setAdminDate((prev) => shiftInputDate(prev, -1))
-                          }
-                        >
-                          <FaChevronLeft size={15} />
-                        </button>
-                        <CustomDatePicker
-                          value={adminDate}
-                          onChange={setAdminDate}
-                          placeholder="Select date"
-                          className="date-input"
-                        />
-                        <button
-                          className="change-button change-button-secondary bg-slate-200 p-2 rounded-md"
-                          type="button"
-                          onClick={() =>
-                            setAdminDate((prev) => shiftInputDate(prev, 1))
-                          }
-                        >
-                          <FaChevronRight size={15} />
-                        </button>
-                      </div>
+                {isAdmin ? (
+                  <div
+                    className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${collapsed ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none" : "mt-4 max-h-[4000px] opacity-100 translate-y-0"}`}
+                  >
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      <button
+                        className="change-button change-button-secondary bg-slate-200 p-2 rounded-md"
+                        type="button"
+                        onClick={() =>
+                          setAdminDate((prev) => shiftInputDate(prev, -1))
+                        }
+                      >
+                        <FaChevronLeft size={15} />
+                      </button>
+                      <CustomDatePicker
+                        value={adminDate}
+                        onChange={setAdminDate}
+                        placeholder="Select date"
+                        className="date-input"
+                      />
+                      <button
+                        className="change-button change-button-secondary bg-slate-200 p-2 rounded-md"
+                        type="button"
+                        onClick={() =>
+                          setAdminDate((prev) => shiftInputDate(prev, 1))
+                        }
+                      >
+                        <FaChevronRight size={15} />
+                      </button>
+                    </div>
 
-                      <div className="mt-4">
-                        <div className="hidden md:block overflow-x-auto">
-                          <table className="min-w-full border border-slate-200 border-separate border-spacing-0">
-                            <thead className="bg-slate-50">
-                              <tr>
-                                <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] px-4 py-3 border-b border-slate-200">
-                                  Project
-                                </th>
-                                <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] px-4 py-3 border-b border-slate-200">
-                                  Category
-                                </th>
-                                <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] px-4 py-3 border-b border-slate-200">
-                                  Description
-                                </th>
-                                <th className="text-left text-xs font-semibold uppercase tracking-[0.2em] px-4 py-3 border-b border-slate-200">
-                                  Action
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {adminLoading && (
-                                <tr>
-                                  <td
-                                    colSpan={4}
-                                    className="px-4 py-3 text-sm text-slate-500"
-                                  >
-                                    <div className="flex items-center justify-center">
-                                      <FaSpinner
-                                        className="animate-spin mr-2"
-                                        size={16}
-                                      />
-                                    </div>
-                                  </td>
-                                </tr>
-                              )}
-                              {!adminLoading && adminReports.length === 0 && (
-                                <tr>
-                                  <td
-                                    colSpan={4}
-                                    className="px-4 py-3 text-sm text-slate-500"
-                                  >
-                                    No reporting found for selected date.
-                                  </td>
-                                </tr>
-                              )}
-                              {!adminLoading &&
-                                adminReports.map((report, index) => (
-                                  <tr
-                                    key={report.id}
-                                    className={
-                                      index % 2 === 0
-                                        ? "bg-white"
-                                        : "bg-slate-50"
-                                    }
-                                  >
-                                    <td className="px-4 py-3 text-sm border-b border-slate-100">
-                                      {report.projectName}
-                                    </td>
-                                    <td className="px-4 py-3 text-sm border-b border-slate-100">
-                                      {report.categoryName || "-"}
-                                    </td>
-                                    <td className="px-4 py-3 text-sm border-b border-slate-100">
-                                      {report.description}
-                                    </td>
-                                    <td className="px-4 py-3 text-sm border-b border-slate-100">
-                                      <button
-                                        className="rbac-link"
-                                        type="button"
-                                        onClick={() => openReportView(report)}
-                                      >
-                                        <FaEye size={15} />
-                                      </button>
-                                    </td>
-                                  </tr>
-                                ))}
-                            </tbody>
-                          </table>
+                    <div className="mt-4">
+                      {adminLoading && (
+                        <div className="flex items-center justify-center py-4">
+                          <FaSpinner className="animate-spin mr-2" size={16} />
                         </div>
-
-                        <div className="md:hidden space-y-3">
+                      )}
+                      {!adminLoading && adminReports.length === 0 && (
+                        <div className="rbac-card p-4 text-sm text-slate-500">
+                          No reporting found for selected date.
+                        </div>
+                      )}
+                      {!adminLoading && adminReports.length > 0 && (
+                        <div className="space-y-3">
                           {adminReports.map((report) => (
-                            <div key={report.id} className="rbac-card p-4">
-                              <p className="text-xs uppercase text-slate-500">
-                                {report.projectName}
-                              </p>
-                              <p className="text-sm font-semibold">
-                                {report.categoryName || "-"}
-                              </p>
-                              <p className="text-sm text-slate-700">
-                                {report.description}
-                              </p>
-                              <p className="text-xs text-slate-500">
-                                {formatToDDMMYYYY(report.reportDate)}
-                              </p>
-                              <div className="flex justify-end">
+                            <div
+                              key={report.id}
+                              className="rbac-card p-4 sm:p-5"
+                            >
+                              <div className="flex flex-wrap items-start justify-between gap-3">
+                                <div>
+                                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                                    {formatToDDMMYYYY(report.reportDate)}
+                                  </p>
+                                  <h4 className="mt-1 text-base font-semibold text-slate-900">
+                                    {report.projectName}
+                                  </h4>
+                                </div>
                                 <button
-                                  className="rbac-link mt-2"
+                                  className="rbac-link"
                                   type="button"
                                   onClick={() => openReportView(report)}
                                 >
                                   <FaEye size={15} />
                                 </button>
                               </div>
+
+                              <div className="mt-3 grid gap-2 text-sm text-slate-600">
+                                <p>{report.categoryName || "-"}</p>
+                                <p>{report.description}</p>
+                              </div>
                             </div>
                           ))}
                         </div>
-                      </div>
+                      )}
                     </div>
-                  ) : (
-                    <div
-                      className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${collapsed ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none" : "mt-4 max-h-[4000px] opacity-100 translate-y-0"}`}
-                    >
-                      {userReportsLoading && (
-                        <div className="flex items-center justify-center py-4">
-                          <FaSpinner className="animate-spin mr-2" size={16} />
-                        </div>
-                      )}
-                      {!userReportsLoading && userReports.length === 0 && (
-                        <p>No reporting found for today.</p>
-                      )}
-                      {!userReportsLoading && userReports.length > 0 && (
-                        <div>
-                          <div className="hidden md:block overflow-x-auto">
-                            <table className="min-w-full border border-slate-200 border-separate border-spacing-0">
-                              <thead className="bg-slate-50">
-                                <tr>
-                                  <th className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200">
-                                    Date
-                                  </th>
-                                  <th className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200">
-                                    Project
-                                  </th>
-                                  <th className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200">
-                                    Reporting Category
-                                  </th>
-                                  <th className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200">
-                                    Action
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {userReports.map((report, index) => (
-                                  <tr
-                                    key={report.id}
-                                    className={
-                                      index % 2 === 0
-                                        ? "bg-white"
-                                        : "bg-slate-50"
-                                    }
-                                  >
-                                    <td className="px-4 py-3 text-sm border-b border-slate-100">
-                                      {formatToDDMMYYYY(report.reportDate)}
-                                    </td>
-                                    <td className="px-4 py-3 text-sm border-b border-slate-100">
-                                      {report.projectName || "-"}
-                                    </td>
-                                    <td className="px-4 py-3 text-sm border-b border-slate-100">
-                                      {report.categoryName || "-"}
-                                    </td>
-                                    <td className="px-4 py-3 text-sm border-b border-slate-100">
-                                      <button
-                                        className="rbac-link"
-                                        type="button"
-                                        onClick={() => openReportView(report)}
-                                      >
-                                        View
-                                      </button>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-
-                          <div className="md:hidden space-y-3">
-                            {userReports.map((report) => (
-                              <div key={report.id} className="rbac-card p-4">
-                                <p className="text-xs uppercase text-slate-500">
+                  </div>
+                ) : (
+                  <div
+                    className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${collapsed ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none" : "mt-4 max-h-[4000px] opacity-100 translate-y-0"}`}
+                  >
+                    {userReportsLoading && (
+                      <div className="flex items-center justify-center py-4">
+                        <FaSpinner className="animate-spin mr-2" size={16} />
+                      </div>
+                    )}
+                    {!userReportsLoading && userReports.length === 0 && (
+                      <div className="rbac-card p-4 text-sm text-slate-500">
+                        No reporting found for today.
+                      </div>
+                    )}
+                    {!userReportsLoading && userReports.length > 0 && (
+                      <div className="space-y-3">
+                        {userReports.map((report) => (
+                          <div key={report.id} className="rbac-card p-4 sm:p-5">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div>
+                                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
                                   {formatToDDMMYYYY(report.reportDate)}
                                 </p>
-                                <p className="text-sm font-semibold">
+                                <h4 className="mt-1 text-base font-semibold text-slate-900">
                                   {report.projectName || "-"}
-                                </p>
-                                <p className="text-sm text-slate-700">
-                                  {report.categoryName || "-"}
-                                </p>
-                                <p className="text-xs text-slate-500">
-                                  Reporting category
-                                </p>
-                                <button
-                                  className="rbac-link mt-2"
-                                  type="button"
-                                  onClick={() => openReportView(report)}
-                                >
-                                  View
-                                </button>
+                                </h4>
                               </div>
-                            ))}
+                              <button
+                                className="rbac-link"
+                                type="button"
+                                onClick={() => openReportView(report)}
+                              >
+                                View
+                              </button>
+                            </div>
+
+                            <div className="mt-3 grid gap-2 text-sm text-slate-600">
+                              <p>
+                                <span className="text-slate-700">
+                                  Reporting Category:
+                                </span>{" "}
+                                {report.categoryName || "-"}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
