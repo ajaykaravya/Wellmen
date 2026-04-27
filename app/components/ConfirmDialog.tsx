@@ -5,6 +5,8 @@ type ConfirmDialogProps = {
   title: string;
   description?: string;
   confirmLabel?: string;
+  confirmLoading?: boolean;
+  confirmLoadingLabel?: string;
   cancelLabel?: string;
   onConfirm: () => void;
   onClose: () => void;
@@ -15,6 +17,8 @@ export default function ConfirmDialog({
   title,
   description,
   confirmLabel = "Confirm",
+  confirmLoading = false,
+  confirmLoadingLabel = "Loading...",
   cancelLabel = "Cancel",
   onConfirm,
   onClose,
@@ -30,12 +34,18 @@ export default function ConfirmDialog({
           <button
             className="rbac-button rbac-button-secondary"
             type="button"
+            disabled={confirmLoading}
             onClick={onClose}
           >
             {cancelLabel}
           </button>
-          <button className="rbac-button" type="button" onClick={onConfirm}>
-            {confirmLabel}
+          <button
+            className="rbac-button"
+            type="button"
+            onClick={onConfirm}
+            disabled={confirmLoading}
+          >
+            {confirmLoading ? confirmLoadingLabel : confirmLabel}
           </button>
         </div>
       </div>

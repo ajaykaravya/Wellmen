@@ -101,6 +101,7 @@ export default function QueryListContent({
   const debouncedQuery = useDebounce(query, 400);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<QueryRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadQueries = useCallback(async () => {
     setLoading(true);
@@ -168,6 +169,7 @@ export default function QueryListContent({
 
   const confirmDelete = useCallback(async () => {
     if (!confirmTarget) return;
+    setDeleting(true);
 
     try {
       const res = await fetch(`${apiBase}/${confirmTarget.id}`, {
@@ -186,6 +188,7 @@ export default function QueryListContent({
       console.error("Failed to delete query", error);
       toast.error("Failed to delete query.");
     } finally {
+      setDeleting(false);
       setConfirmOpen(false);
       setConfirmTarget(null);
     }
@@ -519,6 +522,8 @@ export default function QueryListContent({
         title="Delete query?"
         description="Are you sure you want to delete?"
         confirmLabel="Delete"
+        confirmLoading={deleting}
+        confirmLoadingLabel="Deleting..."
         cancelLabel="Cancel"
         onConfirm={confirmDelete}
         onClose={() => {

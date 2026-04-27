@@ -97,6 +97,7 @@ function TodoListContent() {
   const [assignees, setAssignees] = useState<UserOption[]>([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<TodoRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     setTaskTypeFilter(taskTypeFromQuery);
@@ -257,6 +258,7 @@ function TodoListContent() {
 
   const confirmDeleteTodo = useCallback(async () => {
     if (!confirmTarget) return;
+    setDeleting(true);
     try {
       const endpoint = isAdmin ? "/api/todos" : "/api/my-todos";
       const res = await fetch(`${endpoint}/${confirmTarget.id}`, {
@@ -275,6 +277,7 @@ function TodoListContent() {
       console.error("Failed to delete task", error);
       toast.error("Failed to delete task.");
     } finally {
+      setDeleting(false);
       setConfirmOpen(false);
       setConfirmTarget(null);
     }
@@ -854,6 +857,8 @@ function TodoListContent() {
         title="Delete task?"
         description="Are you sure you want to delete?"
         confirmLabel="Delete"
+        confirmLoading={deleting}
+        confirmLoadingLabel="Deleting..."
         cancelLabel="Cancel"
         onConfirm={confirmDeleteTodo}
         onClose={() => {

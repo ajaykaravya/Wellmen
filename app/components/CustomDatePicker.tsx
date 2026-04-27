@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useRef, useState } from "react";
 import DatePicker from "react-datepicker";
-// @ts-ignore
 import "react-datepicker/dist/react-datepicker.css";
 import { FaCalendarAlt } from "react-icons/fa";
 
@@ -55,24 +54,12 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     return Number.isNaN(fallback.getTime()) ? null : fallback;
   };
 
-  const [selectedDate, setSelectedDate] = useState<Date | null>(() =>
-    parseDateValue(value),
-  );
-
   const [isOpen, setIsOpen] = useState(false);
-  const datePickerRef = useRef<DatePicker>(null);
-
-  useEffect(() => {
-    if (value) {
-      const newDate = parseDateValue(value);
-      setSelectedDate(newDate);
-    } else {
-      setSelectedDate(null);
-    }
-  }, [value]);
+  const [openDirection, setOpenDirection] = useState<"up" | "down">("down");
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const selectedDate = parseDateValue(value);
 
   const handleDateChange = (date: Date | null) => {
-    setSelectedDate(date);
     if (date) {
       const day = date.getDate().toString().padStart(2, "0");
       const month = (date.getMonth() + 1).toString().padStart(2, "0");
@@ -86,6 +73,18 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
 
   const handleInputClick = () => {
     if (!disabled) {
+      const rect = wrapperRef.current?.getBoundingClientRect();
+      if (rect) {
+        const estimatedCalendarHeight = 340;
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+
+        setOpenDirection(
+          spaceBelow < estimatedCalendarHeight && spaceAbove > spaceBelow
+            ? "up"
+            : "down",
+        );
+      }
       setIsOpen(true);
     }
   };
@@ -93,8 +92,6 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
     onChange(inputValue);
-    const parsedDate = parseDateValue(inputValue);
-    setSelectedDate(parsedDate);
   };
 
   const displayValue = selectedDate
@@ -102,7 +99,7 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     : value || "";
 
   return (
-    <div className="relative">
+    <div ref={wrapperRef} className="relative">
       <div className="relative">
         <input
           type="text"
@@ -120,9 +117,10 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
       </div>
 
       {isOpen && (
-        <div className="absolute z-50 mt-1">
+        <div
+          className={`absolute z-50 ${openDirection === "up" ? "bottom-full mb-1" : "top-full mt-1"}`}
+        >
           <DatePicker
-            ref={datePickerRef}
             selected={selectedDate}
             onChange={handleDateChange}
             onClickOutside={() => setIsOpen(false)}

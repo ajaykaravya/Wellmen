@@ -32,6 +32,7 @@ function ReportingCategoryListContent() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] =
     useState<ReportingCategoryRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadCategories = useCallback(async () => {
     setLoading(true);
@@ -79,6 +80,7 @@ function ReportingCategoryListContent() {
 
   const confirmDeleteCategory = useCallback(async () => {
     if (!confirmTarget) return;
+    setDeleting(true);
     try {
       const res = await fetch(`/api/reporting-categories/${confirmTarget.id}`, {
         method: "DELETE",
@@ -94,6 +96,7 @@ function ReportingCategoryListContent() {
       console.error("Failed to delete reporting category", error);
       toast.error("Failed to delete reporting category.");
     } finally {
+      setDeleting(false);
       setConfirmOpen(false);
       setConfirmTarget(null);
     }
@@ -341,6 +344,8 @@ function ReportingCategoryListContent() {
         title="Delete reporting category?"
         description="Are you sure you want to delete?"
         confirmLabel="Delete"
+        confirmLoading={deleting}
+        confirmLoadingLabel="Deleting..."
         cancelLabel="Cancel"
         onConfirm={confirmDeleteCategory}
         onClose={() => {

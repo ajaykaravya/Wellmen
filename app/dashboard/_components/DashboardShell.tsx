@@ -127,6 +127,7 @@ export default function DashboardShell({
   );
   const [navOpen, setNavOpen] = useState(false);
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
   const [masterDataExpanded, setMasterDataExpanded] = useState(false);
 
   const isAdmin = user?.role === "Admin" || user?.role === "Manager";
@@ -235,6 +236,7 @@ export default function DashboardShell({
   }
 
   const handleLogout = async () => {
+    setLogoutLoading(true);
     try {
       await fetch("/api/auth/logout", { method: "POST" });
       clearCachedSession();
@@ -243,6 +245,7 @@ export default function DashboardShell({
     } catch (error) {
       console.error("Logout failed", error);
     } finally {
+      setLogoutLoading(false);
       setConfirmLogoutOpen(false);
       router.push("/login");
     }
@@ -352,6 +355,8 @@ export default function DashboardShell({
           title="Confirm logout"
           description="Are you sure you want to logout?"
           confirmLabel="Yes"
+          confirmLoading={logoutLoading}
+          confirmLoadingLabel="Logging out..."
           cancelLabel="No"
           onConfirm={handleLogout}
           onClose={() => setConfirmLogoutOpen(false)}

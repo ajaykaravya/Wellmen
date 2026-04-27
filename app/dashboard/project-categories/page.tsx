@@ -31,6 +31,7 @@ function CategoryListContent() {
   const debouncedQuery = useDebounce(query, 400);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<CategoryRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadCategories = useCallback(async () => {
     setLoading(true);
@@ -78,6 +79,7 @@ function CategoryListContent() {
 
   const confirmDeleteCategory = useCallback(async () => {
     if (!confirmTarget) return;
+    setDeleting(true);
     try {
       const res = await fetch(`/api/categories/${confirmTarget.id}`, {
         method: "DELETE",
@@ -93,6 +95,7 @@ function CategoryListContent() {
       console.error("Failed to delete category", error);
       toast.error("Failed to delete category.");
     } finally {
+      setDeleting(false);
       setConfirmOpen(false);
       setConfirmTarget(null);
     }
@@ -342,6 +345,8 @@ function CategoryListContent() {
         title="Delete category?"
         description="Are you sure you want to delete?"
         confirmLabel="Delete"
+        confirmLoading={deleting}
+        confirmLoadingLabel="Deleting..."
         cancelLabel="Cancel"
         onConfirm={confirmDeleteCategory}
         onClose={() => {

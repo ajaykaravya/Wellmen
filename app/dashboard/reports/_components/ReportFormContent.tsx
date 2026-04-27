@@ -191,8 +191,9 @@ export default function ReportFormContent({
         `Reporting ${reportId ? "updated" : "created"} successfully.`,
       );
       router.push("/dashboard/reports");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save report", error);
+      toast.error(error || "Failed to save report.");
       setNote("Failed to save report.");
     } finally {
       setSubmitting(false);

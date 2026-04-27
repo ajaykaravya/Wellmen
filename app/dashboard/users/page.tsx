@@ -45,6 +45,7 @@ function UsersContent() {
   const [roleFilter, setRoleFilter] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<UserRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(10);
@@ -108,6 +109,7 @@ function UsersContent() {
 
   const confirmDeleteUser = async () => {
     if (!confirmTarget) return;
+    setDeleting(true);
     try {
       const res = await fetch(`/api/users/${confirmTarget.id}`, {
         method: "DELETE",
@@ -123,6 +125,7 @@ function UsersContent() {
       console.error("Failed to delete user", error);
       toast.error("Failed to delete user.");
     } finally {
+      setDeleting(false);
       setConfirmOpen(false);
       setConfirmTarget(null);
     }
@@ -133,16 +136,16 @@ function UsersContent() {
       {
         header: "Name",
         accessorKey: "firstName",
-        cell: ({ row }: any) => (
+        cell: ({ row }) => (
           <span className="rbac-muted">
-            {row.original?.firstName} {row.original?.lastName}
+            {row.original.firstName} {row.original.lastName}
           </span>
         ),
       },
       {
         header: "Mobile number",
         accessorKey: "mobileNumber",
-        cell: (info: any) => (
+        cell: (info) => (
           <span className="rbac-muted">
             {(info.getValue() as string) || "-"}
           </span>
@@ -151,7 +154,7 @@ function UsersContent() {
       {
         header: "Role",
         accessorKey: "role",
-        cell: (info: any) => (
+        cell: (info) => (
           <span className="rbac-muted">
             {(info.getValue() as string) || "-"}
           </span>
@@ -160,7 +163,7 @@ function UsersContent() {
       {
         header: "Action",
         id: "action",
-        cell: ({ row }: any) => (
+        cell: ({ row }) => (
           <div className="rbac-inline-actions flex gap-4">
             {row.original.id !== user?.id && (
               <>
@@ -252,9 +255,9 @@ function UsersContent() {
             <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full border border-slate-200 border-separate border-spacing-0">
                 <thead className="bg-slate-50">
-                  {table.getHeaderGroups().map((headerGroup: any) => (
+                  {table.getHeaderGroups().map((headerGroup) => (
                     <tr key={headerGroup.id}>
-                      {headerGroup.headers.map((header: any) => (
+                      {headerGroup.headers.map((header) => (
                         <th
                           key={header.id}
                           className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200"
@@ -294,12 +297,12 @@ function UsersContent() {
                     </tr>
                   )}
                   {!loading &&
-                    table.getRowModel().rows.map((row: any, index: number) => (
+                    table.getRowModel().rows.map((row, index) => (
                       <tr
                         key={row.id}
                         className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}
                       >
-                        {row.getVisibleCells().map((cell: any) => (
+                        {row.getVisibleCells().map((cell) => (
                           <td
                             key={cell.id}
                             className="px-4 py-3 text-sm border-b border-slate-100"
@@ -417,6 +420,8 @@ function UsersContent() {
         title="Delete user?"
         description="Are you sure you want to delete?"
         confirmLabel="Delete"
+        confirmLoading={deleting}
+        confirmLoadingLabel="Deleting..."
         cancelLabel="Cancel"
         onConfirm={confirmDeleteUser}
         onClose={() => {

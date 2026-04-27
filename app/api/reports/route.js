@@ -171,6 +171,8 @@ export async function POST(req) {
     const categoryId = getText(form, "categoryId");
     const description = getText(form, "description");
     const parsedDate = parseDate(reportDate);
+    console.log("Received report date:", reportDate);
+    console.log("Parsed report date:", parsedDate);
 
     if (!reportDate || !projectId || !categoryId || !description) {
       return NextResponse.json(
