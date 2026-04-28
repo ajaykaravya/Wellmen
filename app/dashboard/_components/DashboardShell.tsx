@@ -307,7 +307,7 @@ export default function DashboardShell({
                         </span>
                       </button>
                       {masterDataExpanded && (
-                        <div className="ml-4 space-y-1">
+                        <div className="ml-4 space-y-1 mt-1">
                           {item.dropdownItems.map((dropdownItem) => (
                             <Link
                               key={dropdownItem.key}

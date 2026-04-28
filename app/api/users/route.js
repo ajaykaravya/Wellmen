@@ -73,9 +73,10 @@ export async function POST(req) {
   const firstName = String(body.firstName || "").trim();
   const lastName = String(body.lastName || "").trim();
   const fullName = `${firstName} ${lastName}`.trim();
-  const email = String(body.email || "")
+  const emailRaw = String(body.email || "")
     .trim()
     .toLowerCase();
+  const email = emailRaw === "" ? null : emailRaw;
   const mobileNumber = String(body.mobileNumber || "").trim();
   const password = String(body.password || "");
   const roleId = String(body.roleId || "").trim();
