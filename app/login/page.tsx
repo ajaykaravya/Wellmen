@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FaSpinner } from "react-icons/fa";
 import { clearCachedSession } from "../dashboard/_components/DashboardShell";
+import { useThemeMode } from "../components/ThemeProvider";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -11,6 +12,7 @@ export default function LoginPage() {
   const [note, setNote] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [needsSetup, setNeedsSetup] = useState<boolean | null>(null);
+  const { theme, toggleTheme } = useThemeMode();
   const [setupForm, setSetupForm] = useState({
     firstName: "",
     lastName: "",
@@ -295,7 +297,10 @@ export default function LoginPage() {
         ) : (
           <section className="theme-modal-surface rounded-3xl p-8 shadow-xl">
             <div className="flex justify-center">
-              <img src="/images/logo.svg" alt="WellMen" />
+              <img
+                src={`${theme === "dark" ? "/images/logo_white.png" : "/images/logo.svg"}`}
+                alt="WellMen"
+              />
             </div>
             <div className="flex items-center justify-between mt-5">
               <p className="text-xs font-semibold tracking-[0.3em] uppercase text-[#2596be]">
@@ -340,7 +345,7 @@ export default function LoginPage() {
                 <p className="rounded-xl px-4 text-sm text-red-500">{note}</p>
               )}
               <button
-                className="mt-2 rounded-full bg-[#2596be] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-200 transition hover:bg-[#1e7ca5] flex items-center justify-center disabled:opacity-50"
+                className="mt-2 rounded-full bg-[#2596be] px-6 py-3 text-sm font-semibold text-white shadow-lg  transition hover:bg-[#1e7ca5] flex items-center justify-center disabled:opacity-50"
                 type="submit"
                 disabled={loading}
               >

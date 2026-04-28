@@ -1,7 +1,7 @@
 export default function Home() {
   return (
     <main className="shell">
-      <section className="panel hero">
+      <section className="panel">
         <p className="eyebrow">Access Control</p>
         <h1>Role-Based Access Control Portal</h1>
         <p className="subtitle">
