@@ -122,6 +122,7 @@ type QueryTableCardProps = {
   loading: boolean;
   emptyLabel: string;
   viewAllHref: string;
+  addQueryHref: string;
 };
 
 const formatText = (text: string) => {
@@ -296,6 +297,7 @@ function QueryTableCard({
   loading,
   emptyLabel,
   viewAllHref,
+  addQueryHref,
 }: QueryTableCardProps) {
   const [collapsed, setCollapsed] = useState(true);
   const { theme } = useThemeMode();
@@ -306,6 +308,11 @@ function QueryTableCard({
         <div className="flex items-center justify-between gap-2 w-full">
           <h3 className="sm:text-base text-sm font-medium w-full">{title}</h3>
           <div className="flex items-center gap-2 justify-end w-full">
+            <Link href={addQueryHref}>
+              <button className="rbac-button" type="button">
+                Add Query
+              </button>
+            </Link>
             <Link href={viewAllHref}>
               <button
                 className="rbac-button rbac-button-secondary"
@@ -355,22 +362,25 @@ function QueryTableCard({
                       {query.category ? formatText(query.category) : "Query"}
                     </h4>
                   </div>
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] ${getQueryStatusBadgeClass(query.status)}`}
-                  >
-                    {formatText(query.status)}
-                  </span>
+                  <div className="flex flex-col gap-2">
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] ${getQueryStatusBadgeClass(query.status)}`}
+                    >
+                      {formatText(query.status)}
+                    </span>
+                    <p>
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] ${getQueryPriorityBadgeClass(query.priority)}`}
+                      >
+                        {formatText(query.priority)}
+                      </span>
+                    </p>
+                  </div>
                 </div>
 
                 <div className="mt-1 grid gap-2 text-sm">
                   <p>{query.description || "No description"}</p>
-                  <p>
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] ${getQueryPriorityBadgeClass(query.priority)}`}
-                    >
-                      {formatText(query.priority)}
-                    </span>
-                  </p>
+
                   <p>
                     <span>By:</span> {query.createdByName || "-"}
                   </p>
@@ -820,9 +830,6 @@ function OverviewContent() {
           <h1 className="rbac-heading text-lg sm:text-2xl font-medium">
             Welcome back, {displayName}
           </h1>
-          <span className="text-xs sm:text-sm  sm:block hidden">
-            Role-based workspace tailored for {user?.role || "your role"}.
-          </span>
         </div>
         <Menu
           as="div"
@@ -847,9 +854,6 @@ function OverviewContent() {
             }}
           >
             <div>
-              <p className="rbac-label text-[10px] sm:text-xs sm:block hidden">
-                Role
-              </p>
               <p className="rbac-role-name text-xs sm:text-sm">
                 {user?.role || "Unknown"}
               </p>
@@ -1057,6 +1061,11 @@ function OverviewContent() {
             isAdmin
               ? "/dashboard/query-management?status=PENDING"
               : "/dashboard/my-query-management?status=PENDING"
+          }
+          addQueryHref={
+            isAdmin
+              ? "/dashboard/query-management/new"
+              : "/dashboard/my-query-management/new"
           }
         />
       </section>

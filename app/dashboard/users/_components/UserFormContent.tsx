@@ -180,7 +180,7 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
               {userId ? "Edit User" : "Add New User"}
             </h3>
           </div>
-          <form className="rbac-form" onSubmit={handleSubmit}>
+          <form className="rbac-form" autoComplete="off" onSubmit={handleSubmit}>
             <fieldset
               disabled={saving}
               className={saving ? "opacity-70 pointer-events-none" : ""}
@@ -226,6 +226,8 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
                   Email
                   <input
                     className="rbac-input mb-2"
+                    name="user-email"
+                    autoComplete="off"
                     placeholder="Email"
                     value={form.email}
                     onChange={(event) =>
@@ -266,6 +268,8 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
                   <input
                     type="password"
                     className="rbac-input mb-2"
+                    name="user-password"
+                    autoComplete="new-password"
                     placeholder={
                       userId ? "New password (optional)" : "Password"
                     }
