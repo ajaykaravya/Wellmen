@@ -378,7 +378,7 @@ export default function DashboardShell({
             </Link>
             <div className="ml-auto flex items-center gap-2 justify-end">
               <button
-                className="rbac-theme-toggle"
+                className="rbac-theme-toggle-mobile"
                 type="button"
                 onClick={toggleTheme}
                 aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
