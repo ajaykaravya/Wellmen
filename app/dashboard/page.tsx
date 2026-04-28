@@ -203,7 +203,6 @@ function TaskTableCard({
   onUpdate,
 }: TaskTableCardProps) {
   const [collapsed, setCollapsed] = useState(true);
-  const { theme } = useThemeMode();
 
   return (
     <div className="rbac-card">
@@ -874,7 +873,9 @@ function OverviewContent() {
                 <button
                   type="button"
                   className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors ${
-                    focus ? "theme-button-secondary theme-text" : "theme-text-muted"
+                    focus
+                      ? "theme-button-secondary theme-text"
+                      : "theme-text-muted"
                   }`}
                   onClick={() => {
                     setPasswordNotice(null);
@@ -1299,9 +1300,7 @@ function OverviewContent() {
       {modalOpen && !isAdmin && (
         <div className="theme-modal-overlay fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="theme-modal-surface w-full max-w-lg rounded-2xl p-6 shadow-xl">
-            <h2 className="text-lg font-semibold theme-text">
-              Update task
-            </h2>
+            <h2 className="text-lg font-semibold theme-text">Update task</h2>
             <p className="mt-2 text-sm theme-text-muted">
               Add your comments and choose a status before saving.
             </p>

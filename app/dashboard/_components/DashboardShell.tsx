@@ -275,7 +275,7 @@ export default function DashboardShell({
                 <Link href="/dashboard">
                   <div className="rbac-logo">
                     <img
-                      src="/images/logo.svg"
+                      src={`${theme === "dark" ? "/images/logo_white.png" : "/images/logo.svg"}`}
                       className="w-full"
                       alt="WellMen"
                     />
@@ -285,72 +285,71 @@ export default function DashboardShell({
             )}
           </div>
 
-          <nav className="rbac-nav">
-            {menuItems.map((item) => {
-              if (item.hasDropdown && item.dropdownItems) {
-                return (
-                  <div key={item.key}>
-                    <button
-                      className={`rbac-nav-item w-full text-left flex items-center justify-between ${
-                        isMasterDataActive ? "active" : ""
-                      }`}
-                      onClick={() => setMasterDataExpanded(!masterDataExpanded)}
-                    >
-                      {item.label}
-                      <span
-                        className={`ml-2 transition-transform ${masterDataExpanded ? "rotate-90" : ""}`}
+          <div className="rbac-nav-scroll">
+            <nav className="rbac-nav">
+              {menuItems.map((item) => {
+                if (item.hasDropdown && item.dropdownItems) {
+                  return (
+                    <div key={item.key}>
+                      <button
+                        className={`rbac-nav-item w-full text-left flex items-center justify-between ${
+                          isMasterDataActive ? "active" : ""
+                        }`}
+                        onClick={() =>
+                          setMasterDataExpanded(!masterDataExpanded)
+                        }
                       >
-                        <FaChevronRight size={20} />
-                      </span>
-                    </button>
-                    {masterDataExpanded && (
-                      <div className="ml-4 space-y-1">
-                        {item.dropdownItems.map((dropdownItem) => (
-                          <Link
-                            key={dropdownItem.key}
-                            href={routeByMenu[dropdownItem.key]}
-                            className={`rbac-nav-item block text-sm ${
-                              activeMenu === dropdownItem.key ? "active" : ""
-                            }`}
-                            onClick={() => setNavOpen(false)}
-                            prefetch={true}
-                          >
-                            {dropdownItem.label}
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                        {item.label}
+                        <span
+                          className={`ml-2 transition-transform ${masterDataExpanded ? "rotate-90" : ""}`}
+                        >
+                          <FaChevronRight size={20} />
+                        </span>
+                      </button>
+                      {masterDataExpanded && (
+                        <div className="ml-4 space-y-1">
+                          {item.dropdownItems.map((dropdownItem) => (
+                            <Link
+                              key={dropdownItem.key}
+                              href={routeByMenu[dropdownItem.key]}
+                              className={`rbac-nav-item block text-sm ${
+                                activeMenu === dropdownItem.key ? "active" : ""
+                              }`}
+                              onClick={() => setNavOpen(false)}
+                              prefetch={true}
+                            >
+                              {dropdownItem.label}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                return (
+                  <Link
+                    key={item.key}
+                    href={routeByMenu[item.key]}
+                    className={`rbac-nav-item ${
+                      activeMenu === item.key ? "active" : ""
+                    }`}
+                    onClick={() => setNavOpen(false)}
+                    prefetch={true}
+                  >
+                    {item.label}
+                  </Link>
                 );
-              }
-
-              return (
-                <Link
-                  key={item.key}
-                  href={routeByMenu[item.key]}
-                  className={`rbac-nav-item ${
-                    activeMenu === item.key ? "active" : ""
-                  }`}
-                  onClick={() => setNavOpen(false)}
-                  prefetch={true}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
-
-          <div className="rbac-profile">
-            <p className="rbac-label">Signed in</p>
-            <p className="rbac-name">{displayName}</p>
-            <p className="rbac-email">{user?.email}</p>
-            <button
-              className="rbac-logout"
-              onClick={() => setConfirmLogoutOpen(true)}
-            >
-              Logout
-            </button>
+              })}
+            </nav>
           </div>
+
+          <button
+            className="rbac-logout"
+            onClick={() => setConfirmLogoutOpen(true)}
+          >
+            Logout
+          </button>
         </aside>
         <ConfirmDialog
           open={confirmLogoutOpen}
@@ -371,7 +370,10 @@ export default function DashboardShell({
           <div className="rbac-mobile-topbar">
             <Link href="/dashboard">
               <div className="rbac-logo">
-                <img src="/images/logo.svg" alt="WellMen" />
+                <img
+                  src={`${theme === "dark" ? "/images/logo_white.png" : "/images/logo.svg"}`}
+                  alt="WellMen"
+                />
               </div>
             </Link>
             <div className="ml-auto flex items-center gap-2 justify-end">
