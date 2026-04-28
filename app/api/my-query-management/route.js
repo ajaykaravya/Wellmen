@@ -6,8 +6,11 @@ import {
   parseStatus,
   parsePriority,
   parsePayload,
+  parseMultipartPayload,
+  getUploadedFiles,
   serializeQuery,
 } from "@/lib/queryManagement";
+import { saveMediaFiles } from "../_utils/mediaUpload";
 
 export async function GET(req) {
   const auth = await getAuthContext(req);
@@ -73,8 +76,14 @@ export async function POST(req) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await req.json();
-  const payload = parsePayload(body);
+  const contentType = req.headers.get("content-type") || "";
+  const isMultipart = contentType.includes("multipart/form-data");
+  const body = isMultipart ? await req.formData() : await req.json();
+  const payload = isMultipart
+    ? parseMultipartPayload(body)
+    : parsePayload(body);
+  const imageFiles = isMultipart ? getUploadedFiles(body, "images") : [];
+  const videoFiles = isMultipart ? getUploadedFiles(body, "videos") : [];
   const userId = auth.user?.id || null;
 
   if (
@@ -103,14 +112,19 @@ export async function POST(req) {
   }
 
   try {
+    const [imageUrls, videoUrls] = await Promise.all([
+      saveMediaFiles(imageFiles, { scope: "query-management", kind: "image" }),
+      saveMediaFiles(videoFiles, { scope: "query-management", kind: "video" }),
+    ]);
+
     const query = await prisma.queryManagement.create({
       data: {
-        projectId: payload.projectId,
+        project: { connect: { id: payload.projectId } },
         category: payload.category,
         description: payload.description,
         status: payload.status,
         priority: payload.priority,
-        createdById: userId,
+        ...(userId && { createdBy: { connect: { id: userId } } }),
       },
       include: {
         project: { select: { name: true } },
@@ -124,7 +138,10 @@ export async function POST(req) {
   } catch (error) {
     console.error("Failed to create query", error);
     return NextResponse.json(
-      { error: "Failed to create query." },
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to create query.",
+      },
       { status: 500 },
     );
   }

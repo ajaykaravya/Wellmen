@@ -26,6 +26,11 @@ type QueryFormState = {
   priority: PriorityLevel;
 };
 
+type QueryPayload = QueryFormState & {
+  imageUrls?: string[];
+  videoUrls?: string[];
+};
+
 type QueryFormContentProps = {
   queryId?: string;
   apiBase?: string;
@@ -69,6 +74,10 @@ export default function QueryFormContent({
   const [errors, setErrors] = useState<
     Partial<Record<keyof QueryFormState, string>>
   >({});
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [existingVideoUrls, setExistingVideoUrls] = useState<string[]>([]);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [videoFiles, setVideoFiles] = useState<File[]>([]);
   const [form, setForm] = useState<QueryFormState>({
     projectId: "",
     category: "",
@@ -93,7 +102,7 @@ export default function QueryFormContent({
         }
 
         if (queryRes?.ok) {
-          const data = await queryRes.json();
+          const data = (await queryRes.json()) as QueryPayload;
           setForm({
             projectId: data.projectId || "",
             category: data.category || "",
@@ -101,6 +110,12 @@ export default function QueryFormContent({
             status: data.status || "PENDING",
             priority: data.priority || "MEDIUM",
           });
+          setExistingImages(
+            Array.isArray(data.imageUrls) ? data.imageUrls : [],
+          );
+          setExistingVideoUrls(
+            Array.isArray(data.videoUrls) ? data.videoUrls : [],
+          );
         } else if (queryRes && !queryRes.ok) {
           setNote("Failed to load query.");
         }
@@ -145,20 +160,30 @@ export default function QueryFormContent({
 
     try {
       setSaving(true);
-      const res = await fetch(
-        queryId ? `${apiBase}/${queryId}` : apiBase,
-        {
-          method: queryId ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            projectId: form.projectId.trim(),
-            category: form.category,
-            description: form.description.trim(),
-            status: form.status,
-            priority: form.priority,
-          }),
-        },
-      );
+      const payload = new FormData();
+      payload.append("projectId", form.projectId.trim());
+      payload.append("category", form.category);
+      payload.append("description", form.description.trim());
+      payload.append("status", form.status);
+      payload.append("priority", form.priority);
+
+      for (const file of imageFiles) {
+        payload.append("images", file);
+      }
+
+      for (const file of videoFiles) {
+        payload.append("videos", file);
+      }
+
+      if (queryId) {
+        payload.append("existingImages", JSON.stringify(existingImages));
+        payload.append("existingVideoUrls", JSON.stringify(existingVideoUrls));
+      }
+
+      const res = await fetch(queryId ? `${apiBase}/${queryId}` : apiBase, {
+        method: queryId ? "PUT" : "POST",
+        body: payload,
+      });
 
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
@@ -259,6 +284,118 @@ export default function QueryFormContent({
               </label>
               {errors.description && (
                 <p className="text-sm text-red-600">{errors.description}</p>
+              )}
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <label className="rbac-label">
+                  Upload images
+                  <input
+                    className="rbac-input"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(event) => {
+                      setImageFiles(Array.from(event.target.files || []));
+                    }}
+                  />
+                </label>
+
+                <label className="rbac-label">
+                  Upload videos
+                  <input
+                    className="rbac-input"
+                    type="file"
+                    accept="video/*"
+                    multiple
+                    onChange={(event) => {
+                      setVideoFiles(Array.from(event.target.files || []));
+                    }}
+                  />
+                </label>
+              </div>
+
+              {existingImages.length > 0 && (
+                <div className="rounded-xl border border-slate-200 p-3">
+                  <p className="text-sm font-medium text-slate-700">
+                    Existing images
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {existingImages.map((url) => (
+                      <div
+                        key={url}
+                        className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-2 py-1"
+                      >
+                        <a
+                          className="rbac-link"
+                          href={url}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {url.split("/").pop()}
+                        </a>
+                        <button
+                          className="rbac-link danger"
+                          type="button"
+                          onClick={() =>
+                            setExistingImages((prev) =>
+                              prev.filter((item) => item !== url),
+                            )
+                          }
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {existingVideoUrls.length > 0 && (
+                <div className="rounded-xl border border-slate-200 p-3">
+                  <p className="text-sm font-medium text-slate-700">
+                    Existing videos
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {existingVideoUrls.map((url) => (
+                      <div
+                        key={url}
+                        className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-2 py-1"
+                      >
+                        <a
+                          className="rbac-link"
+                          href={url}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {url.split("/").pop()}
+                        </a>
+                        <button
+                          className="rbac-link danger"
+                          type="button"
+                          onClick={() =>
+                            setExistingVideoUrls((prev) =>
+                              prev.filter((item) => item !== url),
+                            )
+                          }
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {imageFiles.length > 0 && (
+                <p className="text-sm text-slate-600">
+                  {imageFiles.length} image file(s) selected.
+                </p>
+              )}
+
+              {videoFiles.length > 0 && (
+                <p className="text-sm text-slate-600">
+                  {videoFiles.length} video file(s) selected.
+                </p>
               )}
 
               <ButtonGroup

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/rbac";
-import { saveReportImages, saveReportVideo } from "../_utils/upload";
+import { saveReportImages, saveReportVideos } from "../_utils/upload";
 
 export const runtime = "nodejs";
 
@@ -43,6 +43,9 @@ const parseJsonArray = (value) => {
   }
 };
 
+const normalizeExistingMedia = (value) =>
+  parseJsonArray(value).filter((item) => typeof item === "string" && item.trim());
+
 const serializeReport = (report, userId, isAdmin) => ({
   id: report.id,
   reportDate: report.reportDate,
@@ -53,6 +56,11 @@ const serializeReport = (report, userId, isAdmin) => ({
   description: report.description,
   imageUrls: Array.isArray(report.imageUrls) ? report.imageUrls : [],
   videoUrl: report.videoUrl || null,
+  videoUrls: Array.isArray(report.videoUrls)
+    ? report.videoUrls
+    : report.videoUrl
+      ? [report.videoUrl]
+      : [],
   createdById: report.createdById,
   createdByName: report.createdBy
     ? `${report.createdBy.firstName} ${report.createdBy.lastName}`.trim()
@@ -127,8 +135,6 @@ export async function PUT(req, { params }) {
     const categoryId = String(form.get("categoryId") || "").trim();
     const description = String(form.get("description") || "").trim();
     const parsedDate = parseDate(reportDate);
-    console.log("Received report date:", reportDate);
-    console.log("Parsed report date:", parsedDate);
 
     if (!reportDate || !projectId || !categoryId || !description) {
       return NextResponse.json(
@@ -165,9 +171,8 @@ export async function PUT(req, { params }) {
       );
     }
 
-    const existingImages = parseJsonArray(form.get("existingImages"));
-    const existingVideoUrl = String(form.get("existingVideoUrl") || "").trim();
-    const removeVideo = String(form.get("removeVideo") || "").trim() === "true";
+    const existingImages = normalizeExistingMedia(form.get("existingImages"));
+    const existingVideoUrls = normalizeExistingMedia(form.get("existingVideoUrls"));
 
     const imageFiles = form
       .getAll("images")
@@ -175,28 +180,21 @@ export async function PUT(req, { params }) {
     const newImages = await saveReportImages(imageFiles);
     const imageUrls = [...existingImages, ...newImages];
 
-    const videoInput = form.get("video");
-    const videoFile =
-      videoInput instanceof File && videoInput.size > 0 ? videoInput : null;
-
-    let videoUrl = loaded.report.videoUrl || null;
-    if (videoFile) {
-      videoUrl = await saveReportVideo(videoFile);
-    } else if (removeVideo) {
-      videoUrl = null;
-    } else if (existingVideoUrl) {
-      videoUrl = existingVideoUrl;
-    }
+    const videoFiles = form
+      .getAll("videos")
+      .filter((value) => value instanceof File && value.size > 0);
+    const newVideoUrls = await saveReportVideos(videoFiles);
+    const videoUrls = [...existingVideoUrls, ...newVideoUrls];
 
     const updated = await prisma.dailyReport.update({
       where: { id: loaded.report.id },
       data: {
         reportDate: parsedDate,
-        projectId,
-        categoryId,
+        project: { connect: { id: projectId } },
+        category: { connect: { id: categoryId } },
         description,
         imageUrls,
-        videoUrl,
+        videoUrl: videoUrls[0] || null,
       },
       include: {
         project: { select: { name: true } },

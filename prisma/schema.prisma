@@ -7,23 +7,23 @@ datasource db {
 }
 
 model User {
-  id              String        @id @default(uuid())
-  email           String?        @unique
-  createdAt       DateTime      @default(now())
-  fullName        String
-  passwordHash    String
-  roleId          String
-  updatedAt       DateTime      @updatedAt
-  username        String?       @unique
-  firstName       String
-  lastName        String
-  mobileNumber    String        @unique
-  dailyReports    DailyReport[] @relation("DailyReportCreator")
-  createdProjects Project[]     @relation("ProjectCreator")
-  assignedTodos   Todo[]        @relation("TodoAssignee")
-  createdTodos    Todo[]        @relation("TodoCreator")
+  id               String            @id @default(uuid())
+  email            String?           @unique
+  createdAt        DateTime          @default(now())
+  fullName         String
+  passwordHash     String
+  roleId           String
+  updatedAt        DateTime          @updatedAt
+  username         String?           @unique
+  firstName        String
+  lastName         String
+  mobileNumber     String            @unique
+  dailyReports     DailyReport[]     @relation("DailyReportCreator")
+  createdProjects  Project[]         @relation("ProjectCreator")
   queryManagements QueryManagement[] @relation("QueryCreatedBy")
-  role            Role          @relation(fields: [roleId], references: [id])
+  assignedTodos    Todo[]            @relation("TodoAssignee")
+  createdTodos     Todo[]            @relation("TodoCreator")
+  role             Role              @relation(fields: [roleId], references: [id])
 }
 
 model Todo {
@@ -35,15 +35,15 @@ model Todo {
   status      TodoStatus @default(TODO)
   projectId   String?
   assigneeId  String?
-  type         TaskType
-  priority     Priority
-  categoryId   String
-  subCategory  String?
+  type        TaskType
+  priority    Priority
+  categoryId  String
+  subCategory String?
   createdById String?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
-  category    Categories @relation(fields: [categoryId], references: [id])
   assignee    User?      @relation("TodoAssignee", fields: [assigneeId], references: [id])
+  category    Categories @relation(fields: [categoryId], references: [id])
   createdBy   User?      @relation("TodoCreator", fields: [createdById], references: [id])
   project     Project?   @relation(fields: [projectId], references: [id])
 
@@ -54,26 +54,26 @@ model Todo {
 }
 
 model Project {
-  id            String        @id @default(uuid())
-  name          String
-  address       String
-  contactNumber String
-  email         String?
-  startDate     DateTime
-  endDate       DateTime?
-  description   String?
-  status        ProjectStatus @default(PENDING)
-  createdById   String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  dailyReports  DailyReport[]
-  createdBy     User?         @relation("ProjectCreator", fields: [createdById], references: [id])
-  todos         Todo[]
+  id               String            @id @default(uuid())
+  name             String
+  address          String
+  contactNumber    String
+  email            String?
+  startDate        DateTime
+  endDate          DateTime?
+  description      String?
+  status           ProjectStatus     @default(PENDING)
+  createdById      String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  dailyReports     DailyReport[]
+  createdBy        User?             @relation("ProjectCreator", fields: [createdById], references: [id])
   queryManagements QueryManagement[]
+  todos            Todo[]
 }
 
 model DailyReport {
-  id          String          @id @default(uuid())
+  id          String      @id @default(uuid())
   reportDate  DateTime
   projectId   String
   categoryId  String?
@@ -81,11 +81,11 @@ model DailyReport {
   imageUrls   Json?
   videoUrl    String?
   createdById String?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  createdBy   User?           @relation("DailyReportCreator", fields: [createdById], references: [id])
-  project     Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  category    Categories?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  category    Categories? @relation(fields: [categoryId], references: [id])
+  createdBy   User?       @relation("DailyReportCreator", fields: [createdById], references: [id])
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([createdById, reportDate])
   @@index([projectId, reportDate])
@@ -115,30 +115,29 @@ model RolePermission {
 }
 
 model Categories {
-  id        String   @id @default(uuid())
+  id        String        @id @default(uuid())
   category  String
   name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-
-  todos     Todo[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @default(now()) @updatedAt
   reports   DailyReport[]
+  todos     Todo[]
 
   @@unique([category, name])
 }
 
 model QueryManagement {
-  id          String       @id @default(uuid())
+  id          String        @id @default(uuid())
   projectId   String
   category    QueryCategory
   description String
-  status      QueryStatus  @default(PENDING)
+  status      QueryStatus   @default(PENDING)
   priority    Priority
   createdById String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  createdBy   User?        @relation("QueryCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  createdBy   User?         @relation("QueryCreatedBy", fields: [createdById], references: [id])
+  project     Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
   @@index([category])
