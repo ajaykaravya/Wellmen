@@ -159,12 +159,12 @@ export default function ReportFormContent({
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
 
-    const MAX_VIDEO_SIZE = 70 * 1024 * 1024;
-    const COMPRESS_THRESHOLD = 60 * 1024 * 1024;
+    const MAX_VIDEO_SIZE = 10 * 1024 * 1024;
+    const COMPRESS_THRESHOLD = 10 * 1024 * 1024;
 
     for (const file of videoFiles) {
       if (file.size > MAX_VIDEO_SIZE) {
-        const errorMsg = `Video ${file.name} is too large. Maximum size is 70MB.`;
+        const errorMsg = `Video ${file.name} is too large. Maximum size is 10MB.`;
         setNote(errorMsg);
         toast.error(errorMsg);
         return;
@@ -174,7 +174,9 @@ export default function ReportFormContent({
     setSubmitting(true);
     let finalVideoFiles = [...videoFiles];
     try {
-      const needsCompression = videoFiles.some((f) => f.size > COMPRESS_THRESHOLD);
+      const needsCompression = videoFiles.some(
+        (f) => f.size > COMPRESS_THRESHOLD,
+      );
 
       if (needsCompression) {
         setCompressing(true);
@@ -184,8 +186,14 @@ export default function ReportFormContent({
         const ffmpeg = new FFmpeg();
         const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd";
         await ffmpeg.load({
-          coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
-          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
+          coreURL: await toBlobURL(
+            `${baseURL}/ffmpeg-core.js`,
+            "text/javascript",
+          ),
+          wasmURL: await toBlobURL(
+            `${baseURL}/ffmpeg-core.wasm`,
+            "application/wasm",
+          ),
         });
 
         finalVideoFiles = await Promise.all(
@@ -193,10 +201,14 @@ export default function ReportFormContent({
             if (file.size > COMPRESS_THRESHOLD) {
               await ffmpeg.writeFile(file.name, await fetchFile(file));
               await ffmpeg.exec([
-                "-i", file.name,
-                "-vcodec", "libx264",
-                "-preset", "superfast",
-                "-crf", "28",
+                "-i",
+                file.name,
+                "-vcodec",
+                "libx264",
+                "-preset",
+                "superfast",
+                "-crf",
+                "28",
                 `compressed_${file.name}`,
               ]);
               const data = await ffmpeg.readFile(`compressed_${file.name}`);
@@ -205,7 +217,7 @@ export default function ReportFormContent({
               });
             }
             return file;
-          })
+          }),
         );
         setCompressing(false);
       }
@@ -224,10 +236,10 @@ export default function ReportFormContent({
         payload.append("videos", file);
       }
 
-    if (reportId) {
-      payload.append("existingImages", JSON.stringify(existingImages));
-      payload.append("existingVideoUrls", JSON.stringify(existingVideoUrls));
-    }
+      if (reportId) {
+        payload.append("existingImages", JSON.stringify(existingImages));
+        payload.append("existingVideoUrls", JSON.stringify(existingVideoUrls));
+      }
       const endpoint = reportId ? `/api/reports/${reportId}` : "/api/reports";
       const res = await fetch(endpoint, {
         method: reportId ? "PUT" : "POST",
@@ -273,7 +285,11 @@ export default function ReportFormContent({
           <form className="rbac-form" onSubmit={handleSubmit}>
             <fieldset
               disabled={submitting || compressing}
-              className={submitting || compressing ? "opacity-70 pointer-events-none" : ""}
+              className={
+                submitting || compressing
+                  ? "opacity-70 pointer-events-none"
+                  : ""
+              }
             >
               <div className="grid gap-5 md:grid-cols-2">
                 <label className="rbac-label">
@@ -437,9 +453,7 @@ export default function ReportFormContent({
 
               {existingVideoUrls.length > 0 && (
                 <div className="mt-3 rounded-xl border border-slate-200 p-3">
-                  <p className="text-sm text-slate-700">
-                    Existing videos
-                  </p>
+                  <p className="text-sm text-slate-700">Existing videos</p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {existingVideoUrls.map((url) => (
                       <div
