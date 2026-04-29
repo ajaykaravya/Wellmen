@@ -70,6 +70,7 @@ export default function QueryFormContent({
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [compressing, setCompressing] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [errors, setErrors] = useState<
     Partial<Record<keyof QueryFormState, string>>
@@ -158,7 +159,56 @@ export default function QueryFormContent({
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
 
+    const MAX_VIDEO_SIZE = 70 * 1024 * 1024;
+    const COMPRESS_THRESHOLD = 60 * 1024 * 1024;
+
+    for (const file of videoFiles) {
+      if (file.size > MAX_VIDEO_SIZE) {
+        const errorMsg = `Video ${file.name} is too large. Maximum size is 70MB.`;
+        setNote(errorMsg);
+        toast.error(errorMsg);
+        return;
+      }
+    }
+
     try {
+      let finalVideoFiles = [...videoFiles];
+      const needsCompression = videoFiles.some((f) => f.size > COMPRESS_THRESHOLD);
+
+      if (needsCompression) {
+        setCompressing(true);
+        const { FFmpeg } = await import("@ffmpeg/ffmpeg");
+        const { fetchFile, toBlobURL } = await import("@ffmpeg/util");
+
+        const ffmpeg = new FFmpeg();
+        const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd";
+        await ffmpeg.load({
+          coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
+          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
+        });
+
+        finalVideoFiles = await Promise.all(
+          videoFiles.map(async (file) => {
+            if (file.size > COMPRESS_THRESHOLD) {
+              await ffmpeg.writeFile(file.name, await fetchFile(file));
+              await ffmpeg.exec([
+                "-i", file.name,
+                "-vcodec", "libx264",
+                "-preset", "superfast",
+                "-crf", "28",
+                `compressed_${file.name}`,
+              ]);
+              const data = await ffmpeg.readFile(`compressed_${file.name}`);
+              return new File([data as any], file.name, {
+                type: file.type,
+              });
+            }
+            return file;
+          })
+        );
+        setCompressing(false);
+      }
+
       setSaving(true);
       const payload = new FormData();
       payload.append("projectId", form.projectId.trim());
@@ -171,7 +221,7 @@ export default function QueryFormContent({
         payload.append("images", file);
       }
 
-      for (const file of videoFiles) {
+      for (const file of finalVideoFiles) {
         payload.append("videos", file);
       }
 
@@ -200,6 +250,7 @@ export default function QueryFormContent({
       setNote("Failed to save query.");
     } finally {
       setSaving(false);
+      setCompressing(false);
     }
   };
 
@@ -222,8 +273,8 @@ export default function QueryFormContent({
 
         <form className="rbac-form" onSubmit={handleSubmit}>
           <fieldset
-            disabled={saving}
-            className={saving ? "pointer-events-none opacity-70" : ""}
+            disabled={saving || compressing}
+            className={saving || compressing ? "pointer-events-none opacity-70" : ""}
           >
             <label className="rbac-label">
               Select Project <span className="text-red-600">*</span>
@@ -420,8 +471,13 @@ export default function QueryFormContent({
           {note && <p className="text-sm text-red-600 mt-4">{note}</p>}
 
           <div className="rbac-actions mt-6">
-            <button className="rbac-button" type="submit" disabled={saving}>
-              {saving ? (
+            <button className="rbac-button" type="submit" disabled={saving || compressing}>
+              {compressing ? (
+                <span className="inline-flex items-center gap-2">
+                  <FaSpinner className="animate-spin" size={16} />
+                  Video is compressing...
+                </span>
+              ) : saving ? (
                 <span className="inline-flex items-center gap-2">
                   <FaSpinner className="animate-spin" size={16} />
                   Saving...
@@ -431,7 +487,7 @@ export default function QueryFormContent({
               )}
             </button>
             <Link href={returnPath}>
-              <button className="text-red-500" type="button" disabled={saving}>
+              <button className="text-red-500" type="button" disabled={saving || compressing}>
                 Cancel
               </button>
             </Link>

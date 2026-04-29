@@ -16,6 +16,8 @@
     "@capacitor/app": "^8.1.0",
     "@capacitor/core": "^8.3.1",
     "@capacitor/ios": "^8.3.0",
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
     "@headlessui/react": "^2.2.10",
     "@heroicons/react": "^2.2.0",
     "@prisma/adapter-pg": "^7.5.0",

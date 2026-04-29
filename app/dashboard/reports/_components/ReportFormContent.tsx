@@ -59,6 +59,7 @@ export default function ReportFormContent({
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [compressing, setCompressing] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [errors, setErrors] = useState<
     Partial<Record<keyof ReportFormState, string>>
@@ -158,27 +159,75 @@ export default function ReportFormContent({
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
 
-    const payload = new FormData();
-    payload.append("reportDate", form.reportDate);
-    payload.append("projectId", form.projectId);
-    payload.append("categoryId", form.categoryId);
-    payload.append("description", form.description.trim());
-
-    for (const file of imageFiles) {
-      payload.append("images", file);
-    }
+    const MAX_VIDEO_SIZE = 70 * 1024 * 1024;
+    const COMPRESS_THRESHOLD = 60 * 1024 * 1024;
 
     for (const file of videoFiles) {
-      payload.append("videos", file);
+      if (file.size > MAX_VIDEO_SIZE) {
+        const errorMsg = `Video ${file.name} is too large. Maximum size is 70MB.`;
+        setNote(errorMsg);
+        toast.error(errorMsg);
+        return;
+      }
     }
+
+    setSubmitting(true);
+    let finalVideoFiles = [...videoFiles];
+    try {
+      const needsCompression = videoFiles.some((f) => f.size > COMPRESS_THRESHOLD);
+
+      if (needsCompression) {
+        setCompressing(true);
+        const { FFmpeg } = await import("@ffmpeg/ffmpeg");
+        const { fetchFile, toBlobURL } = await import("@ffmpeg/util");
+
+        const ffmpeg = new FFmpeg();
+        const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd";
+        await ffmpeg.load({
+          coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
+          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
+        });
+
+        finalVideoFiles = await Promise.all(
+          videoFiles.map(async (file) => {
+            if (file.size > COMPRESS_THRESHOLD) {
+              await ffmpeg.writeFile(file.name, await fetchFile(file));
+              await ffmpeg.exec([
+                "-i", file.name,
+                "-vcodec", "libx264",
+                "-preset", "superfast",
+                "-crf", "28",
+                `compressed_${file.name}`,
+              ]);
+              const data = await ffmpeg.readFile(`compressed_${file.name}`);
+              return new File([data as any], file.name, {
+                type: file.type,
+              });
+            }
+            return file;
+          })
+        );
+        setCompressing(false);
+      }
+
+      const payload = new FormData();
+      payload.append("reportDate", form.reportDate);
+      payload.append("projectId", form.projectId);
+      payload.append("categoryId", form.categoryId);
+      payload.append("description", form.description.trim());
+
+      for (const file of imageFiles) {
+        payload.append("images", file);
+      }
+
+      for (const file of finalVideoFiles) {
+        payload.append("videos", file);
+      }
 
     if (reportId) {
       payload.append("existingImages", JSON.stringify(existingImages));
       payload.append("existingVideoUrls", JSON.stringify(existingVideoUrls));
     }
-
-    setSubmitting(true);
-    try {
       const endpoint = reportId ? `/api/reports/${reportId}` : "/api/reports";
       const res = await fetch(endpoint, {
         method: reportId ? "PUT" : "POST",
@@ -201,6 +250,7 @@ export default function ReportFormContent({
       setNote("Failed to save report.");
     } finally {
       setSubmitting(false);
+      setCompressing(false);
     }
   };
 
@@ -222,8 +272,8 @@ export default function ReportFormContent({
           </div>
           <form className="rbac-form" onSubmit={handleSubmit}>
             <fieldset
-              disabled={submitting}
-              className={submitting ? "opacity-70 pointer-events-none" : ""}
+              disabled={submitting || compressing}
+              className={submitting || compressing ? "opacity-70 pointer-events-none" : ""}
             >
               <div className="grid gap-5 md:grid-cols-2">
                 <label className="rbac-label">
@@ -440,9 +490,14 @@ export default function ReportFormContent({
               <button
                 className="rbac-button"
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || compressing}
               >
-                {submitting ? (
+                {compressing ? (
+                  <span className="inline-flex items-center gap-2">
+                    <FaSpinner className="animate-spin" size={16} />
+                    Video is compressing...
+                  </span>
+                ) : submitting ? (
                   <span className="inline-flex items-center gap-2">
                     <FaSpinner className="animate-spin" size={16} />
                     Saving...
@@ -455,7 +510,7 @@ export default function ReportFormContent({
                 <button
                   className="text-red-500"
                   type="button"
-                  disabled={submitting}
+                  disabled={submitting || compressing}
                 >
                   Cancel
                 </button>
