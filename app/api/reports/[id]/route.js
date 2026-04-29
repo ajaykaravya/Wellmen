@@ -44,7 +44,9 @@ const parseJsonArray = (value) => {
 };
 
 const normalizeExistingMedia = (value) =>
-  parseJsonArray(value).filter((item) => typeof item === "string" && item.trim());
+  parseJsonArray(value).filter(
+    (item) => typeof item === "string" && item.trim(),
+  );
 
 const serializeReport = (report, userId, isAdmin) => ({
   id: report.id,
@@ -172,18 +174,20 @@ export async function PUT(req, { params }) {
     }
 
     const existingImages = normalizeExistingMedia(form.get("existingImages"));
-    const existingVideoUrls = normalizeExistingMedia(form.get("existingVideoUrls"));
+    const existingVideoUrls = normalizeExistingMedia(
+      form.get("existingVideoUrls"),
+    );
 
     const imageFiles = form
       .getAll("images")
       .filter((value) => value instanceof File && value.size > 0);
-    const newImages = await saveReportImages(imageFiles);
+    const newImages = await saveReportImages(imageFiles, projectId);
     const imageUrls = [...existingImages, ...newImages];
 
     const videoFiles = form
       .getAll("videos")
       .filter((value) => value instanceof File && value.size > 0);
-    const newVideoUrls = await saveReportVideos(videoFiles);
+    const newVideoUrls = await saveReportVideos(videoFiles, projectId);
     const videoUrls = [...existingVideoUrls, ...newVideoUrls];
 
     const updated = await prisma.dailyReport.update({

@@ -8,7 +8,7 @@ import {
   getUploadedFiles,
   serializeQuery,
 } from "@/lib/queryManagement";
-import { saveMediaFiles } from "../../_utils/mediaUpload";
+import { saveQueryImages, saveQueryVideos } from "../_utils/upload";
 
 const resolveId = async (params) => String((await params)?.id || "").trim();
 
@@ -54,8 +54,12 @@ export async function PUT(req, { params }) {
   const contentType = req.headers.get("content-type") || "";
   const isMultipart = contentType.includes("multipart/form-data");
   const body = isMultipart ? await req.formData() : await req.json();
-  const payload = isMultipart ? parseMultipartPayload(body) : parsePayload(body);
-  const existingImages = isMultipart ? parseJsonArray(body.get("existingImages")) : [];
+  const payload = isMultipart
+    ? parseMultipartPayload(body)
+    : parsePayload(body);
+  const existingImages = isMultipart
+    ? parseJsonArray(body.get("existingImages"))
+    : [];
   const existingVideoUrls = isMultipart
     ? parseJsonArray(body.get("existingVideoUrls"))
     : [];
@@ -89,9 +93,12 @@ export async function PUT(req, { params }) {
 
   try {
     const [newImages, newVideoUrls] = await Promise.all([
-      saveMediaFiles(imageFiles, { scope: "query-management", kind: "image" }),
-      saveMediaFiles(videoFiles, { scope: "query-management", kind: "video" }),
+      saveQueryImages(imageFiles, payload.projectId),
+      saveQueryVideos(videoFiles, payload.projectId),
     ]);
+
+    const imageUrls = [...existingImages, ...newImages];
+    const videoUrls = [...existingVideoUrls, ...newVideoUrls];
 
     const query = await prisma.queryManagement.update({
       where: { id },
@@ -101,6 +108,8 @@ export async function PUT(req, { params }) {
         description: payload.description,
         status: payload.status,
         priority: payload.priority,
+        imageUrls,
+        videoUrls,
       },
       include: {
         project: { select: { name: true } },

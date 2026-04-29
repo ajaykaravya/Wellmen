@@ -220,8 +220,8 @@ export async function POST(req) {
       .filter((value) => value instanceof File && value.size > 0);
 
     const [imageUrls, videoUrls] = await Promise.all([
-      saveReportImages(imageFiles),
-      saveReportVideos(videoFiles),
+      saveReportImages(imageFiles, projectId),
+      saveReportVideos(videoFiles, projectId),
     ]);
 
     const userId = gate.auth?.user?.id;

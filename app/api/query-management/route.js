@@ -10,7 +10,7 @@ import {
   getUploadedFiles,
   serializeQuery,
 } from "@/lib/queryManagement";
-import { saveMediaFiles } from "../_utils/mediaUpload";
+import { saveQueryImages, saveQueryVideos } from "./_utils/upload";
 
 export async function GET(req) {
   const gate = await requireRole(req, ["Admin", "Manager"]);
@@ -105,8 +105,8 @@ export async function POST(req) {
 
   try {
     const [imageUrls, videoUrls] = await Promise.all([
-      saveMediaFiles(imageFiles, { scope: "query-management", kind: "image" }),
-      saveMediaFiles(videoFiles, { scope: "query-management", kind: "video" }),
+      saveQueryImages(imageFiles, payload.projectId),
+      saveQueryVideos(videoFiles, payload.projectId),
     ]);
 
     const userId = gate.auth?.user?.id;
@@ -117,6 +117,8 @@ export async function POST(req) {
         description: payload.description,
         status: payload.status,
         priority: payload.priority,
+        imageUrls,
+        videoUrls,
         ...(userId && { createdBy: { connect: { id: userId } } }),
       },
       include: {

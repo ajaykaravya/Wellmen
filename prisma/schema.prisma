@@ -133,6 +133,8 @@ model QueryManagement {
   description String
   status      QueryStatus   @default(PENDING)
   priority    Priority
+  imageUrls   Json?
+  videoUrls   Json?
   createdById String?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt

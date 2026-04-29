@@ -10,7 +10,10 @@ import {
   getUploadedFiles,
   serializeQuery,
 } from "@/lib/queryManagement";
-import { saveMediaFiles } from "../_utils/mediaUpload";
+import {
+  saveQueryImages,
+  saveQueryVideos,
+} from "../query-management/_utils/upload";
 
 export async function GET(req) {
   const auth = await getAuthContext(req);
@@ -113,8 +116,8 @@ export async function POST(req) {
 
   try {
     const [imageUrls, videoUrls] = await Promise.all([
-      saveMediaFiles(imageFiles, { scope: "query-management", kind: "image" }),
-      saveMediaFiles(videoFiles, { scope: "query-management", kind: "video" }),
+      saveQueryImages(imageFiles, payload.projectId),
+      saveQueryVideos(videoFiles, payload.projectId),
     ]);
 
     const query = await prisma.queryManagement.create({
@@ -124,6 +127,8 @@ export async function POST(req) {
         description: payload.description,
         status: payload.status,
         priority: payload.priority,
+        imageUrls,
+        videoUrls,
         ...(userId && { createdBy: { connect: { id: userId } } }),
       },
       include: {

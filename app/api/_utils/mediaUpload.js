@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+import { supabase } from "@/lib/supabase";
 
 const sanitizeName = (value) =>
   String(value || "")
@@ -32,26 +33,65 @@ const ensureUploadDir = async (scope) => {
 
 const getPublicUrl = (scope, name) => `/uploads/${scope}/${name}`;
 
-async function saveOne(file, { scope, kind }) {
+const getSupabasePublicUrl = (projectId, kind, name) => {
+  // Use the correct Supabase Storage URL format
+  // Path: {projectId}/{kind}/{name}
+  const baseUrl = process.env.SUPABASE_PROJECT_URL.replace(
+    /\/rest\/v1\/?$/,
+    "",
+  );
+  return `${baseUrl}/storage/v1/object/public/wellmen/${projectId}/${kind}/${name}`;
+};
+
+async function saveOne(file, { type, projectId, kind }) {
   if (!(file instanceof File) || !file.size) return null;
 
-  const type = String(file.type || "").toLowerCase();
-  if (kind === "image" && !type.startsWith("image/")) {
+  if (!type || !projectId || !kind) {
+    throw new Error("type, projectId, and kind are required for file upload.");
+  }
+
+  const fileType = String(file.type || "").toLowerCase();
+  if (kind === "image" && !fileType.startsWith("image/")) {
     throw new Error("Only image files are allowed for images.");
   }
-  if (kind === "video" && !type.startsWith("video/")) {
+  if (kind === "video" && !fileType.startsWith("video/")) {
     throw new Error("Only video files are allowed for videos.");
   }
 
-  const uploadDir = await ensureUploadDir(scope);
   const ext = getExt(file);
   const baseName = sanitizeName(path.basename(file.name || "file", ext));
-  const fileName = `${Date.now()}-${randomUUID()}-${baseName || kind}${ext}`;
-  const filePath = path.join(uploadDir, fileName);
-  const bytes = await file.arrayBuffer();
+  const fileName = `${type}-${Date.now()}-${randomUUID()}-${baseName || kind}${ext}`;
 
-  await writeFile(filePath, Buffer.from(bytes));
-  return getPublicUrl(scope, fileName);
+  try {
+    // Try to upload to Supabase first
+    const bytes = await file.arrayBuffer();
+    const uploadPath = `${projectId}/${kind}/${fileName}`;
+    const { data, error } = await supabase.storage
+      .from("wellmen")
+      .upload(uploadPath, bytes, {
+        contentType: file.type,
+        upsert: false,
+      });
+
+    if (error) {
+      console.warn(
+        "Supabase upload failed, falling back to local storage:",
+        error.message,
+      );
+      // Fallback to local storage
+      const scope = `${projectId}/${kind}`;
+      const uploadDir = await ensureUploadDir(scope);
+      const filePath = path.join(uploadDir, fileName);
+      await writeFile(filePath, Buffer.from(bytes));
+      return getPublicUrl(scope, fileName);
+    }
+
+    // Return Supabase public URL
+    return getSupabasePublicUrl(projectId, kind, fileName);
+  } catch (error) {
+    console.error("Upload failed:", error);
+    throw new Error("Failed to upload file");
+  }
 }
 
 export async function saveMediaFiles(files, options) {
