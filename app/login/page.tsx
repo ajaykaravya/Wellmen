@@ -188,7 +188,11 @@ export default function LoginPage() {
               </p>
               <span className="text-xs theme-text-muted">Create Admin</span>
             </div>
-            <form className="mt-6 grid gap-4" onSubmit={handleSetup}>
+            <form
+              className="mt-6 grid gap-4"
+              autoComplete="off"
+              onSubmit={handleSetup}
+            >
               <label className="text-sm font-semibold theme-text">
                 First name
                 <input
@@ -221,6 +225,7 @@ export default function LoginPage() {
                 Email
                 <input
                   type="email"
+                  autoComplete="off"
                   className="theme-input mt-2 w-full rounded-xl px-4 py-3 focus:outline-none"
                   value={setupForm.email}
                   onChange={(event) =>
@@ -251,6 +256,7 @@ export default function LoginPage() {
                 Password
                 <input
                   type="password"
+                  autoComplete="new-password"
                   className="theme-input mt-2 w-full rounded-xl px-4 py-3 focus:outline-none"
                   value={setupForm.password}
                   onChange={(event) =>

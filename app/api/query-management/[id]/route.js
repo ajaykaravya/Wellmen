@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
-import { parsePayload, serializeQuery } from "@/lib/queryManagement";
+import {
+  parsePayload,
+  parseMultipartPayload,
+  parseJsonArray,
+  getUploadedFiles,
+  serializeQuery,
+} from "@/lib/queryManagement";
+import { saveQueryImages, saveQueryVideos } from "../_utils/upload";
 
 const resolveId = async (params) => String((await params)?.id || "").trim();
 
@@ -44,8 +51,20 @@ export async function PUT(req, { params }) {
     );
   }
 
-  const body = await req.json();
-  const payload = parsePayload(body);
+  const contentType = req.headers.get("content-type") || "";
+  const isMultipart = contentType.includes("multipart/form-data");
+  const body = isMultipart ? await req.formData() : await req.json();
+  const payload = isMultipart
+    ? parseMultipartPayload(body)
+    : parsePayload(body);
+  const existingImages = isMultipart
+    ? parseJsonArray(body.get("existingImages"))
+    : [];
+  const existingVideoUrls = isMultipart
+    ? parseJsonArray(body.get("existingVideoUrls"))
+    : [];
+  const imageFiles = isMultipart ? getUploadedFiles(body, "images") : [];
+  const videoFiles = isMultipart ? getUploadedFiles(body, "videos") : [];
 
   if (
     !payload.projectId ||
@@ -73,14 +92,24 @@ export async function PUT(req, { params }) {
   }
 
   try {
+    const [newImages, newVideoUrls] = await Promise.all([
+      saveQueryImages(imageFiles, payload.projectId),
+      saveQueryVideos(videoFiles, payload.projectId),
+    ]);
+
+    const imageUrls = [...existingImages, ...newImages];
+    const videoUrls = [...existingVideoUrls, ...newVideoUrls];
+
     const query = await prisma.queryManagement.update({
       where: { id },
       data: {
-        projectId: payload.projectId,
+        project: { connect: { id: payload.projectId } },
         category: payload.category,
         description: payload.description,
         status: payload.status,
         priority: payload.priority,
+        imageUrls,
+        videoUrls,
       },
       include: {
         project: { select: { name: true } },

@@ -20,6 +20,7 @@
     "@heroicons/react": "^2.2.0",
     "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^7.5.0",
+    "@supabase/supabase-js": "^2.105.1",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/table-core": "^8.21.3",
     "@types/react-datepicker": "^6.2.0",

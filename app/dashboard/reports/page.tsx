@@ -46,6 +46,7 @@ type ReportRow = {
   description: string;
   imageUrls: string[];
   videoUrl: string | null;
+  videoUrls?: string[];
   createdById: string | null;
   createdByName: string;
   canManage: boolean;
@@ -696,25 +697,44 @@ function ReportingListContent() {
                 </div>
 
                 <div>
-                  {viewData.videoUrl && (
+                  {(
+                    (viewData.videoUrls && viewData.videoUrls.length > 0
+                      ? viewData.videoUrls
+                      : viewData.videoUrl
+                        ? [viewData.videoUrl]
+                        : []
+                    ).length > 0
+                  ) && (
                     <>
                       <p className="text-sm font-semibold ">Video</p>
                       <div
                         className="mt-2 rounded-xl border p-3"
                         style={{ borderColor: "var(--theme-border)" }}
                       >
-                        <video
-                          controls
-                          className="w-full rounded-lg"
-                          src={viewData.videoUrl}
-                        />
-                        <a
-                          className="rbac-link mt-2 inline-block"
-                          href={viewData.videoUrl}
-                          download
-                        >
-                          Download video
-                        </a>
+                        <div className="grid gap-3">
+                          {(
+                            viewData.videoUrls?.length
+                              ? viewData.videoUrls
+                              : viewData.videoUrl
+                                ? [viewData.videoUrl]
+                                : []
+                          ).map((url) => (
+                            <div key={url}>
+                              <video
+                                controls
+                                className="w-full rounded-lg"
+                                src={url}
+                              />
+                              <a
+                                className="rbac-link mt-2 inline-block"
+                                href={url}
+                                download
+                              >
+                                Download video
+                              </a>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </>
                   )}

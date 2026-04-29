@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { FaSpinner } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
@@ -30,6 +30,7 @@ type ReportPayload = {
   description: string;
   imageUrls: string[];
   videoUrl: string | null;
+  videoUrls?: string[];
 };
 
 type ReportFormState = {
@@ -63,10 +64,9 @@ export default function ReportFormContent({
     Partial<Record<keyof ReportFormState, string>>
   >({});
   const [existingImages, setExistingImages] = useState<string[]>([]);
-  const [existingVideoUrl, setExistingVideoUrl] = useState<string | null>(null);
-  const [removeVideo, setRemoveVideo] = useState(false);
+  const [existingVideoUrls, setExistingVideoUrls] = useState<string[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoFiles, setVideoFiles] = useState<File[]>([]);
 
   const [form, setForm] = useState<ReportFormState>({
     reportDate: getTodayInputDate(),
@@ -114,7 +114,13 @@ export default function ReportFormContent({
             setExistingImages(
               Array.isArray(report.imageUrls) ? report.imageUrls : [],
             );
-            setExistingVideoUrl(report.videoUrl || null);
+            setExistingVideoUrls(
+              Array.isArray(report.videoUrls)
+                ? report.videoUrls
+                : report.videoUrl
+                  ? [report.videoUrl]
+                  : [],
+            );
           }
         }
       } catch (error) {
@@ -150,6 +156,7 @@ export default function ReportFormContent({
       newErrors.description = "Description is required.";
 
     setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
 
     const payload = new FormData();
     payload.append("reportDate", form.reportDate);
@@ -161,16 +168,13 @@ export default function ReportFormContent({
       payload.append("images", file);
     }
 
-    if (videoFile) {
-      payload.append("video", videoFile);
+    for (const file of videoFiles) {
+      payload.append("videos", file);
     }
 
     if (reportId) {
       payload.append("existingImages", JSON.stringify(existingImages));
-      if (existingVideoUrl) {
-        payload.append("existingVideoUrl", existingVideoUrl);
-      }
-      payload.append("removeVideo", removeVideo ? "true" : "false");
+      payload.append("existingVideoUrls", JSON.stringify(existingVideoUrls));
     }
 
     setSubmitting(true);
@@ -191,9 +195,9 @@ export default function ReportFormContent({
         `Reporting ${reportId ? "updated" : "created"} successfully.`,
       );
       router.push("/dashboard/reports");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Failed to save report", error);
-      toast.error(error || "Failed to save report.");
+      toast.error("Failed to save report.");
       setNote("Failed to save report.");
     } finally {
       setSubmitting(false);
@@ -325,22 +329,21 @@ export default function ReportFormContent({
                     type="file"
                     accept="image/*"
                     multiple
-                    onChange={(event) =>
-                      setImageFiles(Array.from(event.target.files || []))
-                    }
+                    onChange={(event) => {
+                      setImageFiles(Array.from(event.target.files || []));
+                    }}
                   />
                 </label>
 
                 <label className="rbac-label">
-                  Upload video
+                  Upload videos
                   <input
                     className="rbac-input"
                     type="file"
                     accept="video/*"
+                    multiple
                     onChange={(event) => {
-                      const file = event.target.files?.[0] || null;
-                      setVideoFile(file);
-                      if (file) setRemoveVideo(false);
+                      setVideoFiles(Array.from(event.target.files || []));
                     }}
                   />
                 </label>
@@ -382,27 +385,39 @@ export default function ReportFormContent({
                 </div>
               )}
 
-              {existingVideoUrl && !videoFile && (
+              {existingVideoUrls.length > 0 && (
                 <div className="mt-3 rounded-xl border border-slate-200 p-3">
                   <p className="text-sm text-slate-700">
-                    Existing video:{" "}
-                    <a
-                      className="rbac-link"
-                      href={existingVideoUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {existingVideoUrl.split("/").pop()}
-                    </a>
+                    Existing videos
                   </p>
-                  <label className="mt-2 inline-flex items-center gap-2 text-sm text-slate-600">
-                    <input
-                      type="checkbox"
-                      checked={removeVideo}
-                      onChange={(event) => setRemoveVideo(event.target.checked)}
-                    />
-                    Remove existing video
-                  </label>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {existingVideoUrls.map((url) => (
+                      <div
+                        key={url}
+                        className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-2 py-1"
+                      >
+                        <a
+                          className="rbac-link"
+                          href={url}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {url.split("/").pop()}
+                        </a>
+                        <button
+                          className="rbac-link danger"
+                          type="button"
+                          onClick={() =>
+                            setExistingVideoUrls((prev) =>
+                              prev.filter((item) => item !== url),
+                            )
+                          }
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -412,11 +427,13 @@ export default function ReportFormContent({
                 </p>
               )}
 
-              {videoFile && (
+              {videoFiles.length > 0 && (
                 <p className="mt-2 text-sm text-slate-600">
-                  Selected video: {videoFile.name}
+                  {videoFiles.length} video file(s) selected.
                 </p>
               )}
+
+              {note && <p className="mt-2 text-sm text-red-600">{note}</p>}
             </fieldset>
 
             <div className="rbac-actions">

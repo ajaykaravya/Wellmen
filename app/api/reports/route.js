@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/rbac";
-import { saveReportImages, saveReportVideo } from "./_utils/upload";
+import { saveReportImages, saveReportVideos } from "./_utils/upload";
 
 export const runtime = "nodejs";
 
@@ -39,6 +39,11 @@ const serializeReport = (report, userId, isAdmin) => ({
   description: report.description,
   imageUrls: Array.isArray(report.imageUrls) ? report.imageUrls : [],
   videoUrl: report.videoUrl || null,
+  videoUrls: Array.isArray(report.videoUrls)
+    ? report.videoUrls
+    : report.videoUrl
+      ? [report.videoUrl]
+      : [],
   createdById: report.createdById,
   createdByName: report.createdBy
     ? `${report.createdBy.firstName} ${report.createdBy.lastName}`.trim()
@@ -171,8 +176,6 @@ export async function POST(req) {
     const categoryId = getText(form, "categoryId");
     const description = getText(form, "description");
     const parsedDate = parseDate(reportDate);
-    console.log("Received report date:", reportDate);
-    console.log("Parsed report date:", parsedDate);
 
     if (!reportDate || !projectId || !categoryId || !description) {
       return NextResponse.json(
@@ -212,24 +215,25 @@ export async function POST(req) {
     const imageFiles = form
       .getAll("images")
       .filter((value) => value instanceof File && value.size > 0);
-    const videoInput = form.get("video");
-    const videoFile =
-      videoInput instanceof File && videoInput.size > 0 ? videoInput : null;
+    const videoFiles = form
+      .getAll("videos")
+      .filter((value) => value instanceof File && value.size > 0);
 
-    const [imageUrls, videoUrl] = await Promise.all([
-      saveReportImages(imageFiles),
-      videoFile ? saveReportVideo(videoFile) : Promise.resolve(null),
+    const [imageUrls, videoUrls] = await Promise.all([
+      saveReportImages(imageFiles, projectId),
+      saveReportVideos(videoFiles, projectId),
     ]);
 
+    const userId = gate.auth?.user?.id;
     const created = await prisma.dailyReport.create({
       data: {
         reportDate: parsedDate,
-        projectId,
-        categoryId,
+        project: { connect: { id: projectId } },
+        category: { connect: { id: categoryId } },
         description,
         imageUrls,
-        videoUrl,
-        createdById: gate.auth?.user?.id || null,
+        videoUrl: videoUrls[0] || null,
+        ...(userId && { createdBy: { connect: { id: userId } } }),
       },
       include: {
         project: { select: { name: true } },

@@ -105,6 +105,7 @@ type AdminReportRow = {
   createdByName: string;
   imageUrls: string[];
   videoUrl: string | null;
+  videoUrls?: string[];
 };
 
 type TaskTableCardProps = {
@@ -1460,7 +1461,14 @@ function OverviewContent() {
                 </div>
 
                 <div>
-                  {reportViewData.videoUrl && (
+                  {(
+                    (reportViewData.videoUrls && reportViewData.videoUrls.length > 0
+                      ? reportViewData.videoUrls
+                      : reportViewData.videoUrl
+                        ? [reportViewData.videoUrl]
+                        : []
+                    ).length > 0
+                  ) && (
                     <>
                       <p className="text-sm font-semibold text-slate-800">
                         Video
@@ -1469,18 +1477,30 @@ function OverviewContent() {
                         className="mt-2 rounded-xl border p-3"
                         style={{ borderColor: "var(--theme-border)" }}
                       >
-                        <video
-                          controls
-                          className="w-full rounded-lg"
-                          src={reportViewData.videoUrl}
-                        />
-                        <a
-                          className="rbac-link mt-2 inline-block"
-                          href={reportViewData.videoUrl}
-                          download
-                        >
-                          Download video
-                        </a>
+                        <div className="grid gap-3">
+                          {(
+                            reportViewData.videoUrls?.length
+                              ? reportViewData.videoUrls
+                              : reportViewData.videoUrl
+                                ? [reportViewData.videoUrl]
+                                : []
+                          ).map((url) => (
+                            <div key={url}>
+                              <video
+                                controls
+                                className="w-full rounded-lg"
+                                src={url}
+                              />
+                              <a
+                                className="rbac-link mt-2 inline-block"
+                                href={url}
+                                download
+                              >
+                                Download video
+                              </a>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </>
                   )}
