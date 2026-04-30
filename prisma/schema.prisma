@@ -79,7 +79,7 @@ model DailyReport {
   categoryId  String?
   description String
   imageUrls   Json?
-  videoUrl    String?
+  videoUrls   Json?
   createdById String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt

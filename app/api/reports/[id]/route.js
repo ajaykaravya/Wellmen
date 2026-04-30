@@ -57,12 +57,13 @@ const serializeReport = (report, userId, isAdmin) => ({
   categoryName: report.category?.name || "-",
   description: report.description,
   imageUrls: Array.isArray(report.imageUrls) ? report.imageUrls : [],
-  videoUrl: report.videoUrl || null,
   videoUrls: Array.isArray(report.videoUrls)
     ? report.videoUrls
-    : report.videoUrl
-      ? [report.videoUrl]
-      : [],
+    : [],
+  videoUrl:
+    Array.isArray(report.videoUrls) && report.videoUrls.length > 0
+      ? report.videoUrls[0]
+      : null,
   createdById: report.createdById,
   createdByName: report.createdBy
     ? `${report.createdBy.firstName} ${report.createdBy.lastName}`.trim()
@@ -198,7 +199,7 @@ export async function PUT(req, { params }) {
         category: { connect: { id: categoryId } },
         description,
         imageUrls,
-        videoUrl: videoUrls[0] || null,
+        videoUrls,
       },
       include: {
         project: { select: { name: true } },
