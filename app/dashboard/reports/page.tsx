@@ -13,6 +13,7 @@ import DashboardShell, {
 import ConfirmDialog from "../../components/ConfirmDialog";
 import CustomDatePicker from "../../components/CustomDatePicker";
 import { toast } from "react-toastify";
+import { IoIosClose } from "react-icons/io";
 import {
   FaChevronLeft,
   FaChevronRight,
@@ -623,14 +624,13 @@ function ReportingListContent() {
                 </p>
               </div>
               <button
-                className="rbac-button rbac-button-secondary"
                 type="button"
                 onClick={() => {
                   setViewOpen(false);
                   setViewData(null);
                 }}
               >
-                Close
+                <IoIosClose size={30} />
               </button>
             </div>
 
@@ -697,14 +697,12 @@ function ReportingListContent() {
                 </div>
 
                 <div>
-                  {(
-                    (viewData.videoUrls && viewData.videoUrls.length > 0
-                      ? viewData.videoUrls
-                      : viewData.videoUrl
-                        ? [viewData.videoUrl]
-                        : []
-                    ).length > 0
-                  ) && (
+                  {(viewData.videoUrls && viewData.videoUrls.length > 0
+                    ? viewData.videoUrls
+                    : viewData.videoUrl
+                      ? [viewData.videoUrl]
+                      : []
+                  ).length > 0 && (
                     <>
                       <p className="text-sm font-semibold ">Video</p>
                       <div
@@ -712,12 +710,11 @@ function ReportingListContent() {
                         style={{ borderColor: "var(--theme-border)" }}
                       >
                         <div className="grid gap-3">
-                          {(
-                            viewData.videoUrls?.length
-                              ? viewData.videoUrls
-                              : viewData.videoUrl
-                                ? [viewData.videoUrl]
-                                : []
+                          {(viewData.videoUrls?.length
+                            ? viewData.videoUrls
+                            : viewData.videoUrl
+                              ? [viewData.videoUrl]
+                              : []
                           ).map((url) => (
                             <div key={url}>
                               <video

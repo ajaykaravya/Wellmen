@@ -46,6 +46,8 @@ import {
 } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
 import { useThemeMode } from "../components/ThemeProvider";
+import { IoIosClose } from "react-icons/io";
+import { FaEdit } from "react-icons/fa";
 
 ChartJS.register(
   CategoryScale,
@@ -250,7 +252,9 @@ function TaskTableCard({
             rows.map((task) => (
               <div key={task.id} className="flex rbac-card p-4 sm:p-5">
                 <div className="w-full mt-3 grid gap-2 text-sm">
-                  {task.projectName && <p>{task.projectName}</p>}
+                  {task.projectName && (
+                    <p className="font-semibold">{task.projectName}</p>
+                  )}
                   {"categoryName" in task && <p>{task.categoryName || "-"}</p>}
                   {task.description && <p>{task.description}</p>}
                   {"comments" in task && <p>{task.comments || "-"}</p>}
@@ -273,14 +277,14 @@ function TaskTableCard({
                   </span>
                 </div>
 
-                <div className="mt-4 flex gap-2 justify-end">
+                <div className="flex gap-2 justify-end">
                   {onUpdate && (
                     <button
-                      className="rbac-button rbac-button-secondary"
+                      className="h-fit"
                       type="button"
                       onClick={() => onUpdate(task)}
                     >
-                      Update
+                      <FaEdit />
                     </button>
                   )}
                 </div>
@@ -1384,14 +1388,13 @@ function OverviewContent() {
                 </h2>
               </div>
               <button
-                className="rbac-button rbac-button-secondary"
                 type="button"
                 onClick={() => {
                   setReportViewOpen(false);
                   setReportViewData(null);
                 }}
               >
-                Close
+                <IoIosClose size={30} />
               </button>
             </div>
 
@@ -1461,14 +1464,13 @@ function OverviewContent() {
                 </div>
 
                 <div>
-                  {(
-                    (reportViewData.videoUrls && reportViewData.videoUrls.length > 0
-                      ? reportViewData.videoUrls
-                      : reportViewData.videoUrl
-                        ? [reportViewData.videoUrl]
-                        : []
-                    ).length > 0
-                  ) && (
+                  {(reportViewData.videoUrls &&
+                  reportViewData.videoUrls.length > 0
+                    ? reportViewData.videoUrls
+                    : reportViewData.videoUrl
+                      ? [reportViewData.videoUrl]
+                      : []
+                  ).length > 0 && (
                     <>
                       <p className="text-sm font-semibold text-slate-800">
                         Video
@@ -1478,12 +1480,11 @@ function OverviewContent() {
                         style={{ borderColor: "var(--theme-border)" }}
                       >
                         <div className="grid gap-3">
-                          {(
-                            reportViewData.videoUrls?.length
-                              ? reportViewData.videoUrls
-                              : reportViewData.videoUrl
-                                ? [reportViewData.videoUrl]
-                                : []
+                          {(reportViewData.videoUrls?.length
+                            ? reportViewData.videoUrls
+                            : reportViewData.videoUrl
+                              ? [reportViewData.videoUrl]
+                              : []
                           ).map((url) => (
                             <div key={url}>
                               <video

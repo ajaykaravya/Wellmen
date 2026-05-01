@@ -58,3 +58,6 @@ build/
 
 # OS
 .DS_Store
+
+#config
+config.txt

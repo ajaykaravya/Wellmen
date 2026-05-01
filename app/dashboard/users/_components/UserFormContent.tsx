@@ -180,7 +180,11 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
               {userId ? "Edit User" : "Add New User"}
             </h3>
           </div>
-          <form className="rbac-form" autoComplete="off" onSubmit={handleSubmit}>
+          <form
+            className="rbac-form"
+            autoComplete="off"
+            onSubmit={handleSubmit}
+          >
             <fieldset
               disabled={saving}
               className={saving ? "opacity-70 pointer-events-none" : ""}
@@ -249,12 +253,14 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
                     placeholder="Mobile number"
                     value={form.mobileNumber}
                     maxLength={10}
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      const onlyNumbers = event.target.value.replace(/\D/g, "");
+
                       setForm((prev) => ({
                         ...prev,
-                        mobileNumber: event.target.value,
-                      }))
-                    }
+                        mobileNumber: onlyNumbers,
+                      }));
+                    }}
                   />
                 </label>
                 {errors.mobileNumber && (
