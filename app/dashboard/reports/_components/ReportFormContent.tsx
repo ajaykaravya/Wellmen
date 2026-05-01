@@ -399,6 +399,9 @@ export default function ReportFormContent({
                       setImageFiles(Array.from(event.target.files || []));
                     }}
                   />
+                  <p className="text-xs text-slate-500 mt-1">
+                    You can upload multiple images. Max size per video is 10MB.
+                  </p>
                 </label>
 
                 <label className="rbac-label">
@@ -412,6 +415,9 @@ export default function ReportFormContent({
                       setVideoFiles(Array.from(event.target.files || []));
                     }}
                   />
+                  <p className="text-xs text-slate-500 mt-1">
+                    You can upload multiple videos. Max size per video is 10MB.
+                  </p>
                 </label>
               </div>
 
