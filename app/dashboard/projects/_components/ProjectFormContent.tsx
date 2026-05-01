@@ -246,12 +246,17 @@ export default function ProjectFormContent({
                       placeholder="Mobile number"
                       maxLength={10}
                       value={form.contactNumber}
-                      onChange={(event) =>
+                      onChange={(event) => {
+                        const onlyNumbers = event.target.value.replace(
+                          /\D/g,
+                          "",
+                        );
+
                         setForm((prev) => ({
                           ...prev,
-                          contactNumber: event.target.value,
-                        }))
-                      }
+                          contactNumber: onlyNumbers,
+                        }));
+                      }}
                     />
                     {errors.contactNumber && (
                       <p className="text-sm text-red-600 mb-2">
