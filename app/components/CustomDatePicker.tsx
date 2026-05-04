@@ -24,6 +24,9 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   minDate,
   maxDate,
 }) => {
+  const formatDate = (date: Date) =>
+    `${date.getDate().toString().padStart(2, "0")}/${(date.getMonth() + 1).toString().padStart(2, "0")}/${date.getFullYear()}`;
+
   const parseDateValue = (value?: string) => {
     if (!value) return null;
     const trimmed = String(value).trim();
@@ -50,8 +53,7 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
       if (!isNaN(date.getTime())) return date;
     }
 
-    const fallback = new Date(trimmed);
-    return Number.isNaN(fallback.getTime()) ? null : fallback;
+    return null;
   };
 
   const [isOpen, setIsOpen] = useState(false);
@@ -61,10 +63,8 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
 
   const handleDateChange = (date: Date | null) => {
     if (date) {
-      const day = date.getDate().toString().padStart(2, "0");
-      const month = (date.getMonth() + 1).toString().padStart(2, "0");
-      const year = date.getFullYear();
-      onChange(`${day}/${month}/${year}`);
+      const formatted = formatDate(date);
+      onChange(formatted);
     } else {
       onChange("");
     }
@@ -94,9 +94,7 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     onChange(inputValue);
   };
 
-  const displayValue = selectedDate
-    ? `${selectedDate.getDate().toString().padStart(2, "0")}/${(selectedDate.getMonth() + 1).toString().padStart(2, "0")}/${selectedDate.getFullYear()}`
-    : value || "";
+  const displayValue = value || "";
 
   return (
     <div ref={wrapperRef} className="relative">
@@ -107,8 +105,10 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
           onChange={handleInputChange}
           onClick={handleInputClick}
           placeholder={placeholder}
+          inputMode="numeric"
+          autoComplete="off"
           disabled={disabled}
-          className={`theme-input w-full px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10 ${className} ${disabled ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}
+          className={`theme-input w-full px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10 ${className} ${disabled ? "cursor-not-allowed opacity-70" : "cursor-text"}`}
         />
         <FaCalendarAlt
           className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none"
