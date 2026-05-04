@@ -12,6 +12,7 @@ import DashboardShell, {
 } from "../_components/DashboardShell";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import CustomDatePicker from "../../components/CustomDatePicker";
+import { Dialog, DialogPanel } from "@headlessui/react";
 import { toast } from "react-toastify";
 import { IoIosClose } from "react-icons/io";
 import {
@@ -19,10 +20,12 @@ import {
   FaChevronRight,
   FaEdit,
   FaEye,
+  FaPlay,
   FaSpinner,
   FaTrash,
 } from "react-icons/fa";
 import Link from "next/link";
+import { MdOutlineFileDownload } from "react-icons/md";
 
 type ProjectOption = {
   id: string;
@@ -75,6 +78,8 @@ function ReportingListContent() {
   const [viewOpen, setViewOpen] = useState(false);
   const [viewLoading, setViewLoading] = useState(false);
   const [viewData, setViewData] = useState<ReportRow | null>(null);
+  const [viewImageIndex, setViewImageIndex] = useState<number | null>(null);
+  const [viewVideoIndex, setViewVideoIndex] = useState<number | null>(null);
 
   const loadProjects = useCallback(async () => {
     try {
@@ -147,6 +152,25 @@ function ReportingListContent() {
   }, [loadReports]);
 
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const viewImageUrls = useMemo(
+    () => viewData?.imageUrls ?? [],
+    [viewData],
+  );
+  const viewVideoUrls = useMemo(
+    () =>
+      viewData
+        ? viewData.videoUrls?.length
+          ? viewData.videoUrls
+          : viewData.videoUrl
+            ? [viewData.videoUrl]
+            : []
+        : [],
+    [viewData],
+  );
+  const selectedViewImage =
+    viewImageIndex !== null ? viewImageUrls[viewImageIndex] : null;
+  const selectedViewVideo =
+    viewVideoIndex !== null ? viewVideoUrls[viewVideoIndex] : null;
 
   useEffect(() => {
     if (pageIndex > pageCount - 1) {
@@ -158,6 +182,8 @@ function ReportingListContent() {
     setViewOpen(true);
     setViewLoading(true);
     setViewData(null);
+    setViewImageIndex(null);
+    setViewVideoIndex(null);
 
     try {
       const res = await fetch(`/api/reports/${row.id}`);
@@ -178,6 +204,55 @@ function ReportingListContent() {
       setViewLoading(false);
     }
   }, []);
+
+  const closeView = useCallback(() => {
+    setViewOpen(false);
+    setViewData(null);
+    setViewImageIndex(null);
+    setViewVideoIndex(null);
+  }, []);
+
+  const openViewImage = useCallback((index: number) => {
+    setViewVideoIndex(null);
+    setViewImageIndex(index);
+  }, []);
+
+  const openViewVideo = useCallback((index: number) => {
+    setViewImageIndex(null);
+    setViewVideoIndex(index);
+  }, []);
+
+  const showPreviousViewImage = useCallback(() => {
+    if (!viewImageUrls.length) return;
+    setViewImageIndex((current) => {
+      if (current === null) return 0;
+      return (current - 1 + viewImageUrls.length) % viewImageUrls.length;
+    });
+  }, [viewImageUrls.length]);
+
+  const showNextViewImage = useCallback(() => {
+    if (!viewImageUrls.length) return;
+    setViewImageIndex((current) => {
+      if (current === null) return 0;
+      return (current + 1) % viewImageUrls.length;
+    });
+  }, [viewImageUrls.length]);
+
+  const showPreviousViewVideo = useCallback(() => {
+    if (!viewVideoUrls.length) return;
+    setViewVideoIndex((current) => {
+      if (current === null) return 0;
+      return (current - 1 + viewVideoUrls.length) % viewVideoUrls.length;
+    });
+  }, [viewVideoUrls.length]);
+
+  const showNextViewVideo = useCallback(() => {
+    if (!viewVideoUrls.length) return;
+    setViewVideoIndex((current) => {
+      if (current === null) return 0;
+      return (current + 1) % viewVideoUrls.length;
+    });
+  }, [viewVideoUrls.length]);
 
   const handleEdit = useCallback(
     (row: ReportRow) => {
@@ -625,10 +700,7 @@ function ReportingListContent() {
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  setViewOpen(false);
-                  setViewData(null);
-                }}
+                onClick={closeView}
               >
                 <IoIosClose size={30} />
               </button>
@@ -668,26 +740,32 @@ function ReportingListContent() {
                     <>
                       <p className="text-sm font-semibold ">Images</p>
                       <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        {viewData.imageUrls.map((url) => (
+                        {viewData.imageUrls.map((url, index) => (
                           <div
                             key={url}
                             className="rounded-xl border p-2"
                             style={{ borderColor: "var(--theme-border)" }}
                           >
-                            <Image
-                              src={url}
-                              alt="Report"
-                              width={640}
-                              height={320}
-                              unoptimized
-                              className="h-40 w-full rounded-lg object-cover"
-                            />
+                            <button
+                              type="button"
+                              className="block w-full text-left"
+                              onClick={() => openViewImage(index)}
+                            >
+                              <Image
+                                src={url}
+                                alt={`Report image ${index + 1}`}
+                                width={640}
+                                height={320}
+                                unoptimized
+                                className="h-40 w-full rounded-lg object-cover transition-transform duration-200 hover:scale-[1.01]"
+                              />
+                            </button>
                             <a
                               className="rbac-link mt-2 inline-block"
                               href={url}
                               download
                             >
-                              Download image
+                              <MdOutlineFileDownload size={25} />
                             </a>
                           </div>
                         ))}
@@ -710,24 +788,33 @@ function ReportingListContent() {
                         style={{ borderColor: "var(--theme-border)" }}
                       >
                         <div className="grid gap-3">
-                          {(viewData.videoUrls?.length
-                            ? viewData.videoUrls
-                            : viewData.videoUrl
-                              ? [viewData.videoUrl]
-                              : []
-                          ).map((url) => (
+                          {viewVideoUrls.map((url, index) => (
                             <div key={url}>
-                              <video
-                                controls
-                                className="w-full rounded-lg"
-                                src={url}
-                              />
+                              <button
+                                type="button"
+                                className="group relative block w-full overflow-hidden rounded-lg theme-surface-2"
+                                onClick={() => openViewVideo(index)}
+                                aria-label={`Open video ${index + 1}`}
+                              >
+                                <video
+                                  className="h-48 w-full object-cover"
+                                  src={url}
+                                  muted
+                                  playsInline
+                                  preload="metadata"
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 transition group-hover:bg-black/30">
+                                  <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-slate-900 shadow-lg">
+                                    <FaPlay className="ml-1" size={18} />
+                                  </span>
+                                </div>
+                              </button>
                               <a
                                 className="rbac-link mt-2 inline-block"
                                 href={url}
                                 download
                               >
-                                Download video
+                                <MdOutlineFileDownload size={25} />
                               </a>
                             </div>
                           ))}
@@ -741,6 +828,128 @@ function ReportingListContent() {
           </div>
         </div>
       )}
+
+      <Dialog
+        open={viewImageIndex !== null && !!selectedViewImage}
+        onClose={() => setViewImageIndex(null)}
+        className="relative z-[60]"
+      >
+        <div className="theme-modal-overlay fixed inset-0" aria-hidden="true" />
+
+        <div className="fixed inset-0 flex items-center justify-center px-4 py-6">
+          <DialogPanel className="theme-modal-surface w-full max-w-5xl rounded-2xl p-3 shadow-2xl">
+            <div className="flex items-center justify-between gap-3 px-2 py-2 theme-text">
+              <div className="text-sm theme-text-muted">
+                Image {viewImageIndex !== null ? viewImageIndex + 1 : 0} of{" "}
+                {viewImageUrls.length}
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewImageIndex(null)}
+                className="rounded-full p-1 transition theme-text-muted hover:bg-black/5 hover:opacity-80"
+                aria-label="Close image preview"
+              >
+                <IoIosClose size={30} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-center gap-4 px-2 py-4">
+              <button
+                type="button"
+                onClick={showPreviousViewImage}
+                className="mx-auto flex h-11 w-11 items-center justify-center rounded-full theme-button-secondary transition disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={viewImageUrls.length <= 1}
+                aria-label="Previous image"
+              >
+                <FaChevronLeft size={18} />
+              </button>
+
+              <div className="flex items-center justify-center rounded-xl theme-surface-2 p-2">
+                {selectedViewImage && (
+                  <Image
+                    src={selectedViewImage}
+                    alt={`Report image ${viewImageIndex !== null ? viewImageIndex + 1 : 1}`}
+                    width={1400}
+                    height={900}
+                    unoptimized
+                    className="max-h-[75vh] w-full max-w-full rounded-xl object-contain"
+                  />
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={showNextViewImage}
+                className="mx-auto flex h-11 w-11 items-center justify-center rounded-full theme-button-secondary transition disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={viewImageUrls.length <= 1}
+                aria-label="Next image"
+              >
+                <FaChevronRight size={18} />
+              </button>
+            </div>
+          </DialogPanel>
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={viewVideoIndex !== null && !!selectedViewVideo}
+        onClose={() => setViewVideoIndex(null)}
+        className="relative z-[60]"
+      >
+        <div className="theme-modal-overlay fixed inset-0" aria-hidden="true" />
+
+        <div className="fixed inset-0 flex items-center justify-center px-4 py-6">
+          <DialogPanel className="theme-modal-surface w-full max-w-5xl rounded-2xl p-3 shadow-2xl">
+            <div className="flex items-center justify-between gap-3 px-2 py-2 theme-text">
+              <div className="text-sm theme-text-muted">
+                Video {viewVideoIndex !== null ? viewVideoIndex + 1 : 0} of{" "}
+                {viewVideoUrls.length}
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewVideoIndex(null)}
+                className="rounded-full p-1 transition theme-text-muted hover:bg-black/5 hover:opacity-80"
+                aria-label="Close video preview"
+              >
+                <IoIosClose size={30} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-center gap-4 px-2 py-4">
+              <button
+                type="button"
+                onClick={showPreviousViewVideo}
+                className="mx-auto flex h-11 w-11 items-center justify-center rounded-full theme-button-secondary transition disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={viewVideoUrls.length <= 1}
+                aria-label="Previous video"
+              >
+                <FaChevronLeft size={18} />
+              </button>
+
+              <div className="flex w-full items-center justify-center rounded-xl theme-surface-2 p-2">
+                {selectedViewVideo && (
+                  <video
+                    controls
+                    autoPlay
+                    src={selectedViewVideo}
+                    className="max-h-[75vh] w-full rounded-xl"
+                  />
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={showNextViewVideo}
+                className="mx-auto flex h-11 w-11 items-center justify-center rounded-full theme-button-secondary transition disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={viewVideoUrls.length <= 1}
+                aria-label="Next video"
+              >
+                <FaChevronRight size={18} />
+              </button>
+            </div>
+          </DialogPanel>
+        </div>
+      </Dialog>
     </>
   );
 }

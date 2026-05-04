@@ -18,6 +18,7 @@ import {
   FaClock,
   FaHourglass,
   FaCheckCircle,
+  FaPlay,
   FaSpinner,
   FaMoon,
   FaSun,
@@ -48,6 +49,8 @@ import { ChevronDownIcon } from "@heroicons/react/16/solid";
 import { useThemeMode } from "../components/ThemeProvider";
 import { IoIosClose } from "react-icons/io";
 import { FaEdit } from "react-icons/fa";
+import { MdOutlineFileDownload } from "react-icons/md";
+import { FaLink } from "react-icons/fa6";
 
 ChartJS.register(
   CategoryScale,
@@ -425,6 +428,8 @@ function OverviewContent() {
   const [reportViewData, setReportViewData] = useState<AdminReportRow | null>(
     null,
   );
+  const [reportImageIndex, setReportImageIndex] = useState<number | null>(null);
+  const [reportVideoIndex, setReportVideoIndex] = useState<number | null>(null);
 
   const [collapsed, setCollapsed] = useState(true);
   const [logoutLoading, setLogoutLoading] = useState(false);
@@ -463,6 +468,25 @@ function OverviewContent() {
     () => query.filter((q) => q.status === "PENDING"),
     [query],
   );
+  const reportImageUrls = useMemo(
+    () => reportViewData?.imageUrls ?? [],
+    [reportViewData],
+  );
+  const reportVideoUrls = useMemo(
+    () =>
+      reportViewData
+        ? reportViewData.videoUrls?.length
+          ? reportViewData.videoUrls
+          : reportViewData.videoUrl
+            ? [reportViewData.videoUrl]
+            : []
+        : [],
+    [reportViewData],
+  );
+  const selectedReportImage =
+    reportImageIndex !== null ? reportImageUrls[reportImageIndex] : null;
+  const selectedReportVideo =
+    reportVideoIndex !== null ? reportVideoUrls[reportVideoIndex] : null;
 
   const loadTodos = useCallback(async () => {
     setLoading(true);
@@ -562,6 +586,8 @@ function OverviewContent() {
     setReportViewOpen(true);
     setReportViewLoading(true);
     setReportViewData(null);
+    setReportImageIndex(null);
+    setReportVideoIndex(null);
 
     try {
       const res = await fetch(`/api/reports/${row.id}`);
@@ -625,6 +651,55 @@ function OverviewContent() {
       setSavingId(null);
     }
   }, []);
+
+  const closeReportView = useCallback(() => {
+    setReportViewOpen(false);
+    setReportViewData(null);
+    setReportImageIndex(null);
+    setReportVideoIndex(null);
+  }, []);
+
+  const openReportImage = useCallback((index: number) => {
+    setReportVideoIndex(null);
+    setReportImageIndex(index);
+  }, []);
+
+  const openReportVideo = useCallback((index: number) => {
+    setReportImageIndex(null);
+    setReportVideoIndex(index);
+  }, []);
+
+  const showPreviousReportImage = useCallback(() => {
+    if (!reportImageUrls.length) return;
+    setReportImageIndex((current) => {
+      if (current === null) return 0;
+      return (current - 1 + reportImageUrls.length) % reportImageUrls.length;
+    });
+  }, [reportImageUrls.length]);
+
+  const showNextReportImage = useCallback(() => {
+    if (!reportImageUrls.length) return;
+    setReportImageIndex((current) => {
+      if (current === null) return 0;
+      return (current + 1) % reportImageUrls.length;
+    });
+  }, [reportImageUrls.length]);
+
+  const showPreviousReportVideo = useCallback(() => {
+    if (!reportVideoUrls.length) return;
+    setReportVideoIndex((current) => {
+      if (current === null) return 0;
+      return (current - 1 + reportVideoUrls.length) % reportVideoUrls.length;
+    });
+  }, [reportVideoUrls.length]);
+
+  const showNextReportVideo = useCallback(() => {
+    if (!reportVideoUrls.length) return;
+    setReportVideoIndex((current) => {
+      if (current === null) return 0;
+      return (current + 1) % reportVideoUrls.length;
+    });
+  }, [reportVideoUrls.length]);
 
   const openUpdateModal = useCallback((row: TodoRow) => {
     setModalTarget(row);
@@ -1234,13 +1309,18 @@ function OverviewContent() {
                                     {report.projectName}
                                   </h4>
                                 </div>
-                                <button
-                                  className="rbac-link"
-                                  type="button"
-                                  onClick={() => openReportView(report)}
-                                >
-                                  <FaEye size={15} />
-                                </button>
+                                <div className="flex justify-center items-center gap-4">
+                                  {((report.imageUrls?.length ?? 0) > 0 ||
+                                    (report.videoUrls?.length ?? 0) > 0 ||
+                                    !!report.videoUrl) && <FaLink />}
+                                  <button
+                                    className="rbac-link"
+                                    type="button"
+                                    onClick={() => openReportView(report)}
+                                  >
+                                    <FaEye size={15} />
+                                  </button>
+                                </div>
                               </div>
 
                               <div className="mt-3 grid gap-2 text-sm">
@@ -1285,7 +1365,7 @@ function OverviewContent() {
                                 type="button"
                                 onClick={() => openReportView(report)}
                               >
-                                View
+                                <FaEye size={15} />
                               </button>
                             </div>
 
@@ -1378,7 +1458,7 @@ function OverviewContent() {
         </div>
       )}
 
-      {reportViewOpen && isAdmin && (
+      {reportViewOpen && (
         <div className="theme-modal-overlay fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="theme-modal-surface w-full max-w-4xl rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-auto">
             <div className="flex items-start justify-between gap-4">
@@ -1387,13 +1467,7 @@ function OverviewContent() {
                   Report details
                 </h2>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setReportViewOpen(false);
-                  setReportViewData(null);
-                }}
-              >
+              <button type="button" onClick={closeReportView}>
                 <IoIosClose size={30} />
               </button>
             </div>
@@ -1405,27 +1479,18 @@ function OverviewContent() {
             )}
 
             {!reportViewLoading && reportViewData && (
-              <div className="mt-4 grid gap-4">
-                <div className="grid gap-3 md:grid-cols-2">
-                  <p className="text-sm">
-                    <strong>Date:</strong>{" "}
-                    {formatToDDMMYYYY(reportViewData.reportDate)}
-                  </p>
-                  <p className="text-sm">
-                    <strong>Project:</strong> {reportViewData.projectName}
-                  </p>
-                  <p className="text-sm">
-                    <strong>Employee:</strong>{" "}
-                    {reportViewData.createdByName || "-"}
-                  </p>
-                </div>
-
-                <p className="text-sm">
-                  <strong>Reporting Category:</strong>{" "}
-                  {reportViewData.categoryName || "-"}
+              <div className="mt-4 grid gap-3">
+                <p className="text-xs uppercase tracking-[0.2em]">
+                  {formatToDDMMYYYY(reportViewData.reportDate)}
                 </p>
+                <p className="text-base font-semibold">
+                  {reportViewData.projectName}
+                </p>
+                <p className="text-sm">{reportViewData.createdByName || "-"}</p>
+
+                <p className="text-sm">{reportViewData.categoryName || "-"}</p>
                 <p className="text-sm whitespace-pre-wrap">
-                  <strong>Description:</strong> {reportViewData.description}
+                  {reportViewData.description}
                 </p>
 
                 <div>
@@ -1435,26 +1500,32 @@ function OverviewContent() {
                         Images
                       </p>
                       <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        {reportViewData.imageUrls.map((url) => (
+                        {reportViewData.imageUrls.map((url, index) => (
                           <div
                             key={url}
                             className="rounded-xl border p-2"
                             style={{ borderColor: "var(--theme-border)" }}
                           >
-                            <Image
-                              src={url}
-                              alt="Report"
-                              width={640}
-                              height={320}
-                              unoptimized
-                              className="h-40 w-full rounded-lg object-cover"
-                            />
+                            <button
+                              type="button"
+                              className="block w-full text-left"
+                              onClick={() => openReportImage(index)}
+                            >
+                              <Image
+                                src={url}
+                                alt={`Report image ${index + 1}`}
+                                width={640}
+                                height={320}
+                                unoptimized
+                                className="h-40 w-full rounded-lg object-cover transition-transform duration-200 hover:scale-[1.01]"
+                              />
+                            </button>
                             <a
                               className="rbac-link mt-2 inline-block"
                               href={url}
                               download
                             >
-                              Download image
+                              <MdOutlineFileDownload size={25} />
                             </a>
                           </div>
                         ))}
@@ -1480,24 +1551,33 @@ function OverviewContent() {
                         style={{ borderColor: "var(--theme-border)" }}
                       >
                         <div className="grid gap-3">
-                          {(reportViewData.videoUrls?.length
-                            ? reportViewData.videoUrls
-                            : reportViewData.videoUrl
-                              ? [reportViewData.videoUrl]
-                              : []
-                          ).map((url) => (
+                          {reportVideoUrls.map((url, index) => (
                             <div key={url}>
-                              <video
-                                controls
-                                className="w-full rounded-lg"
-                                src={url}
-                              />
+                              <button
+                                type="button"
+                                className="group relative block w-full overflow-hidden rounded-lg theme-surface-2"
+                                onClick={() => openReportVideo(index)}
+                                aria-label={`Open video ${index + 1}`}
+                              >
+                                <video
+                                  className="h-48 w-full object-cover"
+                                  src={url}
+                                  muted
+                                  playsInline
+                                  preload="metadata"
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 transition group-hover:bg-black/30">
+                                  <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-slate-900 shadow-lg">
+                                    <FaPlay className="ml-1" size={18} />
+                                  </span>
+                                </div>
+                              </button>
                               <a
                                 className="rbac-link mt-2 inline-block"
                                 href={url}
                                 download
                               >
-                                Download video
+                                <MdOutlineFileDownload size={25} />
                               </a>
                             </div>
                           ))}
@@ -1511,6 +1591,128 @@ function OverviewContent() {
           </div>
         </div>
       )}
+
+      <Dialog
+        open={reportImageIndex !== null && !!selectedReportImage}
+        onClose={() => setReportImageIndex(null)}
+        className="relative z-[60]"
+      >
+        <div className="theme-modal-overlay fixed inset-0" aria-hidden="true" />
+
+        <div className="fixed inset-0 flex items-center justify-center px-4 py-6">
+          <DialogPanel className="theme-modal-surface w-full max-w-5xl rounded-2xl p-3 shadow-2xl">
+            <div className="flex items-center justify-between gap-3 px-2 py-2 theme-text">
+              <div className="text-sm theme-text-muted">
+                Image {reportImageIndex !== null ? reportImageIndex + 1 : 0} of{" "}
+                {reportImageUrls.length}
+              </div>
+              <button
+                type="button"
+                onClick={() => setReportImageIndex(null)}
+                className="rounded-full p-1 transition theme-text-muted hover:bg-black/5 hover:opacity-80"
+                aria-label="Close image preview"
+              >
+                <IoIosClose size={30} />
+              </button>
+            </div>
+
+            <div className="flex justify-center items-center gap-4 px-2 py-4">
+              <button
+                type="button"
+                onClick={showPreviousReportImage}
+                className="mx-auto flex h-11 w-11 items-center justify-center rounded-full theme-button-secondary transition disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={reportImageUrls.length <= 1}
+                aria-label="Previous image"
+              >
+                <FaChevronLeft size={18} />
+              </button>
+
+              <div className="flex items-center justify-center rounded-xl theme-surface-2 p-2">
+                {selectedReportImage && (
+                  <Image
+                    src={selectedReportImage}
+                    alt={`Report image ${reportImageIndex !== null ? reportImageIndex + 1 : 1}`}
+                    width={1400}
+                    height={900}
+                    unoptimized
+                    className="max-h-[75vh] w-full max-w-full rounded-xl object-contain"
+                  />
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={showNextReportImage}
+                className="mx-auto flex h-11 w-11 items-center justify-center rounded-full theme-button-secondary transition disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={reportImageUrls.length <= 1}
+                aria-label="Next image"
+              >
+                <FaChevronRight size={18} />
+              </button>
+            </div>
+          </DialogPanel>
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={reportVideoIndex !== null && !!selectedReportVideo}
+        onClose={() => setReportVideoIndex(null)}
+        className="relative z-[60]"
+      >
+        <div className="theme-modal-overlay fixed inset-0" aria-hidden="true" />
+
+        <div className="fixed inset-0 flex items-center justify-center px-4 py-6">
+          <DialogPanel className="theme-modal-surface w-full max-w-5xl rounded-2xl p-3 shadow-2xl">
+            <div className="flex items-center justify-between gap-3 px-2 py-2 theme-text">
+              <div className="text-sm theme-text-muted">
+                Video {reportVideoIndex !== null ? reportVideoIndex + 1 : 0} of{" "}
+                {reportVideoUrls.length}
+              </div>
+              <button
+                type="button"
+                onClick={() => setReportVideoIndex(null)}
+                className="rounded-full p-1 transition theme-text-muted hover:bg-black/5 hover:opacity-80"
+                aria-label="Close video preview"
+              >
+                <IoIosClose size={30} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-center gap-4 px-2 py-4">
+              <button
+                type="button"
+                onClick={showPreviousReportVideo}
+                className="mx-auto flex h-11 w-11 items-center justify-center rounded-full theme-button-secondary transition disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={reportVideoUrls.length <= 1}
+                aria-label="Previous video"
+              >
+                <FaChevronLeft size={18} />
+              </button>
+
+              <div className="flex w-full items-center justify-center rounded-xl theme-surface-2 p-2">
+                {selectedReportVideo && (
+                  <video
+                    controls
+                    autoPlay
+                    src={selectedReportVideo}
+                    className="max-h-[75vh] w-full rounded-xl"
+                  />
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={showNextReportVideo}
+                className="mx-auto flex h-11 w-11 items-center justify-center rounded-full theme-button-secondary transition disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={reportVideoUrls.length <= 1}
+                aria-label="Next video"
+              >
+                <FaChevronRight size={18} />
+              </button>
+            </div>
+          </DialogPanel>
+        </div>
+      </Dialog>
     </>
   );
 }
