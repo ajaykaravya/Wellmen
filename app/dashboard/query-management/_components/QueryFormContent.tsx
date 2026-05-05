@@ -246,7 +246,21 @@ export default function QueryFormContent({
                 `compressed_${file.name}`,
               ]);
               const data = await ffmpeg.readFile(`compressed_${file.name}`);
-              return new File([data as Uint8Array], file.name, {
+              const normalizedData =
+                typeof data === "string"
+                  ? new TextEncoder().encode(data).buffer
+                  : (() => {
+                      const bytes = new Uint8Array(data.byteLength);
+                      bytes.set(
+                        new Uint8Array(
+                          data.buffer,
+                          data.byteOffset,
+                          data.byteLength,
+                        ),
+                      );
+                      return bytes.buffer;
+                    })();
+              return new File([normalizedData], file.name, {
                 type: file.type,
               });
             }
