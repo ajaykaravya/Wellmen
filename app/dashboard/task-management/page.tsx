@@ -286,6 +286,14 @@ function TodoListContent() {
   const adminColumns = useMemo<ColumnDef<TodoRow>[]>(
     () => [
       {
+        header: "Project Name",
+        accessorKey: "projectName",
+        size: 600,
+        cell: (info) => (
+          <span className="rbac-muted">{String(info.getValue() || "-")}</span>
+        ),
+      },
+      {
         header: "Description",
         accessorKey: "description",
         size: 600,
@@ -382,6 +390,14 @@ function TodoListContent() {
 
   const employeeColumns = useMemo<ColumnDef<TodoRow>[]>(
     () => [
+      {
+        header: "Project Name",
+        accessorKey: "projectName",
+        size: 700,
+        cell: (info) => (
+          <span className="rbac-muted">{String(info.getValue() || "-")}</span>
+        ),
+      },
       {
         header: "Description",
         accessorKey: "description",
@@ -675,6 +691,9 @@ function TodoListContent() {
               {!loading &&
                 todos.map((todo) => (
                   <div key={todo.id} className="rbac-card p-4">
+                    <h4 className="text-sm font-semibold">
+                      {todo.projectName}
+                    </h4>
                     <div className="mb-2 flex items-center justify-between">
                       <div>
                         <p className="text-xs text-slate-500">

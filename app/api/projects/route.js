@@ -29,6 +29,7 @@ const parseDate = (value) => {
 const parsePayload = (body) => {
   const name = String(body.name || "").trim();
   const address = String(body.address || "").trim();
+  const city = String(body.city || "").trim();
   const contactNumber = String(body.contactNumber || "").trim();
   const email = String(body.email || "").trim();
   const startDate = String(body.startDate || "").trim();
@@ -39,6 +40,7 @@ const parsePayload = (body) => {
   return {
     name,
     address,
+    city,
     contactNumber,
     email,
     startDate,
@@ -64,6 +66,7 @@ export async function GET(req) {
     Number.isFinite(pageSizeParam) && pageSizeParam > 0
       ? Math.min(pageSizeParam, 100)
       : 10;
+  const city = String(searchParams.get("city") || "").trim();
 
   const where = {};
 
@@ -75,6 +78,10 @@ export async function GET(req) {
       { email: { contains: q, mode: "insensitive" } },
       { contactNumber: { contains: q, mode: "insensitive" } },
     ];
+  }
+
+  if (city) {
+    where.city = { equals: city, mode: "insensitive" };
   }
 
   if (status) {
@@ -118,10 +125,32 @@ export async function GET(req) {
     }),
   ]);
 
+  const cityRows = await prisma.project.findMany({
+    select: { city: true },
+    where: { city: { not: null } },
+  });
+
+  const cities = Array.from(
+    cityRows.reduce((acc, row) => {
+      const value = String(row.city || "").trim();
+      if (!value) return acc;
+
+      const key = value.toLowerCase();
+      if (!acc.has(key)) {
+        acc.set(key, value);
+      }
+
+      return acc;
+    }, new Map()),
+  )
+    .map(([, value]) => value)
+    .sort((a, b) => a.localeCompare(b));
+
   const data = projects.map((project) => ({
     id: project.id,
     name: project.name,
     address: project.address,
+    city: project.city,
     contactNumber: project.contactNumber,
     email: project.email,
     startDate: project.startDate,
@@ -133,6 +162,7 @@ export async function GET(req) {
 
   return NextResponse.json({
     data,
+    cities,
     page,
     pageSize,
     total,
@@ -150,13 +180,14 @@ export async function POST(req) {
   if (
     !payload.name ||
     !payload.address ||
+    !payload.city ||
     !payload.contactNumber ||
     !payload.startDate
   ) {
     return NextResponse.json(
       {
         error:
-          "Project name, address, contact number and start date are required.",
+          "Project name, address, city, contact number and start date are required.",
       },
       { status: 400 },
     );
@@ -189,6 +220,7 @@ export async function POST(req) {
     data: {
       name: payload.name,
       address: payload.address,
+      city: payload.city,
       contactNumber: payload.contactNumber,
       email: payload.email,
       startDate: parsedStartDate,
@@ -204,6 +236,7 @@ export async function POST(req) {
       id: project.id,
       name: project.name,
       address: project.address,
+      city: project.city,
       contactNumber: project.contactNumber,
       email: project.email,
       startDate: project.startDate,
