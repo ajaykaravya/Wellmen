@@ -157,7 +157,7 @@ export async function GET(req) {
       orderBy: { createdAt: "desc" },
       include: {
         assignee: { include: { role: true } },
-        project: { select: { id: true, name: true } },
+        project: { select: { id: true, name: true, city: true } },
         category: { select: { id: true, name: true, category: true } },
       },
       skip: (page - 1) * pageSize,
@@ -173,6 +173,7 @@ export async function GET(req) {
     status: todo.status,
     projectId: todo.projectId,
     projectName: todo.project?.name || "-",
+    projectCity: todo.project?.city || null,
     type: todo.type,
     priority: todo.priority,
     categoryId: todo.categoryId,

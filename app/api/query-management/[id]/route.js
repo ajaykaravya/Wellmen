@@ -27,7 +27,7 @@ export async function GET(req, { params }) {
   const query = await prisma.queryManagement.findUnique({
     where: { id },
     include: {
-      project: { select: { name: true } },
+      project: { select: { name: true, city: true } },
       createdBy: { select: { firstName: true, lastName: true } },
     },
   });
@@ -112,7 +112,7 @@ export async function PUT(req, { params }) {
         videoUrls,
       },
       include: {
-        project: { select: { name: true } },
+        project: { select: { name: true, city: true } },
         createdBy: { select: { firstName: true, lastName: true } },
       },
     });

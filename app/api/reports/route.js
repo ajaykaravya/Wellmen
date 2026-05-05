@@ -34,6 +34,7 @@ const serializeReport = (report, userId, isAdmin) => ({
   reportDate: report.reportDate,
   projectId: report.projectId,
   projectName: report.project?.name || "-",
+  projectCity: report.project?.city || null,
   categoryId: report.categoryId || null,
   categoryName: report.category?.name || "-",
   description: report.description,
@@ -136,7 +137,7 @@ export async function GET(req) {
     prisma.dailyReport.findMany({
       where,
       include: {
-        project: { select: { name: true } },
+        project: { select: { name: true, city: true } },
         category: { select: { name: true } },
         createdBy: { select: { firstName: true, lastName: true } },
       },
@@ -237,7 +238,7 @@ export async function POST(req) {
         ...(userId && { createdBy: { connect: { id: userId } } }),
       },
       include: {
-        project: { select: { name: true } },
+        project: { select: { name: true, city: true } },
         category: { select: { name: true } },
         createdBy: { select: { firstName: true, lastName: true } },
       },

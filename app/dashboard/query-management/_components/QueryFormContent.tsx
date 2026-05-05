@@ -7,10 +7,19 @@ import { toast } from "react-toastify";
 import Link from "next/link";
 import Loading from "../../../components/Loading";
 import { ButtonGroup } from "../../_components/ButtonGroup";
+import {
+  Combobox,
+  ComboboxButton,
+  ComboboxInput,
+  ComboboxOption,
+  ComboboxOptions,
+} from "@headlessui/react";
+import { ChevronDownIcon } from "@heroicons/react/16/solid";
 
 type ProjectOption = {
   id: string;
   name: string;
+  city?: string | null;
   status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "ON_HOLD";
 };
 
@@ -79,6 +88,7 @@ export default function QueryFormContent({
   const [existingVideoUrls, setExistingVideoUrls] = useState<string[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [videoFiles, setVideoFiles] = useState<File[]>([]);
+  const [projectQuery, setProjectQuery] = useState("");
   const [form, setForm] = useState<QueryFormState>({
     projectId: "",
     category: "",
@@ -133,6 +143,33 @@ export default function QueryFormContent({
     () => projects.find((project) => project.id === form.projectId) || null,
     [form.projectId, projects],
   );
+
+  const filteredProjects = useMemo(() => {
+    const normalizedQuery = projectQuery.trim().toLowerCase();
+    const filtered = normalizedQuery
+      ? projects.filter((project) => {
+          const name = project.name.toLowerCase();
+          const city = (project.city || "").toLowerCase();
+          return name.includes(normalizedQuery) || city.includes(normalizedQuery);
+        })
+      : projects;
+
+    if (
+      selectedProject &&
+      !filtered.some((project) => project.id === selectedProject.id)
+    ) {
+      return [selectedProject, ...filtered];
+    }
+
+    return filtered;
+  }, [projectQuery, projects, selectedProject]);
+
+  const formatProjectLabel = (project: ProjectOption | null) => {
+    if (!project) return "";
+    const name = project.name.trim();
+    const city = project.city?.trim();
+    return city ? `${name} - ${city}` : name;
+  };
 
   const formatQueryLabel = (value: string) => value.replaceAll("_", " ");
   const setFieldValue = <K extends keyof QueryFormState>(
@@ -209,7 +246,7 @@ export default function QueryFormContent({
                 `compressed_${file.name}`,
               ]);
               const data = await ffmpeg.readFile(`compressed_${file.name}`);
-              return new File([data as any], file.name, {
+              return new File([data as Uint8Array], file.name, {
                 type: file.type,
               });
             }
@@ -290,27 +327,58 @@ export default function QueryFormContent({
           >
             <label className="rbac-label">
               Select Project <span className="text-red-600">*</span>
-              <select
-                className="rbac-input rbac-select mb-2"
-                value={form.projectId}
-                onChange={(event) =>
+              <Combobox
+                value={selectedProject}
+                onChange={(project: ProjectOption | null) => {
                   setForm((prev) => ({
                     ...prev,
-                    projectId: event.target.value,
-                  }))
-                }
+                    projectId: project?.id || "",
+                  }));
+                  setProjectQuery("");
+                }}
+                nullable
               >
-                <option value="">Select project</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}
-                  </option>
-                ))}
-              </select>
+                <div className="relative mb-2">
+                  <ComboboxInput
+                    className="rbac-input w-full pr-10"
+                    placeholder="Search projects"
+                    displayValue={formatProjectLabel}
+                    onChange={(event) => setProjectQuery(event.target.value)}
+                  />
+                  <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3">
+                    <ChevronDownIcon
+                      className="h-4 w-4 text-slate-500"
+                      aria-hidden="true"
+                    />
+                  </ComboboxButton>
+                  <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
+                    {filteredProjects.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-slate-500">
+                        No projects found
+                      </div>
+                    ) : (
+                      filteredProjects.map((project) => (
+                        <ComboboxOption
+                          key={project.id}
+                          value={project}
+                          className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-slate-100 data-[selected]:bg-slate-200"
+                        >
+                          <div className="flex flex-col items-start">
+                            <span>{project.name}</span>
+                            <span className="text-xs opacity-75">
+                              {project.city || "No city"}
+                            </span>
+                          </div>
+                        </ComboboxOption>
+                      ))
+                    )}
+                  </ComboboxOptions>
+                </div>
+              </Combobox>
             </label>
             {selectedProject && (
               <p className="mb-4 text-xs text-slate-500">
-                Selected: {selectedProject.name}{" "}
+                Selected: {formatProjectLabel(selectedProject)}{" "}
                 <span className="text-slate-400">
                   ({formatQueryLabel(selectedProject.status)})
                 </span>

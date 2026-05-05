@@ -74,6 +74,7 @@ type TodoRow = {
   status: TodoStatus;
   type: "PROJECT" | "OFFICE" | "SERVICE";
   projectName?: string | null;
+  projectCity?: string | null;
   categoryName?: string | null;
   assignee: {
     id: string;
@@ -88,6 +89,7 @@ type QueryRow = {
   id: string;
   projectId: string;
   projectName: string;
+  projectCity: string | null;
   category: "REMARKS" | "URGENCY" | "DECISION_PENDING" | "";
   description: string;
   status: "PENDING" | "COMPLETED";
@@ -105,6 +107,7 @@ type AdminReportRow = {
   id: string;
   reportDate: string;
   projectName: string;
+  projectCity: string | null;
   categoryName: string;
   description: string;
   createdByName: string;
@@ -258,6 +261,9 @@ function TaskTableCard({
                   {task.projectName && (
                     <p className="font-semibold">{task.projectName}</p>
                   )}
+                  {task.projectCity && (
+                    <p className="text-xs text-slate-500">{task.projectCity}</p>
+                  )}
                   {"categoryName" in task && <p>{task.categoryName || "-"}</p>}
                   {task.description && <p>{task.description}</p>}
                   {"comments" in task && <p>{task.comments || "-"}</p>}
@@ -365,6 +371,9 @@ function QueryTableCard({
                   <div>
                     <p className="font-semibold ">
                       {query.projectName || "Project"}
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      {query.projectCity || "Project"}
                     </p>
                     <h4 className="mt-1 text-base">
                       {query.category ? formatText(query.category) : "Query"}
@@ -1308,6 +1317,9 @@ function OverviewContent() {
                                   <h4 className="mt-1 text-base font-semibold">
                                     {report.projectName}
                                   </h4>
+                                  <p className="text-sm text-slate-500">
+                                    {report.projectCity || "-"}
+                                  </p>
                                 </div>
                                 <div className="flex justify-center items-center gap-4">
                                   {((report.imageUrls?.length ?? 0) > 0 ||
@@ -1359,6 +1371,9 @@ function OverviewContent() {
                                 <h4 className="mt-1 text-base font-semibold">
                                   {report.projectName || "-"}
                                 </h4>
+                                <p className="text-sm text-slate-500">
+                                  {report.projectCity || "-"}
+                                </p>
                               </div>
                               <button
                                 className="rbac-link"
