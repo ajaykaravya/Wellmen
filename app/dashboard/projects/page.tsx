@@ -59,7 +59,6 @@ function ProjectListContent() {
       });
 
       if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
-      if (statusFilter) params.set("status", statusFilter);
       if (cityFilter) params.set("city", cityFilter);
       if (fromDate) params.set("fromDate", fromDate);
       if (toDate) params.set("toDate", toDate);
@@ -76,15 +75,7 @@ function ProjectListContent() {
     } finally {
       setLoading(false);
     }
-  }, [
-    cityFilter,
-    fromDate,
-    pageIndex,
-    pageSize,
-    debouncedQuery,
-    statusFilter,
-    toDate,
-  ]);
+  }, [cityFilter, fromDate, pageIndex, pageSize, debouncedQuery, toDate]);
 
   useEffect(() => {
     loadProjects();
@@ -207,13 +198,38 @@ function ProjectListContent() {
     [handleDeleteProject],
   );
 
+  const visibleProjects = useMemo(
+    () =>
+      projects.filter(
+        (project) =>
+          project.status !== "COMPLETED" &&
+          (!statusFilter || project.status === statusFilter),
+      ),
+    [projects, statusFilter],
+  );
+
   const table = useReactTable({
-    data: projects,
+    data: visibleProjects,
     columns,
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
     pageCount,
   });
+
+  const statusLabel = (value: ProjectStatus | string) => {
+    switch (value) {
+      case "PENDING":
+        return "Pending";
+      case "IN_PROGRESS":
+        return "In Progress";
+      case "ON_HOLD":
+        return "On Hold";
+      case "COMPLETED":
+        return "Completed";
+      default:
+        return value.replaceAll("_", " ");
+    }
+  };
 
   return (
     <>
@@ -250,7 +266,6 @@ function ProjectListContent() {
               <option value="">All status</option>
               <option value="PENDING">Pending</option>
               <option value="IN_PROGRESS">In progress</option>
-              <option value="COMPLETED">Completed</option>
               <option value="ON_HOLD">On hold</option>
             </select>
             <select
@@ -338,7 +353,7 @@ function ProjectListContent() {
                       </td>
                     </tr>
                   )}
-                  {!loading && projects.length === 0 && (
+                  {!loading && visibleProjects.length === 0 && (
                     <tr>
                       <td
                         colSpan={columns.length}
@@ -378,13 +393,13 @@ function ProjectListContent() {
                   <FaSpinner className="animate-spin mr-2" size={16} />
                 </div>
               )}
-              {!loading && projects.length === 0 && (
+              {!loading && visibleProjects.length === 0 && (
                 <div className="rbac-card py-4 text-sm text-slate-500">
                   No projects found.
                 </div>
               )}
               {!loading &&
-                projects.map((project) => (
+                visibleProjects.map((project) => (
                   <div key={project.id} className="rbac-card p-4">
                     <div className="mb-2 flex items-center justify-between">
                       <div>
@@ -412,9 +427,6 @@ function ProjectListContent() {
                     </div>
                     <div className="grid gap-1 text-sm">
                       <p>
-                        <strong>City:</strong> {project.city || "-"}
-                      </p>
-                      <p>
                         <strong>Contact:</strong> {project.contactNumber}
                       </p>
                       <p>
@@ -433,8 +445,7 @@ function ProjectListContent() {
                           : "-"}
                       </p>
                       <p>
-                        <strong>Status:</strong>{" "}
-                        {project.status.replaceAll("_", " ")}
+                        <strong>Status:</strong> {statusLabel(project.status)}
                       </p>
                     </div>
                   </div>

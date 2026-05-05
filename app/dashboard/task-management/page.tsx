@@ -42,6 +42,7 @@ type TodoRow = {
   categoryName?: string | null;
   projectId?: string | null;
   projectName?: string;
+  projectCity?: string | null;
   createdById?: string | null;
   canManage?: boolean;
   assignee: {
@@ -70,6 +71,13 @@ const formatTaskType = (value?: string | null) => {
       return value ? value.replaceAll("_", " ") : "-";
   }
 };
+
+const renderProjectName = (name?: string | null, city?: string | null) => (
+  <div className="flex flex-col">
+    <span>{name || "-"}</span>
+    <span className="text-xs text-slate-500">{city || "-"}</span>
+  </div>
+);
 
 function TodoListContent() {
   const { isAdmin } = useDashboardContext();
@@ -289,9 +297,11 @@ function TodoListContent() {
         header: "Project Name",
         accessorKey: "projectName",
         size: 600,
-        cell: (info) => (
-          <span className="rbac-muted">{String(info.getValue() || "-")}</span>
-        ),
+        cell: ({ row, getValue }) =>
+          renderProjectName(
+            String(getValue() || "-"),
+            row.original.projectCity,
+          ),
       },
       {
         header: "Description",
@@ -394,9 +404,11 @@ function TodoListContent() {
         header: "Project Name",
         accessorKey: "projectName",
         size: 700,
-        cell: (info) => (
-          <span className="rbac-muted">{String(info.getValue() || "-")}</span>
-        ),
+        cell: ({ row, getValue }) =>
+          renderProjectName(
+            String(getValue() || "-"),
+            row.original.projectCity,
+          ),
       },
       {
         header: "Description",
@@ -691,13 +703,13 @@ function TodoListContent() {
               {!loading &&
                 todos.map((todo) => (
                   <div key={todo.id} className="rbac-card p-4">
-                    <h4 className="text-sm font-semibold">
-                      {todo.projectName}
-                    </h4>
                     <div className="mb-2 flex items-center justify-between">
-                      <div>
+                      <div className="mb-1">
+                        <h4 className="text-sm font-semibold">
+                          {todo.projectName || "-"}
+                        </h4>
                         <p className="text-xs text-slate-500">
-                          {todo.description || "No description"}
+                          {todo.projectCity || "-"}
                         </p>
                       </div>
                       {(isAdmin || todo.canManage) && (
@@ -723,6 +735,10 @@ function TodoListContent() {
                       )}
                     </div>
                     <div className="grid gap-1 text-sm">
+                      <p>
+                        <strong>Description:</strong>{" "}
+                        {todo.description || "No description"}
+                      </p>
                       <p>
                         <strong>Date:</strong>{" "}
                         {todo.startDate

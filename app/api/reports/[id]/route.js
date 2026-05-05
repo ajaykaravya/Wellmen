@@ -53,6 +53,7 @@ const serializeReport = (report, userId, isAdmin) => ({
   reportDate: report.reportDate,
   projectId: report.projectId,
   projectName: report.project?.name || "-",
+  projectCity: report.project?.city || null,
   categoryId: report.categoryId || null,
   categoryName: report.category?.name || "-",
   description: report.description,
@@ -90,7 +91,7 @@ async function loadAllowedReport(req, params) {
   const report = await prisma.dailyReport.findUnique({
     where: { id },
     include: {
-      project: { select: { name: true } },
+      project: { select: { name: true, city: true } },
       category: { select: { name: true } },
       createdBy: { select: { firstName: true, lastName: true } },
     },
@@ -202,7 +203,7 @@ export async function PUT(req, { params }) {
         videoUrls,
       },
       include: {
-        project: { select: { name: true } },
+        project: { select: { name: true, city: true } },
         category: { select: { name: true } },
         createdBy: { select: { firstName: true, lastName: true } },
       },

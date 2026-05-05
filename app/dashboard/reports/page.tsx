@@ -45,6 +45,7 @@ type ReportRow = {
   reportDate: string;
   projectId: string;
   projectName: string;
+  projectCity?: string | null;
   categoryId: string | null;
   categoryName: string;
   description: string;
@@ -55,6 +56,16 @@ type ReportRow = {
   createdByName: string;
   canManage: boolean;
 };
+
+const renderProjectLabel = (
+  projectName?: string | null,
+  projectCity?: string | null,
+) => (
+  <div className="flex flex-col">
+    <span>{projectName || "-"}</span>
+    <span className="text-xs text-slate-500">{projectCity || "-"}</span>
+  </div>
+);
 
 function ReportingListContent() {
   const router = useRouter();
@@ -152,10 +163,7 @@ function ReportingListContent() {
   }, [loadReports]);
 
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
-  const viewImageUrls = useMemo(
-    () => viewData?.imageUrls ?? [],
-    [viewData],
-  );
+  const viewImageUrls = useMemo(() => viewData?.imageUrls ?? [], [viewData]);
   const viewVideoUrls = useMemo(
     () =>
       viewData
@@ -326,9 +334,11 @@ function ReportingListContent() {
         header: "Project Name",
         accessorKey: "projectName",
         size: 200,
-        cell: (info) => (
-          <span className="rbac-muted">{String(info.getValue() || "-")}</span>
-        ),
+        cell: ({ row, getValue }) =>
+          renderProjectLabel(
+            String(getValue() || "-"),
+            row.original.projectCity,
+          ),
       },
       {
         header: "Reporting Category",
@@ -579,7 +589,7 @@ function ReportingListContent() {
                         </h4>
                         <p className="text-xs text-slate-500">
                           {report.projectName} •{" "}
-                          {formatToDDMMYYYY(report.reportDate)}
+                          {report.projectCity || "-"}{" "}
                         </p>
                       </div>
                       <div className="flex gap-2">
@@ -611,6 +621,10 @@ function ReportingListContent() {
                       </div>
                     </div>
                     <div className="grid gap-1 text-sm">
+                      <p>
+                        <strong>Date:</strong>{" "}
+                        {formatToDDMMYYYY(report.reportDate)}
+                      </p>
                       {isAdmin && (
                         <p>
                           <strong>Employee:</strong>{" "}
@@ -698,10 +712,7 @@ function ReportingListContent() {
                   View full report with media and download options.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={closeView}
-              >
+              <button type="button" onClick={closeView}>
                 <IoIosClose size={30} />
               </button>
             </div>
@@ -721,6 +732,10 @@ function ReportingListContent() {
                   </p>
                   <p className="text-sm ">
                     <strong>Project:</strong> {viewData.projectName}
+                    <span className="text-slate-500">
+                      {" "}
+                      ({viewData.projectCity || "-"})
+                    </span>
                   </p>
                   <p className="text-sm ">
                     <strong>Employee:</strong> {viewData.createdByName || "-"}

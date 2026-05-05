@@ -30,6 +30,7 @@ type MenuKey =
   | "query-management"
   | "my-query-management"
   | "projects"
+  | "hospitals"
   | "masterData"
   | "projectcategories"
   | "officeCategories"
@@ -73,6 +74,7 @@ const routeByMenu: Record<MenuKey, string> = {
   "query-management": "/dashboard/query-management",
   "my-query-management": "/dashboard/my-query-management",
   projects: "/dashboard/projects",
+  hospitals: "/dashboard/hospitals",
   masterData: "/dashboard/master-data",
   projectcategories: "/dashboard/project-categories",
   officeCategories: "/dashboard/office-categories",
@@ -91,6 +93,7 @@ const getActiveMenu = (pathname: string): MenuKey => {
   if (pathname.startsWith("/dashboard/reporting-categories"))
     return "reportingCategories";
   if (pathname.startsWith("/dashboard/projects")) return "projects";
+  if (pathname.startsWith("/dashboard/hospitals")) return "hospitals";
   if (pathname.startsWith("/dashboard/task-management"))
     return "task-management";
   if (pathname.startsWith("/dashboard/query-management"))
@@ -209,6 +212,7 @@ export default function DashboardShell({
     if (isAdmin) {
       items.push({ key: "users", label: "Users" });
       items.push({ key: "projects", label: "Projects" });
+      items.push({ key: "hospitals", label: "Hospitals" });
       items.push({
         key: "masterData",
         label: "Master Data",
