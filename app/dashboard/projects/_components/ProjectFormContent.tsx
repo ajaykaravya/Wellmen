@@ -5,7 +5,6 @@ import { FaSpinner } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import Loading from "../../../components/Loading";
-import { useDashboardContext } from "../../_components/DashboardShell";
 import CustomDatePicker from "../../../components/CustomDatePicker";
 import Link from "next/link";
 import { formatToDDMMYYYY, getTodayInputDate } from "@/lib/dateUtils";
@@ -24,6 +23,7 @@ type ProjectFormState = {
 
 type ProjectFormContentProps = {
   projectId?: string;
+  entityType?: "project" | "hospital";
 };
 
 const formatDateForInput = (value?: string) => {
@@ -38,10 +38,11 @@ const isEmailValid = (email: string) =>
 
 export default function ProjectFormContent({
   projectId,
+  entityType = "project",
 }: ProjectFormContentProps) {
   const router = useRouter();
-  const { setNavOpen } = useDashboardContext();
-  const [note, setNote] = useState<string | null>(null);
+  const isHospital = entityType === "hospital";
+  const [, setNote] = useState<string | null>(null);
   const [errors, setErrors] = useState<
     Partial<Record<keyof ProjectFormState, string>>
   >({});
@@ -56,7 +57,7 @@ export default function ProjectFormContent({
     startDate: getTodayInputDate(),
     endDate: "",
     description: "",
-    status: "PENDING",
+    status: isHospital ? "COMPLETED" : "PENDING",
   });
 
   useEffect(() => {
@@ -83,7 +84,7 @@ export default function ProjectFormContent({
           startDate: formatDateForInput(project.startDate),
           endDate: formatDateForInput(project.endDate),
           description: project.description || "",
-          status: project.status || "PENDING",
+          status: isHospital ? "COMPLETED" : project.status || "PENDING",
         });
       } catch (error) {
         console.error("Failed to load project", error);
@@ -94,7 +95,7 @@ export default function ProjectFormContent({
     };
 
     loadData();
-  }, [projectId]);
+  }, [projectId, isHospital]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -136,7 +137,7 @@ export default function ProjectFormContent({
             startDate: form.startDate,
             endDate: form.endDate,
             description: form.description.trim(),
-            status: form.status,
+            status: isHospital ? "COMPLETED" : form.status,
           }),
         },
       );
@@ -161,9 +162,11 @@ export default function ProjectFormContent({
       }
 
       toast.success(
-        `Project ${projectId ? "updated" : "created"} successfully.`,
+        `${isHospital ? "Hospital" : "Project"} ${
+          projectId ? "updated" : "created"
+        } successfully.`,
       );
-      router.push("/dashboard/projects");
+      router.push(isHospital ? "/dashboard/hospitals" : "/dashboard/projects");
     } catch (error) {
       console.error("Failed to save project", error);
       setNote("Failed to save project.");
@@ -185,7 +188,9 @@ export default function ProjectFormContent({
         <div className="rbac-card">
           <div className="flex justify-between items-center mb-4">
             <h3 className="rbac-title-lg">
-              {projectId ? "Edit Project" : "Add New Project"}
+              {projectId
+                ? `Edit ${isHospital ? "Hospital" : "Project"}`
+                : `Add New ${isHospital ? "Hospital" : "Project"}`}
             </h3>
           </div>
           <form className="rbac-form " onSubmit={handleSubmit}>
@@ -344,25 +349,27 @@ export default function ProjectFormContent({
                     />
                   </label>
                 </div>
-                <label className="rbac-label">
-                  Status <span className="text-red-600">*</span>
-                  <select
-                    className="rbac-input rbac-select mb-2"
-                    value={form.status}
-                    onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        status: event.target
-                          .value as ProjectFormState["status"],
-                      }))
-                    }
-                  >
-                    <option value="PENDING">Pending</option>
-                    <option value="IN_PROGRESS">In progress</option>
-                    <option value="COMPLETED">Completed</option>
-                    <option value="ON_HOLD">On hold</option>
-                  </select>
-                </label>
+                {!isHospital && (
+                  <label className="rbac-label">
+                    Status <span className="text-red-600">*</span>
+                    <select
+                      className="rbac-input rbac-select mb-2"
+                      value={form.status}
+                      onChange={(event) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          status: event.target
+                            .value as ProjectFormState["status"],
+                        }))
+                      }
+                    >
+                      <option value="PENDING">Pending</option>
+                      <option value="IN_PROGRESS">In progress</option>
+                      <option value="COMPLETED">Completed</option>
+                      <option value="ON_HOLD">On hold</option>
+                    </select>
+                  </label>
+                )}
               </div>
             </fieldset>
             <div className="rbac-actions">
@@ -376,7 +383,7 @@ export default function ProjectFormContent({
                   "Save"
                 )}
               </button>
-              <Link href="/dashboard/projects">
+              <Link href={isHospital ? "/dashboard/hospitals" : "/dashboard/projects"}>
                 <button
                   className="text-red-500"
                   type="button"
