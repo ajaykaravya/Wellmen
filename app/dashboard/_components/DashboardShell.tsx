@@ -7,6 +7,11 @@ import ConfirmDialog from "../../components/ConfirmDialog";
 import Loading from "../../components/Loading";
 import { FaChevronRight, FaMoon, FaSun } from "react-icons/fa";
 import { useThemeMode } from "../../components/ThemeProvider";
+import { useNotifications } from "@/hooks/useNotifications";
+import {
+  deactivateCurrentPushToken,
+  useMobilePushNotifications,
+} from "@/hooks/useMobilePushNotifications";
 
 type SessionUser = {
   id: string;
@@ -136,7 +141,8 @@ export default function DashboardShell({
   const { theme, toggleTheme } = useThemeMode();
 
   const isAdmin = user?.role === "Admin" || user?.role === "Manager";
-  const displayName = user ? `${user.firstName} ${user.lastName}`.trim() : "";
+  useNotifications(isAdmin ? user?.id || "" : "");
+  useMobilePushNotifications(isAdmin, user?.id || "");
 
   const activeMenu = useMemo(() => getActiveMenu(pathname), [pathname]);
 
@@ -244,6 +250,7 @@ export default function DashboardShell({
   const handleLogout = async () => {
     setLogoutLoading(true);
     try {
+      await deactivateCurrentPushToken();
       await fetch("/api/auth/logout", { method: "POST" });
       clearCachedSession();
       setUser(null);
