@@ -80,7 +80,6 @@ function ReportingListContent() {
   const [viewData, setViewData] = useState<ReportRow | null>(null);
   const [viewImageIndex, setViewImageIndex] = useState<number | null>(null);
   const [viewVideoIndex, setViewVideoIndex] = useState<number | null>(null);
-  const [debugLoading, setDebugLoading] = useState(false);
 
   const loadProjects = useCallback(async () => {
     try {
@@ -211,37 +210,6 @@ function ReportingListContent() {
     setViewData(null);
     setViewImageIndex(null);
     setViewVideoIndex(null);
-  }, []);
-
-  const handleDebugFirestore = useCallback(async () => {
-    setDebugLoading(true);
-    try {
-      const res = await fetch("/api/debug/notifications", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title: "UI Firestore Test",
-          message: "This notification was created from the reporting list page.",
-        }),
-      });
-
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        toast.error(payload.error || "Firestore debug test failed.");
-        return;
-      }
-
-      toast.success(
-        `Firestore test saved at ${payload.path || "unknown path"} (${payload.recentCount || 0} recent items).`,
-      );
-    } catch (error) {
-      console.error("Firestore debug test failed", error);
-      toast.error("Firestore debug test failed.");
-    } finally {
-      setDebugLoading(false);
-    }
   }, []);
 
   const openViewImage = useCallback((index: number) => {
@@ -432,25 +400,13 @@ function ReportingListContent() {
         <div className="rbac-card">
           <div className="flex justify-between items-center">
             <h3 className="rbac-title-lg">Reporting List</h3>
-            <div className="flex flex-wrap items-center gap-2">
-              {isAdmin && (
-                <button
-                  className="rbac-button rbac-button-secondary"
-                  type="button"
-                  onClick={handleDebugFirestore}
-                  disabled={debugLoading}
-                >
-                  {debugLoading ? "Testing..." : "Test Firestore"}
+            {!isAdmin && (
+              <Link href="/dashboard/reports/new">
+                <button className="rbac-button" type="button">
+                  Add Reporting
                 </button>
-              )}
-              {!isAdmin && (
-                <Link href="/dashboard/reports/new">
-                  <button className="rbac-button" type="button">
-                    Add Reporting
-                  </button>
-                </Link>
-              )}
-            </div>
+              </Link>
+            )}
           </div>
           <div className="mt-4 flex flex-wrap gap-3">
             <input
