@@ -120,7 +120,7 @@ function ProjectListContent() {
   const columns = useMemo<ColumnDef<ProjectRow>[]>(
     () => [
       {
-        header: "Project",
+        header: "Hospitals",
         accessorKey: "name",
         cell: (info) => (
           <span className="rbac-muted">{String(info.getValue() || "")}</span>
@@ -163,7 +163,7 @@ function ProjectListContent() {
         id: "action",
         cell: ({ row }) => (
           <div className="rbac-inline-actions flex gap-4">
-            <Link href={`/dashboard/projects/${row.original.id}`}>
+            <Link href={`/dashboard/hospitals/${row.original.id}`}>
               <button className="rbac-link" type="button">
                 <FaEdit />
               </button>
@@ -200,7 +200,12 @@ function ProjectListContent() {
       <section className="rbac-section rbac-container">
         <div className="rbac-card">
           <div className="flex justify-between item-center">
-            <h3 className="rbac-title-lg">Projects List</h3>
+            <h3 className="rbac-title-lg">Hospitals List</h3>
+            <Link href="/dashboard/hospitals/new">
+              <button className="rbac-button" type="button">
+                Add Hospital
+              </button>
+            </Link>
           </div>
           <div className="my-4 flex flex-wrap gap-2 ">
             <input
