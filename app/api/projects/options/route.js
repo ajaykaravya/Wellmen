@@ -11,6 +11,7 @@ export async function GET(req) {
     select: {
       id: true,
       name: true,
+      city: true,
       status: true,
     },
   });

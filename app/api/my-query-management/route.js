@@ -58,7 +58,7 @@ export async function GET(req) {
       skip: (page - 1) * pageSize,
       take: pageSize,
       include: {
-        project: { select: { name: true } },
+        project: { select: { name: true, city: true } },
         createdBy: { select: { firstName: true, lastName: true } },
       },
     }),
@@ -132,7 +132,7 @@ export async function POST(req) {
         ...(userId && { createdBy: { connect: { id: userId } } }),
       },
       include: {
-        project: { select: { name: true } },
+        project: { select: { name: true, city: true } },
         createdBy: { select: { firstName: true, lastName: true } },
       },
     });

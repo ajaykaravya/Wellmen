@@ -13,6 +13,7 @@ import { formatToDDMMYYYY, getTodayInputDate } from "@/lib/dateUtils";
 type ProjectFormState = {
   name: string;
   address: string;
+  city: string;
   contactNumber: string;
   email: string;
   startDate: string;
@@ -49,6 +50,7 @@ export default function ProjectFormContent({
   const [form, setForm] = useState<ProjectFormState>({
     name: "",
     address: "",
+    city: "",
     contactNumber: "",
     email: "",
     startDate: getTodayInputDate(),
@@ -75,6 +77,7 @@ export default function ProjectFormContent({
         setForm({
           name: project.name || "",
           address: project.address || "",
+          city: project.city || "",
           contactNumber: project.contactNumber || "",
           email: project.email || "",
           startDate: formatDateForInput(project.startDate),
@@ -101,6 +104,7 @@ export default function ProjectFormContent({
 
     if (!form.name.trim()) newErrors.name = "Project name is required.";
     if (!form.address.trim()) newErrors.address = "Address is required.";
+    if (!form.city.trim()) newErrors.city = "City is required.";
     if (!form.contactNumber.trim())
       newErrors.contactNumber = "Contact number is required.";
     else if (!isMobileValid(form.contactNumber.trim())) {
@@ -126,6 +130,7 @@ export default function ProjectFormContent({
           body: JSON.stringify({
             name: form.name.trim(),
             address: form.address.trim(),
+            city: form.city.trim(),
             contactNumber: form.contactNumber.trim(),
             email: form.email.trim(),
             startDate: form.startDate,
@@ -220,23 +225,47 @@ export default function ProjectFormContent({
                   />
                 </label>
 
-                <label className="rbac-label">
-                  Address <span className="text-red-600">*</span>
-                  <textarea
-                    className="rbac-input"
-                    placeholder="Project address"
-                    value={form.address}
-                    onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        address: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-                {errors.address && (
-                  <p className="text-sm text-red-600 mb-2">{errors.address}</p>
-                )}
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <label className="rbac-label">
+                    Address <span className="text-red-600">*</span>
+                    <textarea
+                      className="rbac-input"
+                      placeholder="Project address"
+                      value={form.address}
+                      onChange={(event) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          address: event.target.value,
+                        }))
+                      }
+                    />
+                    {errors.address && (
+                      <p className="text-sm text-red-600 mb-2">
+                        {errors.address}
+                      </p>
+                    )}
+                  </label>
+
+                  <label className="rbac-label">
+                    City <span className="text-red-600">*</span>
+                    <input
+                      className="rbac-input mb-2"
+                      placeholder="City"
+                      value={form.city}
+                      onChange={(event) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          city: event.target.value,
+                        }))
+                      }
+                    />
+                    {errors.city && (
+                      <p className="text-sm text-red-600 mb-2">
+                        {errors.city}
+                      </p>
+                    )}
+                  </label>
+                </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <label className="rbac-label">

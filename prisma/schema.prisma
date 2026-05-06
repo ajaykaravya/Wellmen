@@ -58,6 +58,7 @@ model Project {
   id               String            @id @default(uuid())
   name             String
   address          String
+  city             String?
   contactNumber    String
   email            String?
   startDate        DateTime

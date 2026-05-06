@@ -69,6 +69,7 @@ const serializeTodo = (todo, userId) => ({
   assigneeId: todo.assigneeId,
   projectId: todo.projectId,
   projectName: todo.project?.name || "-",
+  projectCity: todo.project?.city || null,
   createdById: todo.createdById,
   canManage: todo.createdById === userId,
   createdAt: todo.createdAt,
@@ -92,7 +93,7 @@ async function loadAllowedTodo(req, params) {
   const todo = await prisma.todo.findUnique({
     where: { id },
     include: {
-      project: { select: { id: true, name: true } },
+      project: { select: { id: true, name: true, city: true } },
       category: { select: { id: true, name: true, category: true } },
     },
   });
@@ -226,7 +227,7 @@ export async function PUT(req, { params }) {
       subCategory: type === "SERVICE" ? subCategory : null,
     },
     include: {
-      project: { select: { id: true, name: true } },
+      project: { select: { id: true, name: true, city: true } },
       category: { select: { id: true, name: true, category: true } },
     },
   });
