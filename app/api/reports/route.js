@@ -257,7 +257,7 @@ export async function POST(req) {
 
     // 🔹 Send notifications
     if (firestore) {
-      await Promise.allSettled(
+      const firestoreResults = await Promise.allSettled(
         admins.map((admin) =>
           firestore
             .collection("notifications")
@@ -271,6 +271,25 @@ export async function POST(req) {
               reportId: created.id,
             }),
         ),
+      );
+
+      const firestoreFailures = firestoreResults.filter(
+        (result) => result.status === "rejected",
+      );
+      if (firestoreFailures.length > 0) {
+        console.error("Firestore notification writes failed", {
+          failedCount: firestoreFailures.length,
+          totalCount: firestoreResults.length,
+          errors: firestoreFailures.map((item) =>
+            item.status === "rejected" && item.reason
+              ? String(item.reason?.message || item.reason)
+              : "Unknown error",
+          ),
+        });
+      }
+    } else {
+      console.warn(
+        "Firestore notifications skipped because admin SDK is not initialized.",
       );
     }
 
