@@ -121,7 +121,7 @@ const formatDateForInput = (value?: string) => {
 };
 
 const getUserDisplayName = (user: UserOption) =>
-  [user.firstName, user.lastName].filter(Boolean).join(" - ");
+  [user.firstName, user.lastName].filter(Boolean).join(" ");
 
 const getProjectDisplayName = (project: ProjectOption | null) => {
   if (!project) return "";

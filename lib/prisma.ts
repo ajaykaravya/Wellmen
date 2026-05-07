@@ -28,7 +28,8 @@ const cachedClientHasModel = (client: PrismaClient | undefined) => {
   const delegates = client as unknown as Record<string, unknown>
   return (
     typeof delegates.dailyReport !== "undefined" &&
-    typeof delegates.queryManagement !== "undefined"
+    typeof delegates.queryManagement !== "undefined" &&
+    typeof delegates.deviceToken !== "undefined"
   )
 }
 
