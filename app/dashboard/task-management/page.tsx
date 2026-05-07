@@ -451,11 +451,15 @@ function TodoListContent() {
       {
         header: "Status",
         accessorKey: "status",
-        cell: (info) => (
-          <span className="rbac-muted">
-            {String(info.getValue() || "").replaceAll("_", " ")}
-          </span>
-        ),
+        cell: (info) => {
+          const value = String(info.getValue() || "")
+            .replaceAll("_", " ")
+            .toLowerCase();
+
+          const formatted = value.charAt(0).toUpperCase() + value.slice(1);
+
+          return <span className="rbac-muted">{formatted}</span>;
+        },
       },
       {
         header: "Comments",
