@@ -1,9 +1,9 @@
 {
 	"appId": "com.example.app",
-	"appName": "nextjs-capacitor",
+	"appName": "wellman",
 	"webDir": "out",
 	"server": {
-		"url": "https://nextjs-capacitor-puce.vercel.app/",
+		"url": "https://wellmen-git-develop-ajaybkaravyasolutions-3883s-projects.vercel.app/",
 		"cleartext": false
 	}
 }
