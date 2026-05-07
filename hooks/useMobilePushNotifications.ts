@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { createElement, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Capacitor } from "@capacitor/core";
 import {
@@ -11,6 +11,9 @@ import {
 import { toast } from "react-toastify";
 
 const TOKEN_STORAGE_KEY = "wellmen-fcm-token";
+
+const renderNotificationMessage = (message: string) =>
+  createElement("div", { style: { whiteSpace: "pre-line" } }, message);
 
 async function registerToken(token: string, platform: string) {
   await fetch("/api/push-tokens", {
@@ -90,7 +93,7 @@ export function useMobilePushNotifications(
             const title = notification.title || "Notification";
             const body =
               notification.body || notification.data?.message || "New alert";
-            toast.info(body, {
+            toast.info(renderNotificationMessage(body), {
               toastId: `push-${notification.id || `${Date.now()}`}`,
               onClick: () => {
                 const reportId = notification.data?.reportId;

@@ -272,7 +272,7 @@ export async function POST(req) {
             .collection("items")
             .add({
               title: "New Report",
-              message: `New report for ${created.project.name} created by ${creatorName}`,
+              message: `${created.category?.name || "-"}\nNew report for ${created.project.name} has been submitted by ${creatorName}`,
               createdAt: new Date(),
               isRead: false,
               reportId: created.id,
@@ -306,7 +306,7 @@ export async function POST(req) {
             activeTokens.map((item) => item.token),
             {
               title: "New Report",
-              body: `New report for ${created.project.name} created by ${creatorName}`,
+              body: `${created.category?.name || "-"}\nNew report for ${created.project.name} has been submitted by ${creatorName}`,
               data: {
                 reportId: created.id,
                 projectId: created.projectId,
