@@ -1,6 +1,6 @@
 // hooks/useNotifications.ts
 
-import { useEffect, useRef, useState } from "react";
+import { createElement, useEffect, useRef, useState } from "react";
 import {
     collection,
     onSnapshot,
@@ -20,6 +20,9 @@ type NotificationItem = {
     reportId?: string;
     [key: string]: unknown;
 };
+
+const renderNotificationMessage = (message: string) =>
+    createElement("div", { style: { whiteSpace: "pre-line" } }, message);
 
 export function useNotifications(adminId: string) {
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -50,7 +53,9 @@ export function useNotifications(adminId: string) {
 
                     if (shouldToast) {
                         toast.info(
-                            data.message || data.title || "New notification",
+                            renderNotificationMessage(
+                                data.message || data.title || "New notification",
+                            ),
                             {
                                 toastId: `notif-${change.doc.id}`,
                             },
