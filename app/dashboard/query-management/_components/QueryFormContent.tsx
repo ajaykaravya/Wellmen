@@ -365,7 +365,10 @@ export default function QueryFormContent({
                       aria-hidden="true"
                     />
                   </ComboboxButton>
-                  <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
+                  <ComboboxOptions
+                    modal={false}
+                    className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-slate-200 bg-white p-1 shadow-lg"
+                  >
                     {filteredProjects.length === 0 ? (
                       <div className="px-3 py-2 text-sm text-slate-500">
                         No projects found
