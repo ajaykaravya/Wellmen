@@ -65,7 +65,21 @@ function ProjectListContent() {
 
       const data = await res.json();
       setProjects(Array.isArray(data?.data) ? data.data : []);
-      setCityOptions(Array.isArray(data?.cities) ? data.cities : []);
+      const completed = Array.isArray(data?.data)
+        ? data.data.filter(
+            (project: ProjectRow) => project.status === "COMPLETED",
+          )
+        : [];
+
+      setProjects(completed);
+
+      const completedCities = [
+        ...new Set(
+          completed.map((project: ProjectRow) => project.city).filter(Boolean),
+        ),
+      ] as string[];
+
+      setCityOptions(completedCities);
       setTotal(typeof data?.total === "number" ? data.total : 0);
     } catch (error) {
       console.error("Failed to load projects", error);
