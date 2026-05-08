@@ -68,7 +68,6 @@ function ProjectListContent() {
 
       const data = await res.json();
       setProjects(Array.isArray(data?.data) ? data.data : []);
-      setCityOptions(Array.isArray(data?.cities) ? data.cities : []);
       setTotal(typeof data?.total === "number" ? data.total : 0);
     } catch (error) {
       console.error("Failed to load projects", error);
@@ -77,9 +76,59 @@ function ProjectListContent() {
     }
   }, [cityFilter, fromDate, pageIndex, pageSize, debouncedQuery, toDate]);
 
+  const loadCityOptions = useCallback(async () => {
+    try {
+      const pageSizeForCities = 100;
+      let currentPage = 1;
+      let totalPages = 1;
+      const citiesByKey = new Map<string, string>();
+
+      while (currentPage <= totalPages) {
+        const params = new URLSearchParams({
+          page: String(currentPage),
+          pageSize: String(pageSizeForCities),
+        });
+
+        const res = await fetch(`/api/projects?${params.toString()}`);
+        if (!res.ok) {
+          break;
+        }
+
+        const data = await res.json();
+        totalPages =
+          typeof data?.totalPages === "number" && data.totalPages > 0
+            ? data.totalPages
+            : 1;
+
+        const rows = Array.isArray(data?.data) ? data.data : [];
+        rows.forEach((project: ProjectRow) => {
+          const city = String(project.city || "").trim();
+          if (!city || project.status === "COMPLETED") return;
+
+          const key = city.toLowerCase();
+          if (!citiesByKey.has(key)) {
+            citiesByKey.set(key, city);
+          }
+        });
+
+        currentPage += 1;
+      }
+
+      setCityOptions(
+        Array.from(citiesByKey.values()).sort((a, b) => a.localeCompare(b)),
+      );
+    } catch (error) {
+      console.error("Failed to load city options", error);
+    }
+  }, []);
+
   useEffect(() => {
     loadProjects();
   }, [loadProjects]);
+
+  useEffect(() => {
+    loadCityOptions();
+  }, [loadCityOptions]);
 
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
 
@@ -109,6 +158,7 @@ function ProjectListContent() {
       }
 
       await loadProjects();
+      await loadCityOptions();
       toast.success("Project deleted successfully.");
     } catch (error) {
       console.error("Failed to delete project", error);
@@ -118,7 +168,7 @@ function ProjectListContent() {
       setConfirmOpen(false);
       setConfirmTarget(null);
     }
-  }, [confirmTarget, loadProjects]);
+  }, [confirmTarget, loadCityOptions, loadProjects]);
 
   const columns = useMemo<ColumnDef<ProjectRow>[]>(
     () => [
