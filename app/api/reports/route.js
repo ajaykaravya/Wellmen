@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/rbac";
 import { saveReportImages, saveReportVideos } from "./_utils/upload";
+import { firestore } from "@/lib/firebase-admin";
+import { sendPushToTokens } from "@/lib/pushNotifications";
 
 export const runtime = "nodejs";
 
@@ -34,13 +36,12 @@ const serializeReport = (report, userId, isAdmin) => ({
   reportDate: report.reportDate,
   projectId: report.projectId,
   projectName: report.project?.name || "-",
+  projectCity: report.project?.city || null,
   categoryId: report.categoryId || null,
   categoryName: report.category?.name || "-",
   description: report.description,
   imageUrls: Array.isArray(report.imageUrls) ? report.imageUrls : [],
-  videoUrls: Array.isArray(report.videoUrls)
-    ? report.videoUrls
-    : [],
+  videoUrls: Array.isArray(report.videoUrls) ? report.videoUrls : [],
   videoUrl:
     Array.isArray(report.videoUrls) && report.videoUrls.length > 0
       ? report.videoUrls[0]
@@ -54,6 +55,11 @@ const serializeReport = (report, userId, isAdmin) => ({
 });
 
 const getText = (form, key) => String(form.get(key) || "").trim();
+
+const getDisplayName = (user) =>
+  [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
+  user?.fullName ||
+  "Unknown User";
 
 export async function GET(req) {
   const gate = await requireAuth(req);
@@ -136,7 +142,7 @@ export async function GET(req) {
     prisma.dailyReport.findMany({
       where,
       include: {
-        project: { select: { name: true } },
+        project: { select: { name: true, city: true } },
         category: { select: { name: true } },
         createdBy: { select: { firstName: true, lastName: true } },
       },
@@ -226,6 +232,7 @@ export async function POST(req) {
     ]);
 
     const userId = gate.auth?.user?.id;
+    const creatorName = getDisplayName(gate.auth?.user);
     const created = await prisma.dailyReport.create({
       data: {
         reportDate: parsedDate,
@@ -237,11 +244,94 @@ export async function POST(req) {
         ...(userId && { createdBy: { connect: { id: userId } } }),
       },
       include: {
-        project: { select: { name: true } },
+        project: { select: { name: true, city: true } },
         category: { select: { name: true } },
         createdBy: { select: { firstName: true, lastName: true } },
       },
     });
+
+    // 🔹 Get Admin + Manager users
+    const admins = await prisma.user.findMany({
+      where: {
+        role: {
+          name: {
+            in: ["Admin", "Manager"],
+          },
+        },
+      },
+      select: { id: true },
+    });
+
+    // 🔹 Send notifications
+    if (firestore) {
+      await Promise.allSettled(
+        admins.map((admin) =>
+          firestore
+            .collection("notifications")
+            .doc(admin.id)
+            .collection("items")
+            .add({
+              title: "New Report",
+              message: `${created.category?.name || "-"}\nNew report for ${created.project.name} has been submitted by ${creatorName}`,
+              createdAt: new Date(),
+              isRead: false,
+              reportId: created.id,
+            }),
+        ),
+      );
+    }
+
+    const hasDeviceTokens = await prisma.deviceToken.count({
+      where: { isActive: true },
+    });
+
+    if (hasDeviceTokens > 0) {
+      const activeTokens = await prisma.deviceToken.findMany({
+        where: {
+          isActive: true,
+          user: {
+            role: {
+              name: {
+                in: ["Admin", "Manager"],
+              },
+            },
+          },
+        },
+        select: { token: true },
+      });
+
+      if (activeTokens.length > 0) {
+        try {
+          const pushResult = await sendPushToTokens(
+            activeTokens.map((item) => item.token),
+            {
+              title: "New Report",
+              body: `${created.category?.name || "-"}\nNew report for ${created.project.name} has been submitted by ${creatorName}`,
+              data: {
+                reportId: created.id,
+                projectId: created.projectId,
+                screen: "report",
+              },
+            },
+          );
+
+          if (pushResult.invalidTokens.length > 0) {
+            await prisma.deviceToken.updateMany({
+              where: {
+                token: {
+                  in: pushResult.invalidTokens,
+                },
+              },
+              data: {
+                isActive: false,
+              },
+            });
+          }
+        } catch (pushError) {
+          console.error("Push notification delivery failed", pushError);
+        }
+      }
+    }
 
     return NextResponse.json(
       serializeReport(created, gate.auth?.user?.id || "", false),

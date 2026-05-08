@@ -35,6 +35,7 @@ const parseDate = (value) => {
 const parsePayload = (body) => {
   const name = String(body.name || "").trim();
   const address = String(body.address || "").trim();
+  const city = String(body.city || "").trim();
   const contactNumber = String(body.contactNumber || "").trim();
   const email = String(body.email || "").trim();
   const startDate = String(body.startDate || "").trim();
@@ -45,6 +46,7 @@ const parsePayload = (body) => {
   return {
     name,
     address,
+    city,
     contactNumber,
     email,
     startDate,
@@ -76,6 +78,7 @@ export async function GET(req, { params }) {
     id: project.id,
     name: project.name,
     address: project.address,
+    city: project.city,
     contactNumber: project.contactNumber,
     email: project.email,
     startDate: project.startDate,
@@ -104,13 +107,14 @@ export async function PUT(req, { params }) {
   if (
     !payload.name ||
     !payload.address ||
+    !payload.city ||
     !payload.contactNumber ||
     !payload.startDate
   ) {
     return NextResponse.json(
       {
         error:
-          "Project name, address, contact number and start date are required.",
+          "Project name, address, city, contact number and start date are required.",
       },
       { status: 400 },
     );
@@ -144,6 +148,7 @@ export async function PUT(req, { params }) {
     data: {
       name: payload.name,
       address: payload.address,
+      city: payload.city,
       contactNumber: payload.contactNumber,
       email: payload.email,
       startDate: parsedStartDate,
@@ -157,6 +162,7 @@ export async function PUT(req, { params }) {
     id: project.id,
     name: project.name,
     address: project.address,
+    city: project.city,
     contactNumber: project.contactNumber,
     email: project.email,
     startDate: project.startDate,

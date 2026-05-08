@@ -5,7 +5,6 @@ import { FaSpinner } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import Loading from "../../../components/Loading";
-import { useDashboardContext } from "../../_components/DashboardShell";
 import CustomDatePicker from "../../../components/CustomDatePicker";
 import Link from "next/link";
 import { formatToDDMMYYYY, getTodayInputDate } from "@/lib/dateUtils";
@@ -13,6 +12,7 @@ import { formatToDDMMYYYY, getTodayInputDate } from "@/lib/dateUtils";
 type ProjectFormState = {
   name: string;
   address: string;
+  city: string;
   contactNumber: string;
   email: string;
   startDate: string;
@@ -23,6 +23,7 @@ type ProjectFormState = {
 
 type ProjectFormContentProps = {
   projectId?: string;
+  entityType?: "project" | "hospital";
 };
 
 const formatDateForInput = (value?: string) => {
@@ -37,10 +38,11 @@ const isEmailValid = (email: string) =>
 
 export default function ProjectFormContent({
   projectId,
+  entityType = "project",
 }: ProjectFormContentProps) {
   const router = useRouter();
-  const { setNavOpen } = useDashboardContext();
-  const [note, setNote] = useState<string | null>(null);
+  const isHospital = entityType === "hospital";
+  const [, setNote] = useState<string | null>(null);
   const [errors, setErrors] = useState<
     Partial<Record<keyof ProjectFormState, string>>
   >({});
@@ -49,12 +51,13 @@ export default function ProjectFormContent({
   const [form, setForm] = useState<ProjectFormState>({
     name: "",
     address: "",
+    city: "",
     contactNumber: "",
     email: "",
     startDate: getTodayInputDate(),
     endDate: "",
     description: "",
-    status: "PENDING",
+    status: isHospital ? "COMPLETED" : "PENDING",
   });
 
   useEffect(() => {
@@ -75,12 +78,13 @@ export default function ProjectFormContent({
         setForm({
           name: project.name || "",
           address: project.address || "",
+          city: project.city || "",
           contactNumber: project.contactNumber || "",
           email: project.email || "",
           startDate: formatDateForInput(project.startDate),
           endDate: formatDateForInput(project.endDate),
           description: project.description || "",
-          status: project.status || "PENDING",
+          status: isHospital ? "COMPLETED" : project.status || "PENDING",
         });
       } catch (error) {
         console.error("Failed to load project", error);
@@ -91,7 +95,7 @@ export default function ProjectFormContent({
     };
 
     loadData();
-  }, [projectId]);
+  }, [projectId, isHospital]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -101,6 +105,7 @@ export default function ProjectFormContent({
 
     if (!form.name.trim()) newErrors.name = "Project name is required.";
     if (!form.address.trim()) newErrors.address = "Address is required.";
+    if (!form.city.trim()) newErrors.city = "City is required.";
     if (!form.contactNumber.trim())
       newErrors.contactNumber = "Contact number is required.";
     else if (!isMobileValid(form.contactNumber.trim())) {
@@ -126,12 +131,13 @@ export default function ProjectFormContent({
           body: JSON.stringify({
             name: form.name.trim(),
             address: form.address.trim(),
+            city: form.city.trim(),
             contactNumber: form.contactNumber.trim(),
             email: form.email.trim(),
             startDate: form.startDate,
             endDate: form.endDate,
             description: form.description.trim(),
-            status: form.status,
+            status: isHospital ? "COMPLETED" : form.status,
           }),
         },
       );
@@ -156,9 +162,11 @@ export default function ProjectFormContent({
       }
 
       toast.success(
-        `Project ${projectId ? "updated" : "created"} successfully.`,
+        `${isHospital ? "Hospital" : "Project"} ${
+          projectId ? "updated" : "created"
+        } successfully.`,
       );
-      router.push("/dashboard/projects");
+      router.push(isHospital ? "/dashboard/hospitals" : "/dashboard/projects");
     } catch (error) {
       console.error("Failed to save project", error);
       setNote("Failed to save project.");
@@ -180,7 +188,9 @@ export default function ProjectFormContent({
         <div className="rbac-card">
           <div className="flex justify-between items-center mb-4">
             <h3 className="rbac-title-lg">
-              {projectId ? "Edit Project" : "Add New Project"}
+              {projectId
+                ? `Edit ${isHospital ? "Hospital" : "Project"}`
+                : `Add New ${isHospital ? "Hospital" : "Project"}`}
             </h3>
           </div>
           <form className="rbac-form " onSubmit={handleSubmit}>
@@ -220,23 +230,47 @@ export default function ProjectFormContent({
                   />
                 </label>
 
-                <label className="rbac-label">
-                  Address <span className="text-red-600">*</span>
-                  <textarea
-                    className="rbac-input"
-                    placeholder="Project address"
-                    value={form.address}
-                    onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        address: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-                {errors.address && (
-                  <p className="text-sm text-red-600 mb-2">{errors.address}</p>
-                )}
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <label className="rbac-label">
+                    Address <span className="text-red-600">*</span>
+                    <textarea
+                      className="rbac-input"
+                      placeholder="Project address"
+                      value={form.address}
+                      onChange={(event) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          address: event.target.value,
+                        }))
+                      }
+                    />
+                    {errors.address && (
+                      <p className="text-sm text-red-600 mb-2">
+                        {errors.address}
+                      </p>
+                    )}
+                  </label>
+
+                  <label className="rbac-label">
+                    City <span className="text-red-600">*</span>
+                    <input
+                      className="rbac-input mb-2"
+                      placeholder="City"
+                      value={form.city}
+                      onChange={(event) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          city: event.target.value,
+                        }))
+                      }
+                    />
+                    {errors.city && (
+                      <p className="text-sm text-red-600 mb-2">
+                        {errors.city}
+                      </p>
+                    )}
+                  </label>
+                </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <label className="rbac-label">
@@ -315,25 +349,27 @@ export default function ProjectFormContent({
                     />
                   </label>
                 </div>
-                <label className="rbac-label">
-                  Status <span className="text-red-600">*</span>
-                  <select
-                    className="rbac-input rbac-select mb-2"
-                    value={form.status}
-                    onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        status: event.target
-                          .value as ProjectFormState["status"],
-                      }))
-                    }
-                  >
-                    <option value="PENDING">Pending</option>
-                    <option value="IN_PROGRESS">In progress</option>
-                    <option value="COMPLETED">Completed</option>
-                    <option value="ON_HOLD">On hold</option>
-                  </select>
-                </label>
+                {!isHospital && (
+                  <label className="rbac-label">
+                    Status <span className="text-red-600">*</span>
+                    <select
+                      className="rbac-input rbac-select mb-2"
+                      value={form.status}
+                      onChange={(event) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          status: event.target
+                            .value as ProjectFormState["status"],
+                        }))
+                      }
+                    >
+                      <option value="PENDING">Pending</option>
+                      <option value="IN_PROGRESS">In progress</option>
+                      <option value="COMPLETED">Completed</option>
+                      <option value="ON_HOLD">On hold</option>
+                    </select>
+                  </label>
+                )}
               </div>
             </fieldset>
             <div className="rbac-actions">
@@ -347,7 +383,7 @@ export default function ProjectFormContent({
                   "Save"
                 )}
               </button>
-              <Link href="/dashboard/projects">
+              <Link href={isHospital ? "/dashboard/hospitals" : "/dashboard/projects"}>
                 <button
                   className="text-red-500"
                   type="button"

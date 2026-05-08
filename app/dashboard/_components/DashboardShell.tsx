@@ -7,6 +7,11 @@ import ConfirmDialog from "../../components/ConfirmDialog";
 import Loading from "../../components/Loading";
 import { FaChevronRight, FaMoon, FaSun } from "react-icons/fa";
 import { useThemeMode } from "../../components/ThemeProvider";
+import { useNotifications } from "@/hooks/useNotifications";
+import {
+  deactivateCurrentPushToken,
+  useMobilePushNotifications,
+} from "@/hooks/useMobilePushNotifications";
 
 type SessionUser = {
   id: string;
@@ -30,6 +35,7 @@ type MenuKey =
   | "query-management"
   | "my-query-management"
   | "projects"
+  | "hospitals"
   | "masterData"
   | "projectcategories"
   | "officeCategories"
@@ -73,6 +79,7 @@ const routeByMenu: Record<MenuKey, string> = {
   "query-management": "/dashboard/query-management",
   "my-query-management": "/dashboard/my-query-management",
   projects: "/dashboard/projects",
+  hospitals: "/dashboard/hospitals",
   masterData: "/dashboard/master-data",
   projectcategories: "/dashboard/project-categories",
   officeCategories: "/dashboard/office-categories",
@@ -91,6 +98,7 @@ const getActiveMenu = (pathname: string): MenuKey => {
   if (pathname.startsWith("/dashboard/reporting-categories"))
     return "reportingCategories";
   if (pathname.startsWith("/dashboard/projects")) return "projects";
+  if (pathname.startsWith("/dashboard/hospitals")) return "hospitals";
   if (pathname.startsWith("/dashboard/task-management"))
     return "task-management";
   if (pathname.startsWith("/dashboard/query-management"))
@@ -133,7 +141,8 @@ export default function DashboardShell({
   const { theme, toggleTheme } = useThemeMode();
 
   const isAdmin = user?.role === "Admin" || user?.role === "Manager";
-  const displayName = user ? `${user.firstName} ${user.lastName}`.trim() : "";
+  useNotifications(isAdmin ? user?.id || "" : "");
+  useMobilePushNotifications(isAdmin, user?.id || "");
 
   const activeMenu = useMemo(() => getActiveMenu(pathname), [pathname]);
 
@@ -209,6 +218,7 @@ export default function DashboardShell({
     if (isAdmin) {
       items.push({ key: "users", label: "Users" });
       items.push({ key: "projects", label: "Projects" });
+      items.push({ key: "hospitals", label: "Hospitals" });
       items.push({
         key: "masterData",
         label: "Master Data",
@@ -240,6 +250,7 @@ export default function DashboardShell({
   const handleLogout = async () => {
     setLogoutLoading(true);
     try {
+      await deactivateCurrentPushToken();
       await fetch("/api/auth/logout", { method: "POST" });
       clearCachedSession();
       setUser(null);

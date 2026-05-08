@@ -42,6 +42,7 @@ type TodoRow = {
   categoryName?: string | null;
   projectId?: string | null;
   projectName?: string;
+  projectCity?: string | null;
   createdById?: string | null;
   canManage?: boolean;
   assignee: {
@@ -70,6 +71,13 @@ const formatTaskType = (value?: string | null) => {
       return value ? value.replaceAll("_", " ") : "-";
   }
 };
+
+const renderProjectName = (name?: string | null, city?: string | null) => (
+  <div className="flex flex-col">
+    <span>{name || "-"}</span>
+    <span className="text-xs text-slate-500">{city || "-"}</span>
+  </div>
+);
 
 function TodoListContent() {
   const { isAdmin } = useDashboardContext();
@@ -286,6 +294,16 @@ function TodoListContent() {
   const adminColumns = useMemo<ColumnDef<TodoRow>[]>(
     () => [
       {
+        header: "Project Name",
+        accessorKey: "projectName",
+        size: 600,
+        cell: ({ row, getValue }) =>
+          renderProjectName(
+            String(getValue() || "-"),
+            row.original.projectCity,
+          ),
+      },
+      {
         header: "Description",
         accessorKey: "description",
         size: 600,
@@ -383,6 +401,16 @@ function TodoListContent() {
   const employeeColumns = useMemo<ColumnDef<TodoRow>[]>(
     () => [
       {
+        header: "Project Name",
+        accessorKey: "projectName",
+        size: 700,
+        cell: ({ row, getValue }) =>
+          renderProjectName(
+            String(getValue() || "-"),
+            row.original.projectCity,
+          ),
+      },
+      {
         header: "Description",
         accessorKey: "description",
         size: 700,
@@ -423,11 +451,15 @@ function TodoListContent() {
       {
         header: "Status",
         accessorKey: "status",
-        cell: (info) => (
-          <span className="rbac-muted">
-            {String(info.getValue() || "").replaceAll("_", " ")}
-          </span>
-        ),
+        cell: (info) => {
+          const value = String(info.getValue() || "")
+            .replaceAll("_", " ")
+            .toLowerCase();
+
+          const formatted = value.charAt(0).toUpperCase() + value.slice(1);
+
+          return <span className="rbac-muted">{formatted}</span>;
+        },
       },
       {
         header: "Comments",
@@ -676,9 +708,12 @@ function TodoListContent() {
                 todos.map((todo) => (
                   <div key={todo.id} className="rbac-card p-4">
                     <div className="mb-2 flex items-center justify-between">
-                      <div>
+                      <div className="mb-1">
+                        <h4 className="text-sm font-semibold">
+                          {todo.projectName || "-"}
+                        </h4>
                         <p className="text-xs text-slate-500">
-                          {todo.description || "No description"}
+                          {todo.projectCity || "-"}
                         </p>
                       </div>
                       {(isAdmin || todo.canManage) && (
@@ -704,6 +739,10 @@ function TodoListContent() {
                       )}
                     </div>
                     <div className="grid gap-1 text-sm">
+                      <p>
+                        <strong>Description:</strong>{" "}
+                        {todo.description || "No description"}
+                      </p>
                       <p>
                         <strong>Date:</strong>{" "}
                         {todo.startDate

@@ -30,6 +30,7 @@ type ProjectRow = {
   endDate: string;
   description: string | null;
   status: ProjectStatus;
+  city: string | null;
 };
 
 function ProjectListContent() {
@@ -41,6 +42,8 @@ function ProjectListContent() {
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 400);
   const [statusFilter, setStatusFilter] = useState("");
+  const [cityFilter, setCityFilter] = useState("");
+  const [cityOptions, setCityOptions] = useState<string[]>([]);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -56,7 +59,7 @@ function ProjectListContent() {
       });
 
       if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
-      if (statusFilter) params.set("status", statusFilter);
+      if (cityFilter) params.set("city", cityFilter);
       if (fromDate) params.set("fromDate", fromDate);
       if (toDate) params.set("toDate", toDate);
 
@@ -65,13 +68,14 @@ function ProjectListContent() {
 
       const data = await res.json();
       setProjects(Array.isArray(data?.data) ? data.data : []);
+      setCityOptions(Array.isArray(data?.cities) ? data.cities : []);
       setTotal(typeof data?.total === "number" ? data.total : 0);
     } catch (error) {
       console.error("Failed to load projects", error);
     } finally {
       setLoading(false);
     }
-  }, [fromDate, pageIndex, pageSize, debouncedQuery, statusFilter, toDate]);
+  }, [cityFilter, fromDate, pageIndex, pageSize, debouncedQuery, toDate]);
 
   useEffect(() => {
     loadProjects();
@@ -126,8 +130,8 @@ function ProjectListContent() {
         ),
       },
       {
-        header: "Address",
-        accessorKey: "address",
+        header: "City",
+        accessorKey: "city",
         size: 300,
         cell: (info) => (
           <span className="rbac-muted">{String(info.getValue() || "-")}</span>
@@ -194,13 +198,38 @@ function ProjectListContent() {
     [handleDeleteProject],
   );
 
+  const visibleProjects = useMemo(
+    () =>
+      projects.filter(
+        (project) =>
+          project.status !== "COMPLETED" &&
+          (!statusFilter || project.status === statusFilter),
+      ),
+    [projects, statusFilter],
+  );
+
   const table = useReactTable({
-    data: projects,
+    data: visibleProjects,
     columns,
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
     pageCount,
   });
+
+  const statusLabel = (value: ProjectStatus | string) => {
+    switch (value) {
+      case "PENDING":
+        return "Pending";
+      case "IN_PROGRESS":
+        return "In Progress";
+      case "ON_HOLD":
+        return "On Hold";
+      case "COMPLETED":
+        return "Completed";
+      default:
+        return value.replaceAll("_", " ");
+    }
+  };
 
   return (
     <>
@@ -219,7 +248,7 @@ function ProjectListContent() {
             <input
               className="rbac-input-filter"
               type="text"
-              placeholder="Search name, address or contact..."
+              placeholder="Search name, city or contact..."
               value={query}
               onChange={(event) => {
                 setPageIndex(0);
@@ -237,8 +266,22 @@ function ProjectListContent() {
               <option value="">All status</option>
               <option value="PENDING">Pending</option>
               <option value="IN_PROGRESS">In progress</option>
-              <option value="COMPLETED">Completed</option>
               <option value="ON_HOLD">On hold</option>
+            </select>
+            <select
+              className="rbac-input-filter rbac-select"
+              value={cityFilter}
+              onChange={(event) => {
+                setPageIndex(0);
+                setCityFilter(event.target.value);
+              }}
+            >
+              <option value="">All cities</option>
+              {cityOptions.map((city) => (
+                <option key={city} value={city}>
+                  {city}
+                </option>
+              ))}
             </select>
             <CustomDatePicker
               value={fromDate}
@@ -265,6 +308,7 @@ function ProjectListContent() {
                 setPageIndex(0);
                 setQuery("");
                 setStatusFilter("");
+                setCityFilter("");
                 setFromDate("");
                 setToDate("");
               }}
@@ -309,7 +353,7 @@ function ProjectListContent() {
                       </td>
                     </tr>
                   )}
-                  {!loading && projects.length === 0 && (
+                  {!loading && visibleProjects.length === 0 && (
                     <tr>
                       <td
                         colSpan={columns.length}
@@ -349,13 +393,13 @@ function ProjectListContent() {
                   <FaSpinner className="animate-spin mr-2" size={16} />
                 </div>
               )}
-              {!loading && projects.length === 0 && (
+              {!loading && visibleProjects.length === 0 && (
                 <div className="rbac-card py-4 text-sm text-slate-500">
                   No projects found.
                 </div>
               )}
               {!loading &&
-                projects.map((project) => (
+                visibleProjects.map((project) => (
                   <div key={project.id} className="rbac-card p-4">
                     <div className="mb-2 flex items-center justify-between">
                       <div>
@@ -363,7 +407,7 @@ function ProjectListContent() {
                           {project.name}
                         </h4>
                         <p className="text-xs text-slate-500">
-                          {project.address}
+                          {project.city || "-"}
                         </p>
                       </div>
                       <div className="flex gap-2">
@@ -401,8 +445,7 @@ function ProjectListContent() {
                           : "-"}
                       </p>
                       <p>
-                        <strong>Status:</strong>{" "}
-                        {project.status.replaceAll("_", " ")}
+                        <strong>Status:</strong> {statusLabel(project.status)}
                       </p>
                     </div>
                   </div>

@@ -9,6 +9,18 @@ import { getTodayInputDate, formatToDDMMYYYY } from "@/lib/dateUtils";
 import { useDashboardContext } from "../../_components/DashboardShell";
 import CustomDatePicker from "../../../components/CustomDatePicker";
 import { ButtonGroup } from "../../_components/ButtonGroup";
+import {
+  Combobox,
+  ComboboxButton,
+  ComboboxInput,
+  ComboboxOption,
+  ComboboxOptions,
+  Listbox,
+  ListboxButton,
+  ListboxOption,
+  ListboxOptions,
+} from "@headlessui/react";
+import { ChevronDownIcon } from "@heroicons/react/16/solid";
 
 type UserOption = {
   id: string;
@@ -21,6 +33,7 @@ type UserOption = {
 type ProjectOption = {
   id: string;
   name: string;
+  city?: string | null;
   status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "ON_HOLD";
 };
 
@@ -107,6 +120,17 @@ const formatDateForInput = (value?: string) => {
   return formatted === "-" ? "" : formatted;
 };
 
+const getUserDisplayName = (user: UserOption) =>
+  [user.firstName, user.lastName].filter(Boolean).join(" ");
+
+const getProjectDisplayName = (project: ProjectOption | null) => {
+  if (!project) return "";
+
+  const name = project.name.trim();
+  const city = project.city?.trim();
+  return city ? `${name} - ${city}` : name;
+};
+
 export default function TodoFormContent({ todoId }: TodoFormContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -114,6 +138,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
   const [users, setUsers] = useState<UserOption[]>([]);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [projectQuery, setProjectQuery] = useState("");
   const [note, setNote] = useState<string | null>(null);
   const [errors, setErrors] = useState<Partial<Record<FormErrorKey, string>>>(
     {},
@@ -315,12 +340,39 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
     }
   };
 
+  const selectedProject = useMemo(
+    () => projects.find((project) => project.id === form.projectId) ?? null,
+    [form.projectId, projects],
+  );
+
+  const selectedCategory = useMemo(
+    () =>
+      categories.find((category) => category.id === form.categoryId) ?? null,
+    [categories, form.categoryId],
+  );
+
   const filteredProjects = useMemo(() => {
-    if (selectedTaskType === "project") {
-      return projects.filter((p) => p.status === "IN_PROGRESS");
+    const baseProjects =
+      selectedTaskType === "project"
+        ? projects.filter((p) => p.status === "IN_PROGRESS")
+        : projects;
+
+    const normalizedQuery = projectQuery.trim().toLowerCase();
+    const queryMatchedProjects = normalizedQuery
+      ? baseProjects.filter((project) =>
+          project.name.toLowerCase().includes(normalizedQuery),
+        )
+      : baseProjects;
+
+    if (
+      selectedProject &&
+      !queryMatchedProjects.some((project) => project.id === selectedProject.id)
+    ) {
+      return [selectedProject, ...queryMatchedProjects];
     }
-    return projects;
-  }, [projects, selectedTaskType]);
+
+    return queryMatchedProjects;
+  }, [projectQuery, projects, selectedProject, selectedTaskType]);
 
   if (loading)
     return (
@@ -365,23 +417,56 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
               <div>
                 <label className="rbac-label">
                   Project <span className="text-red-600">*</span>
-                  <select
-                    className="rbac-input rbac-select mb-2"
-                    value={form.projectId}
-                    onChange={(event) =>
+                  <Combobox
+                    value={selectedProject}
+                    onChange={(project: ProjectOption | null) => {
                       setForm((prev) => ({
                         ...prev,
-                        projectId: event.target.value,
-                      }))
-                    }
+                        projectId: project?.id || "",
+                      }));
+                      setProjectQuery("");
+                    }}
+                    nullable
                   >
-                    <option value="">No project</option>
-                    {filteredProjects.map((project) => (
-                      <option key={project.id} value={project.id}>
-                        {project.name}
-                      </option>
-                    ))}
-                  </select>
+                    <div className="relative mb-2">
+                      <ComboboxInput
+                        className="rbac-input w-full pr-10"
+                        placeholder="Search projects"
+                        displayValue={getProjectDisplayName}
+                        onChange={(event) =>
+                          setProjectQuery(event.target.value)
+                        }
+                      />
+                      <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3">
+                        <ChevronDownIcon
+                          className="h-4 w-4 text-slate-500"
+                          aria-hidden="true"
+                        />
+                      </ComboboxButton>
+                      <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
+                        {filteredProjects.length === 0 ? (
+                          <div className="px-3 py-2 text-sm text-slate-500">
+                            No projects found
+                          </div>
+                        ) : (
+                          filteredProjects.map((project) => (
+                            <ComboboxOption
+                              key={project.id}
+                              value={project}
+                              className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-slate-100 data-[selected]:bg-slate-200"
+                            >
+                              <div className="flex flex-col items-start">
+                                <span>{project.name}</span>
+                                <span className="text-xs opacity-75">
+                                  {project.city || "No city"}
+                                </span>
+                              </div>
+                            </ComboboxOption>
+                          ))
+                        )}
+                      </ComboboxOptions>
+                    </div>
+                  </Combobox>
                 </label>
                 {errors.projectId && (
                   <p className="text-sm text-red-600 mb-2">
@@ -391,24 +476,47 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
 
                 <label className="rbac-label">
                   Category <span className="text-red-600">*</span>
-                  <select
-                    className="rbac-input rbac-select mb-2"
-                    value={form.categoryId}
-                    disabled={!selectedTaskType}
-                    onChange={(event) =>
+                  <Listbox
+                    value={selectedCategory}
+                    onChange={(category: CategoryOption | null) =>
                       setForm((prev) => ({
                         ...prev,
-                        categoryId: event.target.value,
+                        categoryId: category?.id || "",
                       }))
                     }
+                    disabled={!selectedTaskType}
                   >
-                    <option value="">No category</option>
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
+                    <div className="relative mb-2">
+                      <ListboxButton className="rbac-input flex w-full items-center justify-between gap-3 text-left">
+                        <span
+                          className={selectedCategory ? "" : "text-slate-500"}
+                        >
+                          {selectedCategory?.name || "No category"}
+                        </span>
+                        <ChevronDownIcon
+                          className="h-4 w-4 text-slate-500"
+                          aria-hidden="true"
+                        />
+                      </ListboxButton>
+                      <ListboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
+                        <ListboxOption
+                          value={null}
+                          className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-slate-100 data-[selected]:bg-slate-200"
+                        >
+                          No category
+                        </ListboxOption>
+                        {categories.map((category) => (
+                          <ListboxOption
+                            key={category.id}
+                            value={category}
+                            className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-slate-100 data-[selected]:bg-slate-200"
+                          >
+                            {category.name}
+                          </ListboxOption>
+                        ))}
+                      </ListboxOptions>
+                    </div>
+                  </Listbox>
                 </label>
                 {errors.categoryId && (
                   <p className="text-sm text-red-600 mb-2">
@@ -439,32 +547,53 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
                 )}
 
                 {isAdmin && (
-                  <label className="rbac-label mt-5">
-                    Select User <span className="text-red-600">*</span>
-                    <select
-                      className="rbac-input rbac-select mb-2"
-                      value={form.assigneeId}
-                      onChange={(event) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          assigneeId: event.target.value,
-                        }))
-                      }
-                    >
-                      <option value="">No user selected</option>
-                      {users.map((user) => (
-                        <option key={user.id} value={user.id}>
-                          {user.firstName} {user.lastName} ·{" "}
-                          {user.role || "User"}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="mt-5 space-y-2">
+                    <p className="text-sm font-medium">
+                      Select User <span className="text-red-600">*</span>
+                    </p>
+                    {users.length > 0 ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        {users.map((user) => {
+                          const isSelected = form.assigneeId === user.id;
+
+                          return (
+                            <button
+                              key={user.id}
+                              type="button"
+                              aria-pressed={isSelected}
+                              onClick={() =>
+                                setForm((prev) => ({
+                                  ...prev,
+                                  assigneeId: user.id,
+                                }))
+                              }
+                              className={
+                                isSelected
+                                  ? "rbac-button flex flex-col items-start gap-1 text-left"
+                                  : "rbac-button rbac-button-secondary flex flex-col items-start gap-1 text-left"
+                              }
+                            >
+                              <span className="font-medium">
+                                {getUserDisplayName(user)}
+                              </span>
+                              <span className="text-xs opacity-75">
+                                {user.role || "User"}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-500">
+                        No users available to assign.
+                      </p>
+                    )}
                     {errors.assigneeId && (
                       <p className="text-sm text-red-600 mb-2">
                         {errors.assigneeId}
                       </p>
                     )}
-                  </label>
+                  </div>
                 )}
 
                 <div className="mt-4">

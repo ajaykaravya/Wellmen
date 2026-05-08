@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { flexRender, useReactTable } from "@tanstack/react-table";
 import { ColumnDef, getCoreRowModel } from "@tanstack/table-core";
-import ConfirmDialog from "../../../components/ConfirmDialog";
+import { formatToDDMMYYYY } from "@/lib/dateUtils";
 import useDebounce from "@/app/hooks/useDebounce";
+import DashboardShell from "../_components/DashboardShell";
+import ConfirmDialog from "../../components/ConfirmDialog";
+import CustomDatePicker from "../../components/CustomDatePicker";
 import { toast } from "react-toastify";
 import {
   FaChevronLeft,
@@ -16,95 +18,36 @@ import {
 } from "react-icons/fa";
 import Link from "next/link";
 
-type QueryCategory = "REMARKS" | "URGENCY" | "DECISION_PENDING";
-type QueryStatus = "PENDING" | "COMPLETED";
-type PriorityLevel = "LOW" | "MEDIUM" | "HIGH";
-
-type QueryRow = {
+type ProjectRow = {
   id: string;
-  projectId: string;
-  projectName: string;
-  projectCity?: string | null;
-  category: QueryCategory;
-  description: string;
-  status: QueryStatus;
-  priority: PriorityLevel;
-  createdAt: string;
+  name: string;
+  address: string;
+  contactNumber: string;
+  email: string;
+  startDate: string;
+  endDate: string;
+  description: string | null;
+  city: string | null;
+  status: string;
 };
 
-type QueryListContentProps = {
-  apiBase: string;
-  basePath: string;
-  title: string;
-  addLabel?: string;
-  emptyMessage?: string;
-};
-
-const categoryLabel = (value: QueryCategory | string) => {
-  switch (value) {
-    case "REMARKS":
-      return "Remarks";
-    case "URGENCY":
-      return "Urgency";
-    case "DECISION_PENDING":
-      return "Decision Pending";
-    default:
-      return value.replaceAll("_", " ");
-  }
-};
-
-const statusLabel = (value: QueryStatus | string) => {
-  switch (value) {
-    case "PENDING":
-      return "Pending";
-    case "COMPLETED":
-      return "Completed";
-    default:
-      return value.replaceAll("_", " ");
-  }
-};
-
-const priorityLabel = (value: PriorityLevel | string) => {
-  switch (value) {
-    case "LOW":
-      return "Low";
-    case "MEDIUM":
-      return "Medium";
-    case "HIGH":
-      return "High";
-    default:
-      return value.replaceAll("_", " ");
-  }
-};
-
-export default function QueryListContent({
-  apiBase,
-  basePath,
-  title,
-  addLabel = "Add Query",
-  emptyMessage = "No queries found.",
-}: QueryListContentProps) {
-  const searchParams = useSearchParams();
-  const [queries, setQueries] = useState<QueryRow[]>([]);
+function ProjectListContent() {
+  const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
   const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<QueryStatus | "">(() => {
-    const initialStatus = searchParams.get("status")?.toUpperCase();
-    return initialStatus === "PENDING" || initialStatus === "COMPLETED"
-      ? (initialStatus as QueryStatus)
-      : "";
-  });
-  const [priorityFilter, setPriorityFilter] = useState<PriorityLevel | "">("");
-  const [categoryFilter, setCategoryFilter] = useState<QueryCategory | "">("");
   const debouncedQuery = useDebounce(query, 400);
+  const [cityFilter, setCityFilter] = useState("");
+  const [cityOptions, setCityOptions] = useState<string[]>([]);
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmTarget, setConfirmTarget] = useState<QueryRow | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<ProjectRow | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const loadQueries = useCallback(async () => {
+  const loadProjects = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -113,47 +56,27 @@ export default function QueryListContent({
       });
 
       if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
-      if (statusFilter) params.set("status", statusFilter);
-      if (priorityFilter) params.set("priority", priorityFilter);
-      if (categoryFilter) params.set("category", categoryFilter);
-      const res = await fetch(`${apiBase}?${params.toString()}`);
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to load queries.");
-        return;
-      }
+      if (cityFilter) params.set("city", cityFilter);
+      if (fromDate) params.set("fromDate", fromDate);
+      if (toDate) params.set("toDate", toDate);
+
+      const res = await fetch(`/api/projects?${params.toString()}`);
+      if (!res.ok) return;
 
       const data = await res.json();
-      setQueries(Array.isArray(data?.data) ? data.data : []);
+      setProjects(Array.isArray(data?.data) ? data.data : []);
+      setCityOptions(Array.isArray(data?.cities) ? data.cities : []);
       setTotal(typeof data?.total === "number" ? data.total : 0);
     } catch (error) {
-      console.error("Failed to load queries", error);
-      toast.error("Failed to load queries.");
+      console.error("Failed to load projects", error);
     } finally {
       setLoading(false);
     }
-  }, [
-    apiBase,
-    debouncedQuery,
-    pageIndex,
-    pageSize,
-    statusFilter,
-    priorityFilter,
-    categoryFilter,
-  ]);
+  }, [cityFilter, fromDate, pageIndex, pageSize, debouncedQuery, toDate]);
 
   useEffect(() => {
-    loadQueries();
-  }, [loadQueries]);
-
-  useEffect(() => {
-    const status = searchParams.get("status")?.toUpperCase();
-    if (status === "PENDING" || status === "COMPLETED") {
-      setStatusFilter(status as QueryStatus);
-    } else {
-      setStatusFilter("");
-    }
-  }, [searchParams]);
+    loadProjects();
+  }, [loadProjects]);
 
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
 
@@ -163,96 +86,84 @@ export default function QueryListContent({
     }
   }, [pageCount, pageIndex]);
 
-  const handleDelete = useCallback((row: QueryRow) => {
+  const handleDeleteProject = useCallback((row: ProjectRow) => {
     setConfirmTarget(row);
     setConfirmOpen(true);
   }, []);
 
-  const confirmDelete = useCallback(async () => {
+  const confirmDeleteProject = useCallback(async () => {
     if (!confirmTarget) return;
     setDeleting(true);
-
     try {
-      const res = await fetch(`${apiBase}/${confirmTarget.id}`, {
+      const res = await fetch(`/api/projects/${confirmTarget.id}`, {
         method: "DELETE",
       });
 
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to delete query.");
+        toast.error(payload.error || "Failed to delete project.");
         return;
       }
 
-      await loadQueries();
-      toast.success("Query deleted successfully.");
+      await loadProjects();
+      toast.success("Project deleted successfully.");
     } catch (error) {
-      console.error("Failed to delete query", error);
-      toast.error("Failed to delete query.");
+      console.error("Failed to delete project", error);
+      toast.error("Failed to delete project.");
     } finally {
       setDeleting(false);
       setConfirmOpen(false);
       setConfirmTarget(null);
     }
-  }, [apiBase, confirmTarget, loadQueries]);
+  }, [confirmTarget, loadProjects]);
 
-  const columns = useMemo<ColumnDef<QueryRow>[]>(
+  const columns = useMemo<ColumnDef<ProjectRow>[]>(
     () => [
       {
-        header: "Category",
-        accessorKey: "category",
+        header: "Hospitals",
+        accessorKey: "name",
         cell: (info) => (
-          <span className="rbac-muted">
-            {categoryLabel(String(info.getValue() || ""))}
-          </span>
+          <span className="rbac-muted">{String(info.getValue() || "")}</span>
         ),
       },
       {
-        header: "Project",
-        accessorKey: "projectName",
-        cell: ({ row, getValue }) => (
-          <div className="flex flex-col">
-            <span className="rbac-muted">{String(getValue() || "-")}</span>
-            <span className="text-xs text-slate-500">
-              {row.original.projectCity || "-"}
-            </span>
-          </div>
-        ),
-      },
-      {
-        header: "Description",
-        accessorKey: "description",
+        header: "City",
+        accessorKey: "city",
+        size: 300,
         cell: (info) => (
           <span className="rbac-muted">{String(info.getValue() || "-")}</span>
         ),
       },
       {
-        header: "Status",
-        accessorKey: "status",
+        header: "Contact",
+        accessorKey: "contactNumber",
+      },
+      {
+        header: "Email",
+        accessorKey: "email",
+      },
+      {
+        header: "Start",
+        accessorKey: "startDate",
         cell: (info) => {
-          const value = String(info.getValue() || "")
-            .replaceAll("_", " ")
-            .toLowerCase();
-
-          const formatted = value.charAt(0).toUpperCase() + value.slice(1);
-
-          return <span className="rbac-muted">{formatted}</span>;
+          const value = String(info.getValue() || "");
+          return value ? formatToDDMMYYYY(value) : "-";
         },
       },
       {
-        header: "Priority",
-        accessorKey: "priority",
-        cell: (info) => (
-          <span className="rbac-muted">
-            {priorityLabel(String(info.getValue() || ""))}
-          </span>
-        ),
+        header: "End",
+        accessorKey: "endDate",
+        cell: (info) => {
+          const value = String(info.getValue() || "");
+          return value ? formatToDDMMYYYY(value) : "-";
+        },
       },
       {
         header: "Action",
         id: "action",
         cell: ({ row }) => (
           <div className="rbac-inline-actions flex gap-4">
-            <Link href={`${basePath}/${row.original.id}`}>
+            <Link href={`/dashboard/hospitals/${row.original.id}`}>
               <button className="rbac-link" type="button">
                 <FaEdit />
               </button>
@@ -260,7 +171,7 @@ export default function QueryListContent({
             <button
               className="rbac-link danger"
               type="button"
-              onClick={() => handleDelete(row.original)}
+              onClick={() => handleDeleteProject(row.original)}
             >
               <FaTrash />
             </button>
@@ -268,11 +179,15 @@ export default function QueryListContent({
         ),
       },
     ],
-    [basePath, handleDelete],
+    [handleDeleteProject],
   );
 
+  const completedProjects = projects.filter((project) => {
+    return project.status === "COMPLETED";
+  });
+
   const table = useReactTable({
-    data: queries,
+    data: completedProjects,
     columns,
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
@@ -281,22 +196,22 @@ export default function QueryListContent({
 
   return (
     <>
+      {" "}
       <section className="rbac-section rbac-container">
         <div className="rbac-card">
-          <div className="flex justify-between items-center">
-            <h3 className="rbac-title-lg">{title}</h3>
-            <Link href={`${basePath}/new`}>
+          <div className="flex justify-between item-center">
+            <h3 className="rbac-title-lg">Hospitals List</h3>
+            <Link href="/dashboard/hospitals/new">
               <button className="rbac-button" type="button">
-                {addLabel}
+                Add Hospital
               </button>
             </Link>
           </div>
-
-          <div className="my-4 flex flex-wrap gap-3">
+          <div className="my-4 flex flex-wrap gap-2 ">
             <input
               className="rbac-input-filter"
               type="text"
-              placeholder="Search description or project"
+              placeholder="Search name, city or contact..."
               value={query}
               onChange={(event) => {
                 setPageIndex(0);
@@ -305,49 +220,46 @@ export default function QueryListContent({
             />
             <select
               className="rbac-input-filter rbac-select"
-              value={statusFilter}
+              value={cityFilter}
               onChange={(event) => {
                 setPageIndex(0);
-                setStatusFilter(event.target.value as QueryStatus | "");
+                setCityFilter(event.target.value);
               }}
             >
-              <option value="">All status</option>
-              <option value="PENDING">Pending</option>
-              <option value="COMPLETED">Completed</option>
+              <option value="">All cities</option>
+              {cityOptions.map((city) => (
+                <option key={city} value={city}>
+                  {city}
+                </option>
+              ))}
             </select>
-            <select
-              className="rbac-input-filter rbac-select"
-              value={priorityFilter}
-              onChange={(event) => {
+            <CustomDatePicker
+              value={fromDate}
+              onChange={(value) => {
                 setPageIndex(0);
-                setPriorityFilter(event.target.value as PriorityLevel | "");
+                setFromDate(value);
               }}
-            >
-              <option value="">Priority</option>
-              <option value="LOW">Low</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HIGH">High</option>
-            </select>
-            <select
-              className="rbac-input-filter rbac-select"
-              value={categoryFilter}
-              onChange={(event) => {
+              placeholder="From date"
+              className="rbac-input-filter"
+            />
+            <CustomDatePicker
+              value={toDate}
+              onChange={(value) => {
                 setPageIndex(0);
-                setCategoryFilter(event.target.value as QueryCategory | "");
+                setToDate(value);
               }}
-            >
-              <option value="">Category</option>
-              <option value="REMARKS">Remarks</option>
-              <option value="DECISION_PENDING">Decision Pending</option>
-              <option value="URGENCY">Urgency</option>
-            </select>
+              placeholder="To date"
+              className="rbac-input-filter"
+            />
             <button
               className="rbac-button rbac-button-secondary"
               type="button"
               onClick={() => {
                 setPageIndex(0);
                 setQuery("");
-                setStatusFilter("");
+                setCityFilter("");
+                setFromDate("");
+                setToDate("");
               }}
             >
               Clear filters
@@ -363,6 +275,7 @@ export default function QueryListContent({
                       {headerGroup.headers.map((header) => (
                         <th
                           key={header.id}
+                          style={{ width: header.getSize() }}
                           className="text-left text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200"
                         >
                           {header.isPlaceholder
@@ -389,25 +302,26 @@ export default function QueryListContent({
                       </td>
                     </tr>
                   )}
-                  {!loading && queries.length === 0 && (
+                  {!loading && completedProjects.length === 0 && (
                     <tr>
                       <td
                         colSpan={columns.length}
                         className="px-4 py-3 text-sm text-slate-500"
                       >
-                        {emptyMessage}
+                        No completed projects found.
                       </td>
                     </tr>
                   )}
                   {!loading &&
                     table.getRowModel().rows.map((row, index) => (
                       <tr
-                        key={row.original.id}
+                        key={row.id}
                         className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}
                       >
                         {row.getVisibleCells().map((cell) => (
                           <td
                             key={cell.id}
+                            style={{ width: cell.column.getSize() }}
                             className="px-4 py-3 text-sm border-b border-slate-100"
                           >
                             {flexRender(
@@ -428,25 +342,25 @@ export default function QueryListContent({
                   <FaSpinner className="animate-spin mr-2" size={16} />
                 </div>
               )}
-              {!loading && queries.length === 0 && (
+              {!loading && completedProjects.length === 0 && (
                 <div className="rbac-card py-4 text-sm text-slate-500">
-                  {emptyMessage}
+                  No completed projects found.
                 </div>
               )}
               {!loading &&
-                queries.map((item) => (
-                  <div key={item.id} className="rbac-card p-4">
-                    <div className="mb-2 flex items-center justify-between gap-3">
+                completedProjects.map((project) => (
+                  <div key={project.id} className="rbac-card p-4">
+                    <div className="mb-2 flex items-center justify-between">
                       <div>
                         <h4 className="text-sm font-semibold">
-                          {item.projectName || "-"}
+                          {project.name}
                         </h4>
                         <p className="text-xs text-slate-500">
-                          {item.projectCity || "-"}
+                          {project.city || "-"}
                         </p>
                       </div>
                       <div className="flex gap-2">
-                        <Link href={`${basePath}/${item.id}`}>
+                        <Link href={`/dashboard/projects/${project.id}`}>
                           <button className="rbac-link" type="button">
                             <FaEdit />
                           </button>
@@ -454,7 +368,7 @@ export default function QueryListContent({
                         <button
                           className="rbac-link danger"
                           type="button"
-                          onClick={() => handleDelete(item)}
+                          onClick={() => handleDeleteProject(project)}
                         >
                           <FaTrash />
                         </button>
@@ -462,18 +376,22 @@ export default function QueryListContent({
                     </div>
                     <div className="grid gap-1 text-sm">
                       <p>
-                        <strong>Category:</strong>{" "}
-                        {categoryLabel(item.category)}
+                        <strong>Contact:</strong> {project.contactNumber}
                       </p>
                       <p>
-                        <strong>Description:</strong> {item.description || "-"}
+                        <strong>Email:</strong> {project.email}
                       </p>
                       <p>
-                        <strong>Status:</strong> {statusLabel(item.status)}
+                        <strong>Start:</strong>{" "}
+                        {project.startDate
+                          ? formatToDDMMYYYY(project.startDate)
+                          : "-"}
                       </p>
                       <p>
-                        <strong>Priority:</strong>{" "}
-                        {priorityLabel(item.priority)}
+                        <strong>End:</strong>{" "}
+                        {project.endDate
+                          ? formatToDDMMYYYY(project.endDate)
+                          : "-"}
                       </p>
                     </div>
                   </div>
@@ -483,7 +401,7 @@ export default function QueryListContent({
 
           <div className="mt-4 flex flex-wrap items-center justify-end gap-3 text-sm">
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   className="change-button change-button-secondary"
                   type="button"
@@ -526,21 +444,28 @@ export default function QueryListContent({
           </div>
         </div>
       </section>
-
       <ConfirmDialog
         open={confirmOpen}
-        title="Delete query?"
+        title="Delete project?"
         description="Are you sure you want to delete?"
         confirmLabel="Delete"
         confirmLoading={deleting}
         confirmLoadingLabel="Deleting..."
         cancelLabel="Cancel"
-        onConfirm={confirmDelete}
+        onConfirm={confirmDeleteProject}
         onClose={() => {
           setConfirmOpen(false);
           setConfirmTarget(null);
         }}
       />
     </>
+  );
+}
+
+export default function ProjectsPage() {
+  return (
+    <DashboardShell requireAdmin>
+      <ProjectListContent />
+    </DashboardShell>
   );
 }

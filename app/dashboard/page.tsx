@@ -74,6 +74,7 @@ type TodoRow = {
   status: TodoStatus;
   type: "PROJECT" | "OFFICE" | "SERVICE";
   projectName?: string | null;
+  projectCity?: string | null;
   categoryName?: string | null;
   assignee: {
     id: string;
@@ -88,6 +89,7 @@ type QueryRow = {
   id: string;
   projectId: string;
   projectName: string;
+  projectCity: string | null;
   category: "REMARKS" | "URGENCY" | "DECISION_PENDING" | "";
   description: string;
   status: "PENDING" | "COMPLETED";
@@ -105,6 +107,7 @@ type AdminReportRow = {
   id: string;
   reportDate: string;
   projectName: string;
+  projectCity: string | null;
   categoryName: string;
   description: string;
   createdByName: string;
@@ -254,15 +257,26 @@ function TaskTableCard({
           {!loading &&
             rows.map((task) => (
               <div key={task.id} className="flex rbac-card p-4 sm:p-5">
-                <div className="w-full mt-3 grid gap-2 text-sm">
+                <div className="w-full mt-3 grid text-sm">
                   {task.projectName && (
-                    <p className="font-semibold">{task.projectName}</p>
+                    <p className="font-semibold text-base">
+                      {task.projectName}
+                    </p>
                   )}
-                  {"categoryName" in task && <p>{task.categoryName || "-"}</p>}
-                  {task.description && <p>{task.description}</p>}
-                  {"comments" in task && <p>{task.comments || "-"}</p>}
+                  {task.projectCity && (
+                    <p className="text-sm text-slate-500">{task.projectCity}</p>
+                  )}
+                  {"categoryName" in task && (
+                    <p className="text-sm mt-1">{task.categoryName || "-"}</p>
+                  )}
+                  {task.description && (
+                    <p className="text-sm">{task.description}</p>
+                  )}
+                  {"comments" in task && (
+                    <p className="text-sm">{task.comments || "-"}</p>
+                  )}
                   {task.assignee && (
-                    <p>
+                    <p className="text-sm">
                       {task.assignee.firstName} {task.assignee.lastName}
                     </p>
                   )}
@@ -363,10 +377,13 @@ function QueryTableCard({
               <div key={query.id} className="rbac-card p-4 sm:p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="font-semibold ">
+                    <p className="text-base font-semibold ">
                       {query.projectName || "Project"}
                     </p>
-                    <h4 className="mt-1 text-base">
+                    <p className="text-sm text-slate-500">
+                      {query.projectCity || "Project"}
+                    </p>
+                    <h4 className="mt-1 text-sm">
                       {query.category ? formatText(query.category) : "Query"}
                     </h4>
                   </div>
@@ -386,7 +403,7 @@ function QueryTableCard({
                   </div>
                 </div>
 
-                <div className="mt-1 grid gap-2 text-sm">
+                <div className="grid text-sm">
                   <p>{query.description || "No description"}</p>
 
                   <p>
@@ -736,29 +753,6 @@ function OverviewContent() {
     ? query.filter((q) => q.status === "COMPLETED").length
     : 0;
 
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: { enabled: true },
-    },
-    scales: {
-      x: { display: false },
-      y: { display: false },
-    },
-    elements: {
-      line: {
-        tension: 0.4,
-        borderWidth: 2,
-        borderColor: "#2596be",
-        backgroundColor: "rgba(37,150,190,0.2)",
-        fill: "start",
-      },
-      point: { radius: 0 },
-    },
-  };
-
   const statsChartData = (values: number[]) => ({
     labels: values.map((_, index) => `p${index}`),
     datasets: [
@@ -770,35 +764,6 @@ function OverviewContent() {
       },
     ],
   });
-
-  const totalTasksChart = statsChartData([
-    todoTotal * 0.4,
-    todoTotal * 0.6,
-    todoTotal * 0.55,
-    todoTotal * 0.8,
-    todoTotal,
-  ]);
-  const inProgressChart = statsChartData([
-    todoInProgress * 0.3,
-    todoInProgress * 0.5,
-    todoInProgress * 0.7,
-    todoInProgress * 0.6,
-    todoInProgress,
-  ]);
-  const todoChart = statsChartData([
-    todoTodo * 0.4,
-    todoTodo * 0.8,
-    todoTodo * 0.7,
-    todoTodo * 0.9,
-    todoTodo,
-  ]);
-  const doneChart = statsChartData([
-    todoCompleted * 0.2,
-    todoCompleted * 0.35,
-    todoCompleted * 0.45,
-    todoCompleted * 0.75,
-    todoCompleted,
-  ]);
 
   const isModalDirty =
     !!modalTarget &&
@@ -1305,9 +1270,12 @@ function OverviewContent() {
                                   <p className="text-xs uppercase tracking-[0.2em]">
                                     {formatToDDMMYYYY(report.reportDate)}
                                   </p>
-                                  <h4 className="mt-1 text-base font-semibold">
+                                  <p className="font-semibold text-base">
                                     {report.projectName}
-                                  </h4>
+                                  </p>
+                                  <p className="text-sm text-slate-500">
+                                    {report.projectCity || "-"}
+                                  </p>
                                 </div>
                                 <div className="flex justify-center items-center gap-4">
                                   {((report.imageUrls?.length ?? 0) > 0 ||
@@ -1323,7 +1291,7 @@ function OverviewContent() {
                                 </div>
                               </div>
 
-                              <div className="mt-3 grid gap-2 text-sm">
+                              <div className="mt-1 grid text-sm">
                                 <p>{report.categoryName || "-"}</p>
                                 <p>{report.description}</p>
                               </div>
@@ -1356,9 +1324,12 @@ function OverviewContent() {
                                 <p className="text-xs uppercase tracking-[0.2em] ">
                                   {formatToDDMMYYYY(report.reportDate)}
                                 </p>
-                                <h4 className="mt-1 text-base font-semibold">
+                                <p className="font-semibold">
                                   {report.projectName || "-"}
-                                </h4>
+                                </p>
+                                <p className="text-sm text-slate-500">
+                                  {report.projectCity || "-"}
+                                </p>
                               </div>
                               <button
                                 className="rbac-link"

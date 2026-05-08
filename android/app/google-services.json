@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "418106824855",
+    "project_id": "wellmen-b0911",
+    "storage_bucket": "wellmen-b0911.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:418106824855:android:771386b4001138a221b1d2",
+        "android_client_info": {
+          "package_name": "com.example.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBCWtmkiLdR9jN5E1RxM5UZK4oB2S2_hmk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
