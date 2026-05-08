@@ -3,7 +3,7 @@
 	"appName": "wellman",
 	"webDir": "out",
 	"server": {
-		"url": "https://wellmen-git-develop-ajaybkaravyasolutions-3883s-projects.vercel.app/",
+		"url": "https://wellmen.vercel.app/",
 		"cleartext": false
 	}
 }
