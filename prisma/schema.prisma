@@ -128,6 +128,33 @@ model Categories {
   @@unique([category, name])
 }
 
+model ExpenseType {
+  id            String           @id @default(uuid())
+  name          String           @unique
+  status        ExpenseTypeStatus @default(ACTIVE)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  dailyExpenses DailyExpense[]
+
+  @@index([status])
+}
+
+model DailyExpense {
+  id              String         @id @default(uuid())
+  transactionType TransactionType
+  amount          Decimal        @db.Decimal(14, 2)
+  expenseTypeId   String?
+  date            DateTime
+  remark          String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  expenseType     ExpenseType?   @relation(fields: [expenseTypeId], references: [id], onDelete: SetNull)
+
+  @@index([transactionType])
+  @@index([date])
+  @@index([expenseTypeId])
+}
+
 model QueryManagement {
   id          String        @id @default(uuid())
   projectId   String
@@ -201,4 +228,14 @@ enum QueryCategory {
 enum QueryStatus {
   PENDING
   COMPLETED
+}
+
+enum ExpenseTypeStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
 }

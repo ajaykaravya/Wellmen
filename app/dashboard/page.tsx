@@ -910,13 +910,8 @@ function OverviewContent() {
             {theme === "light" ? <FaMoon size={14} /> : <FaSun size={14} />}
           </button>
           <MenuButton
-            className="flex items-center gap-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl text-left transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400/40"
-            style={{
-              background: "var(--input-bg)",
-              border: "1px solid var(--stroke)",
-              color: "var(--ink)",
-              width: "fit-content",
-            }}
+            className="theme-input flex items-center gap-2 rounded-xl px-2 py-1 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400/40 sm:px-3 sm:py-1.5"
+            style={{ width: "fit-content" }}
           >
             <div>
               <p className="rbac-role-name text-xs sm:text-sm">
@@ -932,20 +927,14 @@ function OverviewContent() {
           <MenuItems
             modal={false}
             anchor="bottom end"
-            className="z-50 mt-2 w-56 origin-top-right rounded-2xl border p-1 shadow-lg outline-none transition duration-150 ease-out data-[closed]:scale-95 data-[closed]:opacity-0"
-            style={{
-              background: "var(--card)",
-              borderColor: "var(--stroke)",
-            }}
+            className="theme-modal-surface z-50 mt-2 w-56 origin-top-right rounded-2xl border p-1 shadow-lg outline-none transition duration-150 ease-out data-[closed]:scale-95 data-[closed]:opacity-0"
           >
             <MenuItem>
               {({ focus }) => (
                 <button
                   type="button"
                   className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors ${
-                    focus
-                      ? "theme-button-secondary theme-text"
-                      : "theme-text-muted"
+                    focus ? "theme-button-secondary theme-text" : "theme-text-muted"
                   }`}
                   onClick={() => {
                     setPasswordNotice(null);
@@ -961,7 +950,9 @@ function OverviewContent() {
                 <button
                   type="button"
                   className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors ${
-                    focus ? "bg-red-50 text-red-700" : "text-red-600"
+                    focus
+                      ? "theme-status-danger"
+                      : "text-[color:var(--theme-danger-text)]"
                   }`}
                   onClick={() => setConfirmLogoutOpen(true)}
                 >
