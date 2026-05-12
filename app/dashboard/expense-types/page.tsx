@@ -160,6 +160,17 @@ function ExpenseTypeListContent() {
     pageCount,
   });
 
+  const statusLabel = (value: string) => {
+    switch (value) {
+      case "ACTIVE":
+        return "Active";
+      case "INACTIVE":
+        return "Inactive";
+      default:
+        return value.replaceAll("_", " ");
+    }
+  };
+
   return (
     <>
       <section className="rbac-section rbac-container">
@@ -300,8 +311,8 @@ function ExpenseTypeListContent() {
                         <h4 className="text-sm font-semibold">
                           {expenseType.name}
                         </h4>
-                        <span className="mt-2 inline-flex items-center text-xs font-medium uppercase tracking-wide text-[color:var(--theme-text-muted)]">
-                          {expenseType.status.toLowerCase()}
+                        <span className="mt-2 inline-flex items-center text-xs font-medium tracking-wide text-[color:var(--theme-text-muted)]">
+                          {statusLabel(expenseType.status)}
                         </span>
                       </div>
                       <div className="flex gap-2">
