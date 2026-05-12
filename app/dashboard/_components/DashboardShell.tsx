@@ -158,6 +158,7 @@ export default function DashboardShell({
       "officeCategories",
       "serviceCategories",
       "reportingCategories",
+      "expenseTypes",
     ].includes(activeMenu);
   }, [activeMenu]);
 
@@ -234,6 +235,7 @@ export default function DashboardShell({
           { key: "officeCategories", label: "Office work Categories" },
           { key: "serviceCategories", label: "Service work Categories" },
           { key: "reportingCategories", label: "Reporting work Categories" },
+          { key: "expenseTypes", label: "Expense Types" },
         ],
       });
     }
@@ -244,7 +246,6 @@ export default function DashboardShell({
         : { key: "my-query-management", label: "My Query Management" },
     );
     items.push({ key: "reports", label: "Reporting" });
-    items.push({ key: "expenseTypes", label: "Expense Types" });
     items.push({ key: "dailyExpenses", label: "Daily Expense" });
     items.push({ key: "profile", label: "My Profile" });
     return items;
