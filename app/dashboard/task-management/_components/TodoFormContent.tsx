@@ -430,25 +430,22 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
                   >
                     <div className="relative mb-2">
                       <ComboboxInput
-                        className="rbac-input w-full pr-10"
+                        className="theme-input rbac-input w-full pr-10"
                         placeholder="Search projects"
                         displayValue={getProjectDisplayName}
                         onChange={(event) =>
                           setProjectQuery(event.target.value)
                         }
                       />
-                      <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3">
-                        <ChevronDownIcon
-                          className="h-4 w-4 text-slate-500"
-                          aria-hidden="true"
-                        />
+                      <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+                        <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
                       </ComboboxButton>
                       <ComboboxOptions
                         modal={false}
-                        className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-slate-200 bg-white p-1 shadow-lg"
+                        className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]"
                       >
                         {filteredProjects.length === 0 ? (
-                          <div className="px-3 py-2 text-sm text-slate-500">
+                          <div className="px-3 py-2 text-sm text-[color:var(--theme-text-muted)]">
                             No projects found
                           </div>
                         ) : (
@@ -456,11 +453,11 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
                             <ComboboxOption
                               key={project.id}
                               value={project}
-                              className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-slate-100 data-[selected]:bg-slate-200"
+                              className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
                             >
                               <div className="flex flex-col items-start">
                                 <span>{project.name}</span>
-                                <span className="text-xs opacity-75">
+                                <span className="text-xs text-[color:var(--theme-text-muted)]">
                                   {project.city || "No city"}
                                 </span>
                               </div>
@@ -492,22 +489,26 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
                     <div className="relative mb-2">
                       <ListboxButton className="rbac-input flex w-full items-center justify-between gap-3 text-left">
                         <span
-                          className={selectedCategory ? "" : "text-slate-500"}
+                          className={
+                            selectedCategory
+                              ? ""
+                              : "text-[color:var(--theme-text-muted)]"
+                          }
                         >
                           {selectedCategory?.name || "No category"}
                         </span>
                         <ChevronDownIcon
-                          className="h-4 w-4 text-slate-500"
+                          className="h-4 w-4 text-[color:var(--theme-text-muted)]"
                           aria-hidden="true"
                         />
                       </ListboxButton>
                       <ListboxOptions
                         modal={false}
-                        className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-slate-200 bg-white p-1 shadow-lg"
+                        className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]"
                       >
                         <ListboxOption
                           value={null}
-                          className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-slate-100 data-[selected]:bg-slate-200"
+                          className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
                         >
                           No category
                         </ListboxOption>
@@ -515,7 +516,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
                           <ListboxOption
                             key={category.id}
                             value={category}
-                            className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-slate-100 data-[selected]:bg-slate-200"
+                            className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
                           >
                             {category.name}
                           </ListboxOption>

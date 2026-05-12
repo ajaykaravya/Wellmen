@@ -29,7 +29,9 @@ const cachedClientHasModel = (client: PrismaClient | undefined) => {
   return (
     typeof delegates.dailyReport !== "undefined" &&
     typeof delegates.queryManagement !== "undefined" &&
-    typeof delegates.deviceToken !== "undefined"
+    typeof delegates.deviceToken !== "undefined" &&
+    typeof delegates.expenseType !== "undefined" &&
+    typeof delegates.dailyExpense !== "undefined"
   )
 }
 
