@@ -238,6 +238,7 @@ export default function DashboardShell({
           { key: "expenseTypes", label: "Expense Types" },
         ],
       });
+      items.push({ key: "dailyExpenses", label: "Daily Expense" });
     }
     items.push({ key: "task-management", label: "Task Management" });
     items.push(
@@ -246,7 +247,6 @@ export default function DashboardShell({
         : { key: "my-query-management", label: "My Query Management" },
     );
     items.push({ key: "reports", label: "Reporting" });
-    items.push({ key: "dailyExpenses", label: "Daily Expense" });
     items.push({ key: "profile", label: "My Profile" });
     return items;
   }, [isAdmin]);
