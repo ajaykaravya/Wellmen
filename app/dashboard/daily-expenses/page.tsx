@@ -17,6 +17,7 @@ import {
 import Link from "next/link";
 import { formatToDDMMYYYY } from "@/lib/dateUtils";
 import CustomDatePicker from "../../components/CustomDatePicker";
+import * as XLSX from "xlsx";
 import {
   Combobox,
   ComboboxButton,
@@ -74,8 +75,7 @@ const transactionTypeOptions: Array<{
   { key: "EXPENSE", label: "Expense" },
 ];
 
-const getExpenseTypeLabel = (option: ExpenseTypeOption) =>
-  option.name;
+const getExpenseTypeLabel = (option: ExpenseTypeOption) => option.name;
 
 function DailyExpenseListContent() {
   const [dailyExpenses, setDailyExpenses] = useState<DailyExpenseRow[]>([]);
@@ -100,6 +100,7 @@ function DailyExpenseListContent() {
     null,
   );
   const [deleting, setDeleting] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     const loadExpenseTypes = async () => {
@@ -203,6 +204,105 @@ function DailyExpenseListContent() {
     }
   }, [confirmTarget, loadDailyExpenses]);
 
+  const loadAllFilteredExpenses = useCallback(async () => {
+    const accumulated: DailyExpenseRow[] = [];
+    let currentPage = 1;
+    let totalPages = 1;
+
+    while (currentPage <= totalPages) {
+      const params = new URLSearchParams({
+        page: String(currentPage),
+        pageSize: "100",
+      });
+      if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
+      if (transactionTypeFilter)
+        params.set("transactionType", transactionTypeFilter);
+      if (expenseTypeFilter?.id)
+        params.set("expenseTypeId", expenseTypeFilter.id);
+      if (fromDate) params.set("fromDate", fromDate);
+      if (toDate) params.set("toDate", toDate);
+
+      const res = await fetch(`/api/daily-expenses?${params.toString()}`);
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        throw new Error(payload.error || "Failed to load daily expenses.");
+      }
+
+      const data = await res.json();
+      const rows = Array.isArray(data?.data) ? data.data : [];
+      accumulated.push(...rows);
+      totalPages =
+        typeof data?.totalPages === "number" && data.totalPages > 0
+          ? data.totalPages
+          : 1;
+      currentPage += 1;
+    }
+
+    return accumulated;
+  }, [
+    debouncedQuery,
+    transactionTypeFilter,
+    expenseTypeFilter,
+    fromDate,
+    toDate,
+  ]);
+
+  const handleExportExcel = useCallback(async () => {
+    setExporting(true);
+    try {
+      const rows = await loadAllFilteredExpenses();
+      const worksheetData = [
+        [
+          "#",
+          "Date",
+          "Transaction Type",
+          "Amount",
+          "Expense Type",
+          "Remark",
+        ],
+        ...rows.map((row, index) => [
+          index + 1,
+          formatToDDMMYYYY(row.date),
+          row.transactionType.toLowerCase(),
+          Number(row.amount || 0),
+          row.expenseTypeName || "-",
+          row.remark || "-",
+        ]),
+      ];
+
+      const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Daily Expenses");
+      const arrayBuffer = XLSX.write(workbook, {
+        bookType: "xlsx",
+        type: "array",
+      });
+      const blob = new Blob([arrayBuffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `daily-expenses-${new Date()
+        .toISOString()
+        .slice(0, 10)}.xlsx`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+      toast.success("Daily expense export generated successfully.");
+    } catch (error) {
+      console.error("Failed to export daily expenses", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to export daily expenses.",
+      );
+    } finally {
+      setExporting(false);
+    }
+  }, [loadAllFilteredExpenses]);
+
   const columns = useMemo<ColumnDef<DailyExpenseRow>[]>(
     () => [
       {
@@ -217,15 +317,15 @@ function DailyExpenseListContent() {
       {
         header: "Type",
         accessorKey: "transactionType",
-        cell: ({ row }) => (
-          <span
-            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium uppercase tracking-wide ${getTransactionBadgeClass(
-              row.original.transactionType,
-            )}`}
-          >
-            {row.original.transactionType}
-          </span>
-        ),
+        cell: (info) => {
+          const value = String(info.getValue() || "")
+            .replaceAll("_", " ")
+            .toLowerCase();
+
+          const formatted = value.charAt(0).toUpperCase() + value.slice(1);
+
+          return <span className="rbac-muted">{formatted}</span>;
+        },
       },
       {
         header: "Amount",
@@ -302,11 +402,21 @@ function DailyExpenseListContent() {
                 Current Balance: {formatAmount(balance)}
               </span>
             </div>
-            <Link href="/dashboard/daily-expenses/new">
-              <button className="rbac-button" type="button">
-                Add Daily Expense
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                className="rbac-button rbac-button-secondary"
+                type="button"
+                onClick={handleExportExcel}
+                disabled={exporting || loading}
+              >
+                {exporting ? "Exporting..." : "Export Excel Sheet"}
               </button>
-            </Link>
+              <Link href="/dashboard/daily-expenses/new">
+                <button className="rbac-button" type="button">
+                  Add Daily Expense
+                </button>
+              </Link>
+            </div>
           </div>
 
           <div className="my-4 flex flex-wrap gap-2">

@@ -118,11 +118,15 @@ function ExpenseTypeListContent() {
       {
         header: "Status",
         accessorKey: "status",
-        cell: ({ row }) => (
-          <span className="text-xs font-medium uppercase tracking-wide text-[color:var(--theme-text-muted)]">
-            {row.original.status.toLowerCase()}
-          </span>
-        ),
+        cell: (info) => {
+          const value = String(info.getValue() || "")
+            .replaceAll("_", " ")
+            .toLowerCase();
+
+          const formatted = value.charAt(0).toUpperCase() + value.slice(1);
+
+          return <span className="rbac-muted">{formatted}</span>;
+        },
       },
       {
         header: "Action",
