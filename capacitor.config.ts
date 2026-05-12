@@ -7,7 +7,16 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://wellmen-git-main-ajaybkaravyasolutions-3883s-projects.vercel.app', // 👈 YOUR LIVE URL
     cleartext: false
-  }
+  },
+  plugins: {
+    SplashScreen: {
+      launchShowDuration: 3000,
+      launchAutoHide: true,
+      backgroundColor: "#ffffff",
+      androidSplashResourceName: "splash_logo_inset",
+      showSpinner: false,
+    },
+  },
 };
 
 export default config;
