@@ -4,7 +4,10 @@ import { requireAuth } from "@/lib/rbac";
 import { saveReportImages, saveReportVideos } from "./_utils/upload";
 import { firestore } from "@/lib/firebase-admin";
 import { sendPushToTokens } from "@/lib/pushNotifications";
-import { sendWhatsAppTextToMany } from "@/lib/whatsapp";
+import {
+  buildReportWhatsAppMessage,
+  sendWhatsAppTextToMany,
+} from "@/lib/whatsapp";
 
 export const runtime = "nodejs";
 
@@ -61,28 +64,6 @@ const getDisplayName = (user) =>
   [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
   user?.fullName ||
   "Unknown User";
-
-const buildReportWhatsAppMessage = (report, creatorName) => {
-  const reportDate = report.reportDate
-    ? new Intl.DateTimeFormat("en-IN", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }).format(new Date(report.reportDate))
-    : "-";
-  const description = String(report.description || "").trim();
-  const safeDescription =
-    description.length > 500 ? `${description.slice(0, 497)}...` : description;
-
-  return [
-    "New report submitted",
-    `Creator: ${creatorName}`,
-    `Project: ${report.project?.name || "-"}`,
-    `Category: ${report.category?.name || "-"}`,
-    `Date: ${reportDate}`,
-    `Description: ${safeDescription || "-"}`,
-  ].join("\n");
-};
 
 export async function GET(req) {
   const gate = await requireAuth(req);

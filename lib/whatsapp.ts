@@ -3,7 +3,7 @@ type WhatsAppMessageResult = {
   skipped?: boolean;
   error?: string;
   recipient?: string;
-  responseText?: string;
+  responseText?: string | null;
 };
 
 type SendWhatsAppTextOptions = {
@@ -11,8 +11,19 @@ type SendWhatsAppTextOptions = {
   message: string;
 };
 
+type ReportLike = {
+  project?: {
+    name?: string | null;
+  } | null;
+  category?: {
+    name?: string | null;
+  } | null;
+  description?: string | null;
+  reportDate?: string | Date | null;
+};
+
 const DEFAULT_GRAPH_API_VERSION = "v21.0";
-const DEFAULT_COUNTRY_CODE = "+91";
+const DEFAULT_COUNTRY_CODE = "91";
 
 const normalizeCountryCode = (value: string) => {
   const digits = String(value || "").replace(/\D/g, "");
@@ -92,21 +103,41 @@ export async function sendWhatsAppText(
     },
   );
 
-  const responseText = await response.text();
+  let responseData: unknown = null;
+  try {
+    responseData = await response.json();
+  } catch {
+    responseData = null;
+  }
   if (!response.ok) {
     return {
       ok: false,
       recipient,
       error: `WhatsApp API responded with ${response.status}`,
-      responseText,
+      responseText:
+        responseData !== null ? JSON.stringify(responseData) : null,
     };
   }
 
   return {
     ok: true,
     recipient,
-    responseText,
+    responseText: responseData !== null ? JSON.stringify(responseData) : null,
   };
+}
+
+export function buildReportWhatsAppMessage(
+  report: ReportLike,
+  creatorName: string,
+) {
+  return `
+📢 New Report Submitted
+Project: ${report.project?.name || "-"}
+Category: ${report.category?.name || "-"}
+
+By: ${creatorName}
+${report.description || "-"}
+`.trim();
 }
 
 export async function sendWhatsAppTextToMany(
