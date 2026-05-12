@@ -3,7 +3,16 @@
 	"appName": "wellman",
 	"webDir": "out",
 	"server": {
-		"url": "https://wellmen.vercel.app/",
+		"url": "https://wellmen-git-main-ajaybkaravyasolutions-3883s-projects.vercel.app",
 		"cleartext": false
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 3000,
+			"launchAutoHide": true,
+			"backgroundColor": "#ffffff",
+			"androidSplashResourceName": "splash_logo_inset",
+			"showSpinner": false
+		}
 	}
 }

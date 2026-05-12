@@ -40,7 +40,9 @@ type MenuKey =
   | "projectcategories"
   | "officeCategories"
   | "serviceCategories"
-  | "reportingCategories";
+  | "reportingCategories"
+  | "expenseTypes"
+  | "dailyExpenses";
 
 type DashboardContextValue = {
   user: SessionUser | null;
@@ -85,6 +87,8 @@ const routeByMenu: Record<MenuKey, string> = {
   officeCategories: "/dashboard/office-categories",
   serviceCategories: "/dashboard/service-categories",
   reportingCategories: "/dashboard/reporting-categories",
+  expenseTypes: "/dashboard/expense-types",
+  dailyExpenses: "/dashboard/daily-expenses",
 };
 
 const getActiveMenu = (pathname: string): MenuKey => {
@@ -108,6 +112,8 @@ const getActiveMenu = (pathname: string): MenuKey => {
   if (pathname.startsWith("/dashboard/roles")) return "roles";
   if (pathname.startsWith("/dashboard/permissions")) return "permissions";
   if (pathname.startsWith("/dashboard/reports")) return "reports";
+  if (pathname.startsWith("/dashboard/expense-types")) return "expenseTypes";
+  if (pathname.startsWith("/dashboard/daily-expenses")) return "dailyExpenses";
   if (pathname.startsWith("/dashboard/team")) return "team";
   if (pathname.startsWith("/dashboard/profile")) return "profile";
   return "dashboard";
@@ -152,6 +158,7 @@ export default function DashboardShell({
       "officeCategories",
       "serviceCategories",
       "reportingCategories",
+      "expenseTypes",
     ].includes(activeMenu);
   }, [activeMenu]);
 
@@ -228,8 +235,10 @@ export default function DashboardShell({
           { key: "officeCategories", label: "Office work Categories" },
           { key: "serviceCategories", label: "Service work Categories" },
           { key: "reportingCategories", label: "Reporting work Categories" },
+          { key: "expenseTypes", label: "Expense Types" },
         ],
       });
+      items.push({ key: "dailyExpenses", label: "Daily Expense" });
     }
     items.push({ key: "task-management", label: "Task Management" });
     items.push(
@@ -238,7 +247,6 @@ export default function DashboardShell({
         : { key: "my-query-management", label: "My Query Management" },
     );
     items.push({ key: "reports", label: "Reporting" });
-
     items.push({ key: "profile", label: "My Profile" });
     return items;
   }, [isAdmin]);
@@ -286,7 +294,11 @@ export default function DashboardShell({
                 <Link href="/dashboard">
                   <div className="rbac-logo">
                     <img
-                      src={`${theme === "dark" ? "/images/logo_white.png" : "/images/logo.svg"}`}
+                      src={`${
+                        theme === "dark"
+                          ? "/images/logo_white.png"
+                          : "/images/logo.svg"
+                      }`}
                       className="w-full"
                       alt="WellMen"
                     />
@@ -312,7 +324,9 @@ export default function DashboardShell({
                       >
                         {item.label}
                         <span
-                          className={`ml-2 transition-transform ${masterDataExpanded ? "rotate-90" : ""}`}
+                          className={`ml-2 transition-transform ${
+                            masterDataExpanded ? "rotate-90" : ""
+                          }`}
                         >
                           <FaChevronRight size={20} />
                         </span>
@@ -382,7 +396,11 @@ export default function DashboardShell({
             <Link href="/dashboard">
               <div className="rbac-logo">
                 <img
-                  src={`${theme === "dark" ? "/images/logo_white.png" : "/images/logo.svg"}`}
+                  src={`${
+                    theme === "dark"
+                      ? "/images/logo_white.png"
+                      : "/images/logo.svg"
+                  }`}
                   alt="WellMen"
                 />
               </div>
@@ -392,7 +410,9 @@ export default function DashboardShell({
                 className="rbac-theme-toggle-mobile"
                 type="button"
                 onClick={toggleTheme}
-                aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+                aria-label={`Switch to ${
+                  theme === "light" ? "dark" : "light"
+                } mode`}
                 title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
               >
                 {theme === "light" ? <FaMoon size={14} /> : <FaSun size={14} />}

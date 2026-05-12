@@ -233,7 +233,9 @@ function TaskTableCard({
               aria-label={`${collapsed ? "Expand" : "Collapse"} ${title}`}
             >
               <FaChevronRight
-                className={`transition-transform duration-200 ${collapsed ? "" : "rotate-90"}`}
+                className={`transition-transform duration-200 ${
+                  collapsed ? "" : "rotate-90"
+                }`}
                 size={14}
               />
             </button>
@@ -242,7 +244,11 @@ function TaskTableCard({
       </div>
 
       <div
-        className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${collapsed ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none" : "mt-4 max-h-[4000px] opacity-100 translate-y-0"}`}
+        className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${
+          collapsed
+            ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none"
+            : "mt-4 max-h-[4000px] opacity-100 translate-y-0"
+        }`}
         aria-hidden={collapsed}
       >
         <div className="space-y-3">
@@ -288,7 +294,9 @@ function TaskTableCard({
                     </h4>
                   </div>
                   <span
-                    className={`rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] w-max ${getTaskStatusBadgeClass(task.status)}`}
+                    className={`rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] w-max ${getTaskStatusBadgeClass(
+                      task.status,
+                    )}`}
                   >
                     {formatText(task.status)}
                   </span>
@@ -351,7 +359,9 @@ function QueryTableCard({
               aria-label={`${collapsed ? "Expand" : "Collapse"} ${title}`}
             >
               <FaChevronRight
-                className={`transition-transform duration-200 ${theme === "dark" ? "text-white" : "text-black"} ${collapsed ? "" : "rotate-90"}`}
+                className={`transition-transform duration-200 ${
+                  theme === "dark" ? "text-white" : "text-black"
+                } ${collapsed ? "" : "rotate-90"}`}
                 size={14}
               />
             </button>
@@ -360,7 +370,11 @@ function QueryTableCard({
       </div>
 
       <div
-        className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${collapsed ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none" : "mt-4 max-h-[4000px] opacity-100 translate-y-0"}`}
+        className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${
+          collapsed
+            ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none"
+            : "mt-4 max-h-[4000px] opacity-100 translate-y-0"
+        }`}
         aria-hidden={collapsed}
       >
         <div className="space-y-3">
@@ -389,13 +403,17 @@ function QueryTableCard({
                   </div>
                   <div className="flex flex-col gap-2">
                     <span
-                      className={`rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] ${getQueryStatusBadgeClass(query.status)}`}
+                      className={`rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] ${getQueryStatusBadgeClass(
+                        query.status,
+                      )}`}
                     >
                       {formatText(query.status)}
                     </span>
                     <p>
                       <span
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] ${getQueryPriorityBadgeClass(query.priority)}`}
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] ${getQueryPriorityBadgeClass(
+                          query.priority,
+                        )}`}
                       >
                         {formatText(query.priority)}
                       </span>
@@ -495,8 +513,8 @@ function OverviewContent() {
         ? reportViewData.videoUrls?.length
           ? reportViewData.videoUrls
           : reportViewData.videoUrl
-            ? [reportViewData.videoUrl]
-            : []
+          ? [reportViewData.videoUrl]
+          : []
         : [],
     [reportViewData],
   );
@@ -884,19 +902,16 @@ function OverviewContent() {
             className="rbac-theme-toggle hidden xl:inline-flex"
             type="button"
             onClick={toggleTheme}
-            aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+            aria-label={`Switch to ${
+              theme === "light" ? "dark" : "light"
+            } mode`}
             title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
           >
             {theme === "light" ? <FaMoon size={14} /> : <FaSun size={14} />}
           </button>
           <MenuButton
-            className="flex items-center gap-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl text-left transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400/40"
-            style={{
-              background: "var(--input-bg)",
-              border: "1px solid var(--stroke)",
-              color: "var(--ink)",
-              width: "fit-content",
-            }}
+            className="theme-input flex items-center gap-2 rounded-xl px-2 py-1 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400/40 sm:px-3 sm:py-1.5"
+            style={{ width: "fit-content" }}
           >
             <div>
               <p className="rbac-role-name text-xs sm:text-sm">
@@ -910,21 +925,16 @@ function OverviewContent() {
           </MenuButton>
 
           <MenuItems
+            modal={false}
             anchor="bottom end"
-            className="z-50 mt-2 w-56 origin-top-right rounded-2xl border p-1 shadow-lg outline-none transition duration-150 ease-out data-[closed]:scale-95 data-[closed]:opacity-0"
-            style={{
-              background: "var(--card)",
-              borderColor: "var(--stroke)",
-            }}
+            className="theme-modal-surface z-50 mt-2 w-56 origin-top-right rounded-2xl border p-1 shadow-lg outline-none transition duration-150 ease-out data-[closed]:scale-95 data-[closed]:opacity-0"
           >
             <MenuItem>
               {({ focus }) => (
                 <button
                   type="button"
                   className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors ${
-                    focus
-                      ? "theme-button-secondary theme-text"
-                      : "theme-text-muted"
+                    focus ? "theme-button-secondary theme-text" : "theme-text-muted"
                   }`}
                   onClick={() => {
                     setPasswordNotice(null);
@@ -940,7 +950,9 @@ function OverviewContent() {
                 <button
                   type="button"
                   className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors ${
-                    focus ? "bg-red-50 text-red-700" : "text-red-600"
+                    focus
+                      ? "theme-status-danger"
+                      : "text-[color:var(--theme-danger-text)]"
                   }`}
                   onClick={() => setConfirmLogoutOpen(true)}
                 >
@@ -1209,7 +1221,9 @@ function OverviewContent() {
                       aria-expanded={!collapsed}
                     >
                       <FaChevronRight
-                        className={`transition-transform duration-200 ${collapsed ? "" : "rotate-90"}`}
+                        className={`transition-transform duration-200 ${
+                          collapsed ? "" : "rotate-90"
+                        }`}
                         size={14}
                       />
                     </button>
@@ -1218,7 +1232,11 @@ function OverviewContent() {
 
                 {isAdmin ? (
                   <div
-                    className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${collapsed ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none" : "mt-4 max-h-[4000px] opacity-100 translate-y-0"}`}
+                    className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${
+                      collapsed
+                        ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none"
+                        : "mt-4 max-h-[4000px] opacity-100 translate-y-0"
+                    }`}
                   >
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       <button
@@ -1303,7 +1321,11 @@ function OverviewContent() {
                   </div>
                 ) : (
                   <div
-                    className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${collapsed ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none" : "mt-4 max-h-[4000px] opacity-100 translate-y-0"}`}
+                    className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${
+                      collapsed
+                        ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none"
+                        : "mt-4 max-h-[4000px] opacity-100 translate-y-0"
+                    }`}
                   >
                     {userReportsLoading && (
                       <div className="flex items-center justify-center py-4">
@@ -1510,8 +1532,8 @@ function OverviewContent() {
                   reportViewData.videoUrls.length > 0
                     ? reportViewData.videoUrls
                     : reportViewData.videoUrl
-                      ? [reportViewData.videoUrl]
-                      : []
+                    ? [reportViewData.videoUrl]
+                    : []
                   ).length > 0 && (
                     <>
                       <p className="text-sm font-semibold text-slate-800">
@@ -1602,7 +1624,9 @@ function OverviewContent() {
                 {selectedReportImage && (
                   <Image
                     src={selectedReportImage}
-                    alt={`Report image ${reportImageIndex !== null ? reportImageIndex + 1 : 1}`}
+                    alt={`Report image ${
+                      reportImageIndex !== null ? reportImageIndex + 1 : 1
+                    }`}
                     width={1400}
                     height={900}
                     unoptimized

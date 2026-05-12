@@ -530,6 +530,21 @@ function TodoListContent() {
 
   const isModalSaving = savingId === modalTarget?.id;
 
+  const statusLabel = (value: string) => {
+    switch (value) {
+      case "TODO":
+        return "To Do";
+      case "IN_PROGRESS":
+        return "In Progress";
+      case "ON_HOLD":
+        return "On Hold";
+      case "COMPLETED":
+        return "Completed";
+      default:
+        return value.replaceAll("_", " ");
+    }
+  };
+
   return (
     <>
       <section className="rbac-section rbac-container">
@@ -750,8 +765,7 @@ function TodoListContent() {
                           : "-"}
                       </p>
                       <p>
-                        <strong>Status:</strong>{" "}
-                        {todo.status.replaceAll("_", " ")}
+                        <strong>Status:</strong> {statusLabel(todo.status)}
                       </p>
                       <p>
                         <strong>Comments:</strong> {todo.comments || "-"}
