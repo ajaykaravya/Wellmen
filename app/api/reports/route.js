@@ -281,7 +281,9 @@ export async function POST(req) {
             .collection("items")
             .add({
               title: "New Report",
-              message: `${created.category?.name || "-"}\nNew report for ${created.project.name} has been submitted by ${creatorName}`,
+              message: `${created.category?.name || "-"}\nNew report for ${
+                created.project.name
+              } has been submitted by ${creatorName}`,
               createdAt: new Date(),
               isRead: false,
               reportId: created.id,
@@ -315,7 +317,9 @@ export async function POST(req) {
             activeTokens.map((item) => item.token),
             {
               title: "New Report",
-              body: `${created.category?.name || "-"}\nNew report for ${created.project.name} has been submitted by ${creatorName}`,
+              body: `${created.category?.name || "-"}\nNew report for ${
+                created.project.name
+              } has been submitted by ${creatorName}`,
               data: {
                 reportId: created.id,
                 projectId: created.projectId,
@@ -352,6 +356,25 @@ export async function POST(req) {
           whatsAppRecipients,
           buildReportWhatsAppMessage(created, creatorName),
         );
+
+        for (const recipient of whatsAppRecipients) {
+          for (const imageUrl of created.imageUrls || []) {
+            await sendWhatsAppMedia({
+              to: recipient,
+              mediaUrl: imageUrl,
+              type: "image",
+              caption: `Report Image - ${created.project?.name || ""}`,
+            });
+          }
+
+          for (const videoUrl of created.videoUrls || []) {
+            await sendWhatsAppMedia({
+              to: recipient,
+              mediaUrl: videoUrl,
+              type: "video",
+            });
+          }
+        }
 
         if (whatsappResult.failureCount > 0) {
           console.warn("WhatsApp delivery completed with failures", {

@@ -129,6 +129,62 @@ export async function sendWhatsAppText(
   };
 }
 
+type SendWhatsAppMediaOptions = {
+  to: string;
+  mediaUrl: string;
+  type: "image" | "video";
+  caption?: string;
+};
+
+export async function sendWhatsAppMedia(
+  options: SendWhatsAppMediaOptions,
+) {
+  const config = getWhatsAppConfig();
+
+  if (!config) {
+    return {
+      ok: false,
+      error: "WhatsApp configuration missing",
+    };
+  }
+
+  const recipient = normalizeWhatsAppRecipient(options.to);
+
+  if (!recipient) {
+    return {
+      ok: false,
+      error: "Invalid recipient",
+    };
+  }
+
+  const response = await fetch(
+    `https://graph.facebook.com/${config.graphApiVersion}/${config.phoneNumberId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: recipient,
+        type: options.type,
+        [options.type]: {
+          link: options.mediaUrl,
+          caption: options.caption,
+        },
+      }),
+    },
+  );
+
+  const data = await response.json();
+
+  return {
+    ok: response.ok,
+    response: data,
+  };
+}
+
 export function buildReportWhatsAppMessage(
   report: ReportLike,
   creatorName: string,
