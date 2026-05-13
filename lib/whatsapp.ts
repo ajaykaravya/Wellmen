@@ -14,12 +14,15 @@ type SendWhatsAppTextOptions = {
 type ReportLike = {
   project?: {
     name?: string | null;
+    city?: string | null;
   } | null;
   category?: {
     name?: string | null;
   } | null;
   description?: string | null;
   reportDate?: string | Date | null;
+  imageUrls?: string[] | null;
+  videoUrls?: string[] | null;
 };
 
 const DEFAULT_GRAPH_API_VERSION = "v21.0";
@@ -130,13 +133,27 @@ export function buildReportWhatsAppMessage(
   report: ReportLike,
   creatorName: string,
 ) {
+  const attachments = [
+    ...(report.imageUrls || []),
+    ...(report.videoUrls || []),
+  ];
+
   return `
 📢 New Report Submitted
-Project: ${report.project?.name || "-"}
+
+Project: ${report.project?.name || "-"}${report.project?.city ? ` - ${report.project.city}` : ""}
+
 Category: ${report.category?.name || "-"}
 
 By: ${creatorName}
+
+Description:
 ${report.description || "-"}
+
+${attachments.length > 0
+      ? `Attachments:\n${attachments.join("\n")}`
+      : ""
+    }
 `.trim();
 }
 
@@ -174,9 +191,9 @@ export async function sendWhatsAppTextToMany(
     result.status === "fulfilled"
       ? result.value
       : {
-          ok: false,
-          error: result.reason instanceof Error ? result.reason.message : String(result.reason),
-        },
+        ok: false,
+        error: result.reason instanceof Error ? result.reason.message : String(result.reason),
+      },
   );
 
   const sentCount = settledResults.filter((result) => result.ok).length;
