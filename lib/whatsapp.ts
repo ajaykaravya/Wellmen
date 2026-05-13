@@ -21,8 +21,6 @@ type ReportLike = {
   } | null;
   description?: string | null;
   reportDate?: string | Date | null;
-  imageUrls?: string[] | null;
-  videoUrls?: string[] | null;
 };
 
 const DEFAULT_GRAPH_API_VERSION = "v21.0";
@@ -189,11 +187,6 @@ export function buildReportWhatsAppMessage(
   report: ReportLike,
   creatorName: string,
 ) {
-  const attachments = [
-    ...(report.imageUrls || []),
-    ...(report.videoUrls || []),
-  ];
-
   return `
 📢 New Report Submitted
 
@@ -205,11 +198,6 @@ By: ${creatorName}
 
 Description:
 ${report.description || "-"}
-
-${attachments.length > 0
-      ? `Attachments:\n${attachments.join("\n")}`
-      : ""
-    }
 `.trim();
 }
 
