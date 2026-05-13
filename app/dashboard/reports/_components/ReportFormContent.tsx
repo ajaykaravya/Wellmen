@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FaSpinner } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
@@ -9,11 +9,20 @@ import CustomDatePicker from "../../../components/CustomDatePicker";
 import Loading from "../../../components/Loading";
 import Link from "next/link";
 import { getTodayInputDate, formatToDDMMYYYY } from "@/lib/dateUtils";
+import {
+  Combobox,
+  ComboboxButton,
+  ComboboxInput,
+  ComboboxOption,
+  ComboboxOptions,
+} from "@headlessui/react";
+import { ChevronDownIcon } from "@heroicons/react/16/solid";
 
 type ProjectOption = {
   id: string;
   name: string;
   status: string;
+  city?: string | null;
 };
 
 type CategoryOption = {
@@ -50,6 +59,16 @@ const formatDateForInput = (value?: string) => {
   return formatted === "-" ? "" : formatted;
 };
 
+const toArrayBuffer = (value: string | Uint8Array): ArrayBuffer => {
+  if (typeof value === "string") {
+    return new TextEncoder().encode(value).buffer;
+  }
+
+  const copy = new Uint8Array(value.byteLength);
+  copy.set(value);
+  return copy.buffer as ArrayBuffer;
+};
+
 export default function ReportFormContent({
   reportId,
 }: ReportFormContentProps) {
@@ -68,6 +87,7 @@ export default function ReportFormContent({
   const [existingVideoUrls, setExistingVideoUrls] = useState<string[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [videoFiles, setVideoFiles] = useState<File[]>([]);
+  const [projectQuery, setProjectQuery] = useState("");
 
   const [form, setForm] = useState<ReportFormState>({
     reportDate: getTodayInputDate(),
@@ -119,8 +139,8 @@ export default function ReportFormContent({
               Array.isArray(report.videoUrls)
                 ? report.videoUrls
                 : report.videoUrl
-                  ? [report.videoUrl]
-                  : [],
+                ? [report.videoUrl]
+                : [],
             );
           }
         }
@@ -134,6 +154,38 @@ export default function ReportFormContent({
 
     loadData();
   }, [reportId]);
+
+  const selectedProject = useMemo(
+    () => projects.find((project) => project.id === form.projectId) || null,
+    [form.projectId, projects],
+  );
+
+  const filteredProjects = useMemo(() => {
+    const normalizedQuery = projectQuery.trim().toLowerCase();
+    const filtered = normalizedQuery
+      ? projects.filter((project) => {
+          const name = project.name.toLowerCase();
+          const status = (project.status || "").toLowerCase();
+          return (
+            name.includes(normalizedQuery) || status.includes(normalizedQuery)
+          );
+        })
+      : projects;
+
+    if (
+      selectedProject &&
+      !filtered.some((project) => project.id === selectedProject.id)
+    ) {
+      return [selectedProject, ...filtered];
+    }
+
+    return filtered;
+  }, [projectQuery, projects, selectedProject]);
+
+  const formatProjectLabel = (project: ProjectOption | null) => {
+    if (!project) return "";
+    return project.name.trim();
+  };
 
   const isCreateBlocked = isAdmin && !reportId;
 
@@ -212,7 +264,8 @@ export default function ReportFormContent({
                 `compressed_${file.name}`,
               ]);
               const data = await ffmpeg.readFile(`compressed_${file.name}`);
-              return new File([data as any], file.name, {
+              const normalizedData = toArrayBuffer(data as string | Uint8Array);
+              return new File([normalizedData], file.name, {
                 type: file.type,
               });
             }
@@ -311,25 +364,59 @@ export default function ReportFormContent({
 
                 <label className="rbac-label">
                   Project <span className="text-red-600">*</span>
-                  <select
-                    className="rbac-input rbac-select"
-                    value={form.projectId}
-                    onChange={(event) =>
+                  <Combobox
+                    value={selectedProject}
+                    onChange={(project: ProjectOption | null) => {
                       setForm((prev) => ({
                         ...prev,
-                        projectId: event.target.value,
-                      }))
-                    }
+                        projectId: project?.id || "",
+                      }));
+                      setProjectQuery("");
+                    }}
+                    nullable
                   >
-                    {projects.length === 0 && (
-                      <option value="">No project available</option>
-                    )}
-                    {projects.map((project) => (
-                      <option key={project.id} value={project.id}>
-                        {project.name}
-                      </option>
-                    ))}
-                  </select>
+                    <div className="relative mb-2">
+                      <ComboboxInput
+                        className="theme-input rbac-input w-full pr-10"
+                        placeholder="Search projects"
+                        displayValue={formatProjectLabel}
+                        onChange={(event) =>
+                          setProjectQuery(event.target.value)
+                        }
+                      />
+                      <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+                        <ChevronDownIcon
+                          className="h-4 w-4"
+                          aria-hidden="true"
+                        />
+                      </ComboboxButton>
+                      <ComboboxOptions
+                        modal={false}
+                        className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]"
+                      >
+                        {filteredProjects.length === 0 ? (
+                          <div className="px-3 py-2 text-sm text-[color:var(--theme-text-muted)]">
+                            No projects found
+                          </div>
+                        ) : (
+                          filteredProjects.map((project) => (
+                            <ComboboxOption
+                              key={project.id}
+                              value={project}
+                              className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                            >
+                              <div className="flex flex-col items-start">
+                                <span>{project.name}</span>
+                                <span className="text-xs text-[color:var(--theme-text-muted)]">
+                                  {project.city || "No city"}
+                                </span>
+                              </div>
+                            </ComboboxOption>
+                          ))
+                        )}
+                      </ComboboxOptions>
+                    </div>
+                  </Combobox>
                 </label>
                 {errors.projectId && (
                   <p className="text-sm text-red-600 mt-1">

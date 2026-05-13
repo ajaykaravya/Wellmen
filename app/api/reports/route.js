@@ -364,7 +364,9 @@ export async function POST(req) {
               to: recipient,
               mediaUrl: imageUrl,
               type: "image",
-              caption: `Report Image - ${created.project?.name || ""}`,
+              caption: `Project: ${
+                created.project?.name || "-"
+              }\nBy: ${creatorName}`,
             });
           }
 
@@ -373,6 +375,9 @@ export async function POST(req) {
               to: recipient,
               mediaUrl: videoUrl,
               type: "video",
+              caption: `Project: ${
+                created.project?.name || "-"
+              }\nBy: ${creatorName}`,
             });
           }
         }
