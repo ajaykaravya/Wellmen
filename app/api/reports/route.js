@@ -7,6 +7,7 @@ import { sendPushToTokens } from "@/lib/pushNotifications";
 import {
   buildReportWhatsAppMessage,
   sendWhatsAppTextToMany,
+  sendWhatsAppMedia,
 } from "@/lib/whatsapp";
 
 export const runtime = "nodejs";
