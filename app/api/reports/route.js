@@ -351,6 +351,8 @@ export async function POST(req) {
       .map((recipient) => recipient.mobileNumber)
       .filter(Boolean);
 
+    console.log("WhatsApp recipients:", whatsAppRecipients);
+
     if (whatsAppRecipients.length > 0) {
       try {
         const whatsappResult = await sendWhatsAppTextToMany(

@@ -120,6 +120,12 @@ export async function sendWhatsAppText(
     };
   }
 
+  console.log("WhatsApp Response:", {
+    recipient,
+    status: response.status,
+    responseData,
+  });
+
   return {
     ok: true,
     recipient,
@@ -205,6 +211,9 @@ export async function sendWhatsAppTextToMany(
   recipients: string[],
   message: string,
 ) {
+
+  console.log("Original WhatsApp recipients:", recipients);
+
   const uniqueRecipients = Array.from(
     new Set(
       recipients
@@ -212,6 +221,8 @@ export async function sendWhatsAppTextToMany(
         .filter((recipient): recipient is string => Boolean(recipient)),
     ),
   );
+
+  console.log("Unique WhatsApp recipients:", uniqueRecipients);
 
   if (uniqueRecipients.length === 0) {
     return {
