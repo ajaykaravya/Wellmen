@@ -204,6 +204,14 @@ const shiftInputDate = (value: string, diffDays: number) => {
   return `${day}/${month}/${year}`;
 };
 
+type DailyExpenseTransactionType = "INCOME" | "EXPENSE";
+
+const formatAmount = (value: number) =>
+  Number(value || 0).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
 function TaskTableCard({
   title,
   rows,
@@ -456,6 +464,8 @@ function OverviewContent() {
   const [adminDate, setAdminDate] = useState(getTodayInputDate());
   const [adminReports, setAdminReports] = useState<AdminReportRow[]>([]);
   const [adminLoading, setAdminLoading] = useState(false);
+  const [currentBalance, setCurrentBalance] = useState<number | null>(null);
+  const [balanceLoading, setBalanceLoading] = useState(false);
   const [userReports, setUserReports] = useState<AdminReportRow[]>([]);
   const [userReportsLoading, setUserReportsLoading] = useState(false);
   const [reportViewOpen, setReportViewOpen] = useState(false);
@@ -617,6 +627,30 @@ function OverviewContent() {
     loadUserReports();
   }, [loadUserReports]);
 
+  const loadCurrentBalance = useCallback(async () => {
+    if (!isAdmin) {
+      setCurrentBalance(null);
+      return;
+    }
+
+    setBalanceLoading(true);
+    try {
+      const res = await fetch("/api/daily-expenses?page=1&pageSize=1");
+      if (!res.ok) return;
+
+      const data = await res.json();
+      setCurrentBalance(typeof data?.balance === "number" ? data.balance : 0);
+    } catch (error) {
+      console.error("Failed to load current balance", error);
+    } finally {
+      setBalanceLoading(false);
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
+    loadCurrentBalance();
+  }, [loadCurrentBalance]);
+
   const openReportView = useCallback(async (row: AdminReportRow) => {
     setReportViewOpen(true);
     setReportViewLoading(true);
@@ -742,6 +776,13 @@ function OverviewContent() {
     setModalOpen(true);
   }, []);
 
+  const openDailyExpenseEntry = useCallback(
+    (transactionType: DailyExpenseTransactionType) => {
+      router.push(`/dashboard/daily-expenses/new?type=${transactionType}`);
+    },
+    [router],
+  );
+
   const closeUpdateModal = useCallback(() => {
     setModalOpen(false);
     setModalTarget(null);
@@ -770,18 +811,6 @@ function OverviewContent() {
   const queryCompleted = query
     ? query.filter((q) => q.status === "COMPLETED").length
     : 0;
-
-  const statsChartData = (values: number[]) => ({
-    labels: values.map((_, index) => `p${index}`),
-    datasets: [
-      {
-        data: values,
-        borderColor: "#2596be",
-        backgroundColor: "rgba(37,150,190,0.2)",
-        fill: true,
-      },
-    ],
-  });
 
   const isModalDirty =
     !!modalTarget &&
@@ -934,7 +963,9 @@ function OverviewContent() {
                 <button
                   type="button"
                   className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors ${
-                    focus ? "theme-button-secondary theme-text" : "theme-text-muted"
+                    focus
+                      ? "theme-button-secondary theme-text"
+                      : "theme-text-muted"
                   }`}
                   onClick={() => {
                     setPasswordNotice(null);
@@ -1381,6 +1412,43 @@ function OverviewContent() {
           </div>
         </div>
       </section>
+
+      {isAdmin && (
+        <section className="rbac-section mt-4 rbac-container">
+          <div className="rbac-card p-5 sm:p-6">
+            <div className="flex flex-wrap justify-between bg-[var(--theme-surface-2)] sm:p-5">
+              <div className="flex items-center gap-2">
+                <h3 className="sm:text-base text-sm font-medium">
+                  Current balance:
+                </h3>
+                <p className="text-slate-500 sm:text-base text-sm">
+                  {balanceLoading
+                    ? "Loading..."
+                    : currentBalance === null
+                    ? "—"
+                    : formatAmount(currentBalance)}
+                </p>
+              </div>
+              <div className="mt-4 flex gap-3">
+                <button
+                  type="button"
+                  className="rbac-button h-fit"
+                  onClick={() => openDailyExpenseEntry("INCOME")}
+                >
+                  Add Income
+                </button>
+                <button
+                  type="button"
+                  className="rbac-button rbac-button-secondary h-fit"
+                  onClick={() => openDailyExpenseEntry("EXPENSE")}
+                >
+                  Add Expense
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className=""></section>
 

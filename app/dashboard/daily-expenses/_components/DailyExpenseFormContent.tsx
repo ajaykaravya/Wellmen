@@ -35,6 +35,7 @@ type DailyExpenseFormState = {
 
 type DailyExpenseFormContentProps = {
   dailyExpenseId?: string;
+  initialTransactionType?: TransactionType;
 };
 
 const TRANSACTION_OPTIONS: { value: TransactionType; label: string }[] = [
@@ -48,10 +49,11 @@ function getDisplayLabel(option: ExpenseTypeOption) {
 
 export default function DailyExpenseFormContent({
   dailyExpenseId,
+  initialTransactionType = "INCOME",
 }: DailyExpenseFormContentProps) {
   const router = useRouter();
   const [form, setForm] = useState<DailyExpenseFormState>({
-    transactionType: "INCOME",
+    transactionType: initialTransactionType,
     amount: "",
     expenseTypeId: "",
     date: getTodayInputDate(),
