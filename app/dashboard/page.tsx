@@ -1416,7 +1416,7 @@ function OverviewContent() {
       {isAdmin && (
         <section className="rbac-section mt-4 rbac-container">
           <div className="rbac-card p-5 sm:p-6">
-            <div className="flex flex-wrap justify-between bg-[var(--theme-surface-2)] sm:p-5">
+            <div className="flex flex-wrap justify-between">
               <div className="flex items-center gap-2">
                 <h3 className="sm:text-base text-sm font-medium">
                   Current balance:
