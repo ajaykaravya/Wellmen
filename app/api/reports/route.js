@@ -4,6 +4,11 @@ import { requireAuth } from "@/lib/rbac";
 import { saveReportImages, saveReportVideos } from "./_utils/upload";
 import { firestore } from "@/lib/firebase-admin";
 import { sendPushToTokens } from "@/lib/pushNotifications";
+import {
+  buildReportWhatsAppMessage,
+  sendWhatsAppTextToMany,
+  sendWhatsAppMedia,
+} from "@/lib/whatsapp";
 
 export const runtime = "nodejs";
 
@@ -251,7 +256,7 @@ export async function POST(req) {
     });
 
     // 🔹 Get Admin + Manager users
-    const admins = await prisma.user.findMany({
+    const recipients = await prisma.user.findMany({
       where: {
         role: {
           name: {
@@ -259,20 +264,27 @@ export async function POST(req) {
           },
         },
       },
-      select: { id: true },
+      select: {
+        id: true,
+        mobileNumber: true,
+        firstName: true,
+        lastName: true,
+      },
     });
 
     // 🔹 Send notifications
     if (firestore) {
       await Promise.allSettled(
-        admins.map((admin) =>
+        recipients.map((recipient) =>
           firestore
             .collection("notifications")
-            .doc(admin.id)
+            .doc(recipient.id)
             .collection("items")
             .add({
               title: "New Report",
-              message: `${created.category?.name || "-"}\nNew report for ${created.project.name} has been submitted by ${creatorName}`,
+              message: `${created.category?.name || "-"}\nNew report for ${
+                created.project.name
+              } has been submitted by ${creatorName}`,
               createdAt: new Date(),
               isRead: false,
               reportId: created.id,
@@ -306,7 +318,9 @@ export async function POST(req) {
             activeTokens.map((item) => item.token),
             {
               title: "New Report",
-              body: `${created.category?.name || "-"}\nNew report for ${created.project.name} has been submitted by ${creatorName}`,
+              body: `${created.category?.name || "-"}\nNew report for ${
+                created.project.name
+              } has been submitted by ${creatorName}`,
               data: {
                 reportId: created.id,
                 projectId: created.projectId,
@@ -330,6 +344,54 @@ export async function POST(req) {
         } catch (pushError) {
           console.error("Push notification delivery failed", pushError);
         }
+      }
+    }
+
+    const whatsAppRecipients = recipients
+      .map((recipient) => recipient.mobileNumber)
+      .filter(Boolean);
+
+    console.log("WhatsApp recipients:", whatsAppRecipients);
+
+    if (whatsAppRecipients.length > 0) {
+      try {
+        const whatsappResult = await sendWhatsAppTextToMany(
+          whatsAppRecipients,
+          buildReportWhatsAppMessage(created, creatorName),
+        );
+
+        for (const recipient of whatsAppRecipients) {
+          for (const imageUrl of created.imageUrls || []) {
+            await sendWhatsAppMedia({
+              to: recipient,
+              mediaUrl: imageUrl,
+              type: "image",
+              caption: `Project: ${
+                created.project?.name || "-"
+              }\nBy: ${creatorName}`,
+            });
+          }
+
+          for (const videoUrl of created.videoUrls || []) {
+            await sendWhatsAppMedia({
+              to: recipient,
+              mediaUrl: videoUrl,
+              type: "video",
+              caption: `Project: ${
+                created.project?.name || "-"
+              }\nBy: ${creatorName}`,
+            });
+          }
+        }
+
+        if (whatsappResult.failureCount > 0) {
+          console.warn("WhatsApp delivery completed with failures", {
+            sentCount: whatsappResult.sentCount,
+            failureCount: whatsappResult.failureCount,
+          });
+        }
+      } catch (whatsappError) {
+        console.error("WhatsApp notification delivery failed", whatsappError);
       }
     }
 
