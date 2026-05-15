@@ -6,8 +6,10 @@ import { ColumnDef, getCoreRowModel } from "@tanstack/table-core";
 import { formatToDDMMYYYY } from "@/lib/dateUtils";
 import useDebounce from "@/app/hooks/useDebounce";
 import DashboardShell from "../_components/DashboardShell";
+import AppliedFilterSummary from "../../components/AppliedFilterSummary";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import CustomDatePicker from "../../components/CustomDatePicker";
+import ListingFilterDialog from "../../components/ListingFilterDialog";
 import { toast } from "react-toastify";
 import {
   FaChevronLeft,
@@ -15,6 +17,7 @@ import {
   FaEdit,
   FaTrash,
   FaSpinner,
+  FaFilter
 } from "react-icons/fa";
 import Link from "next/link";
 
@@ -46,6 +49,12 @@ function ProjectListContent() {
   const [cityOptions, setCityOptions] = useState<string[]>([]);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftQuery, setDraftQuery] = useState("");
+  const [draftStatusFilter, setDraftStatusFilter] = useState("");
+  const [draftCityFilter, setDraftCityFilter] = useState("");
+  const [draftFromDate, setDraftFromDate] = useState("");
+  const [draftToDate, setDraftToDate] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<ProjectRow | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -281,91 +290,88 @@ function ProjectListContent() {
     }
   };
 
+  const activeFilterCount = [
+    query.trim(),
+    statusFilter,
+    cityFilter,
+    fromDate,
+    toDate,
+    ].filter(Boolean).length;
+
+  const appliedFilters = [
+    query.trim(),
+    statusFilter ? statusLabel(statusFilter) : "",
+    cityFilter,
+    fromDate,
+    toDate,
+  ].filter(Boolean);
+
+  const openFilters = useCallback(() => {
+    setDraftQuery(query);
+    setDraftStatusFilter(statusFilter);
+    setDraftCityFilter(cityFilter);
+    setDraftFromDate(fromDate);
+    setDraftToDate(toDate);
+    setFilterOpen(true);
+  }, [cityFilter, fromDate, query, statusFilter, toDate]);
+
+  const closeFilters = useCallback(() => {
+    setFilterOpen(false);
+  }, []);
+
+  const applyFilters = useCallback(() => {
+    setPageIndex(0);
+    setQuery(draftQuery);
+    setStatusFilter(draftStatusFilter);
+    setCityFilter(draftCityFilter);
+    setFromDate(draftFromDate);
+    setToDate(draftToDate);
+    setFilterOpen(false);
+  }, [
+    draftCityFilter,
+    draftFromDate,
+    draftQuery,
+    draftStatusFilter,
+    draftToDate,
+  ]);
+
   return (
     <>
       {" "}
       <section className="rbac-section rbac-container">
         <div className="rbac-card">
-          <div className="flex justify-between item-center">
+<div className="flex items-center justify-between gap-3">
             <h3 className="rbac-title-lg">Projects List</h3>
-            <Link href="/dashboard/projects/new">
-              <button className="rbac-button" type="button">
-                Add Project
+            <div className="flex
+             gap-2">
+              <button
+                className="rbac-button rbac-button-secondary theme-button-secondary inline-flex items-center gap-2"
+                type="button"
+                onClick={openFilters}
+              >
+                <FaFilter />
+                <span>Filters</span>
               </button>
-            </Link>
+              <Link href="/dashboard/users/new">
+                <button className="rbac-button" type="button">
+                  Add User
+                </button>
+              </Link>
+            </div>
           </div>
-          <div className="my-4 flex flex-wrap gap-2 ">
-            <input
-              className="rbac-input-filter"
-              type="text"
-              placeholder="Search name, city or contact..."
-              value={query}
-              onChange={(event) => {
-                setPageIndex(0);
-                setQuery(event.target.value);
-              }}
-            />
-            <select
-              className="rbac-input-filter rbac-select"
-              value={statusFilter}
-              onChange={(event) => {
-                setPageIndex(0);
-                setStatusFilter(event.target.value);
-              }}
-            >
-              <option value="">All status</option>
-              <option value="PENDING">Pending</option>
-              <option value="IN_PROGRESS">In progress</option>
-              <option value="ON_HOLD">On hold</option>
-            </select>
-            <select
-              className="rbac-input-filter rbac-select"
-              value={cityFilter}
-              onChange={(event) => {
-                setPageIndex(0);
-                setCityFilter(event.target.value);
-              }}
-            >
-              <option value="">All cities</option>
-              {cityOptions.map((city) => (
-                <option key={city} value={city}>
-                  {city}
-                </option>
-              ))}
-            </select>
-            <CustomDatePicker
-              value={fromDate}
-              onChange={(value) => {
-                setPageIndex(0);
-                setFromDate(value);
-              }}
-              placeholder="From date"
-              className="rbac-input-filter"
-            />
-            <CustomDatePicker
-              value={toDate}
-              onChange={(value) => {
-                setPageIndex(0);
-                setToDate(value);
-              }}
-              placeholder="To date"
-              className="rbac-input-filter"
-            />
-            <button
-              className="rbac-button rbac-button-secondary"
-              type="button"
-              onClick={() => {
-                setPageIndex(0);
-                setQuery("");
-                setStatusFilter("");
-                setCityFilter("");
-                setFromDate("");
-                setToDate("");
-              }}
-            >
-              Clear filters
-            </button>
-          </div>
+
+          <AppliedFilterSummary
+            items={appliedFilters}
+            onClear={() => {
+              setPageIndex(0);
+              setQuery("");
+              setStatusFilter("");
+              setCityFilter("");
+              setFromDate("");
+              setToDate("");
+              setFilterOpen(false);
+            }}
+          />
 
           <div className="mt-4">
             <div className="hidden md:block overflow-x-auto">
@@ -562,6 +568,56 @@ function ProjectListContent() {
           setConfirmTarget(null);
         }}
       />
+      <ListingFilterDialog
+        open={filterOpen}
+        title="Project Filters"
+        description="Update the filters and apply them when you're ready."
+        onClose={closeFilters}
+        onApply={applyFilters}
+        activeCount={activeFilterCount}
+      >
+        <input
+          className="rbac-input-filter"
+          type="text"
+          placeholder="Search name, city or contact..."
+          value={draftQuery}
+          onChange={(event) => setDraftQuery(event.target.value)}
+        />
+        <select
+          className="rbac-input-filter rbac-select"
+          value={draftStatusFilter}
+          onChange={(event) => setDraftStatusFilter(event.target.value)}
+        >
+          <option value="">All status</option>
+          <option value="PENDING">Pending</option>
+          <option value="IN_PROGRESS">In progress</option>
+          <option value="ON_HOLD">On hold</option>
+        </select>
+        <select
+          className="rbac-input-filter rbac-select"
+          value={draftCityFilter}
+          onChange={(event) => setDraftCityFilter(event.target.value)}
+        >
+          <option value="">All cities</option>
+          {cityOptions.map((city) => (
+            <option key={city} value={city}>
+              {city}
+            </option>
+          ))}
+        </select>
+        <CustomDatePicker
+          value={draftFromDate}
+          onChange={setDraftFromDate}
+          placeholder="From date"
+          className="rbac-input-filter"
+        />
+        <CustomDatePicker
+          value={draftToDate}
+          onChange={setDraftToDate}
+          placeholder="To date"
+          className="rbac-input-filter"
+        />
+      </ListingFilterDialog>
     </>
   );
 }

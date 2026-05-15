@@ -4,7 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { flexRender, useReactTable } from "@tanstack/react-table";
 import { ColumnDef, getCoreRowModel } from "@tanstack/table-core";
 import DashboardShell from "../_components/DashboardShell";
+import AppliedFilterSummary from "../../components/AppliedFilterSummary";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import ListingFilterDialog from "../../components/ListingFilterDialog";
 import useDebounce from "@/app/hooks/useDebounce";
 import { toast } from "react-toastify";
 import {
@@ -13,6 +15,7 @@ import {
   FaEdit,
   FaTrash,
   FaSpinner,
+  FaFilter
 } from "react-icons/fa";
 import Link from "next/link";
 
@@ -30,6 +33,9 @@ function ExpenseTypeListContent() {
   const [total, setTotal] = useState(0);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftQuery, setDraftQuery] = useState("");
+  const [draftStatusFilter, setDraftStatusFilter] = useState("");
   const debouncedQuery = useDebounce(query, 400);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<ExpenseTypeRow | null>(
@@ -171,54 +177,66 @@ function ExpenseTypeListContent() {
     }
   };
 
+  const activeFilterCount = [query.trim(), statusFilter].filter(Boolean).length;
+
+  const openFilters = useCallback(() => {
+    setDraftQuery(query);
+    setDraftStatusFilter(statusFilter);
+    setFilterOpen(true);
+  }, [query, statusFilter]);
+
+  const closeFilters = useCallback(() => {
+    setFilterOpen(false);
+  }, []);
+
+  const applyFilters = useCallback(() => {
+    setPageIndex(0);
+    setQuery(draftQuery);
+    setStatusFilter(draftStatusFilter);
+    setFilterOpen(false);
+  }, [draftQuery, draftStatusFilter]);
+
+  const appliedFilters = [
+    query.trim(),
+    statusFilter ? statusLabel(statusFilter) : "",
+  ].filter(Boolean);
+
   return (
     <>
       <section className="rbac-section rbac-container">
         <div className="rbac-card">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="rbac-title-lg">Expense Types</h3>
-            <Link href="/dashboard/expense-types/new">
-              <button className="rbac-button" type="button">
-                Add Expense Type
+            <div className="flex items-center gap-2">
+              <button
+                className="rbac-button rbac-button-secondary theme-button-secondary inline-flex items-center gap-2"
+                type="button"
+                onClick={openFilters}
+              >
+                <FaFilter /> <span> Filters</span>
+                {activeFilterCount > 0 && (
+                  <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[color:var(--brand)] px-1 text-[10px] font-semibold text-white">
+                    {activeFilterCount}
+                  </span>
+                )}
               </button>
-            </Link>
+              <Link href="/dashboard/expense-types/new">
+                  <button className="rbac-button" type="button">
+                    Add Expense Type
+                  </button>
+                </Link>
+            </div>
           </div>
 
-          <div className="my-4 flex flex-wrap gap-2">
-            <input
-              className="rbac-input-filter"
-              type="text"
-              placeholder="Search name"
-              value={query}
-              onChange={(event) => {
-                setPageIndex(0);
-                setQuery(event.target.value);
-              }}
-            />
-            <select
-              className="rbac-input-filter"
-              value={statusFilter}
-              onChange={(event) => {
-                setPageIndex(0);
-                setStatusFilter(event.target.value);
-              }}
-            >
-              <option value="">All status</option>
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
-            </select>
-            <button
-              className="rbac-button rbac-button-secondary"
-              type="button"
-              onClick={() => {
-                setPageIndex(0);
-                setQuery("");
-                setStatusFilter("");
-              }}
-            >
-              Clear filters
-            </button>
-          </div>
+          <AppliedFilterSummary
+            items={appliedFilters}
+            onClear={() => {
+              setPageIndex(0);
+              setQuery("");
+              setStatusFilter("");
+              setFilterOpen(false);
+            }}
+          />
 
           <div className="mt-4">
             <div className="hidden md:block overflow-x-auto">
@@ -315,20 +333,21 @@ function ExpenseTypeListContent() {
                           {statusLabel(expenseType.status)}
                         </span>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex">
                         <Link
                           href={`/dashboard/expense-types/${expenseType.id}`}
                         >
                           <button className="rbac-link" type="button">
-                            <FaEdit />
+                            <FaEdit size={18} />
                           </button>
                         </Link>
                         <button
+                          style={{ padding: "2px" }}
                           className="rbac-link danger"
                           type="button"
                           onClick={() => handleDeleteExpenseType(expenseType)}
                         >
-                          <FaTrash />
+                          <FaTrash size={18} />
                         </button>
                       </div>
                     </div>
@@ -397,6 +416,31 @@ function ExpenseTypeListContent() {
           setConfirmTarget(null);
         }}
       />
+      <ListingFilterDialog
+        open={filterOpen}
+        title="Expense Type Filters"
+        description="Update the filters and apply them when you're ready."
+        onClose={closeFilters}
+        onApply={applyFilters}
+        activeCount={activeFilterCount}
+      >
+        <input
+          className="rbac-input-filter"
+          type="text"
+          placeholder="Search name"
+          value={draftQuery}
+          onChange={(event) => setDraftQuery(event.target.value)}
+        />
+        <select
+          className="rbac-input-filter"
+          value={draftStatusFilter}
+          onChange={(event) => setDraftStatusFilter(event.target.value)}
+        >
+          <option value="">All status</option>
+          <option value="ACTIVE">Active</option>
+          <option value="INACTIVE">Inactive</option>
+        </select>
+      </ListingFilterDialog>
     </>
   );
 }

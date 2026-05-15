@@ -9,6 +9,7 @@ import DashboardShell, {
   clearCachedSession,
   useDashboardContext,
 } from "./_components/DashboardShell";
+import { TaskTableCard } from "./_components/TaskTableCard";
 import ConfirmDialog from "../components/ConfirmDialog";
 import CustomDatePicker from "../components/CustomDatePicker";
 import {
@@ -48,7 +49,6 @@ import {
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
 import { useThemeMode } from "../components/ThemeProvider";
 import { IoIosClose } from "react-icons/io";
-import { FaEdit } from "react-icons/fa";
 import { MdOutlineFileDownload } from "react-icons/md";
 import { FaLink } from "react-icons/fa6";
 
@@ -116,15 +116,6 @@ type AdminReportRow = {
   videoUrls?: string[];
 };
 
-type TaskTableCardProps = {
-  title: string;
-  rows: TodoRow[];
-  loading: boolean;
-  emptyLabel: string;
-  addTaskType: TodoRow["type"];
-  onUpdate?: (row: TodoRow) => void;
-};
-
 type QueryTableCardProps = {
   title: string;
   rows: QueryRow[];
@@ -138,21 +129,6 @@ const formatText = (text: string) => {
   const formation = text.replaceAll("_", " ").toLowerCase();
   const formatted = formation.charAt(0).toUpperCase() + formation.slice(1);
   return formatted;
-};
-
-const getTaskStatusBadgeClass = (status: TodoStatus) => {
-  switch (status) {
-    case "TODO":
-      return "bg-amber-100 text-amber-800 ring-1 ring-amber-200";
-    case "IN_PROGRESS":
-      return "bg-blue-100 text-blue-800 ring-1 ring-blue-200";
-    case "ON_HOLD":
-      return "bg-orange-100 text-orange-800 ring-1 ring-orange-200";
-    case "COMPLETED":
-      return "bg-green-100 text-green-800 ring-1 ring-green-200";
-    default:
-      return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
-  }
 };
 
 const getQueryStatusBadgeClass = (status: QueryRow["status"]) => {
@@ -211,123 +187,6 @@ const formatAmount = (value: number) =>
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-
-function TaskTableCard({
-  title,
-  rows,
-  loading,
-  emptyLabel,
-  addTaskType,
-  onUpdate,
-}: TaskTableCardProps) {
-  const [collapsed, setCollapsed] = useState(true);
-
-  return (
-    <div className="rbac-card">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center justify-between gap-2 w-full">
-          <h3 className="sm:text-base text-sm font-medium w-full">{title}</h3>
-          <div className="flex items-center gap-2 justify-end w-full">
-            <Link href={`/dashboard/task-management/new?type=${addTaskType}`}>
-              <button className="rbac-button" type="button">
-                Add Task
-              </button>
-            </Link>
-            <button
-              className="change-button change-button-secondary px-3 py-2 rounded-md"
-              type="button"
-              onClick={() => setCollapsed((prev) => !prev)}
-              aria-expanded={!collapsed}
-              aria-label={`${collapsed ? "Expand" : "Collapse"} ${title}`}
-            >
-              <FaChevronRight
-                className={`transition-transform duration-200 ${
-                  collapsed ? "" : "rotate-90"
-                }`}
-                size={14}
-              />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div
-        className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${
-          collapsed
-            ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none"
-            : "mt-4 max-h-[4000px] opacity-100 translate-y-0"
-        }`}
-        aria-hidden={collapsed}
-      >
-        <div className="space-y-3">
-          {loading && (
-            <div className="flex items-center justify-center py-4">
-              <FaSpinner className="animate-spin mr-2" size={16} />
-            </div>
-          )}
-          {!loading && rows.length === 0 && (
-            <div className="rbac-card py-4 text-sm ">{emptyLabel}</div>
-          )}
-          {!loading &&
-            rows.map((task) => (
-              <div key={task.id} className="flex rbac-card p-4 sm:p-5">
-                <div className="w-full mt-3 grid text-sm">
-                  {task.projectName && (
-                    <p className="font-semibold text-base">
-                      {task.projectName}
-                    </p>
-                  )}
-                  {task.projectCity && (
-                    <p className="text-sm text-slate-500">{task.projectCity}</p>
-                  )}
-                  {"categoryName" in task && (
-                    <p className="text-sm mt-1">{task.categoryName || "-"}</p>
-                  )}
-                  {task.description && (
-                    <p className="text-sm">{task.description}</p>
-                  )}
-                  {"comments" in task && (
-                    <p className="text-sm">{task.comments || "-"}</p>
-                  )}
-                  {task.assignee && (
-                    <p className="text-sm">
-                      {task.assignee.firstName} {task.assignee.lastName}
-                    </p>
-                  )}
-                </div>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <h4 className="mt-1 text-base font-semibold theme-text">
-                      {task.title}
-                    </h4>
-                  </div>
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] w-max ${getTaskStatusBadgeClass(
-                      task.status,
-                    )}`}
-                  >
-                    {formatText(task.status)}
-                  </span>
-                </div>
-
-                <div className="flex gap-2 justify-end">
-                  {onUpdate && (
-                    <button
-                      className="h-fit"
-                      type="button"
-                      onClick={() => onUpdate(task)}
-                    >
-                      <FaEdit />
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function QueryTableCard({
   title,
@@ -1210,16 +1069,40 @@ function OverviewContent() {
               rows={projectTasks}
               loading={loading}
               emptyLabel="No project work tasks for today"
-              addTaskType="PROJECT"
-              onUpdate={isAdmin ? undefined : openUpdateModal}
+              addTaskHref="/dashboard/task-management/new?type=PROJECT"
+              renderActions={
+                isAdmin
+                  ? undefined
+                  : (task) => (
+                      <button
+                        className="rbac-button rbac-button-secondary"
+                        type="button"
+                        onClick={() => openUpdateModal(task)}
+                      >
+                        Update
+                      </button>
+                    )
+              }
             />
             <TaskTableCard
               title="Office Work"
               rows={officeTasks}
               loading={loading}
               emptyLabel="No office work tasks for today"
-              addTaskType="OFFICE"
-              onUpdate={isAdmin ? undefined : openUpdateModal}
+              addTaskHref="/dashboard/task-management/new?type=OFFICE"
+              renderActions={
+                isAdmin
+                  ? undefined
+                  : (task) => (
+                      <button
+                        className="rbac-button rbac-button-secondary"
+                        type="button"
+                        onClick={() => openUpdateModal(task)}
+                      >
+                        Update
+                      </button>
+                    )
+              }
             />
           </div>
           <div className="flex flex-col gap-4">
@@ -1228,8 +1111,20 @@ function OverviewContent() {
               rows={serviceTasks}
               loading={loading}
               emptyLabel="No service work tasks for today"
-              addTaskType="SERVICE"
-              onUpdate={isAdmin ? undefined : openUpdateModal}
+              addTaskHref="/dashboard/task-management/new?type=SERVICE"
+              renderActions={
+                isAdmin
+                  ? undefined
+                  : (task) => (
+                      <button
+                        className="rbac-button rbac-button-secondary"
+                        type="button"
+                        onClick={() => openUpdateModal(task)}
+                      >
+                        Update
+                      </button>
+                    )
+              }
             />
             <div className="grid gap-4">
               <div className="rbac-card">

@@ -10,8 +10,10 @@ import useDebounce from "@/app/hooks/useDebounce";
 import DashboardShell, {
   useDashboardContext,
 } from "../_components/DashboardShell";
+import AppliedFilterSummary from "../../components/AppliedFilterSummary";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import CustomDatePicker from "../../components/CustomDatePicker";
+import ListingFilterDialog from "../../components/ListingFilterDialog";
 import { Dialog, DialogPanel } from "@headlessui/react";
 import { toast } from "react-toastify";
 import { IoIosClose } from "react-icons/io";
@@ -23,6 +25,7 @@ import {
   FaPlay,
   FaSpinner,
   FaTrash,
+  FaFilter,
 } from "react-icons/fa";
 import Link from "next/link";
 import { MdOutlineFileDownload } from "react-icons/md";
@@ -83,6 +86,12 @@ function ReportingListContent() {
   const [employeeFilter, setEmployeeFilter] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftQuery, setDraftQuery] = useState("");
+  const [draftProjectFilter, setDraftProjectFilter] = useState("");
+  const [draftEmployeeFilter, setDraftEmployeeFilter] = useState("");
+  const [draftFromDate, setDraftFromDate] = useState("");
+  const [draftToDate, setDraftToDate] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<ReportRow | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -161,6 +170,60 @@ function ReportingListContent() {
   useEffect(() => {
     loadReports();
   }, [loadReports]);
+
+  const activeFilterCount = [
+    query.trim(),
+    projectFilter,
+    isAdmin ? employeeFilter : "",
+    fromDate,
+    toDate,
+  ].filter(Boolean).length;
+
+  const openFilters = useCallback(() => {
+    setDraftQuery(query);
+    setDraftProjectFilter(projectFilter);
+    setDraftEmployeeFilter(employeeFilter);
+    setDraftFromDate(fromDate);
+    setDraftToDate(toDate);
+    setFilterOpen(true);
+  }, [employeeFilter, fromDate, projectFilter, query, toDate]);
+
+  const closeFilters = useCallback(() => {
+    setFilterOpen(false);
+  }, []);
+
+  const applyFilters = useCallback(() => {
+    setPageIndex(0);
+    setQuery(draftQuery);
+    setProjectFilter(draftProjectFilter);
+    setEmployeeFilter(draftEmployeeFilter);
+    setFromDate(draftFromDate);
+    setToDate(draftToDate);
+    setFilterOpen(false);
+  }, [
+    draftEmployeeFilter,
+    draftFromDate,
+    draftProjectFilter,
+    draftQuery,
+    draftToDate,
+  ]);
+
+  const appliedFilters = [
+    query.trim(),
+    projects.find((project) => project.id === projectFilter)?.name || "",
+    isAdmin
+      ? (() => {
+          const selectedEmployee = employees.find(
+            (employee) => employee.id === employeeFilter,
+          );
+          return selectedEmployee
+            ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}`
+            : employeeFilter;
+        })()
+      : "",
+    fromDate,
+    toDate,
+  ].filter(Boolean);
 
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const viewImageUrls = useMemo(() => viewData?.imageUrls ?? [], [viewData]);
@@ -408,96 +471,38 @@ function ReportingListContent() {
     <>
       <section className="rbac-section rbac-container">
         <div className="rbac-card">
-          <div className="flex justify-between items-center">
+          <div className="flex items-center justify-between gap-3">
             <h3 className="rbac-title-lg">Reporting List</h3>
-            {!isAdmin && (
-              <Link href="/dashboard/reports/new">
-                <button className="rbac-button" type="button">
-                  Add Reporting
-                </button>
-              </Link>
-            )}
-          </div>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <input
-              className="rbac-input-filter"
-              type="text"
-              placeholder="Search category, description"
-              value={query}
-              onChange={(event) => {
-                setPageIndex(0);
-                setQuery(event.target.value);
-              }}
-            />
-
-            <select
-              className="rbac-input-filter rbac-select"
-              value={projectFilter}
-              onChange={(event) => {
-                setPageIndex(0);
-                setProjectFilter(event.target.value);
-              }}
-            >
-              <option value="">All projects</option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
-            </select>
-
-            {isAdmin && (
-              <select
-                className="rbac-input-filter rbac-select"
-                value={employeeFilter}
-                onChange={(event) => {
-                  setPageIndex(0);
-                  setEmployeeFilter(event.target.value);
-                }}
+            <div className="flex gap-2">
+              {!isAdmin && (
+                <Link href="/dashboard/reports/new">
+                  <button className="rbac-button" type="button">
+                    Add Reporting
+                  </button>
+                </Link>
+              )}
+              <button
+                className="rbac-button rbac-button-secondary theme-button-secondary inline-flex items-center gap-2"
+                type="button"
+                onClick={openFilters}
               >
-                <option value="">All employees</option>
-                {employees.map((employee) => (
-                  <option key={employee.id} value={employee.id}>
-                    {employee.firstName} {employee.lastName}
-                  </option>
-                ))}
-              </select>
-            )}
-
-            <CustomDatePicker
-              value={fromDate}
-              onChange={(value) => {
-                setPageIndex(0);
-                setFromDate(value);
-              }}
-              placeholder="From date"
-              className="rbac-input-filter"
-            />
-            <CustomDatePicker
-              value={toDate}
-              onChange={(value) => {
-                setPageIndex(0);
-                setToDate(value);
-              }}
-              placeholder="To date"
-              className="rbac-input-filter"
-            />
-
-            <button
-              className="rbac-button rbac-button-secondary"
-              type="button"
-              onClick={() => {
-                setPageIndex(0);
-                setProjectFilter("");
-                setEmployeeFilter("");
-                setFromDate("");
-                setToDate("");
-                setQuery("");
-              }}
-            >
-              Clear filters
-            </button>
+                <FaFilter /> <span>Filters</span>
+              </button>
+            </div>
           </div>
+
+          <AppliedFilterSummary
+            items={appliedFilters}
+            onClear={() => {
+              setPageIndex(0);
+              setQuery("");
+              setProjectFilter("");
+              setEmployeeFilter("");
+              setFromDate("");
+              setToDate("");
+              setFilterOpen(false);
+            }}
+          />
 
           <div className="mt-4">
             <div className="hidden md:block overflow-x-auto">
@@ -701,6 +706,61 @@ function ReportingListContent() {
           setConfirmTarget(null);
         }}
       />
+      <ListingFilterDialog
+        open={filterOpen}
+        title="Reporting Filters"
+        description="Update the filters and apply them when you're ready."
+        onClose={closeFilters}
+        onApply={applyFilters}
+        activeCount={activeFilterCount}
+        maxWidthClassName="max-w-2xl"
+      >
+        <input
+          className="rbac-input-filter"
+          type="text"
+          placeholder="Search category, description"
+          value={draftQuery}
+          onChange={(event) => setDraftQuery(event.target.value)}
+        />
+        <select
+          className="rbac-input-filter rbac-select"
+          value={draftProjectFilter}
+          onChange={(event) => setDraftProjectFilter(event.target.value)}
+        >
+          <option value="">All projects</option>
+          {projects.map((project) => (
+            <option key={project.id} value={project.id}>
+              {project.name}
+            </option>
+          ))}
+        </select>
+        {isAdmin && (
+          <select
+            className="rbac-input-filter rbac-select"
+            value={draftEmployeeFilter}
+            onChange={(event) => setDraftEmployeeFilter(event.target.value)}
+          >
+            <option value="">All employees</option>
+            {employees.map((employee) => (
+              <option key={employee.id} value={employee.id}>
+                {employee.firstName} {employee.lastName}
+              </option>
+            ))}
+          </select>
+        )}
+        <CustomDatePicker
+          value={draftFromDate}
+          onChange={setDraftFromDate}
+          placeholder="From date"
+          className="rbac-input-filter"
+        />
+        <CustomDatePicker
+          value={draftToDate}
+          onChange={setDraftToDate}
+          placeholder="To date"
+          className="rbac-input-filter"
+        />
+      </ListingFilterDialog>
 
       {viewOpen && (
         <div className="theme-modal-overlay fixed inset-0 z-50 flex items-center justify-center px-4">

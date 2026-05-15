@@ -11,7 +11,9 @@ import {
 import DashboardShell, {
   useDashboardContext,
 } from "../_components/DashboardShell";
+import AppliedFilterSummary from "../../components/AppliedFilterSummary";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import ListingFilterDialog from "../../components/ListingFilterDialog";
 import { toast } from "react-toastify";
 import {
   FaChevronLeft,
@@ -19,7 +21,10 @@ import {
   FaEdit,
   FaTrash,
   FaSpinner,
+  FaFilter
 } from "react-icons/fa";
+import { FaMobileRetro } from "react-icons/fa6";
+import { MdEmail } from "react-icons/md";
 import Link from "next/link";
 import useDebounce from "@/app/hooks/useDebounce";
 
@@ -43,6 +48,9 @@ function UsersContent() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [roleFilter, setRoleFilter] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftQuery, setDraftQuery] = useState("");
+  const [draftRoleFilter, setDraftRoleFilter] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<UserRow | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -52,6 +60,26 @@ function UsersContent() {
   const [total, setTotal] = useState(0);
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 400);
+  const activeFilterCount = [query.trim(), roleFilter].filter(Boolean).length;
+
+  const openFilters = () => {
+    setDraftQuery(query);
+    setDraftRoleFilter(roleFilter);
+    setFilterOpen(true);
+  };
+
+  const closeFilters = () => {
+    setFilterOpen(false);
+  };
+
+  const applyFilters = () => {
+    setPageIndex(0);
+    setQuery(draftQuery);
+    setRoleFilter(draftRoleFilter);
+    setFilterOpen(false);
+  };
+
+  const appliedFilters = [query.trim(), roleFilter].filter(Boolean);
 
   const loadUsers = async () => {
     if (!isAdmin) return;
@@ -152,6 +180,15 @@ function UsersContent() {
         ),
       },
       {
+        header: "Email",
+        accessorKey: "email",
+        cell: (info) => (
+          <span className="rbac-muted">
+            {(info.getValue() as string) || "-"}
+          </span>
+        ),
+      },
+      {
         header: "Role",
         accessorKey: "role",
         cell: (info) => (
@@ -204,53 +241,34 @@ function UsersContent() {
     <>
       <section className="rbac-section rbac-container">
         <div className="rbac-card">
-          <div className="flex justify-between items-center">
+          <div className="flex items-center justify-between gap-3">
             <h3 className="rbac-title-lg">Users List</h3>
-            <Link href="/dashboard/users/new">
-              <button className="rbac-button" type="button">
-                Add User
+            <div className="flex
+             gap-2">
+              <button
+                className="rbac-button rbac-button-secondary theme-button-secondary inline-flex items-center gap-2"
+                type="button"
+                onClick={openFilters}
+              >
+                <FaFilter />
+                <span>Filters</span>
               </button>
-            </Link>
+              <Link href="/dashboard/users/new">
+                <button className="rbac-button" type="button">
+                  Add User
+                </button>
+              </Link>
+            </div>
           </div>
-          <div className="my-4 flex flex-wrap gap-2 ">
-            <input
-              className="rbac-input-filter"
-              type="text"
-              placeholder="Search name or mobile number..."
-              value={query}
-              onChange={(event) => {
-                setPageIndex(0);
-                setQuery(event.target.value);
-              }}
-            />
-            <select
-              className="rbac-input-filter rbac-select"
-              value={roleFilter}
-              onChange={(event) => {
-                setPageIndex(0);
-                setRoleFilter(event.target.value);
-              }}
-            >
-              <option value="">Select Role</option>
-
-              {roles.map((role) => (
-                <option key={role.id} value={role.name}>
-                  {role.name}
-                </option>
-              ))}
-            </select>
-            <button
-              className="rbac-button rbac-button-secondary"
-              type="button"
-              onClick={() => {
-                setPageIndex(0);
-                setQuery("");
-                setRoleFilter("");
-              }}
-            >
-              Clear filters
-            </button>
-          </div>
+          <AppliedFilterSummary
+            items={appliedFilters}
+            onClear={() => {
+              setPageIndex(0);
+              setQuery("");
+              setRoleFilter("");
+              setFilterOpen(false);
+            }}
+          />
           <div className="mt-4">
             <div className="hidden md:block overflow-x-auto">
               <table className="theme-table min-w-full border border-slate-200 border-separate border-spacing-0">
@@ -333,12 +351,16 @@ function UsersContent() {
               {!loading &&
                 users.map((user) => (
                   <div key={user.id} className="rbac-card p-4">
-                    <div className="mb-2 flex items-center justify-between">
+                    <div className="flex items-center justify-between">
                       <div>
                         <h4 className="text-sm font-semibold">
                           {user.firstName} {user.lastName}
                         </h4>
-                        <p className="text-xs text-slate-500">{user.email}</p>
+                        {user.email && (
+                          <p className="flex items-center gap-1">
+                          <MdEmail /> {user.email}
+                        </p>
+                        )}
                       </div>
                       <div className="flex gap-2">
                         <button
@@ -358,12 +380,18 @@ function UsersContent() {
                       </div>
                     </div>
                     <div className="grid gap-1 text-sm">
-                      <p>
-                        <strong>Mobile:</strong> {user.mobileNumber || "-"}
+                      {
+                        user.mobileNumber && (
+                          <p className="flex items-center gap-1">
+                        <FaMobileRetro /> {user.mobileNumber}
                       </p>
-                      <p>
-                        <strong>Role:</strong> {user.role || "-"}
-                      </p>
+                        )
+                      }
+                      {user.role && (
+                        <p>
+                          <strong>Role:</strong> {user.role || "-"}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -429,6 +457,34 @@ function UsersContent() {
           setConfirmTarget(null);
         }}
       />
+      <ListingFilterDialog
+        open={filterOpen}
+        title="User Filters"
+        description="Update the filters and apply them when you're ready."
+        onClose={closeFilters}
+        onApply={applyFilters}
+        activeCount={activeFilterCount}
+      >
+        <input
+          className="rbac-input-filter"
+          type="text"
+          placeholder="Search name or mobile number..."
+          value={draftQuery}
+          onChange={(event) => setDraftQuery(event.target.value)}
+        />
+        <select
+          className="rbac-input-filter rbac-select"
+          value={draftRoleFilter}
+          onChange={(event) => setDraftRoleFilter(event.target.value)}
+        >
+          <option value="">Select Role</option>
+          {roles.map((role) => (
+            <option key={role.id} value={role.name}>
+              {role.name}
+            </option>
+          ))}
+        </select>
+      </ListingFilterDialog>
     </>
   );
 }
