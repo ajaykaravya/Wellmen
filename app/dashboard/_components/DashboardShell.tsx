@@ -42,7 +42,9 @@ type MenuKey =
   | "serviceCategories"
   | "reportingCategories"
   | "expenseTypes"
-  | "dailyExpenses";
+  | "dailyExpenses"
+  | "transportManagement"
+  | "boleroDeliveryLog";
 
 type DashboardContextValue = {
   user: SessionUser | null;
@@ -89,6 +91,8 @@ const routeByMenu: Record<MenuKey, string> = {
   reportingCategories: "/dashboard/reporting-categories",
   expenseTypes: "/dashboard/expense-types",
   dailyExpenses: "/dashboard/daily-expenses",
+  transportManagement: "/dashboard/transport-management",
+  boleroDeliveryLog: "/dashboard/transport-management/bolero-delivery-log",
 };
 
 const getActiveMenu = (pathname: string): MenuKey => {
@@ -114,6 +118,10 @@ const getActiveMenu = (pathname: string): MenuKey => {
   if (pathname.startsWith("/dashboard/reports")) return "reports";
   if (pathname.startsWith("/dashboard/expense-types")) return "expenseTypes";
   if (pathname.startsWith("/dashboard/daily-expenses")) return "dailyExpenses";
+  if (pathname.startsWith("/dashboard/transport-management/bolero-delivery-log"))
+    return "boleroDeliveryLog";
+  if (pathname.startsWith("/dashboard/transport-management"))
+    return "transportManagement";
   if (pathname.startsWith("/dashboard/team")) return "team";
   if (pathname.startsWith("/dashboard/profile")) return "profile";
   return "dashboard";
@@ -144,6 +152,8 @@ export default function DashboardShell({
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [masterDataExpanded, setMasterDataExpanded] = useState(false);
+  const [transportManagementExpanded, setTransportManagementExpanded] =
+    useState(false);
   const { theme, toggleTheme } = useThemeMode();
 
   const isAdmin = user?.role === "Admin" || user?.role === "Manager";
@@ -160,6 +170,10 @@ export default function DashboardShell({
       "reportingCategories",
       "expenseTypes",
     ].includes(activeMenu);
+  }, [activeMenu]);
+
+  const isTransportManagementActive = useMemo(() => {
+    return ["transportManagement", "boleroDeliveryLog"].includes(activeMenu);
   }, [activeMenu]);
 
   useEffect(() => {
@@ -214,6 +228,17 @@ export default function DashboardShell({
     }
   }, [isNestedShell, isMasterDataActive, masterDataExpanded]);
 
+  useEffect(() => {
+    if (isNestedShell) return;
+    if (isTransportManagementActive && !transportManagementExpanded) {
+      setTransportManagementExpanded(true);
+    }
+  }, [
+    isNestedShell,
+    isTransportManagementActive,
+    transportManagementExpanded,
+  ]);
+
   const menuItems = useMemo(() => {
     const items: {
       key: MenuKey;
@@ -236,6 +261,14 @@ export default function DashboardShell({
           { key: "serviceCategories", label: "Service work Categories" },
           { key: "reportingCategories", label: "Reporting work Categories" },
           { key: "expenseTypes", label: "Expense Types" },
+        ],
+      });
+      items.push({
+        key: "transportManagement",
+        label: "Transport Management",
+        hasDropdown: true,
+        dropdownItems: [
+          { key: "boleroDeliveryLog", label: "Bolero Delivery Log" },
         ],
       });
       items.push({ key: "dailyExpenses", label: "Daily Expense" });
@@ -315,6 +348,7 @@ export default function DashboardShell({
                   return (
                     <div key={item.key}>
                       <button
+                        type="button"
                         className={`rbac-nav-item w-full text-left flex items-center justify-between ${
                           isMasterDataActive ? "active" : ""
                         }`}
@@ -332,6 +366,50 @@ export default function DashboardShell({
                         </span>
                       </button>
                       {masterDataExpanded && (
+                        <div className="ml-4 space-y-1 mt-1">
+                          {item.dropdownItems.map((dropdownItem) => (
+                            <Link
+                              key={dropdownItem.key}
+                              href={routeByMenu[dropdownItem.key]}
+                              className={`rbac-nav-item block text-sm ${
+                                activeMenu === dropdownItem.key ? "active" : ""
+                              }`}
+                              onClick={() => setNavOpen(false)}
+                              prefetch={true}
+                            >
+                              {dropdownItem.label}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                if (item.key === "transportManagement" && item.dropdownItems) {
+                  return (
+                    <div key={item.key}>
+                      <button
+                        type="button"
+                        className={`rbac-nav-item w-full text-left flex items-center justify-between ${
+                          isTransportManagementActive ? "active" : ""
+                        }`}
+                        onClick={() =>
+                          setTransportManagementExpanded(
+                            !transportManagementExpanded,
+                          )
+                        }
+                      >
+                        {item.label}
+                        <span
+                          className={`ml-2 transition-transform ${
+                            transportManagementExpanded ? "rotate-90" : ""
+                          }`}
+                        >
+                          <FaChevronRight size={20} />
+                        </span>
+                      </button>
+                      {transportManagementExpanded && (
                         <div className="ml-4 space-y-1 mt-1">
                           {item.dropdownItems.map((dropdownItem) => (
                             <Link

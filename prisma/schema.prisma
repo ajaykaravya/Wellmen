@@ -155,6 +155,33 @@ model DailyExpense {
   @@index([expenseTypeId])
 }
 
+model BoleroDeliveryLog {
+  id             String   @id @default(uuid())
+  tripDate       DateTime
+  tripDescription String
+  locationType   String
+  city           String?
+  floor          String
+  kmStart        Decimal  @db.Decimal(10, 2)
+  kmEnd          Decimal  @db.Decimal(10, 2)
+  totalKm        Decimal  @db.Decimal(10, 2)
+  loadType       String
+  driverWages    Decimal  @db.Decimal(14, 2)
+  otherExpenses  Decimal  @db.Decimal(14, 2) @default(0)
+  floorRent      Decimal  @db.Decimal(14, 2)
+  totalAmount    Decimal  @db.Decimal(14, 2)
+  dcNumber       String?
+  remark         String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([tripDate])
+  @@index([locationType])
+  @@index([floor])
+  @@index([loadType])
+  @@index([city])
+}
+
 model QueryManagement {
   id          String        @id @default(uuid())
   projectId   String
