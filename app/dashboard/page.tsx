@@ -1320,7 +1320,7 @@ function OverviewContent() {
                   {balanceLoading
                     ? "Loading..."
                     : currentBalance === null
-                    ? "—"
+                    ? "0"
                     : formatAmount(currentBalance)}
                 </p>
               </div>

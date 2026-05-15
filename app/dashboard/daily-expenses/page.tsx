@@ -596,7 +596,12 @@ function DailyExpenseListContent() {
                           {formatToDDMMYYYY(expense.date)}
                         </h4>
                         <div className="flex flex-wrap gap-2">
-                          <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+                          <span
+                            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${getTransactionBadgeClass(
+                              expense.transactionType,
+                            )}`}
+                          >
+                            {expense.transactionType === "INCOME" ? "+" : "-"}
                             {formatAmount(expense.amount)}
                           </span>
                         </div>

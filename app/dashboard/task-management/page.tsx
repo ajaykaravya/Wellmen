@@ -91,7 +91,7 @@ function TodoListContent() {
     if (value === "PROJECT" || value === "OFFICE" || value === "SERVICE") {
       return value;
     }
-    return "";
+    return "PROJECT";
   })();
   const [todos, setTodos] = useState<TodoRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -128,7 +128,6 @@ function TodoListContent() {
   const activeFilterCount = [
     query.trim(),
     statusFilter,
-    taskTypeFilter,
     categoryFilter.trim(),
     fromDate,
     toDate,
@@ -195,12 +194,16 @@ function TodoListContent() {
   const appliedFilters = [
     query.trim(),
     statusFilter ? statusLabel(statusFilter) : "",
-    taskTypeFilter ? formatTaskType(taskTypeFilter) : "",
     categoryFilter.trim(),
     selectedAssigneeLabel || "",
     fromDate,
     toDate,
   ].filter(Boolean);
+
+  const getTaskTypeButtonClass = (type: TodoRow["type"]) =>
+    taskTypeFilter === type
+      ? "rbac-button"
+      : "rbac-button rbac-button-secondary";
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTarget, setModalTarget] = useState<TodoRow | null>(null);
@@ -633,11 +636,6 @@ function TodoListContent() {
                 onClick={openFilters}
               >
                 <FaFilter /> <span>Filters</span>
-                {activeFilterCount > 0 && (
-                  <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[color:var(--brand)] px-1 text-[10px] font-semibold text-white">
-                    {activeFilterCount}
-                  </span>
-                )}
               </button>
               <Link href="/dashboard/task-management/new">
                 <button className="rbac-button" type="button">
@@ -653,7 +651,7 @@ function TodoListContent() {
               setPageIndex(0);
               setQuery("");
               setStatusFilter("");
-              setTaskTypeFilter("");
+              setTaskTypeFilter("PROJECT");
               setCategoryFilter("");
               setAssigneeFilter("");
               setFromDate("");
@@ -661,6 +659,39 @@ function TodoListContent() {
               setFilterOpen(false);
             }}
           />
+
+            <div className="flex items-center gap-2 mt-2">
+              <button
+                type="button"
+                className={getTaskTypeButtonClass("PROJECT")}
+                onClick={() => {
+                  setPageIndex(0);
+                  setTaskTypeFilter("PROJECT");
+                }}
+              >
+                Project
+              </button>
+              <button
+                type="button"
+                className={getTaskTypeButtonClass("OFFICE")}
+                onClick={() => {
+                  setPageIndex(0);
+                  setTaskTypeFilter("OFFICE");
+                }}
+              >
+                Office
+              </button>
+              <button
+                type="button"
+                className={getTaskTypeButtonClass("SERVICE")}
+                onClick={() => {
+                  setPageIndex(0);
+                  setTaskTypeFilter("SERVICE");
+                }}
+              >
+                Service
+              </button>
+            </div>
 
           <div className="mt-4">
             <div className="hidden md:block overflow-x-auto">
@@ -929,16 +960,6 @@ function TodoListContent() {
           <option value="IN_PROGRESS">In progress</option>
           <option value="ON_HOLD">On hold</option>
           <option value="COMPLETED">Completed</option>
-        </select>
-        <select
-          className="rbac-input-filter rbac-select"
-          value={draftTaskTypeFilter}
-          onChange={(event) => setDraftTaskTypeFilter(event.target.value)}
-        >
-          <option value="">All task types</option>
-          <option value="PROJECT">Project Work</option>
-          <option value="OFFICE">Office Work</option>
-          <option value="SERVICE">Service Work</option>
         </select>
         <input
           className="rbac-input-filter"
