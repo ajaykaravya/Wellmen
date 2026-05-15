@@ -457,18 +457,19 @@ export default function QueryListContent({
                           {item.projectCity || "-"}
                         </p>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex">
                         <Link href={`${basePath}/${item.id}`}>
                           <button className="rbac-link" type="button">
-                            <FaEdit />
+                            <FaEdit size={18} />
                           </button>
                         </Link>
                         <button
+                          style={{padding:"2px"}}
                           className="rbac-link danger"
                           type="button"
                           onClick={() => handleDelete(item)}
                         >
-                          <FaTrash />
+                          <FaTrash size={18} />
                         </button>
                       </div>
                     </div>

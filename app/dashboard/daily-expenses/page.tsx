@@ -588,21 +588,8 @@ function DailyExpenseListContent() {
               {!loading &&
                 dailyExpenses.map((expense) => (
                   <div key={expense.id} className="rbac-card p-4">
-                    <div className="mb-2 flex flex-col items-start justify-between gap-3">
-                      <div className="flex justify-end w-full">
-                        <Link href={`/dashboard/daily-expenses/${expense.id}`}>
-                          <button className="rbac-link" type="button">
-                            <FaEdit size={18} />
-                          </button>
-                        </Link>
-                        <button
-                          className="rbac-link danger"
-                          type="button"
-                          onClick={() => handleDeleteDailyExpense(expense)}
-                        >
-                          <FaTrash size={18} />
-                        </button>
-                      </div>
+                    <div className="mb-2 flex items-start justify-between gap-3">
+                      
                       <div className="space-y-2">
                         <div className="flex gap-2">
                         <h4 className="text-sm font-semibold">
@@ -625,7 +612,20 @@ function DailyExpenseListContent() {
                           </p>
                         )}
                       </div>
-                      
+                      <div className="flex justify-end w-full">
+                        <Link href={`/dashboard/daily-expenses/${expense.id}`}>
+                          <button className="rbac-link" type="button">
+                            <FaEdit size={18} />
+                          </button>
+                        </Link>
+                        <button
+                          className="rbac-link danger"
+                          type="button"
+                          onClick={() => handleDeleteDailyExpense(expense)}
+                        >
+                          <FaTrash size={18} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}

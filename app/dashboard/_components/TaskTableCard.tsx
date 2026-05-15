@@ -30,6 +30,7 @@ type TaskTableCardProps<T extends TaskTableCardRow> = {
   addTaskHref?: string;
   addTaskLabel?: string;
   showHeader?: boolean;
+  showCount?: boolean;
   collapsible?: boolean;
   actionLabel?: string;
   actionButtonClassName?: string;
@@ -65,6 +66,7 @@ export function TaskTableCard<T extends TaskTableCardRow>({
   addTaskHref,
   addTaskLabel = "Add Task",
   showHeader = true,
+  showCount = true,
   collapsible = true,
   actionLabel,
   actionButtonClassName = "rbac-button rbac-button-secondary",
@@ -110,14 +112,6 @@ export function TaskTableCard<T extends TaskTableCardRow>({
                 )}
               </div>
               <div className="flex flex-col items-end gap-3">
-                <span
-                  className={`rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] w-max ${getTaskStatusBadgeClass(
-                    task.status,
-                  )}`}
-                >
-                  {formatStatusText(task.status)}
-                </span>
-
                 {renderActions
                   ? renderActions(task)
                   : onUpdate && (
@@ -131,6 +125,15 @@ export function TaskTableCard<T extends TaskTableCardRow>({
                         {actionLabel ?? <FaEdit />}
                       </button>
                     )}
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] w-max ${getTaskStatusBadgeClass(
+                    task.status,
+                  )}`}
+                >
+                  {formatStatusText(task.status)}
+                </span>
+
+                
               </div>
             </div>
           ))}
@@ -142,7 +145,14 @@ export function TaskTableCard<T extends TaskTableCardRow>({
     <div className="rbac-card">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center justify-between gap-2 w-full">
-          <h3 className="sm:text-base text-sm font-medium w-full">{title}</h3>
+          <h3 className="sm:text-base text-sm font-medium w-full">
+            {title}
+            {showCount && (
+              <span className="ml-2 text-slate-100 text-sm font-normal bg-[#2596be] px-2 py-1 rounded-full">
+                {rows.length}
+              </span>
+            )}
+          </h3>
           <div className="flex items-center gap-2 justify-end w-full">
             {addTaskHref && (
               <Link href={addTaskHref}>
@@ -221,16 +231,7 @@ export function TaskTableCard<T extends TaskTableCardRow>({
                       {task.title}
                     </h4>
                   </div>
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] w-max ${getTaskStatusBadgeClass(
-                      task.status,
-                    )}`}
-                  >
-                    {formatStatusText(task.status)}
-                  </span>
-                </div>
-
-                <div className="flex gap-2 justify-end">
+                  <div className="flex gap-2 justify-end">
                   {renderActions
                     ? renderActions(task)
                     : onUpdate && (
@@ -245,6 +246,16 @@ export function TaskTableCard<T extends TaskTableCardRow>({
                         </button>
                       )}
                 </div>
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] w-max ${getTaskStatusBadgeClass(
+                      task.status,
+                    )}`}
+                  >
+                    {formatStatusText(task.status)}
+                  </span>
+                </div>
+
+                
               </div>
             ))}
         </div>

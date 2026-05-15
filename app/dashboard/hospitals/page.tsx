@@ -17,8 +17,10 @@ import {
   FaEdit,
   FaTrash,
   FaSpinner,
-  FaFilter
+  FaFilter,
+  FaEye,
 } from "react-icons/fa";
+import { IoIosClose } from "react-icons/io";
 import Link from "next/link";
 
 type ProjectRow = {
@@ -54,6 +56,9 @@ function ProjectListContent() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<ProjectRow | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewData, setViewData] = useState<ProjectRow | null>(null);
+  const [viewLoading, setViewLoading] = useState(false);
 
   const loadProjects = useCallback(async () => {
     setLoading(true);
@@ -143,6 +148,36 @@ function ProjectListContent() {
     toDate,
   ].filter(Boolean);
 
+  const handleView = useCallback(async (row: ProjectRow) => {
+    setViewOpen(true);
+    setViewLoading(true);
+    setViewData(null);
+
+    try {
+      const res = await fetch(`/api/projects/${row.id}`);
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        toast.error(payload.error || "Failed to load project details.");
+        setViewOpen(false);
+        return;
+      }
+
+      const data = await res.json();
+      setViewData(data);
+    } catch (error) {
+      console.error("Failed to load project details", error);
+      toast.error("Failed to load project details.");
+      setViewOpen(false);
+    } finally {
+      setViewLoading(false);
+    }
+  }, []);
+
+  const closeView = useCallback(() => {
+    setViewOpen(false);
+    setViewData(null);
+  }, []);
+
   const confirmDeleteProject = useCallback(async () => {
     if (!confirmTarget) return;
     setDeleting(true);
@@ -215,6 +250,13 @@ function ProjectListContent() {
         id: "action",
         cell: ({ row }) => (
           <div className="rbac-inline-actions flex gap-4">
+            <button
+              className="rbac-link"
+              type="button"
+              onClick={() => handleView(row.original)}
+            >
+              <FaEye />
+            </button>
             <Link href={`/dashboard/hospitals/${row.original.id}`}>
               <button className="rbac-link" type="button">
                 <FaEdit />
@@ -375,40 +417,64 @@ function ProjectListContent() {
                           {project.city || "-"}
                         </p>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex">
+                        <button
+                          className="rbac-link"
+                          type="button"
+                          onClick={() => handleView(project)}
+                        >
+                          <FaEye size={18} />
+                        </button>
                         <Link href={`/dashboard/projects/${project.id}`}>
                           <button className="rbac-link" type="button">
-                            <FaEdit />
+                            <FaEdit size={18} />
                           </button>
                         </Link>
                         <button
+                        style={{padding:"2px"}}
                           className="rbac-link danger"
                           type="button"
                           onClick={() => handleDeleteProject(project)}
                         >
-                          <FaTrash />
+                          <FaTrash size={18} />
                         </button>
                       </div>
                     </div>
                     <div className="grid gap-1 text-sm">
-                      <p>
+                      {
+                        project.contactNumber && (
+                          <p>
                         <strong>Contact:</strong> {project.contactNumber}
                       </p>
-                      <p>
-                        <strong>Email:</strong> {project.email}
-                      </p>
-                      <p>
+                        )
+                      }
+                      {
+                        project.email && (
+                          <p>
+                            <strong>Email:</strong> {project.email}
+                          </p>
+                        )
+                      }
+                      {
+                        project.startDate && (
+                          <p>
                         <strong>Start:</strong>{" "}
                         {project.startDate
                           ? formatToDDMMYYYY(project.startDate)
-                          : "-"}
+                          : ""}
                       </p>
-                      <p>
+                        )
+                        }
+                      {
+                        project.endDate && (
+                          <p>
                         <strong>End:</strong>{" "}
                         {project.endDate
                           ? formatToDDMMYYYY(project.endDate)
-                          : "-"}
+                          : ""}
                       </p>
+                        )
+                        }
                     </div>
                   </div>
                 ))}
@@ -514,6 +580,68 @@ function ProjectListContent() {
           className="rbac-input-filter"
         />
       </ListingFilterDialog>
+
+      {viewOpen && (
+        <div className="theme-modal-overlay fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="theme-modal-surface w-full max-w-4xl rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-auto">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold">Hospital details</h2>
+                <p className="mt-1 text-sm">View full hospital information.</p>
+              </div>
+              <button type="button" onClick={closeView}>
+                <IoIosClose size={30} />
+              </button>
+            </div>
+
+            {viewLoading && (
+              <div className="flex items-center justify-center py-4">
+                <FaSpinner className="animate-spin mr-2" size={16} />
+              </div>
+            )}
+
+            {!viewLoading && viewData && (
+              <div className="mt-4 grid gap-4">
+                <div className="grid gap-3 md:grid-cols-2">
+                  <p className="text-sm">
+                    <strong>Name:</strong> {viewData.name}
+                  </p>
+                  <p className="text-sm">
+                    <strong>City:</strong> {viewData.city || "-"}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Contact:</strong> {viewData.contactNumber || "-"}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Email:</strong> {viewData.email || "-"}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Start Date:</strong> {formatToDDMMYYYY(viewData.startDate)}
+                  </p>
+                  <p className="text-sm">
+                    <strong>End Date:</strong> {formatToDDMMYYYY(viewData.endDate)}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Status:</strong> {viewData.status}
+                  </p>
+                </div>
+
+                {viewData.address && (
+                  <p className="text-sm whitespace-pre-wrap">
+                    <strong>Address:</strong> {viewData.address}
+                  </p>
+                )}
+
+                {viewData.description && (
+                  <p className="text-sm whitespace-pre-wrap">
+                    <strong>Description:</strong> {viewData.description}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }

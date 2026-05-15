@@ -47,19 +47,19 @@ export default function ListingFilterDialog({
 
   return (
     <Dialog
-  open={open}
-  onClose={() => {}}
-  className="relative z-100"
->
-   <DialogBackdrop
-    className="fixed inset-0 z-100 bg-black/60 backdrop-blur-sm transition-opacity"
-    aria-hidden="true"
-  />
+      open={open}
+      onClose={onClose}
+      className="relative z-[100]"
+    >
+      <DialogBackdrop
+        className="theme-modal-overlay fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm transition-opacity"
+        aria-hidden="true"
+      />
 
       <div className="fixed inset-0 z-[101] flex items-center justify-center p-4">
-    <DialogPanel
-      className={`theme-modal-surface relative z-[102] ${maxWidthClassName} rounded-2xl border border-white/10 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.5)]`}
-    >
+        <DialogPanel
+          className={`theme-modal-surface relative z-[102] ${maxWidthClassName} rounded-2xl border border-white/10 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.5)]`}
+        >
           <div className="flex items-start justify-between gap-4">
             <div>
               <DialogTitle className="text-lg font-semibold theme-text">

@@ -597,13 +597,13 @@ function ReportingListContent() {
                           {report.projectCity || "-"}{" "}
                         </p>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex">
                         <button
                           className="rbac-link"
                           type="button"
                           onClick={() => handleView(report)}
                         >
-                          <FaEye />
+                          <FaEye size={18} />
                         </button>
                         {report.canManage && (
                           <>
@@ -612,14 +612,14 @@ function ReportingListContent() {
                               type="button"
                               onClick={() => handleEdit(report)}
                             >
-                              <FaEdit />
+                              <FaEdit size={18}  />
                             </button>
                             <button
                               className="rbac-link danger"
                               type="button"
                               onClick={() => handleDelete(report)}
                             >
-                              <FaTrash />
+                              <FaTrash size={18} />
                             </button>
                           </>
                         )}

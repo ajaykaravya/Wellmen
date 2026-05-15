@@ -356,26 +356,23 @@ function UsersContent() {
                         <h4 className="text-sm font-semibold">
                           {user.firstName} {user.lastName}
                         </h4>
-                        {user.email && (
-                          <p className="flex items-center gap-1">
-                          <MdEmail /> {user.email}
-                        </p>
-                        )}
+                        
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex">
                         <button
                           className="rbac-link"
                           type="button"
                           onClick={() => handleEditUser(user)}
                         >
-                          <FaEdit />
+                          <FaEdit size={18} />
                         </button>
                         <button
+                          style={{padding:"2px"}}
                           className="rbac-link danger"
                           type="button"
                           onClick={() => handleDeleteUser(user)}
                         >
-                          <FaTrash />
+                          <FaTrash size={18} />
                         </button>
                       </div>
                     </div>
@@ -387,6 +384,11 @@ function UsersContent() {
                       </p>
                         )
                       }
+                      {user.email && (
+                          <p className="flex items-center gap-1">
+                          <MdEmail /> {user.email}
+                        </p>
+                        )}
                       {user.role && (
                         <p>
                           <strong>Role:</strong> {user.role || "-"}

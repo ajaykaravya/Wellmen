@@ -1164,7 +1164,7 @@ function OverviewContent() {
                         : "mt-4 max-h-[4000px] opacity-100 translate-y-0"
                     }`}
                   >
-                    <div className="flex flex-wrap items-center justify-end gap-2">
+                    <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2">
                       <button
                         className="change-button change-button-secondary p-2 rounded-md"
                         type="button"
