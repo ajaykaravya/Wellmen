@@ -51,6 +51,7 @@ import { useThemeMode } from "../components/ThemeProvider";
 import { IoIosClose } from "react-icons/io";
 import { MdOutlineFileDownload } from "react-icons/md";
 import { FaLink } from "react-icons/fa6";
+import { QueryTableCard } from "./_components/QueryTableCard";
 
 ChartJS.register(
   CategoryScale,
@@ -188,120 +189,120 @@ const formatAmount = (value: number) =>
     maximumFractionDigits: 2,
   });
 
-function QueryTableCard({
-  title,
-  rows,
-  loading,
-  emptyLabel,
-  viewAllHref,
-  addQueryHref,
-}: QueryTableCardProps) {
-  const [collapsed, setCollapsed] = useState(true);
-  const { theme } = useThemeMode();
+// function QueryTableCard({
+//   title,
+//   rows,
+//   loading,
+//   emptyLabel,
+//   viewAllHref,
+//   addQueryHref,
+// }: QueryTableCardProps) {
+//   const [collapsed, setCollapsed] = useState(true);
+//   const { theme } = useThemeMode();
 
-  return (
-    <div className="rbac-card">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center justify-between gap-2 w-full">
-          <h3 className="sm:text-base text-sm font-medium w-full">{title}</h3>
-          <div className="flex items-center gap-2 justify-end w-full">
-            <Link href={addQueryHref}>
-              <button className="rbac-button" type="button">
-                Add Query
-              </button>
-            </Link>
-            <Link href={viewAllHref}>
-              <button
-                className="rbac-button rbac-button-secondary"
-                type="button"
-              >
-                View All
-              </button>
-            </Link>
-            <button
-              className="change-button change-button-secondary px-3 py-2 rounded-md"
-              type="button"
-              onClick={() => setCollapsed((prev) => !prev)}
-              aria-expanded={!collapsed}
-              aria-label={`${collapsed ? "Expand" : "Collapse"} ${title}`}
-            >
-              <FaChevronRight
-                className={`transition-transform duration-200 ${
-                  theme === "dark" ? "text-white" : "text-black"
-                } ${collapsed ? "" : "rotate-90"}`}
-                size={14}
-              />
-            </button>
-          </div>
-        </div>
-      </div>
+//   return (
+//     <div className="rbac-card">
+//       <div className="flex flex-wrap items-center justify-between gap-3">
+//         <div className="flex items-center justify-between gap-2 w-full">
+//           <h3 className="sm:text-base text-sm font-medium w-full">{title}</h3>
+//           <div className="flex items-center gap-2 justify-end w-full">
+//             <Link href={addQueryHref}>
+//               <button className="rbac-button" type="button">
+//                 Add Query
+//               </button>
+//             </Link>
+//             <Link href={viewAllHref}>
+//               <button
+//                 className="rbac-button rbac-button-secondary"
+//                 type="button"
+//               >
+//                 View All
+//               </button>
+//             </Link>
+//             <button
+//               className="change-button change-button-secondary px-3 py-2 rounded-md"
+//               type="button"
+//               onClick={() => setCollapsed((prev) => !prev)}
+//               aria-expanded={!collapsed}
+//               aria-label={`${collapsed ? "Expand" : "Collapse"} ${title}`}
+//             >
+//               <FaChevronRight
+//                 className={`transition-transform duration-200 ${
+//                   theme === "dark" ? "text-white" : "text-black"
+//                 } ${collapsed ? "" : "rotate-90"}`}
+//                 size={14}
+//               />
+//             </button>
+//           </div>
+//         </div>
+//       </div>
 
-      <div
-        className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${
-          collapsed
-            ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none"
-            : "mt-4 max-h-[4000px] opacity-100 translate-y-0"
-        }`}
-        aria-hidden={collapsed}
-      >
-        <div className="space-y-3">
-          {loading && (
-            <div className="flex items-center justify-center py-4">
-              <FaSpinner className="animate-spin mr-2" size={16} />
-            </div>
-          )}
-          {!loading && rows.length === 0 && (
-            <div className="rbac-card py-4 text-sm">{emptyLabel}</div>
-          )}
-          {!loading &&
-            rows.map((query) => (
-              <div key={query.id} className="rbac-card p-4 sm:p-5">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-base font-semibold ">
-                      {query.projectName || "Project"}
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      {query.projectCity || "Project"}
-                    </p>
-                    <h4 className="mt-1 text-sm">
-                      {query.category ? formatText(query.category) : "Query"}
-                    </h4>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] ${getQueryStatusBadgeClass(
-                        query.status,
-                      )}`}
-                    >
-                      {formatText(query.status)}
-                    </span>
-                    <p>
-                      <span
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] ${getQueryPriorityBadgeClass(
-                          query.priority,
-                        )}`}
-                      >
-                        {formatText(query.priority)}
-                      </span>
-                    </p>
-                  </div>
-                </div>
+//       <div
+//         className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${
+//           collapsed
+//             ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none"
+//             : "mt-4 max-h-[4000px] opacity-100 translate-y-0"
+//         }`}
+//         aria-hidden={collapsed}
+//       >
+//         <div className="space-y-3">
+//           {loading && (
+//             <div className="flex items-center justify-center py-4">
+//               <FaSpinner className="animate-spin mr-2" size={16} />
+//             </div>
+//           )}
+//           {!loading && rows.length === 0 && (
+//             <div className="rbac-card py-4 text-sm">{emptyLabel}</div>
+//           )}
+//           {!loading &&
+//             rows.map((query) => (
+//               <div key={query.id} className="rbac-card p-4 sm:p-5">
+//                 <div className="flex flex-wrap items-start justify-between gap-3">
+//                   <div>
+//                     <p className="text-base font-semibold ">
+//                       {query.projectName || "Project"}
+//                     </p>
+//                     <p className="text-sm text-slate-500">
+//                       {query.projectCity || "Project"}
+//                     </p>
+//                     <h4 className="mt-1 text-sm">
+//                       {query.category ? formatText(query.category) : "Query"}
+//                     </h4>
+//                   </div>
+//                   <div className="flex flex-col gap-2">
+//                     <span
+//                       className={`rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] ${getQueryStatusBadgeClass(
+//                         query.status,
+//                       )}`}
+//                     >
+//                       {formatText(query.status)}
+//                     </span>
+//                     <p>
+//                       <span
+//                         className={`inline-flex rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] ${getQueryPriorityBadgeClass(
+//                           query.priority,
+//                         )}`}
+//                       >
+//                         {formatText(query.priority)}
+//                       </span>
+//                     </p>
+//                   </div>
+//                 </div>
 
-                <div className="grid text-sm">
-                  <p>{query.description || "No description"}</p>
+//                 <div className="grid text-sm">
+//                   <p>{query.description || "No description"}</p>
 
-                  <p>
-                    <span>By:</span> {query.createdByName || "-"}
-                  </p>
-                </div>
-              </div>
-            ))}
-        </div>
-      </div>
-    </div>
-  );
-}
+//                   <p>
+//                     <span>By:</span> {query.createdByName || "-"}
+//                   </p>
+//                 </div>
+//               </div>
+//             ))}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
 
 function OverviewContent() {
   const { user, isAdmin } = useDashboardContext();
@@ -999,7 +1000,7 @@ function OverviewContent() {
             </div>
           </div>
         </div>
-        <QueryTableCard
+        {/* <QueryTableCard
           title="Pending Queries"
           rows={pendingQuery}
           loading={loading}
@@ -1014,6 +1015,16 @@ function OverviewContent() {
               ? "/dashboard/query-management/new"
               : "/dashboard/my-query-management/new"
           }
+        /> */}
+        <QueryTableCard
+          title="Queries"
+          rows={pendingQuery}
+          loading={loading}
+          emptyLabel="No queries found"
+          addHref="/queries/add"
+          addLabel="Add Query"
+          secondaryHref="/queries"
+          secondaryLabel="View All"
         />
       </section>
       <section className="rbac-section mt-4 rbac-container">
