@@ -29,6 +29,8 @@ import {
 } from "react-icons/fa";
 import Link from "next/link";
 import { MdOutlineFileDownload } from "react-icons/md";
+import { ReportingCardList } from "../_components/ReportingCardList";
+import { ReportDetailsDialog } from "../_components/ReportDetailsDialog";
 
 type ProjectOption = {
   id: string;
@@ -579,70 +581,18 @@ function ReportingListContent() {
                   <FaSpinner className="animate-spin mr-2" size={16} />
                 </div>
               )}
-              {!loading && reports.length === 0 && (
-                <div className="rbac-card py-4 text-sm text-slate-500">
-                  No reporting found.
-                </div>
+              {!loading && (
+                <ReportingCardList
+                  rows={reports}
+                  loading={loading}
+                  emptyLabel="No reporting found."
+                  showCount={false}
+                  showEmployee={isAdmin}
+                  onView={handleView}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
               )}
-              {!loading &&
-                reports.map((report) => (
-                  <div key={report.id} className="rbac-card p-4">
-                    <div className="mb-2 flex items-center justify-between">
-                      <div>
-                        <h4 className="text-sm font-semibold">
-                          {report.categoryName}
-                        </h4>
-                        <p className="text-xs text-slate-500">
-                          {report.projectName} •{" "}
-                          {report.projectCity || "-"}{" "}
-                        </p>
-                      </div>
-                      <div className="flex">
-                        <button
-                          className="rbac-link"
-                          type="button"
-                          onClick={() => handleView(report)}
-                        >
-                          <FaEye size={18} />
-                        </button>
-                        {report.canManage && (
-                          <>
-                            <button
-                              className="rbac-link"
-                              type="button"
-                              onClick={() => handleEdit(report)}
-                            >
-                              <FaEdit size={18}  />
-                            </button>
-                            <button
-                              className="rbac-link danger"
-                              type="button"
-                              onClick={() => handleDelete(report)}
-                            >
-                              <FaTrash size={18} />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <div className="grid gap-1 text-sm">
-                      <p>
-                        <strong>Date:</strong>{" "}
-                        {formatToDDMMYYYY(report.reportDate)}
-                      </p>
-                      {isAdmin && (
-                        <p>
-                          <strong>Employee:</strong>{" "}
-                          {report.createdByName || "-"}
-                        </p>
-                      )}
-                      <p>
-                        <strong>Description:</strong>{" "}
-                        {report.description || "-"}
-                      </p>
-                    </div>
-                  </div>
-                ))}
             </div>
           </div>
 
@@ -763,145 +713,21 @@ function ReportingListContent() {
       </ListingFilterDialog>
 
       {viewOpen && (
-        <div className="theme-modal-overlay fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="theme-modal-surface w-full max-w-4xl rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-auto">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-semibold ">Report details</h2>
-                <p className="mt-1 text-sm ">
-                  View full report with media and download options.
-                </p>
-              </div>
-              <button type="button" onClick={closeView}>
-                <IoIosClose size={30} />
-              </button>
-            </div>
-
-            {viewLoading && (
-              <div className="flex items-center justify-center py-4">
-                <FaSpinner className="animate-spin mr-2" size={16} />
-              </div>
-            )}
-
-            {!viewLoading && viewData && (
-              <div className="mt-4 grid gap-4">
-                <div className="grid gap-3 md:grid-cols-2">
-                  <p className="text-sm ">
-                    <strong>Date:</strong>{" "}
-                    {formatToDDMMYYYY(viewData.reportDate)}
-                  </p>
-                  <p className="text-sm ">
-                    <strong>Project:</strong> {viewData.projectName}
-                    <span className="text-slate-500">
-                      {" "}
-                      ({viewData.projectCity || "-"})
-                    </span>
-                  </p>
-                  <p className="text-sm ">
-                    <strong>Employee:</strong> {viewData.createdByName || "-"}
-                  </p>
-                  <p className="text-sm ">
-                    <strong>Reporting Category:</strong>{" "}
-                    {viewData.categoryName || "-"}
-                  </p>
-                </div>
-
-                <p className="text-sm  whitespace-pre-wrap">
-                  <strong>Description:</strong> {viewData.description}
-                </p>
-
-                <div>
-                  {viewData.imageUrls?.length > 0 && (
-                    <>
-                      <p className="text-sm font-semibold ">Images</p>
-                      <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        {viewData.imageUrls.map((url, index) => (
-                          <div
-                            key={url}
-                            className="rounded-xl border p-2"
-                            style={{ borderColor: "var(--theme-border)" }}
-                          >
-                            <button
-                              type="button"
-                              className="block w-full text-left"
-                              onClick={() => openViewImage(index)}
-                            >
-                              <Image
-                                src={url}
-                                alt={`Report image ${index + 1}`}
-                                width={640}
-                                height={320}
-                                unoptimized
-                                className="h-40 w-full rounded-lg object-cover transition-transform duration-200 hover:scale-[1.01]"
-                              />
-                            </button>
-                            <a
-                              className="rbac-link mt-2 inline-block"
-                              href={url}
-                              download
-                            >
-                              <MdOutlineFileDownload size={25} />
-                            </a>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                <div>
-                  {(viewData.videoUrls && viewData.videoUrls.length > 0
-                    ? viewData.videoUrls
-                    : viewData.videoUrl
-                      ? [viewData.videoUrl]
-                      : []
-                  ).length > 0 && (
-                    <>
-                      <p className="text-sm font-semibold ">Video</p>
-                      <div
-                        className="mt-2 rounded-xl border p-3"
-                        style={{ borderColor: "var(--theme-border)" }}
-                      >
-                        <div className="grid gap-3">
-                          {viewVideoUrls.map((url, index) => (
-                            <div key={url}>
-                              <button
-                                type="button"
-                                className="group relative block w-full overflow-hidden rounded-lg theme-surface-2"
-                                onClick={() => openViewVideo(index)}
-                                aria-label={`Open video ${index + 1}`}
-                              >
-                                <video
-                                  className="h-48 w-full object-cover"
-                                  src={url}
-                                  muted
-                                  playsInline
-                                  preload="metadata"
-                                />
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 transition group-hover:bg-black/30">
-                                  <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-slate-900 shadow-lg">
-                                    <FaPlay className="ml-1" size={18} />
-                                  </span>
-                                </div>
-                              </button>
-                              <a
-                                className="rbac-link mt-2 inline-block"
-                                href={url}
-                                download
-                              >
-                                <MdOutlineFileDownload size={25} />
-                              </a>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <ReportDetailsDialog
+          open={viewOpen}
+          loading={viewLoading}
+          report={viewData}
+          showEmployee={true}
+          viewImageUrls={viewData?.imageUrls ?? []}
+          viewVideoUrls={viewData?.videoUrls?.length
+            ? viewData.videoUrls
+            : viewData?.videoUrl
+            ? [viewData.videoUrl]
+            : []}
+          onClose={closeView}
+          onOpenImage={openViewImage}
+          onOpenVideo={openViewVideo}
+        />
       )}
 
       <Dialog

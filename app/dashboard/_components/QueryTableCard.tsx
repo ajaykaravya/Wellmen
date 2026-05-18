@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ReactNode, useState } from "react";
-import { FaChevronRight, FaSpinner } from "react-icons/fa";
+import { FaChevronRight, FaSpinner, FaEdit } from "react-icons/fa";
 
 type QueryRow = {
   id: string;
@@ -33,6 +33,10 @@ type QueryCardContainerProps<T> = {
   secondaryHref?: string;
   secondaryLabel?: string;
 
+  onUpdate?: (row: QueryRow) => void;
+  renderActions?: (row: QueryRow) => ReactNode;
+  actionLabel?: string;
+  actionButtonClassName?: string;
 };
 
 export function QueryTableCard<T>({
@@ -51,38 +55,42 @@ export function QueryTableCard<T>({
   secondaryHref,
   secondaryLabel,
 
+  onUpdate,
+  renderActions,
+  actionLabel,
+  actionButtonClassName = "rbac-button rbac-button-secondary",
 }: QueryCardContainerProps<T>) {
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
 
   const formatText = (text: string) => {
-  const formation = text.replaceAll("_", " ").toLowerCase();
-  const formatted = formation.charAt(0).toUpperCase() + formation.slice(1);
-  return formatted;
-};
+    const formation = text.replaceAll("_", " ").toLowerCase();
+    const formatted = formation.charAt(0).toUpperCase() + formation.slice(1);
+    return formatted;
+  };
 
-const getQueryStatusBadgeClass = (status: QueryRow["status"]) => {
-  switch (status) {
-    case "PENDING":
-      return "bg-rose-100 text-rose-800 ring-1 ring-rose-200";
-    case "COMPLETED":
-      return "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200";
-    default:
-      return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
-  }
-};
+  const getQueryStatusBadgeClass = (status: QueryRow["status"]) => {
+    switch (status) {
+      case "PENDING":
+        return "bg-rose-100 text-rose-800 ring-1 ring-rose-200";
+      case "COMPLETED":
+        return "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200";
+      default:
+        return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
+    }
+  };
 
-const getQueryPriorityBadgeClass = (priority: QueryRow["priority"]) => {
-  switch (priority) {
-    case "LOW":
-      return "bg-amber-100 text-amber-800 ring-1 ring-amber-200";
-    case "MEDIUM":
-      return "bg-orange-100 text-orange-800 ring-1 ring-orange-200";
-    case "HIGH":
-      return "bg-red-100 text-red-800 ring-1 ring-red-200";
-    default:
-      return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
-  }
-};
+  const getQueryPriorityBadgeClass = (priority: QueryRow["priority"]) => {
+    switch (priority) {
+      case "LOW":
+        return "bg-amber-100 text-amber-800 ring-1 ring-amber-200";
+      case "MEDIUM":
+        return "bg-orange-100 text-orange-800 ring-1 ring-orange-200";
+      case "HIGH":
+        return "bg-red-100 text-red-800 ring-1 ring-red-200";
+      default:
+        return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
+    }
+  };
 
   return (
     <div className="rbac-card">
@@ -98,7 +106,7 @@ const getQueryPriorityBadgeClass = (priority: QueryRow["priority"]) => {
             )}
           </h3>
 
-          <div className="flex flex-wrap items-center justify-end gap-2 w-full">
+          <div className="flex items-center justify-end gap-2 w-full">
             {addHref && (
               <Link href={addHref}>
                 <button className="rbac-button" type="button">
@@ -154,55 +162,66 @@ const getQueryPriorityBadgeClass = (priority: QueryRow["priority"]) => {
           )}
 
           {!loading && rows.length === 0 && (
-            <div className="rbac-card py-4 text-sm">
-              {emptyLabel}
-            </div>
+            <div className="rbac-card py-4 text-sm">{emptyLabel}</div>
           )}
 
-           {!loading &&
-             rows.map((query) => (
-               <div key={query.id} className="rbac-card p-4 sm:p-5">
-                 <div className="flex flex-wrap items-start justify-between gap-3">
-                   <div>
-                     <p className="text-base font-semibold ">
-                       {query.projectName || "Project"}
-                     </p>
-                     <p className="text-sm text-slate-500">
-                       {query.projectCity || "Project"}
-                     </p>
-                     <h4 className="mt-1 text-sm">
-                       {query.category ? formatText(query.category) : "Query"}
-                     </h4>
-                   </div>
-                   <div className="flex flex-col gap-2">
-                     <span
-                       className={`rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] ${getQueryStatusBadgeClass(
-                         query.status,
-                       )}`}
-                     >
-                       {formatText(query.status)}
-                     </span>
-                     <p>
-                       <span
-                         className={`inline-flex rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] ${getQueryPriorityBadgeClass(
-                           query.priority,
-                         )}`}
-                       >
-                         {formatText(query.priority)}
-                       </span>
-                     </p>
-                   </div>
-                 </div>
-
-                 <div className="grid text-sm">
-                   <p>{query.description || "No description"}</p>
-
-                   <p>
-                     <span>By:</span> {query.createdByName || "-"}
-                   </p>
-                 </div>
-               </div>
-             ))}
+          {!loading &&
+            rows.map((query) => (
+              <div key={query.id} className="rbac-card p-4 sm:p-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-base font-semibold ">
+                      {query.projectName || "Project"}
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      {query.projectCity || "Project"}
+                    </p>
+                    <h4 className="text-sm">
+                      {query.category ? formatText(query.category) : "Query"}
+                    </h4>
+                    <p className="text-sm">
+                      {query.description || "No description"}
+                    </p>
+                    <p className="text-sm">
+                      <span>By:</span> {query.createdByName || ""}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <div className="flex gap-2 justify-end">
+                      {renderActions
+                        ? renderActions(query)
+                        : onUpdate && (
+                            <button
+                              className={
+                                actionLabel ? actionButtonClassName : "h-fit"
+                              }
+                              type="button"
+                              onClick={() => onUpdate(query)}
+                            >
+                              {actionLabel ?? <FaEdit />}
+                            </button>
+                          )}
+                    </div>
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-medium ${getQueryStatusBadgeClass(
+                        query.status,
+                      )}`}
+                    >
+                      {formatText(query.status)}
+                    </span>
+                    <p>
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${getQueryPriorityBadgeClass(
+                          query.priority,
+                        )}`}
+                      >
+                        {formatText(query.priority)}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
         </div>
       </div>
     </div>

@@ -8,6 +8,7 @@ import AppliedFilterSummary from "../../../components/AppliedFilterSummary";
 import ConfirmDialog from "../../../components/ConfirmDialog";
 import ListingFilterDialog from "../../../components/ListingFilterDialog";
 import useDebounce from "@/app/hooks/useDebounce";
+import { QueryTableCard } from "../../../dashboard/_components/QueryTableCard";
 import { toast } from "react-toastify";
 import {
   FaChevronLeft,
@@ -33,6 +34,8 @@ type QueryRow = {
   status: QueryStatus;
   priority: PriorityLevel;
   createdAt: string;
+  createdById?: string;
+  createdByName?: string;
 };
 
 type QueryListContentProps = {
@@ -445,52 +448,47 @@ export default function QueryListContent({
                   {emptyMessage}
                 </div>
               )}
-              {!loading &&
-                queries.map((item) => (
-                  <div key={item.id} className="rbac-card p-4">
-                    <div className="mb-2 flex items-center justify-between gap-3">
-                      <div>
-                        <h4 className="text-sm font-semibold">
-                          {item.projectName || "-"}
-                        </h4>
-                        <p className="text-xs text-slate-500">
-                          {item.projectCity || "-"}
-                        </p>
-                      </div>
-                      <div className="flex">
-                        <Link href={`${basePath}/${item.id}`}>
-                          <button className="rbac-link" type="button">
-                            <FaEdit size={18} />
-                          </button>
-                        </Link>
-                        <button
-                          style={{padding:"2px"}}
-                          className="rbac-link danger"
-                          type="button"
-                          onClick={() => handleDelete(item)}
-                        >
-                          <FaTrash size={18} />
+              {!loading && (
+                <QueryTableCard
+                  title=""
+                  rows={queries.map((query) => ({
+                    id: query.id,
+                    projectId: query.projectId,
+                    projectName: query.projectName,
+                    projectCity: query.projectCity || null,
+                    category: query.category,
+                    description: query.description,
+                    status: query.status,
+                    priority: query.priority,
+                    createdById: query.createdById || query.id,
+                    createdByName: query.createdByName || "",
+                  }))}
+                  loading={loading}
+                  emptyLabel={emptyMessage}
+                  showCount={false}
+                  collapsible={false}
+                  renderActions={(query) => (
+                    <div className="flex gap-2">
+                      <Link href={`${basePath}/${query.id}`}>
+                        <button className="rbac-link" type="button">
+                          <FaEdit size={18} />
                         </button>
-                      </div>
+                      </Link>
+                      <button
+                        style={{padding:"2px"}}
+                        className="rbac-link danger"
+                        type="button"
+                        onClick={() => {
+                          const fullQuery = queries.find((q) => q.id === query.id);
+                          if (fullQuery) handleDelete(fullQuery);
+                        }}
+                      >
+                        <FaTrash size={18} />
+                      </button>
                     </div>
-                    <div className="grid gap-1 text-sm">
-                      <p>
-                        <strong>Category:</strong>{" "}
-                        {categoryLabel(item.category)}
-                      </p>
-                      <p>
-                        <strong>Description:</strong> {item.description || "-"}
-                      </p>
-                      <p>
-                        <strong>Status:</strong> {statusLabel(item.status)}
-                      </p>
-                      <p>
-                        <strong>Priority:</strong>{" "}
-                        {priorityLabel(item.priority)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  )}
+                />
+              )}
             </div>
           </div>
 

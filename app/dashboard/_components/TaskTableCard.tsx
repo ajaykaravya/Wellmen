@@ -97,7 +97,7 @@ export function TaskTableCard<T extends TaskTableCardRow>({
                   <p className="text-sm text-slate-500">{task.projectCity}</p>
                 )}
                 {"categoryName" in task && (
-                  <p className="text-sm mt-1">{task.categoryName || ""}</p>
+                  <p className="text-sm">{task.categoryName || ""}</p>
                 )}
                 {task.description && (
                   <p className="text-sm">{task.description}</p>
@@ -211,7 +211,7 @@ export function TaskTableCard<T extends TaskTableCardRow>({
                     <p className="text-sm text-slate-500">{task.projectCity}</p>
                   )}
                   {"categoryName" in task && (
-                    <p className="text-sm mt-1">{task.categoryName || ""}</p>
+                    <p className="text-sm">{task.categoryName || ""}</p>
                   )}
                   {task.description && (
                     <p className="text-sm">{task.description}</p>
@@ -247,7 +247,7 @@ export function TaskTableCard<T extends TaskTableCardRow>({
                       )}
                 </div>
                   <span
-                    className={`rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] w-max ${getTaskStatusBadgeClass(
+                    className={`rounded-full px-3 py-1 text-xs font-medium w-max ${getTaskStatusBadgeClass(
                       task.status,
                     )}`}
                   >

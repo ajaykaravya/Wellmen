@@ -50,8 +50,9 @@ import { ChevronDownIcon } from "@heroicons/react/16/solid";
 import { useThemeMode } from "../components/ThemeProvider";
 import { IoIosClose } from "react-icons/io";
 import { MdOutlineFileDownload } from "react-icons/md";
-import { FaLink } from "react-icons/fa6";
 import { QueryTableCard } from "./_components/QueryTableCard";
+import { ReportingCardList } from "./_components/ReportingCardList";
+import { ReportDetailsDialog } from "./_components/ReportDetailsDialog";
 
 ChartJS.register(
   CategoryScale,
@@ -117,45 +118,6 @@ type AdminReportRow = {
   videoUrls?: string[];
 };
 
-type QueryTableCardProps = {
-  title: string;
-  rows: QueryRow[];
-  loading: boolean;
-  emptyLabel: string;
-  viewAllHref: string;
-  addQueryHref: string;
-};
-
-const formatText = (text: string) => {
-  const formation = text.replaceAll("_", " ").toLowerCase();
-  const formatted = formation.charAt(0).toUpperCase() + formation.slice(1);
-  return formatted;
-};
-
-const getQueryStatusBadgeClass = (status: QueryRow["status"]) => {
-  switch (status) {
-    case "PENDING":
-      return "bg-rose-100 text-rose-800 ring-1 ring-rose-200";
-    case "COMPLETED":
-      return "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200";
-    default:
-      return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
-  }
-};
-
-const getQueryPriorityBadgeClass = (priority: QueryRow["priority"]) => {
-  switch (priority) {
-    case "LOW":
-      return "bg-amber-100 text-amber-800 ring-1 ring-amber-200";
-    case "MEDIUM":
-      return "bg-orange-100 text-orange-800 ring-1 ring-orange-200";
-    case "HIGH":
-      return "bg-red-100 text-red-800 ring-1 ring-red-200";
-    default:
-      return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
-  }
-};
-
 const shiftInputDate = (value: string, diffDays: number) => {
   let base: Date;
   if (value) {
@@ -188,121 +150,6 @@ const formatAmount = (value: number) =>
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-
-// function QueryTableCard({
-//   title,
-//   rows,
-//   loading,
-//   emptyLabel,
-//   viewAllHref,
-//   addQueryHref,
-// }: QueryTableCardProps) {
-//   const [collapsed, setCollapsed] = useState(true);
-//   const { theme } = useThemeMode();
-
-//   return (
-//     <div className="rbac-card">
-//       <div className="flex flex-wrap items-center justify-between gap-3">
-//         <div className="flex items-center justify-between gap-2 w-full">
-//           <h3 className="sm:text-base text-sm font-medium w-full">{title}</h3>
-//           <div className="flex items-center gap-2 justify-end w-full">
-//             <Link href={addQueryHref}>
-//               <button className="rbac-button" type="button">
-//                 Add Query
-//               </button>
-//             </Link>
-//             <Link href={viewAllHref}>
-//               <button
-//                 className="rbac-button rbac-button-secondary"
-//                 type="button"
-//               >
-//                 View All
-//               </button>
-//             </Link>
-//             <button
-//               className="change-button change-button-secondary px-3 py-2 rounded-md"
-//               type="button"
-//               onClick={() => setCollapsed((prev) => !prev)}
-//               aria-expanded={!collapsed}
-//               aria-label={`${collapsed ? "Expand" : "Collapse"} ${title}`}
-//             >
-//               <FaChevronRight
-//                 className={`transition-transform duration-200 ${
-//                   theme === "dark" ? "text-white" : "text-black"
-//                 } ${collapsed ? "" : "rotate-90"}`}
-//                 size={14}
-//               />
-//             </button>
-//           </div>
-//         </div>
-//       </div>
-
-//       <div
-//         className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${
-//           collapsed
-//             ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none"
-//             : "mt-4 max-h-[4000px] opacity-100 translate-y-0"
-//         }`}
-//         aria-hidden={collapsed}
-//       >
-//         <div className="space-y-3">
-//           {loading && (
-//             <div className="flex items-center justify-center py-4">
-//               <FaSpinner className="animate-spin mr-2" size={16} />
-//             </div>
-//           )}
-//           {!loading && rows.length === 0 && (
-//             <div className="rbac-card py-4 text-sm">{emptyLabel}</div>
-//           )}
-//           {!loading &&
-//             rows.map((query) => (
-//               <div key={query.id} className="rbac-card p-4 sm:p-5">
-//                 <div className="flex flex-wrap items-start justify-between gap-3">
-//                   <div>
-//                     <p className="text-base font-semibold ">
-//                       {query.projectName || "Project"}
-//                     </p>
-//                     <p className="text-sm text-slate-500">
-//                       {query.projectCity || "Project"}
-//                     </p>
-//                     <h4 className="mt-1 text-sm">
-//                       {query.category ? formatText(query.category) : "Query"}
-//                     </h4>
-//                   </div>
-//                   <div className="flex flex-col gap-2">
-//                     <span
-//                       className={`rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] ${getQueryStatusBadgeClass(
-//                         query.status,
-//                       )}`}
-//                     >
-//                       {formatText(query.status)}
-//                     </span>
-//                     <p>
-//                       <span
-//                         className={`inline-flex rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] ${getQueryPriorityBadgeClass(
-//                           query.priority,
-//                         )}`}
-//                       >
-//                         {formatText(query.priority)}
-//                       </span>
-//                     </p>
-//                   </div>
-//                 </div>
-
-//                 <div className="grid text-sm">
-//                   <p>{query.description || "No description"}</p>
-
-//                   <p>
-//                     <span>By:</span> {query.createdByName || "-"}
-//                   </p>
-//                 </div>
-//               </div>
-//             ))}
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
 
 function OverviewContent() {
   const { user, isAdmin } = useDashboardContext();
@@ -1000,22 +847,6 @@ function OverviewContent() {
             </div>
           </div>
         </div>
-        {/* <QueryTableCard
-          title="Pending Queries"
-          rows={pendingQuery}
-          loading={loading}
-          emptyLabel="No pending queries for today"
-          viewAllHref={
-            isAdmin
-              ? "/dashboard/query-management?status=PENDING"
-              : "/dashboard/my-query-management?status=PENDING"
-          }
-          addQueryHref={
-            isAdmin
-              ? "/dashboard/query-management/new"
-              : "/dashboard/my-query-management/new"
-          }
-        /> */}
         <QueryTableCard
           title="Queries"
           rows={pendingQuery}
@@ -1140,9 +971,12 @@ function OverviewContent() {
             <div className="grid gap-4">
               <div className="rbac-card">
                 <div className="flex items-center justify-between gap-2 w-full">
+                  <div className="flex items-center">
                   <h3 className="sm:text-base text-sm font-medium w-full">
                     {isAdmin ? "Employees reporting" : "Today's reporting"}
                   </h3>
+                  <p className=" text-white text-sm font-normal bg-[#2596be] px-2 py-1 rounded-full">{isAdmin ? adminReports.length : userReports.length}</p>
+                  </div>
                   <div className="flex items-center gap-2 justify-end w-full">
                     {!isAdmin && (
                       <Link href="/dashboard/reports/new">
@@ -1214,45 +1048,13 @@ function OverviewContent() {
                         </div>
                       )}
                       {!adminLoading && adminReports.length > 0 && (
-                        <div className="space-y-3">
-                          {adminReports.map((report) => (
-                            <div
-                              key={report.id}
-                              className="rbac-card p-4 sm:p-5"
-                            >
-                              <div className="flex flex-wrap items-start justify-between gap-3">
-                                <div>
-                                  <p className="text-xs uppercase tracking-[0.2em]">
-                                    {formatToDDMMYYYY(report.reportDate)}
-                                  </p>
-                                  <p className="font-semibold text-base">
-                                    {report.projectName}
-                                  </p>
-                                  <p className="text-sm text-slate-500">
-                                    {report.projectCity || "-"}
-                                  </p>
-                                </div>
-                                <div className="flex justify-center items-center gap-4">
-                                  {((report.imageUrls?.length ?? 0) > 0 ||
-                                    (report.videoUrls?.length ?? 0) > 0 ||
-                                    !!report.videoUrl) && <FaLink />}
-                                  <button
-                                    className="rbac-link"
-                                    type="button"
-                                    onClick={() => openReportView(report)}
-                                  >
-                                    <FaEye size={15} />
-                                  </button>
-                                </div>
-                              </div>
-
-                              <div className="mt-1 grid text-sm">
-                                <p>{report.categoryName || "-"}</p>
-                                <p>{report.description}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                        <ReportingCardList
+                          rows={adminReports}
+                          loading={adminLoading}
+                          emptyLabel="No reporting found for selected date."
+                          onView={openReportView}
+                          showEmployee={true}
+                        />
                       )}
                     </div>
                   </div>
@@ -1275,41 +1077,12 @@ function OverviewContent() {
                       </div>
                     )}
                     {!userReportsLoading && userReports.length > 0 && (
-                      <div className="space-y-3">
-                        {userReports.map((report) => (
-                          <div key={report.id} className="rbac-card p-4 sm:p-5">
-                            <div className="flex flex-wrap items-start justify-between gap-3">
-                              <div>
-                                <p className="text-xs uppercase tracking-[0.2em] ">
-                                  {formatToDDMMYYYY(report.reportDate)}
-                                </p>
-                                <p className="font-semibold">
-                                  {report.projectName || "-"}
-                                </p>
-                                <p className="text-sm text-slate-500">
-                                  {report.projectCity || "-"}
-                                </p>
-                              </div>
-                              <button
-                                className="rbac-link"
-                                type="button"
-                                onClick={() => openReportView(report)}
-                              >
-                                <FaEye size={15} />
-                              </button>
-                            </div>
-
-                            <div className="mt-3 grid gap-2 text-sm theme-text-muted">
-                              <p>
-                                <span className="theme-text">
-                                  Reporting Category:
-                                </span>{" "}
-                                {report.categoryName || "-"}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      <ReportingCardList
+                        rows={userReports}
+                        loading={userReportsLoading}
+                        emptyLabel="No reporting found for today."
+                        onView={openReportView}
+                      />
                     )}
                   </div>
                 )}
@@ -1426,137 +1199,21 @@ function OverviewContent() {
       )}
 
       {reportViewOpen && (
-        <div className="theme-modal-overlay fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="theme-modal-surface w-full max-w-4xl rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-auto">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-semibold theme-text">
-                  Report details
-                </h2>
-              </div>
-              <button type="button" onClick={closeReportView}>
-                <IoIosClose size={30} />
-              </button>
-            </div>
-
-            {reportViewLoading && (
-              <div className="flex items-center justify-center py-4">
-                <FaSpinner className="animate-spin mr-2" size={16} />
-              </div>
-            )}
-
-            {!reportViewLoading && reportViewData && (
-              <div className="mt-4 grid gap-3">
-                <p className="text-xs uppercase tracking-[0.2em]">
-                  {formatToDDMMYYYY(reportViewData.reportDate)}
-                </p>
-                <p className="text-base font-semibold">
-                  {reportViewData.projectName}
-                </p>
-                <p className="text-sm">{reportViewData.createdByName || "-"}</p>
-
-                <p className="text-sm">{reportViewData.categoryName || "-"}</p>
-                <p className="text-sm whitespace-pre-wrap">
-                  {reportViewData.description}
-                </p>
-
-                <div>
-                  {reportViewData.imageUrls?.length > 0 && (
-                    <>
-                      <p className="text-sm font-semibold text-slate-800">
-                        Images
-                      </p>
-                      <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        {reportViewData.imageUrls.map((url, index) => (
-                          <div
-                            key={url}
-                            className="rounded-xl border p-2"
-                            style={{ borderColor: "var(--theme-border)" }}
-                          >
-                            <button
-                              type="button"
-                              className="block w-full text-left"
-                              onClick={() => openReportImage(index)}
-                            >
-                              <Image
-                                src={url}
-                                alt={`Report image ${index + 1}`}
-                                width={640}
-                                height={320}
-                                unoptimized
-                                className="h-40 w-full rounded-lg object-cover transition-transform duration-200 hover:scale-[1.01]"
-                              />
-                            </button>
-                            <a
-                              className="rbac-link mt-2 inline-block"
-                              href={url}
-                              download
-                            >
-                              <MdOutlineFileDownload size={25} />
-                            </a>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                <div>
-                  {(reportViewData.videoUrls &&
-                  reportViewData.videoUrls.length > 0
-                    ? reportViewData.videoUrls
-                    : reportViewData.videoUrl
-                    ? [reportViewData.videoUrl]
-                    : []
-                  ).length > 0 && (
-                    <>
-                      <p className="text-sm font-semibold text-slate-800">
-                        Video
-                      </p>
-                      <div
-                        className="mt-2 rounded-xl border p-3"
-                        style={{ borderColor: "var(--theme-border)" }}
-                      >
-                        <div className="grid gap-3">
-                          {reportVideoUrls.map((url, index) => (
-                            <div key={url}>
-                              <button
-                                type="button"
-                                className="group relative block w-full overflow-hidden rounded-lg theme-surface-2"
-                                onClick={() => openReportVideo(index)}
-                                aria-label={`Open video ${index + 1}`}
-                              >
-                                <video
-                                  className="h-48 w-full object-cover"
-                                  src={url}
-                                  muted
-                                  playsInline
-                                  preload="metadata"
-                                />
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 transition group-hover:bg-black/30">
-                                  <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-slate-900 shadow-lg">
-                                    <FaPlay className="ml-1" size={18} />
-                                  </span>
-                                </div>
-                              </button>
-                              <a
-                                className="rbac-link mt-2 inline-block"
-                                href={url}
-                                download
-                              >
-                                <MdOutlineFileDownload size={25} />
-                              </a>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <ReportDetailsDialog
+          open={reportViewOpen}
+          loading={reportViewLoading}
+          report={reportViewData}
+          showEmployee={true}
+          viewImageUrls={reportViewData?.imageUrls ?? []}
+          viewVideoUrls={reportViewData?.videoUrls?.length
+            ? reportViewData.videoUrls
+            : reportViewData?.videoUrl
+            ? [reportViewData.videoUrl]
+            : []}
+          onClose={closeReportView}
+          onOpenImage={openReportImage}
+          onOpenVideo={openReportVideo}
+        />
       )}
 
       <Dialog
