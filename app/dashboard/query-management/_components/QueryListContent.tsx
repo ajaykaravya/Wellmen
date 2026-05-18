@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { flexRender, useReactTable } from "@tanstack/react-table";
 import { ColumnDef, getCoreRowModel } from "@tanstack/table-core";
 import AppliedFilterSummary from "../../../components/AppliedFilterSummary";
@@ -90,6 +90,7 @@ export default function QueryListContent({
   addLabel = "Add Query",
   emptyMessage = "No queries found.",
 }: QueryListContentProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [queries, setQueries] = useState<QueryRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -214,6 +215,13 @@ export default function QueryListContent({
     }
   }, [pageCount, pageIndex]);
 
+  const handleEdit = useCallback(
+    (row: QueryRow) => {
+      router.push(`${basePath}/${row.id}`);
+    },
+    [basePath, router],
+  );
+
   const handleDelete = useCallback((row: QueryRow) => {
     setConfirmTarget(row);
     setConfirmOpen(true);
@@ -303,11 +311,13 @@ export default function QueryListContent({
         id: "action",
         cell: ({ row }) => (
           <div className="rbac-inline-actions flex gap-4">
-            <Link href={`${basePath}/${row.original.id}`}>
-              <button className="rbac-link" type="button">
-                <FaEdit />
-              </button>
-            </Link>
+            <button
+              className="rbac-link"
+              type="button"
+              onClick={() => handleEdit(row.original)}
+            >
+              <FaEdit />
+            </button>
             <button
               className="rbac-link danger"
               type="button"
@@ -383,9 +393,9 @@ export default function QueryListContent({
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext(),
-                              )}
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
                         </th>
                       ))}
                     </tr>
@@ -469,13 +479,18 @@ export default function QueryListContent({
                   collapsible={false}
                   renderActions={(query) => (
                     <div className="flex gap-2">
-                      <Link href={`${basePath}/${query.id}`}>
-                        <button className="rbac-link" type="button">
-                          <FaEdit size={18} />
-                        </button>
-                      </Link>
                       <button
-                        style={{padding:"2px"}}
+                        className="rbac-link"
+                        type="button"
+                        onClick={() => {
+                          const fullQuery = queries.find((q) => q.id === query.id);
+                          if (fullQuery) handleEdit(fullQuery);
+                        }}
+                      >
+                        <FaEdit size={18} />
+                      </button>
+                      <button
+                        style={{ padding: "2px" }}
                         className="rbac-link danger"
                         type="button"
                         onClick={() => {

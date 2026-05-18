@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { flexRender, useReactTable } from "@tanstack/react-table";
 import { ColumnDef, getCoreRowModel } from "@tanstack/table-core";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { formatToDDMMYYYY } from "@/lib/dateUtils";
 import useDebounce from "@/app/hooks/useDebounce";
 import DashboardShell, {
@@ -84,6 +84,7 @@ const renderProjectName = (name?: string | null, city?: string | null) => (
 );
 
 function TodoListContent() {
+  const router = useRouter();
   const { isAdmin } = useDashboardContext();
   const searchParams = useSearchParams();
   const taskTypeFromQuery = (() => {
@@ -281,6 +282,13 @@ function TodoListContent() {
       setPageIndex(Math.max(pageCount - 1, 0));
     }
   }, [pageCount, pageIndex]);
+1
+  const handleEdit = useCallback(
+    (row: TodoRow) => {
+      router.push(`/dashboard/task-management/${row.id}`);
+    },
+    [router],
+  );
 
   const handleDeleteTodo = useCallback(
     (row: TodoRow) => {
@@ -472,11 +480,13 @@ function TodoListContent() {
         id: "action",
         cell: ({ row }) => (
           <div className="rbac-inline-actions flex gap-4">
-            <Link href={`/dashboard/task-management/${row.original.id}`}>
-              <button className="rbac-link" type="button">
-                <FaEdit />
-              </button>
-            </Link>
+            <button
+              className="rbac-link"
+              type="button"
+              onClick={() => handleEdit(row.original)}
+            >
+              <FaEdit />
+            </button>
             <button
               className="rbac-link danger"
               type="button"
@@ -570,16 +580,15 @@ function TodoListContent() {
             <div className="rbac-inline-actions flex gap-4">
               {canManage && (
                 <>
-                  <Link href={`/dashboard/task-management/${row.original.id}`}>
-                    <button
-                      className="rbac-link"
-                      type="button"
-                      disabled={!canManage}
-                      title={"Edit"}
-                    >
-                      <FaEdit />
-                    </button>
-                  </Link>
+                  <button
+                    className="rbac-link"
+                    type="button"
+                    onClick={() => handleEdit(row.original)}
+                    disabled={!canManage}
+                    title={"Edit"}
+                  >
+                    <FaEdit />
+                  </button>
                   <button
                     className="rbac-link danger"
                     type="button"
@@ -774,17 +783,16 @@ function TodoListContent() {
                   <>
                     {(isAdmin || todo.canManage) && (
                       <div className="flex justify-end">
-                        <Link href={`/dashboard/task-management/${todo.id}`}>
-                          <button
-                            className="rbac-link"
-                            type="button"
-                            title="Edit"
-                          >
-                            <FaEdit size={18} />
-                          </button>
-                        </Link>
                         <button
-                          style={{padding:"2px"}}
+                          className="rbac-link"
+                          type="button"
+                          title="Edit"
+                          onClick={() => handleEdit(todo)}
+                        >
+                          <FaEdit size={18} />
+                        </button>
+                        <button
+                          style={{ padding: "2px" }}
                           className="rbac-link danger"
                           type="button"
                           onClick={() => handleDeleteTodo(todo)}

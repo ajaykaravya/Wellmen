@@ -63,7 +63,7 @@ export function ReportingCardList<T extends ReportingCardRow>({
   const renderDefaultActions = (row: T) => {
     const canManage = row.canManage !== false;
     return (
-      <div className="flex items-center">
+      <div className="flex items-center gap-2">
         {onView && (
           <button
             className="rbac-link"
@@ -162,15 +162,15 @@ export function ReportingCardList<T extends ReportingCardRow>({
                 <p className="text-sm">{row.categoryName || ""}</p>
                 <p>{row.description || "No description"}</p>
                 <div className="flex justify-between items-center">
-                {showEmployee && row.createdByName !== undefined ? (
-                  <p>
-                    <span className="font-semibold">By:</span>{" "}
-                    {row.createdByName || ""}
+                  {showEmployee && row.createdByName !== undefined ? (
+                    <p>
+                      <span className="font-semibold">By:</span>{" "}
+                      {row.createdByName || ""}
+                    </p>
+                  ) : <p></p>}
+                  <p className="text-xs uppercase flex justify-end">
+                    {formatToDDMMYYYY(row.reportDate)}
                   </p>
-                ) : <p></p>}
-                <p className="text-xs uppercase flex justify-end">
-                  {formatToDDMMYYYY(row.reportDate)}
-                </p>
                 </div>
               </div>
             </div>

@@ -115,25 +115,25 @@ export function TaskTableCard<T extends TaskTableCardRow>({
                 {renderActions
                   ? renderActions(task)
                   : onUpdate && (
-                      <button
-                        className={
-                          actionLabel ? actionButtonClassName : "h-fit"
-                        }
-                        type="button"
-                        onClick={() => onUpdate(task)}
-                      >
-                        {actionLabel ?? <FaEdit />}
-                      </button>
-                    )}
+                    <button
+                      className={
+                        actionLabel ? actionButtonClassName : "h-fit"
+                      }
+                      type="button"
+                      onClick={() => onUpdate(task)}
+                    >
+                      {actionLabel ?? <FaEdit />}
+                    </button>
+                  )}
                 <span
-                  className={`rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] w-max ${getTaskStatusBadgeClass(
+                  className={`rounded-full px-3 py-1 text-xs font-medium w-max ${getTaskStatusBadgeClass(
                     task.status,
                   )}`}
                 >
                   {formatStatusText(task.status)}
                 </span>
 
-                
+
               </div>
             </div>
           ))}
@@ -169,9 +169,8 @@ export function TaskTableCard<T extends TaskTableCardRow>({
               aria-label={`${collapsed ? "Expand" : "Collapse"} ${title}`}
             >
               <FaChevronRight
-                className={`transition-transform duration-200 ${
-                  collapsed ? "" : "rotate-90"
-                }`}
+                className={`transition-transform duration-200 ${collapsed ? "" : "rotate-90"
+                  }`}
                 size={14}
               />
             </button>
@@ -180,13 +179,12 @@ export function TaskTableCard<T extends TaskTableCardRow>({
       </div>
 
       <div
-        className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${
-          !collapsible
+        className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${!collapsible
             ? "mt-4 max-h-[4000px] opacity-100 translate-y-0"
             : collapsed
-            ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none"
-            : "mt-4 max-h-[4000px] opacity-100 translate-y-0"
-        }`}
+              ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none"
+              : "mt-4 max-h-[4000px] opacity-100 translate-y-0"
+          }`}
         aria-hidden={collapsible ? collapsed : false}
       >
         <div className="space-y-3">
@@ -232,9 +230,9 @@ export function TaskTableCard<T extends TaskTableCardRow>({
                     </h4>
                   </div>
                   <div className="flex gap-2 justify-end">
-                  {renderActions
-                    ? renderActions(task)
-                    : onUpdate && (
+                    {renderActions
+                      ? renderActions(task)
+                      : onUpdate && (
                         <button
                           className={
                             actionLabel ? actionButtonClassName : "h-fit"
@@ -245,7 +243,7 @@ export function TaskTableCard<T extends TaskTableCardRow>({
                           {actionLabel ?? <FaEdit />}
                         </button>
                       )}
-                </div>
+                  </div>
                   <span
                     className={`rounded-full px-3 py-1 text-xs font-medium w-max ${getTaskStatusBadgeClass(
                       task.status,
@@ -255,7 +253,7 @@ export function TaskTableCard<T extends TaskTableCardRow>({
                   </span>
                 </div>
 
-                
+
               </div>
             ))}
         </div>

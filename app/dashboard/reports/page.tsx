@@ -22,7 +22,6 @@ import {
   FaChevronRight,
   FaEdit,
   FaEye,
-  FaPlay,
   FaSpinner,
   FaTrash,
   FaFilter,
@@ -215,13 +214,13 @@ function ReportingListContent() {
     projects.find((project) => project.id === projectFilter)?.name || "",
     isAdmin
       ? (() => {
-          const selectedEmployee = employees.find(
-            (employee) => employee.id === employeeFilter,
-          );
-          return selectedEmployee
-            ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}`
-            : employeeFilter;
-        })()
+        const selectedEmployee = employees.find(
+          (employee) => employee.id === employeeFilter,
+        );
+        return selectedEmployee
+          ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}`
+          : employeeFilter;
+      })()
       : "",
     fromDate,
     toDate,
@@ -384,16 +383,16 @@ function ReportingListContent() {
       },
       ...(isAdmin
         ? [
-            {
-              header: "Employee",
-              accessorKey: "createdByName",
-              cell: (info) => (
-                <span className="rbac-muted">
-                  {String(info.getValue() || "-")}
-                </span>
-              ),
-            } as ColumnDef<ReportRow>,
-          ]
+          {
+            header: "Employee",
+            accessorKey: "createdByName",
+            cell: (info) => (
+              <span className="rbac-muted">
+                {String(info.getValue() || "-")}
+              </span>
+            ),
+          } as ColumnDef<ReportRow>,
+        ]
         : []),
       {
         header: "Project Name",
@@ -521,9 +520,9 @@ function ReportingListContent() {
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext(),
-                              )}
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
                         </th>
                       ))}
                     </tr>
@@ -722,8 +721,8 @@ function ReportingListContent() {
           viewVideoUrls={viewData?.videoUrls?.length
             ? viewData.videoUrls
             : viewData?.videoUrl
-            ? [viewData.videoUrl]
-            : []}
+              ? [viewData.videoUrl]
+              : []}
           onClose={closeView}
           onOpenImage={openViewImage}
           onOpenVideo={openViewVideo}

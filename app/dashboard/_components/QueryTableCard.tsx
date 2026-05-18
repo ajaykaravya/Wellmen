@@ -134,9 +134,8 @@ export function QueryTableCard<T>({
                 aria-expanded={!collapsed}
               >
                 <FaChevronRight
-                  className={`transition-transform duration-200 ${
-                    collapsed ? "" : "rotate-90"
-                  }`}
+                  className={`transition-transform duration-200 ${collapsed ? "" : "rotate-90"
+                    }`}
                   size={14}
                 />
               </button>
@@ -146,13 +145,12 @@ export function QueryTableCard<T>({
       </div>
 
       <div
-        className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${
-          !collapsible
-            ? "mt-4 max-h-[4000px] opacity-100 translate-y-0"
-            : collapsed
+        className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${!collapsible
+          ? "mt-4 max-h-[4000px] opacity-100 translate-y-0"
+          : collapsed
             ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none"
             : "mt-4 max-h-[4000px] opacity-100 translate-y-0"
-        }`}
+          }`}
       >
         <div className="space-y-3">
           {loading && (
@@ -191,16 +189,16 @@ export function QueryTableCard<T>({
                       {renderActions
                         ? renderActions(query)
                         : onUpdate && (
-                            <button
-                              className={
-                                actionLabel ? actionButtonClassName : "h-fit"
-                              }
-                              type="button"
-                              onClick={() => onUpdate(query)}
-                            >
-                              {actionLabel ?? <FaEdit />}
-                            </button>
-                          )}
+                          <button
+                            className={
+                              actionLabel ? actionButtonClassName : "h-fit"
+                            }
+                            type="button"
+                            onClick={() => onUpdate(query)}
+                          >
+                            {actionLabel ?? <FaEdit />}
+                          </button>
+                        )}
                     </div>
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-medium ${getQueryStatusBadgeClass(

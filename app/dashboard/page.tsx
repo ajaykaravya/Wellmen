@@ -23,6 +23,8 @@ import {
   FaSpinner,
   FaMoon,
   FaSun,
+  FaEdit,
+  FaTrash,
 } from "react-icons/fa";
 import Link from "next/link";
 import {
@@ -78,6 +80,7 @@ type TodoRow = {
   projectName?: string | null;
   projectCity?: string | null;
   categoryName?: string | null;
+  canManage?: boolean;
   assignee: {
     id: string;
     firstName: string;
@@ -116,6 +119,7 @@ type AdminReportRow = {
   imageUrls: string[];
   videoUrl: string | null;
   videoUrls?: string[];
+  canManage?: boolean;
 };
 
 const shiftInputDate = (value: string, diffDays: number) => {
@@ -183,6 +187,18 @@ function OverviewContent() {
   const [reportImageIndex, setReportImageIndex] = useState<number | null>(null);
   const [reportVideoIndex, setReportVideoIndex] = useState<number | null>(null);
 
+  const [confirmTodoOpen, setConfirmTodoOpen] = useState(false);
+  const [confirmTodoTarget, setConfirmTodoTarget] = useState<TodoRow | null>(null);
+  const [deletingTodo, setDeletingTodo] = useState(false);
+
+  const [confirmQueryOpen, setConfirmQueryOpen] = useState(false);
+  const [confirmQueryTarget, setConfirmQueryTarget] = useState<QueryRow | null>(null);
+  const [deletingQuery, setDeletingQuery] = useState(false);
+
+  const [confirmReportOpen, setConfirmReportOpen] = useState(false);
+  const [confirmReportTarget, setConfirmReportTarget] = useState<AdminReportRow | null>(null);
+  const [deletingReport, setDeletingReport] = useState(false);
+
   const [collapsed, setCollapsed] = useState(true);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
@@ -230,8 +246,8 @@ function OverviewContent() {
         ? reportViewData.videoUrls?.length
           ? reportViewData.videoUrls
           : reportViewData.videoUrl
-          ? [reportViewData.videoUrl]
-          : []
+            ? [reportViewData.videoUrl]
+            : []
         : [],
     [reportViewData],
   );
@@ -410,10 +426,10 @@ function OverviewContent() {
         prev.map((item) =>
           item.id === row.id
             ? {
-                ...item,
-                comments: updated.comments ?? null,
-                status: updated.status,
-              }
+              ...item,
+              comments: updated.comments ?? null,
+              status: updated.status,
+            }
             : item,
         ),
       );
@@ -524,6 +540,97 @@ function OverviewContent() {
     ((modalDraft.comments || "") !== (modalTarget.comments || "") ||
       modalDraft.status !== modalTarget.status);
   const isModalSaving = savingId === modalTarget?.id;
+
+  const handleDeleteTodo = useCallback((row: TodoRow) => {
+    setConfirmTodoTarget(row);
+    setConfirmTodoOpen(true);
+  }, []);
+
+  const confirmDeleteTodo = useCallback(async () => {
+    if (!confirmTodoTarget) return;
+    setDeletingTodo(true);
+    try {
+      const endpoint = isAdmin ? "/api/todos" : "/api/my-todos";
+      const res = await fetch(`${endpoint}/${confirmTodoTarget.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        toast.error(payload.error || "Failed to delete task.");
+        return;
+      }
+      await loadTodos();
+      toast.success("Task deleted successfully.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to delete task.");
+    } finally {
+      setDeletingTodo(false);
+      setConfirmTodoOpen(false);
+      setConfirmTodoTarget(null);
+    }
+  }, [confirmTodoTarget, isAdmin, loadTodos]);
+
+  const handleDeleteQuery = useCallback((row: QueryRow) => {
+    setConfirmQueryTarget(row);
+    setConfirmQueryOpen(true);
+  }, []);
+
+  const confirmDeleteQuery = useCallback(async () => {
+    if (!confirmQueryTarget) return;
+    setDeletingQuery(true);
+    try {
+      const endpoint = isAdmin ? "/api/query-management" : "/api/my-query-management";
+      const res = await fetch(`${endpoint}/${confirmQueryTarget.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        toast.error(payload.error || "Failed to delete query.");
+        return;
+      }
+      await loadQuery();
+      toast.success("Query deleted successfully.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to delete query.");
+    } finally {
+      setDeletingQuery(false);
+      setConfirmQueryOpen(false);
+      setConfirmQueryTarget(null);
+    }
+  }, [confirmQueryTarget, isAdmin, loadQuery]);
+
+  const handleEditReport = useCallback((row: AdminReportRow) => {
+    router.push(`/dashboard/reports/${row.id}`);
+  }, [router]);
+
+  const handleDeleteReport = useCallback((row: AdminReportRow) => {
+    setConfirmReportTarget(row);
+    setConfirmReportOpen(true);
+  }, []);
+
+  const confirmDeleteReport = useCallback(async () => {
+    if (!confirmReportTarget) return;
+    setDeletingReport(true);
+    try {
+      const res = await fetch(`/api/reports/${confirmReportTarget.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        toast.error(payload.error || "Failed to delete reporting.");
+        return;
+      }
+      if (isAdmin) {
+        await loadAdminReports();
+      } else {
+        await loadUserReports();
+      }
+      toast.success("Reporting deleted successfully.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to delete reporting.");
+    } finally {
+      setDeletingReport(false);
+      setConfirmReportOpen(false);
+      setConfirmReportTarget(null);
+    }
+  }, [confirmReportTarget, isAdmin, loadAdminReports, loadUserReports]);
 
   const closeChangePasswordModal = useCallback(() => {
     setChangePasswordOpen(false);
@@ -638,9 +745,8 @@ function OverviewContent() {
             className="rbac-theme-toggle hidden xl:inline-flex"
             type="button"
             onClick={toggleTheme}
-            aria-label={`Switch to ${
-              theme === "light" ? "dark" : "light"
-            } mode`}
+            aria-label={`Switch to ${theme === "light" ? "dark" : "light"
+              } mode`}
             title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
           >
             {theme === "light" ? <FaMoon size={14} /> : <FaSun size={14} />}
@@ -669,11 +775,10 @@ function OverviewContent() {
               {({ focus }) => (
                 <button
                   type="button"
-                  className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors ${
-                    focus
-                      ? "theme-button-secondary theme-text"
-                      : "theme-text-muted"
-                  }`}
+                  className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors ${focus
+                    ? "theme-button-secondary theme-text"
+                    : "theme-text-muted"
+                    }`}
                   onClick={() => {
                     setPasswordNotice(null);
                     setChangePasswordOpen(true);
@@ -687,11 +792,10 @@ function OverviewContent() {
               {({ focus }) => (
                 <button
                   type="button"
-                  className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors ${
-                    focus
-                      ? "theme-status-danger"
-                      : "text-[color:var(--theme-danger-text)]"
-                  }`}
+                  className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors ${focus
+                    ? "theme-status-danger"
+                    : "text-[color:var(--theme-danger-text)]"
+                    }`}
                   onClick={() => setConfirmLogoutOpen(true)}
                 >
                   Logout
@@ -781,11 +885,10 @@ function OverviewContent() {
 
               {passwordNotice && (
                 <div
-                  className={`rounded-xl px-3 py-2 text-sm ${
-                    passwordNotice.type === "success"
-                      ? "bg-emerald-50 text-emerald-700"
-                      : "bg-rose-50 text-rose-700"
-                  }`}
+                  className={`rounded-xl px-3 py-2 text-sm ${passwordNotice.type === "success"
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "bg-rose-50 text-rose-700"
+                    }`}
                 >
                   {passwordNotice.message}
                 </div>
@@ -826,6 +929,40 @@ function OverviewContent() {
         onClose={() => setConfirmLogoutOpen(false)}
       />
 
+      <ConfirmDialog
+        open={confirmTodoOpen}
+        title="Delete task?"
+        description="Are you sure you want to delete this task?"
+        confirmLabel="Delete"
+        confirmLoading={deletingTodo}
+        confirmLoadingLabel="Deleting..."
+        cancelLabel="Cancel"
+        onConfirm={confirmDeleteTodo}
+        onClose={() => setConfirmTodoOpen(false)}
+      />
+      <ConfirmDialog
+        open={confirmQueryOpen}
+        title="Delete query?"
+        description="Are you sure you want to delete this query?"
+        confirmLabel="Delete"
+        confirmLoading={deletingQuery}
+        confirmLoadingLabel="Deleting..."
+        cancelLabel="Cancel"
+        onConfirm={confirmDeleteQuery}
+        onClose={() => setConfirmQueryOpen(false)}
+      />
+      <ConfirmDialog
+        open={confirmReportOpen}
+        title="Delete reporting?"
+        description="Are you sure you want to delete this reporting?"
+        confirmLabel="Delete"
+        confirmLoading={deletingReport}
+        confirmLoadingLabel="Deleting..."
+        cancelLabel="Cancel"
+        onConfirm={confirmDeleteReport}
+        onClose={() => setConfirmReportOpen(false)}
+      />
+
       <section className="rbac-section mt-4 rbac-container">
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
           <div className="rbac-card p-4 sm:p-6 flex items-center gap-4">
@@ -852,10 +989,28 @@ function OverviewContent() {
           rows={pendingQuery}
           loading={loading}
           emptyLabel="No queries found"
-          addHref="/queries/add"
+          addHref="/dashboard/query-management/new"
           addLabel="Add Query"
-          secondaryHref="/queries"
+          secondaryHref="/dashboard/query-management"
           secondaryLabel="View All"
+          renderActions={(q) => (
+            <div className="flex gap-2">
+              <Link className="mt-1" href={`/dashboard/query-management/${q.id}`}>
+                <button className="rbac-link" type="button" title="Edit">
+                  <FaEdit size={18} />
+                </button>
+              </Link>
+              <button
+                style={{ padding: "2px" }}
+                className="rbac-link danger"
+                type="button"
+                onClick={() => handleDeleteQuery(q)}
+                title="Delete"
+              >
+                <FaTrash size={18} />
+              </button>
+            </div>
+          )}
         />
       </section>
       <section className="rbac-section mt-4 rbac-container">
@@ -912,19 +1067,37 @@ function OverviewContent() {
               loading={loading}
               emptyLabel="No project work tasks for today"
               addTaskHref="/dashboard/task-management/new?type=PROJECT"
-              renderActions={
-                isAdmin
-                  ? undefined
-                  : (task) => (
+              renderActions={(task) => (
+                <>
+                  {(isAdmin || task.canManage) && (
+                    <div className="flex justify-end gap-2 items-center">
+                      <Link className="mt-1" href={`/dashboard/task-management/${task.id}`}>
+                        <button className="rbac-link" type="button" title="Edit">
+                          <FaEdit size={18} />
+                        </button>
+                      </Link>
                       <button
-                        className="rbac-button rbac-button-secondary"
+                        style={{ padding: "2px" }}
+                        className="rbac-link danger"
                         type="button"
-                        onClick={() => openUpdateModal(task)}
+                        onClick={() => handleDeleteTodo(task)}
+                        title="Delete"
                       >
-                        Update
+                        <FaTrash size={18} />
                       </button>
-                    )
-              }
+                    </div>
+                  )}
+                  {!isAdmin && (
+                    <button
+                      className="rbac-button rbac-button-secondary ml-2"
+                      type="button"
+                      onClick={() => openUpdateModal(task)}
+                    >
+                      Update
+                    </button>
+                  )}
+                </>
+              )}
             />
             <TaskTableCard
               title="Office Work"
@@ -932,19 +1105,37 @@ function OverviewContent() {
               loading={loading}
               emptyLabel="No office work tasks for today"
               addTaskHref="/dashboard/task-management/new?type=OFFICE"
-              renderActions={
-                isAdmin
-                  ? undefined
-                  : (task) => (
+              renderActions={(task) => (
+                <>
+                  {(isAdmin || task.canManage) && (
+                    <div className="flex justify-end gap-2 items-center">
+                      <Link className="mt-1" href={`/dashboard/task-management/${task.id}`}>
+                        <button className="rbac-link" type="button" title="Edit">
+                          <FaEdit size={18} />
+                        </button>
+                      </Link>
                       <button
-                        className="rbac-button rbac-button-secondary"
+                        style={{ padding: "2px" }}
+                        className="rbac-link danger"
                         type="button"
-                        onClick={() => openUpdateModal(task)}
+                        onClick={() => handleDeleteTodo(task)}
+                        title="Delete"
                       >
-                        Update
+                        <FaTrash size={18} />
                       </button>
-                    )
-              }
+                    </div>
+                  )}
+                  {!isAdmin && (
+                    <button
+                      className="rbac-button rbac-button-secondary ml-2"
+                      type="button"
+                      onClick={() => openUpdateModal(task)}
+                    >
+                      Update
+                    </button>
+                  )}
+                </>
+              )}
             />
           </div>
           <div className="flex flex-col gap-4">
@@ -954,28 +1145,46 @@ function OverviewContent() {
               loading={loading}
               emptyLabel="No service work tasks for today"
               addTaskHref="/dashboard/task-management/new?type=SERVICE"
-              renderActions={
-                isAdmin
-                  ? undefined
-                  : (task) => (
+              renderActions={(task) => (
+                <>
+                  {(isAdmin || task.canManage) && (
+                    <div className="flex justify-end gap-2 items-center">
+                      <Link className="mt-1" href={`/dashboard/task-management/${task.id}`}>
+                        <button className="rbac-link" type="button" title="Edit">
+                          <FaEdit size={18} />
+                        </button>
+                      </Link>
                       <button
-                        className="rbac-button rbac-button-secondary"
+                        style={{ padding: "2px" }}
+                        className="rbac-link danger"
                         type="button"
-                        onClick={() => openUpdateModal(task)}
+                        onClick={() => handleDeleteTodo(task)}
+                        title="Delete"
                       >
-                        Update
+                        <FaTrash size={18} />
                       </button>
-                    )
-              }
+                    </div>
+                  )}
+                  {!isAdmin && (
+                    <button
+                      className="rbac-button rbac-button-secondary ml-2"
+                      type="button"
+                      onClick={() => openUpdateModal(task)}
+                    >
+                      Update
+                    </button>
+                  )}
+                </>
+              )}
             />
             <div className="grid gap-4">
               <div className="rbac-card">
                 <div className="flex items-center justify-between gap-2 w-full">
                   <div className="flex items-center">
-                  <h3 className="sm:text-base text-sm font-medium w-full">
-                    {isAdmin ? "Employees reporting" : "Today's reporting"}
-                  </h3>
-                  <p className=" text-white text-sm font-normal bg-[#2596be] px-2 py-1 rounded-full">{isAdmin ? adminReports.length : userReports.length}</p>
+                    <h3 className="sm:text-base text-sm font-medium w-full">
+                      {isAdmin ? "Employees reporting" : "Today's reporting"}
+                    </h3>
+                    <p className=" text-white text-sm font-normal bg-[#2596be] px-2 py-1 rounded-full">{isAdmin ? adminReports.length : userReports.length}</p>
                   </div>
                   <div className="flex items-center gap-2 justify-end w-full">
                     {!isAdmin && (
@@ -992,9 +1201,8 @@ function OverviewContent() {
                       aria-expanded={!collapsed}
                     >
                       <FaChevronRight
-                        className={`transition-transform duration-200 ${
-                          collapsed ? "" : "rotate-90"
-                        }`}
+                        className={`transition-transform duration-200 ${collapsed ? "" : "rotate-90"
+                          }`}
                         size={14}
                       />
                     </button>
@@ -1003,11 +1211,10 @@ function OverviewContent() {
 
                 {isAdmin ? (
                   <div
-                    className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${
-                      collapsed
-                        ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none"
-                        : "mt-4 max-h-[4000px] opacity-100 translate-y-0"
-                    }`}
+                    className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${collapsed
+                      ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none"
+                      : "mt-4 max-h-[4000px] opacity-100 translate-y-0"
+                      }`}
                   >
                     <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2">
                       <button
@@ -1053,6 +1260,8 @@ function OverviewContent() {
                           loading={adminLoading}
                           emptyLabel="No reporting found for selected date."
                           onView={openReportView}
+                          onEdit={handleEditReport}
+                          onDelete={handleDeleteReport}
                           showEmployee={true}
                         />
                       )}
@@ -1060,11 +1269,10 @@ function OverviewContent() {
                   </div>
                 ) : (
                   <div
-                    className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${
-                      collapsed
-                        ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none"
-                        : "mt-4 max-h-[4000px] opacity-100 translate-y-0"
-                    }`}
+                    className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${collapsed
+                      ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none"
+                      : "mt-4 max-h-[4000px] opacity-100 translate-y-0"
+                      }`}
                   >
                     {userReportsLoading && (
                       <div className="flex items-center justify-center py-4">
@@ -1082,6 +1290,8 @@ function OverviewContent() {
                         loading={userReportsLoading}
                         emptyLabel="No reporting found for today."
                         onView={openReportView}
+                        onEdit={handleEditReport}
+                        onDelete={handleDeleteReport}
                       />
                     )}
                   </div>
@@ -1104,8 +1314,8 @@ function OverviewContent() {
                   {balanceLoading
                     ? "Loading..."
                     : currentBalance === null
-                    ? "0"
-                    : formatAmount(currentBalance)}
+                      ? "0"
+                      : formatAmount(currentBalance)}
                 </p>
               </div>
               <div className="mt-4 flex gap-3">
@@ -1208,8 +1418,8 @@ function OverviewContent() {
           viewVideoUrls={reportViewData?.videoUrls?.length
             ? reportViewData.videoUrls
             : reportViewData?.videoUrl
-            ? [reportViewData.videoUrl]
-            : []}
+              ? [reportViewData.videoUrl]
+              : []}
           onClose={closeReportView}
           onOpenImage={openReportImage}
           onOpenVideo={openReportVideo}
@@ -1255,9 +1465,8 @@ function OverviewContent() {
                 {selectedReportImage && (
                   <Image
                     src={selectedReportImage}
-                    alt={`Report image ${
-                      reportImageIndex !== null ? reportImageIndex + 1 : 1
-                    }`}
+                    alt={`Report image ${reportImageIndex !== null ? reportImageIndex + 1 : 1
+                      }`}
                     width={1400}
                     height={900}
                     unoptimized
