@@ -10,8 +10,10 @@ import useDebounce from "@/app/hooks/useDebounce";
 import DashboardShell, {
   useDashboardContext,
 } from "../_components/DashboardShell";
+import AppliedFilterSummary from "../../components/AppliedFilterSummary";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import CustomDatePicker from "../../components/CustomDatePicker";
+import ListingFilterDialog from "../../components/ListingFilterDialog";
 import { Dialog, DialogPanel } from "@headlessui/react";
 import { toast } from "react-toastify";
 import { IoIosClose } from "react-icons/io";
@@ -20,12 +22,14 @@ import {
   FaChevronRight,
   FaEdit,
   FaEye,
-  FaPlay,
   FaSpinner,
   FaTrash,
+  FaFilter,
 } from "react-icons/fa";
 import Link from "next/link";
 import { MdOutlineFileDownload } from "react-icons/md";
+import { ReportingCardList } from "../_components/ReportingCardList";
+import { ReportDetailsDialog } from "../_components/ReportDetailsDialog";
 
 type ProjectOption = {
   id: string;
@@ -83,6 +87,12 @@ function ReportingListContent() {
   const [employeeFilter, setEmployeeFilter] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftQuery, setDraftQuery] = useState("");
+  const [draftProjectFilter, setDraftProjectFilter] = useState("");
+  const [draftEmployeeFilter, setDraftEmployeeFilter] = useState("");
+  const [draftFromDate, setDraftFromDate] = useState("");
+  const [draftToDate, setDraftToDate] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<ReportRow | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -161,6 +171,60 @@ function ReportingListContent() {
   useEffect(() => {
     loadReports();
   }, [loadReports]);
+
+  const activeFilterCount = [
+    query.trim(),
+    projectFilter,
+    isAdmin ? employeeFilter : "",
+    fromDate,
+    toDate,
+  ].filter(Boolean).length;
+
+  const openFilters = useCallback(() => {
+    setDraftQuery(query);
+    setDraftProjectFilter(projectFilter);
+    setDraftEmployeeFilter(employeeFilter);
+    setDraftFromDate(fromDate);
+    setDraftToDate(toDate);
+    setFilterOpen(true);
+  }, [employeeFilter, fromDate, projectFilter, query, toDate]);
+
+  const closeFilters = useCallback(() => {
+    setFilterOpen(false);
+  }, []);
+
+  const applyFilters = useCallback(() => {
+    setPageIndex(0);
+    setQuery(draftQuery);
+    setProjectFilter(draftProjectFilter);
+    setEmployeeFilter(draftEmployeeFilter);
+    setFromDate(draftFromDate);
+    setToDate(draftToDate);
+    setFilterOpen(false);
+  }, [
+    draftEmployeeFilter,
+    draftFromDate,
+    draftProjectFilter,
+    draftQuery,
+    draftToDate,
+  ]);
+
+  const appliedFilters = [
+    query.trim(),
+    projects.find((project) => project.id === projectFilter)?.name || "",
+    isAdmin
+      ? (() => {
+        const selectedEmployee = employees.find(
+          (employee) => employee.id === employeeFilter,
+        );
+        return selectedEmployee
+          ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}`
+          : employeeFilter;
+      })()
+      : "",
+    fromDate,
+    toDate,
+  ].filter(Boolean);
 
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const viewImageUrls = useMemo(() => viewData?.imageUrls ?? [], [viewData]);
@@ -319,16 +383,16 @@ function ReportingListContent() {
       },
       ...(isAdmin
         ? [
-            {
-              header: "Employee",
-              accessorKey: "createdByName",
-              cell: (info) => (
-                <span className="rbac-muted">
-                  {String(info.getValue() || "-")}
-                </span>
-              ),
-            } as ColumnDef<ReportRow>,
-          ]
+          {
+            header: "Employee",
+            accessorKey: "createdByName",
+            cell: (info) => (
+              <span className="rbac-muted">
+                {String(info.getValue() || "-")}
+              </span>
+            ),
+          } as ColumnDef<ReportRow>,
+        ]
         : []),
       {
         header: "Project Name",
@@ -408,96 +472,38 @@ function ReportingListContent() {
     <>
       <section className="rbac-section rbac-container">
         <div className="rbac-card">
-          <div className="flex justify-between items-center">
+          <div className="flex items-center justify-between gap-3">
             <h3 className="rbac-title-lg">Reporting List</h3>
-            {!isAdmin && (
-              <Link href="/dashboard/reports/new">
-                <button className="rbac-button" type="button">
-                  Add Reporting
-                </button>
-              </Link>
-            )}
-          </div>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <input
-              className="rbac-input-filter"
-              type="text"
-              placeholder="Search category, description"
-              value={query}
-              onChange={(event) => {
-                setPageIndex(0);
-                setQuery(event.target.value);
-              }}
-            />
-
-            <select
-              className="rbac-input-filter rbac-select"
-              value={projectFilter}
-              onChange={(event) => {
-                setPageIndex(0);
-                setProjectFilter(event.target.value);
-              }}
-            >
-              <option value="">All projects</option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
-            </select>
-
-            {isAdmin && (
-              <select
-                className="rbac-input-filter rbac-select"
-                value={employeeFilter}
-                onChange={(event) => {
-                  setPageIndex(0);
-                  setEmployeeFilter(event.target.value);
-                }}
+            <div className="flex gap-2">
+              {!isAdmin && (
+                <Link href="/dashboard/reports/new">
+                  <button className="rbac-button" type="button">
+                    Add Reporting
+                  </button>
+                </Link>
+              )}
+              <button
+                className="rbac-button rbac-button-secondary theme-button-secondary inline-flex items-center gap-2"
+                type="button"
+                onClick={openFilters}
               >
-                <option value="">All employees</option>
-                {employees.map((employee) => (
-                  <option key={employee.id} value={employee.id}>
-                    {employee.firstName} {employee.lastName}
-                  </option>
-                ))}
-              </select>
-            )}
-
-            <CustomDatePicker
-              value={fromDate}
-              onChange={(value) => {
-                setPageIndex(0);
-                setFromDate(value);
-              }}
-              placeholder="From date"
-              className="rbac-input-filter"
-            />
-            <CustomDatePicker
-              value={toDate}
-              onChange={(value) => {
-                setPageIndex(0);
-                setToDate(value);
-              }}
-              placeholder="To date"
-              className="rbac-input-filter"
-            />
-
-            <button
-              className="rbac-button rbac-button-secondary"
-              type="button"
-              onClick={() => {
-                setPageIndex(0);
-                setProjectFilter("");
-                setEmployeeFilter("");
-                setFromDate("");
-                setToDate("");
-                setQuery("");
-              }}
-            >
-              Clear filters
-            </button>
+                <FaFilter /> <span>Filters</span>
+              </button>
+            </div>
           </div>
+
+          <AppliedFilterSummary
+            items={appliedFilters}
+            onClear={() => {
+              setPageIndex(0);
+              setQuery("");
+              setProjectFilter("");
+              setEmployeeFilter("");
+              setFromDate("");
+              setToDate("");
+              setFilterOpen(false);
+            }}
+          />
 
           <div className="mt-4">
             <div className="hidden md:block overflow-x-auto">
@@ -514,9 +520,9 @@ function ReportingListContent() {
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext(),
-                              )}
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
                         </th>
                       ))}
                     </tr>
@@ -574,70 +580,18 @@ function ReportingListContent() {
                   <FaSpinner className="animate-spin mr-2" size={16} />
                 </div>
               )}
-              {!loading && reports.length === 0 && (
-                <div className="rbac-card py-4 text-sm text-slate-500">
-                  No reporting found.
-                </div>
+              {!loading && (
+                <ReportingCardList
+                  rows={reports}
+                  loading={loading}
+                  emptyLabel="No reporting found."
+                  showCount={false}
+                  showEmployee={isAdmin}
+                  onView={handleView}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
               )}
-              {!loading &&
-                reports.map((report) => (
-                  <div key={report.id} className="rbac-card p-4">
-                    <div className="mb-2 flex items-center justify-between">
-                      <div>
-                        <h4 className="text-sm font-semibold">
-                          {report.categoryName}
-                        </h4>
-                        <p className="text-xs text-slate-500">
-                          {report.projectName} •{" "}
-                          {report.projectCity || "-"}{" "}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          className="rbac-link"
-                          type="button"
-                          onClick={() => handleView(report)}
-                        >
-                          <FaEye />
-                        </button>
-                        {report.canManage && (
-                          <>
-                            <button
-                              className="rbac-link"
-                              type="button"
-                              onClick={() => handleEdit(report)}
-                            >
-                              <FaEdit />
-                            </button>
-                            <button
-                              className="rbac-link danger"
-                              type="button"
-                              onClick={() => handleDelete(report)}
-                            >
-                              <FaTrash />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <div className="grid gap-1 text-sm">
-                      <p>
-                        <strong>Date:</strong>{" "}
-                        {formatToDDMMYYYY(report.reportDate)}
-                      </p>
-                      {isAdmin && (
-                        <p>
-                          <strong>Employee:</strong>{" "}
-                          {report.createdByName || "-"}
-                        </p>
-                      )}
-                      <p>
-                        <strong>Description:</strong>{" "}
-                        {report.description || "-"}
-                      </p>
-                    </div>
-                  </div>
-                ))}
             </div>
           </div>
 
@@ -701,147 +655,78 @@ function ReportingListContent() {
           setConfirmTarget(null);
         }}
       />
+      <ListingFilterDialog
+        open={filterOpen}
+        title="Reporting Filters"
+        description="Update the filters and apply them when you're ready."
+        onClose={closeFilters}
+        onApply={applyFilters}
+        activeCount={activeFilterCount}
+        maxWidthClassName="max-w-2xl"
+      >
+        <input
+          className="rbac-input-filter"
+          type="text"
+          placeholder="Search category, description"
+          value={draftQuery}
+          onChange={(event) => setDraftQuery(event.target.value)}
+        />
+        <select
+          className="rbac-input-filter rbac-select"
+          value={draftProjectFilter}
+          onChange={(event) => setDraftProjectFilter(event.target.value)}
+        >
+          <option value="">All projects</option>
+          {projects.map((project) => (
+            <option key={project.id} value={project.id}>
+              {project.name}
+            </option>
+          ))}
+        </select>
+        {isAdmin && (
+          <select
+            className="rbac-input-filter rbac-select"
+            value={draftEmployeeFilter}
+            onChange={(event) => setDraftEmployeeFilter(event.target.value)}
+          >
+            <option value="">All employees</option>
+            {employees.map((employee) => (
+              <option key={employee.id} value={employee.id}>
+                {employee.firstName} {employee.lastName}
+              </option>
+            ))}
+          </select>
+        )}
+        <CustomDatePicker
+          value={draftFromDate}
+          onChange={setDraftFromDate}
+          placeholder="From date"
+          className="rbac-input-filter"
+        />
+        <CustomDatePicker
+          value={draftToDate}
+          onChange={setDraftToDate}
+          placeholder="To date"
+          className="rbac-input-filter"
+        />
+      </ListingFilterDialog>
 
       {viewOpen && (
-        <div className="theme-modal-overlay fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="theme-modal-surface w-full max-w-4xl rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-auto">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-semibold ">Report details</h2>
-                <p className="mt-1 text-sm ">
-                  View full report with media and download options.
-                </p>
-              </div>
-              <button type="button" onClick={closeView}>
-                <IoIosClose size={30} />
-              </button>
-            </div>
-
-            {viewLoading && (
-              <div className="flex items-center justify-center py-4">
-                <FaSpinner className="animate-spin mr-2" size={16} />
-              </div>
-            )}
-
-            {!viewLoading && viewData && (
-              <div className="mt-4 grid gap-4">
-                <div className="grid gap-3 md:grid-cols-2">
-                  <p className="text-sm ">
-                    <strong>Date:</strong>{" "}
-                    {formatToDDMMYYYY(viewData.reportDate)}
-                  </p>
-                  <p className="text-sm ">
-                    <strong>Project:</strong> {viewData.projectName}
-                    <span className="text-slate-500">
-                      {" "}
-                      ({viewData.projectCity || "-"})
-                    </span>
-                  </p>
-                  <p className="text-sm ">
-                    <strong>Employee:</strong> {viewData.createdByName || "-"}
-                  </p>
-                  <p className="text-sm ">
-                    <strong>Reporting Category:</strong>{" "}
-                    {viewData.categoryName || "-"}
-                  </p>
-                </div>
-
-                <p className="text-sm  whitespace-pre-wrap">
-                  <strong>Description:</strong> {viewData.description}
-                </p>
-
-                <div>
-                  {viewData.imageUrls?.length > 0 && (
-                    <>
-                      <p className="text-sm font-semibold ">Images</p>
-                      <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        {viewData.imageUrls.map((url, index) => (
-                          <div
-                            key={url}
-                            className="rounded-xl border p-2"
-                            style={{ borderColor: "var(--theme-border)" }}
-                          >
-                            <button
-                              type="button"
-                              className="block w-full text-left"
-                              onClick={() => openViewImage(index)}
-                            >
-                              <Image
-                                src={url}
-                                alt={`Report image ${index + 1}`}
-                                width={640}
-                                height={320}
-                                unoptimized
-                                className="h-40 w-full rounded-lg object-cover transition-transform duration-200 hover:scale-[1.01]"
-                              />
-                            </button>
-                            <a
-                              className="rbac-link mt-2 inline-block"
-                              href={url}
-                              download
-                            >
-                              <MdOutlineFileDownload size={25} />
-                            </a>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                <div>
-                  {(viewData.videoUrls && viewData.videoUrls.length > 0
-                    ? viewData.videoUrls
-                    : viewData.videoUrl
-                      ? [viewData.videoUrl]
-                      : []
-                  ).length > 0 && (
-                    <>
-                      <p className="text-sm font-semibold ">Video</p>
-                      <div
-                        className="mt-2 rounded-xl border p-3"
-                        style={{ borderColor: "var(--theme-border)" }}
-                      >
-                        <div className="grid gap-3">
-                          {viewVideoUrls.map((url, index) => (
-                            <div key={url}>
-                              <button
-                                type="button"
-                                className="group relative block w-full overflow-hidden rounded-lg theme-surface-2"
-                                onClick={() => openViewVideo(index)}
-                                aria-label={`Open video ${index + 1}`}
-                              >
-                                <video
-                                  className="h-48 w-full object-cover"
-                                  src={url}
-                                  muted
-                                  playsInline
-                                  preload="metadata"
-                                />
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 transition group-hover:bg-black/30">
-                                  <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-slate-900 shadow-lg">
-                                    <FaPlay className="ml-1" size={18} />
-                                  </span>
-                                </div>
-                              </button>
-                              <a
-                                className="rbac-link mt-2 inline-block"
-                                href={url}
-                                download
-                              >
-                                <MdOutlineFileDownload size={25} />
-                              </a>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <ReportDetailsDialog
+          open={viewOpen}
+          loading={viewLoading}
+          report={viewData}
+          showEmployee={true}
+          viewImageUrls={viewData?.imageUrls ?? []}
+          viewVideoUrls={viewData?.videoUrls?.length
+            ? viewData.videoUrls
+            : viewData?.videoUrl
+              ? [viewData.videoUrl]
+              : []}
+          onClose={closeView}
+          onOpenImage={openViewImage}
+          onOpenVideo={openViewVideo}
+        />
       )}
 
       <Dialog

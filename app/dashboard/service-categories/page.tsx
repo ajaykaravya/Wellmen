@@ -4,7 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { flexRender, useReactTable } from "@tanstack/react-table";
 import { ColumnDef, getCoreRowModel } from "@tanstack/table-core";
 import DashboardShell from "../_components/DashboardShell";
+import AppliedFilterSummary from "../../components/AppliedFilterSummary";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import ListingFilterDialog from "../../components/ListingFilterDialog";
 import useDebounce from "@/app/hooks/useDebounce";
 import { toast } from "react-toastify";
 import {
@@ -13,6 +15,7 @@ import {
   FaEdit,
   FaTrash,
   FaSpinner,
+  FaFilter,
 } from "react-icons/fa";
 import Link from "next/link";
 
@@ -28,6 +31,8 @@ function ServiceCategoryListContent() {
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
   const [query, setQuery] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftQuery, setDraftQuery] = useState("");
   const debouncedQuery = useDebounce(query, 400);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<ServiceCategoryRow | null>(
@@ -78,6 +83,25 @@ function ServiceCategoryListContent() {
     setConfirmTarget(row);
     setConfirmOpen(true);
   }, []);
+
+  const activeFilterCount = [query.trim()].filter(Boolean).length;
+
+  const openFilters = useCallback(() => {
+    setDraftQuery(query);
+    setFilterOpen(true);
+  }, [query]);
+
+  const closeFilters = useCallback(() => {
+    setFilterOpen(false);
+  }, []);
+
+  const applyFilters = useCallback(() => {
+    setPageIndex(0);
+    setQuery(draftQuery);
+    setFilterOpen(false);
+  }, [draftQuery]);
+
+  const appliedFilters = [query.trim()].filter(Boolean);
 
   const confirmDeleteCategory = useCallback(async () => {
     if (!confirmTarget) return;
@@ -150,35 +174,35 @@ function ServiceCategoryListContent() {
         <div className="rbac-card">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="rbac-title-lg">Service work Categories</h3>
-            <Link href="/dashboard/service-categories/new">
-              <button className="rbac-button" type="button">
-                Add Service Category
+            <div className="flex items-center gap-2">
+              <button
+                className="rbac-button rbac-button-secondary theme-button-secondary inline-flex items-center gap-2"
+                type="button"
+                onClick={openFilters}
+              >
+               <FaFilter /> <span> Filters</span>
+                {activeFilterCount > 0 && (
+                  <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[color:var(--brand)] px-1 text-[10px] font-semibold text-white">
+                    {activeFilterCount}
+                  </span>
+                )}
               </button>
-            </Link>
+              <Link href="/dashboard/service-categories/new">
+                <button className="rbac-button" type="button">
+                  Add Service Category
+                </button>
+              </Link>
+            </div>
           </div>
 
-          <div className="my-4 flex flex-wrap gap-2">
-            <input
-              className="rbac-input-filter"
-              type="text"
-              placeholder="Search name"
-              value={query}
-              onChange={(event) => {
-                setPageIndex(0);
-                setQuery(event.target.value);
-              }}
-            />
-            <button
-              className="rbac-button rbac-button-secondary"
-              type="button"
-              onClick={() => {
-                setPageIndex(0);
-                setQuery("");
-              }}
-            >
-              Clear filters
-            </button>
-          </div>
+          <AppliedFilterSummary
+            items={appliedFilters}
+            onClear={() => {
+              setPageIndex(0);
+              setQuery("");
+              setFilterOpen(false);
+            }}
+          />
 
           <div className="mt-4">
             <div className="hidden md:block overflow-x-auto">
@@ -272,20 +296,21 @@ function ServiceCategoryListContent() {
                           {category.name}
                         </h4>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex">
                         <Link
                           href={`/dashboard/service-categories/${category.id}`}
                         >
                           <button className="rbac-link" type="button">
-                            <FaEdit />
+                            <FaEdit size={18} />
                           </button>
                         </Link>
                         <button
+                          style={{ padding: "2px" }}
                           className="rbac-link danger"
                           type="button"
                           onClick={() => handleDeleteCategory(category)}
                         >
-                          <FaTrash />
+                          <FaTrash size={18} />
                         </button>
                       </div>
                     </div>
@@ -354,6 +379,22 @@ function ServiceCategoryListContent() {
           setConfirmTarget(null);
         }}
       />
+      <ListingFilterDialog
+        open={filterOpen}
+        title="Service Category Filters"
+        description="Update the filters and apply them when you're ready."
+        onClose={closeFilters}
+        onApply={applyFilters}
+        activeCount={activeFilterCount}
+      >
+        <input
+          className="rbac-input-filter"
+          type="text"
+          placeholder="Search name"
+          value={draftQuery}
+          onChange={(event) => setDraftQuery(event.target.value)}
+        />
+      </ListingFilterDialog>
     </>
   );
 }

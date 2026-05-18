@@ -1,11 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { flexRender, useReactTable } from "@tanstack/react-table";
 import { ColumnDef, getCoreRowModel } from "@tanstack/table-core";
+import AppliedFilterSummary from "../../../components/AppliedFilterSummary";
 import ConfirmDialog from "../../../components/ConfirmDialog";
+import ListingFilterDialog from "../../../components/ListingFilterDialog";
 import useDebounce from "@/app/hooks/useDebounce";
+import { QueryTableCard } from "../../../dashboard/_components/QueryTableCard";
 import { toast } from "react-toastify";
 import {
   FaChevronLeft,
@@ -13,6 +16,7 @@ import {
   FaEdit,
   FaTrash,
   FaSpinner,
+  FaFilter,
 } from "react-icons/fa";
 import Link from "next/link";
 
@@ -30,6 +34,8 @@ type QueryRow = {
   status: QueryStatus;
   priority: PriorityLevel;
   createdAt: string;
+  createdById?: string;
+  createdByName?: string;
 };
 
 type QueryListContentProps = {
@@ -84,6 +90,7 @@ export default function QueryListContent({
   addLabel = "Add Query",
   emptyMessage = "No queries found.",
 }: QueryListContentProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [queries, setQueries] = useState<QueryRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -99,6 +106,16 @@ export default function QueryListContent({
   });
   const [priorityFilter, setPriorityFilter] = useState<PriorityLevel | "">("");
   const [categoryFilter, setCategoryFilter] = useState<QueryCategory | "">("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftQuery, setDraftQuery] = useState("");
+  const [draftStatusFilter, setDraftStatusFilter] = useState<QueryStatus | "">(
+    "",
+  );
+  const [draftPriorityFilter, setDraftPriorityFilter] = useState<
+    PriorityLevel | ""
+  >("");
+  const [draftCategoryFilter, setDraftCategoryFilter] =
+    useState<QueryCategory | "">("");
   const debouncedQuery = useDebounce(query, 400);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<QueryRow | null>(null);
@@ -155,6 +172,41 @@ export default function QueryListContent({
     }
   }, [searchParams]);
 
+  const activeFilterCount = [
+    query.trim(),
+    statusFilter,
+    priorityFilter,
+    categoryFilter,
+  ].filter(Boolean).length;
+
+  const appliedFilters = [
+    query.trim(),
+    statusFilter ? statusLabel(statusFilter) : "",
+    priorityFilter ? priorityLabel(priorityFilter) : "",
+    categoryFilter ? categoryLabel(categoryFilter) : "",
+  ].filter(Boolean);
+
+  const openFilters = () => {
+    setDraftQuery(query);
+    setDraftStatusFilter(statusFilter);
+    setDraftPriorityFilter(priorityFilter);
+    setDraftCategoryFilter(categoryFilter);
+    setFilterOpen(true);
+  };
+
+  const closeFilters = () => {
+    setFilterOpen(false);
+  };
+
+  const applyFilters = () => {
+    setPageIndex(0);
+    setQuery(draftQuery);
+    setStatusFilter(draftStatusFilter);
+    setPriorityFilter(draftPriorityFilter);
+    setCategoryFilter(draftCategoryFilter);
+    setFilterOpen(false);
+  };
+
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
 
   useEffect(() => {
@@ -162,6 +214,13 @@ export default function QueryListContent({
       setPageIndex(Math.max(pageCount - 1, 0));
     }
   }, [pageCount, pageIndex]);
+
+  const handleEdit = useCallback(
+    (row: QueryRow) => {
+      router.push(`${basePath}/${row.id}`);
+    },
+    [basePath, router],
+  );
 
   const handleDelete = useCallback((row: QueryRow) => {
     setConfirmTarget(row);
@@ -252,11 +311,13 @@ export default function QueryListContent({
         id: "action",
         cell: ({ row }) => (
           <div className="rbac-inline-actions flex gap-4">
-            <Link href={`${basePath}/${row.original.id}`}>
-              <button className="rbac-link" type="button">
-                <FaEdit />
-              </button>
-            </Link>
+            <button
+              className="rbac-link"
+              type="button"
+              onClick={() => handleEdit(row.original)}
+            >
+              <FaEdit />
+            </button>
             <button
               className="rbac-link danger"
               type="button"
@@ -283,76 +344,40 @@ export default function QueryListContent({
     <>
       <section className="rbac-section rbac-container">
         <div className="rbac-card">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="rbac-title-lg">{title}</h3>
-            <Link href={`${basePath}/new`}>
-              <button className="rbac-button" type="button">
-                {addLabel}
+            <div className="flex items-center gap-2">
+              <button
+                className="rbac-button rbac-button-secondary theme-button-secondary inline-flex items-center gap-2"
+                type="button"
+                onClick={openFilters}
+              >
+                <FaFilter /> <span>Filters</span>
+                {activeFilterCount > 0 && (
+                  <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[color:var(--brand)] px-1 text-[10px] font-semibold text-white">
+                    {activeFilterCount}
+                  </span>
+                )}
               </button>
-            </Link>
+              <Link href={`${basePath}/new`}>
+                <button className="rbac-button" type="button">
+                  {addLabel}
+                </button>
+              </Link>
+            </div>
           </div>
 
-          <div className="my-4 flex flex-wrap gap-3">
-            <input
-              className="rbac-input-filter"
-              type="text"
-              placeholder="Search description or project"
-              value={query}
-              onChange={(event) => {
-                setPageIndex(0);
-                setQuery(event.target.value);
-              }}
-            />
-            <select
-              className="rbac-input-filter rbac-select"
-              value={statusFilter}
-              onChange={(event) => {
-                setPageIndex(0);
-                setStatusFilter(event.target.value as QueryStatus | "");
-              }}
-            >
-              <option value="">All status</option>
-              <option value="PENDING">Pending</option>
-              <option value="COMPLETED">Completed</option>
-            </select>
-            <select
-              className="rbac-input-filter rbac-select"
-              value={priorityFilter}
-              onChange={(event) => {
-                setPageIndex(0);
-                setPriorityFilter(event.target.value as PriorityLevel | "");
-              }}
-            >
-              <option value="">Priority</option>
-              <option value="LOW">Low</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HIGH">High</option>
-            </select>
-            <select
-              className="rbac-input-filter rbac-select"
-              value={categoryFilter}
-              onChange={(event) => {
-                setPageIndex(0);
-                setCategoryFilter(event.target.value as QueryCategory | "");
-              }}
-            >
-              <option value="">Category</option>
-              <option value="REMARKS">Remarks</option>
-              <option value="DECISION_PENDING">Decision Pending</option>
-              <option value="URGENCY">Urgency</option>
-            </select>
-            <button
-              className="rbac-button rbac-button-secondary"
-              type="button"
-              onClick={() => {
-                setPageIndex(0);
-                setQuery("");
-                setStatusFilter("");
-              }}
-            >
-              Clear filters
-            </button>
-          </div>
+          <AppliedFilterSummary
+            items={appliedFilters}
+            onClear={() => {
+              setPageIndex(0);
+              setQuery("");
+              setStatusFilter("");
+              setPriorityFilter("");
+              setCategoryFilter("");
+              setFilterOpen(false);
+            }}
+          />
 
           <div className="mt-4">
             <div className="hidden md:block overflow-x-auto">
@@ -368,9 +393,9 @@ export default function QueryListContent({
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext(),
-                              )}
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
                         </th>
                       ))}
                     </tr>
@@ -433,51 +458,52 @@ export default function QueryListContent({
                   {emptyMessage}
                 </div>
               )}
-              {!loading &&
-                queries.map((item) => (
-                  <div key={item.id} className="rbac-card p-4">
-                    <div className="mb-2 flex items-center justify-between gap-3">
-                      <div>
-                        <h4 className="text-sm font-semibold">
-                          {item.projectName || "-"}
-                        </h4>
-                        <p className="text-xs text-slate-500">
-                          {item.projectCity || "-"}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Link href={`${basePath}/${item.id}`}>
-                          <button className="rbac-link" type="button">
-                            <FaEdit />
-                          </button>
-                        </Link>
-                        <button
-                          className="rbac-link danger"
-                          type="button"
-                          onClick={() => handleDelete(item)}
-                        >
-                          <FaTrash />
-                        </button>
-                      </div>
+              {!loading && (
+                <QueryTableCard
+                  title=""
+                  rows={queries.map((query) => ({
+                    id: query.id,
+                    projectId: query.projectId,
+                    projectName: query.projectName,
+                    projectCity: query.projectCity || null,
+                    category: query.category,
+                    description: query.description,
+                    status: query.status,
+                    priority: query.priority,
+                    createdById: query.createdById || query.id,
+                    createdByName: query.createdByName || "",
+                  }))}
+                  loading={loading}
+                  emptyLabel={emptyMessage}
+                  showCount={false}
+                  collapsible={false}
+                  renderActions={(query) => (
+                    <div className="flex gap-2">
+                      <button
+                        className="rbac-link"
+                        type="button"
+                        onClick={() => {
+                          const fullQuery = queries.find((q) => q.id === query.id);
+                          if (fullQuery) handleEdit(fullQuery);
+                        }}
+                      >
+                        <FaEdit size={18} />
+                      </button>
+                      <button
+                        style={{ padding: "2px" }}
+                        className="rbac-link danger"
+                        type="button"
+                        onClick={() => {
+                          const fullQuery = queries.find((q) => q.id === query.id);
+                          if (fullQuery) handleDelete(fullQuery);
+                        }}
+                      >
+                        <FaTrash size={18} />
+                      </button>
                     </div>
-                    <div className="grid gap-1 text-sm">
-                      <p>
-                        <strong>Category:</strong>{" "}
-                        {categoryLabel(item.category)}
-                      </p>
-                      <p>
-                        <strong>Description:</strong> {item.description || "-"}
-                      </p>
-                      <p>
-                        <strong>Status:</strong> {statusLabel(item.status)}
-                      </p>
-                      <p>
-                        <strong>Priority:</strong>{" "}
-                        {priorityLabel(item.priority)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  )}
+                />
+              )}
             </div>
           </div>
 
@@ -541,6 +567,57 @@ export default function QueryListContent({
           setConfirmTarget(null);
         }}
       />
+      <ListingFilterDialog
+        open={filterOpen}
+        title={`${title} Filters`}
+        description="Update the filters and apply them when you're ready."
+        onClose={closeFilters}
+        onApply={applyFilters}
+        activeCount={activeFilterCount}
+      >
+        <input
+          className="rbac-input-filter"
+          type="text"
+          placeholder="Search description or project"
+          value={draftQuery}
+          onChange={(event) => setDraftQuery(event.target.value)}
+        />
+        <select
+          className="rbac-input-filter rbac-select"
+          value={draftStatusFilter}
+          onChange={(event) =>
+            setDraftStatusFilter(event.target.value as QueryStatus | "")
+          }
+        >
+          <option value="">All status</option>
+          <option value="PENDING">Pending</option>
+          <option value="COMPLETED">Completed</option>
+        </select>
+        <select
+          className="rbac-input-filter rbac-select"
+          value={draftPriorityFilter}
+          onChange={(event) =>
+            setDraftPriorityFilter(event.target.value as PriorityLevel | "")
+          }
+        >
+          <option value="">Priority</option>
+          <option value="LOW">Low</option>
+          <option value="MEDIUM">Medium</option>
+          <option value="HIGH">High</option>
+        </select>
+        <select
+          className="rbac-input-filter rbac-select"
+          value={draftCategoryFilter}
+          onChange={(event) =>
+            setDraftCategoryFilter(event.target.value as QueryCategory | "")
+          }
+        >
+          <option value="">Category</option>
+          <option value="REMARKS">Remarks</option>
+          <option value="DECISION_PENDING">Decision Pending</option>
+          <option value="URGENCY">Urgency</option>
+        </select>
+      </ListingFilterDialog>
     </>
   );
 }
