@@ -680,11 +680,6 @@ function TransportListView() {
           <AppliedFilterSummary
             items={appliedFilters}
             onClear={clearFilters}
-            emptyState={
-              <div className="mt-4 text-sm text-slate-500">
-                No filters applied.
-              </div>
-            }
           />
 
           <div className="mt-4 flex flex-wrap gap-2">
