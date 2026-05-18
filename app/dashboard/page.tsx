@@ -306,7 +306,7 @@ function OverviewContent() {
     setAdminLoading(true);
     try {
       const params = new URLSearchParams({
-        fromDate: adminDate,
+        date: adminDate,
         page: "1",
         pageSize: "50",
       });

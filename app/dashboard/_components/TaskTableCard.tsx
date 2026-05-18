@@ -223,7 +223,7 @@ export function TaskTableCard<T extends TaskTableCardRow>({
                     </p>
                   )}
                 </div>
-                <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex flex-wrap items-start justify-end gap-3">
                   <div>
                     <h4 className="mt-1 text-base font-semibold theme-text">
                       {task.title}

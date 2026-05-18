@@ -184,7 +184,7 @@ export function QueryTableCard<T>({
                       <span>By:</span> {query.createdByName || ""}
                     </p>
                   </div>
-                  <div className="flex flex-col items-end gap-2">
+                  <div style={{alignItems:"end"}} className="flex flex-col gap-2">
                     <div className="flex gap-2 justify-end">
                       {renderActions
                         ? renderActions(query)
