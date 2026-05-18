@@ -111,7 +111,7 @@ export function TaskTableCard<T extends TaskTableCardRow>({
                   </p>
                 )}
               </div>
-              <div className="flex flex-col items-end gap-3">
+              <div className="flex flex-col gap-2 justify-end">
                 {renderActions
                   ? renderActions(task)
                   : onUpdate && (
@@ -229,7 +229,7 @@ export function TaskTableCard<T extends TaskTableCardRow>({
                       {task.title}
                     </h4>
                   </div>
-                  <div className="flex gap-2 justify-end">
+                  <div className="flex flex-col gap-2 justify-end">
                     {renderActions
                       ? renderActions(task)
                       : onUpdate && (

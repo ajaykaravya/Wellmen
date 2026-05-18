@@ -989,13 +989,13 @@ function OverviewContent() {
           rows={pendingQuery}
           loading={loading}
           emptyLabel="No queries found"
-          addHref="/dashboard/query-management/new"
+          addHref={isAdmin ? "/dashboard/query-management/new" : "/dashboard/my-query-management/new"}
           addLabel="Add Query"
-          secondaryHref="/dashboard/query-management"
+          secondaryHref={isAdmin ? "/dashboard/query-management" : "/dashboard/my-query-management"}
           secondaryLabel="View All"
           renderActions={(q) => (
             <div className="flex gap-2">
-              <Link className="mt-1" href={`/dashboard/query-management/${q.id}`}>
+              <Link className="mt-1" href={isAdmin ? `/dashboard/query-management/${q.id}` : `/dashboard/my-query-management/${q.id}`}>
                 <button className="rbac-link" type="button" title="Edit">
                   <FaEdit size={18} />
                 </button>
