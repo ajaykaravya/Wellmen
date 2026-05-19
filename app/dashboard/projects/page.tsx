@@ -394,9 +394,9 @@ function ProjectListContent() {
                 <FaFilter />
                 <span>Filters</span>
               </button>
-              <Link href="/dashboard/users/new">
+              <Link href="/dashboard/projects/new">
                 <button className="rbac-button" type="button">
-                  Add User
+                  Add Project
                 </button>
               </Link>
             </div>

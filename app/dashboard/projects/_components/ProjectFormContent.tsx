@@ -349,7 +349,17 @@ export default function ProjectFormContent({
                     />
                   </label>
                 </div>
-                {!isHospital && (
+                {isHospital ? (
+                  <label className="rbac-label">
+                    Status <span className="text-red-600">*</span>
+                    <input
+                      className="rbac-input mb-2"
+                      value="Completed"
+                      disabled
+                      readOnly
+                    />
+                  </label>
+                ) : (
                   <label className="rbac-label">
                     Status <span className="text-red-600">*</span>
                     <select
