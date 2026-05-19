@@ -117,6 +117,7 @@ const validateStatusByType = (transportType, status) => {
 
 const validatePaymentModeByType = (transportType, paymentMode) => {
   switch (transportType) {
+    case "PORTER_DAILY":
     case "CNG_RICKSHAW":
     case "LOADING_VEHICLE":
       return validateChoice(paymentMode, PAYMENT_MODE_OPTIONS, "Payment mode");

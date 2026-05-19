@@ -459,6 +459,7 @@ export default function TransportFormContent({
             </div>
             {renderFieldError("transportType")}
 
+              <div className="grid gap-4 md:grid-cols-2">
             <label className="rbac-label">
               Date <span className="text-red-600">*</span>
               <CustomDatePicker
@@ -469,7 +470,6 @@ export default function TransportFormContent({
               />
             </label>
             {renderFieldError("date")}
-            <div className="grid gap-4 md:grid-cols-2">
               <label className="rbac-label">
                 {getTransportReferenceLabel(form.transportType)}
                 <input
@@ -485,17 +485,19 @@ export default function TransportFormContent({
                   }
                 />
               </label>
-              <label className="rbac-label md:col-span-2">
-                Description
-                <textarea
-                  className="rbac-input"
-                  rows={3}
-                  placeholder="Description"
-                  value={form.description}
-                  onChange={(event) => setField("description", event.target.value)}
-                />
-              </label>
             </div>
+            <label className="rbac-label md:col-span-2">
+              Description
+              <textarea
+                className="rbac-input"
+                rows={3}
+                placeholder="Description"
+                value={form.description}
+                onChange={(event) =>
+                  setField("description", event.target.value)
+                }
+              />
+            </label>
             {form.transportType === "BOLERO_DELIVERY" ||
             form.transportType === "BOLERO_RETURN_DC" ? (
               <div className="grid gap-4 md:grid-cols-2">
@@ -519,66 +521,74 @@ export default function TransportFormContent({
                   </label>
                   {renderFieldError("locationType")}
                 </div>
+              </div>
+            ) : null}
+            <div className="grid gap-4 md:grid-cols-4">
+            <div>
+              <label className="rbac-label">
+                From Location <span className="text-red-600">*</span>
+                <input
+                  className="rbac-input"
+                  placeholder="Pickup location"
+                  value={form.fromLocation}
+                  onChange={(event) =>
+                    setField("fromLocation", event.target.value)
+                  }
+                />
+              </label>
+              {renderFieldError("fromLocation")}
+            </div>
+            <div>
+              <label className="rbac-label">
+                To Location <span className="text-red-600">*</span>
+                <input
+                  className="rbac-input"
+                  placeholder="Delivery location"
+                  value={form.toLocation}
+                  onChange={(event) =>
+                    setField("toLocation", event.target.value)
+                  }
+                />
+              </label>
+              {renderFieldError("toLocation")}
+            </div>
+            <div>
+              <label className="rbac-label">
+                City <span className="text-red-600">*</span>
+                <input
+                  className="rbac-input"
+                  placeholder="City"
+                  value={form.city}
+                  onChange={(event) => setField("city", event.target.value)}
+                />
+              </label>
+              {renderFieldError("city")}
+            </div>
+            </div>
+            {form.transportType === "BOLERO_DELIVERY" ||
+            form.transportType === "BOLERO_RETURN_DC" ? (
+              <div>
                 <div>
                   <label className="rbac-label">
-                    From Location <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="Pickup location"
-                      value={form.fromLocation}
-                      onChange={(event) =>
-                        setField("fromLocation", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("fromLocation")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    To Location <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="Delivery location"
-                      value={form.toLocation}
-                      onChange={(event) =>
-                        setField("toLocation", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("toLocation")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    City <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="City"
-                      value={form.city}
-                      onChange={(event) => setField("city", event.target.value)}
-                    />
-                  </label>
-                  {renderFieldError("city")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    Floor <span className="text-red-600">*</span>
+                    Load Type <span className="text-red-600">*</span>
                     <select
                       className="rbac-input rbac-select"
-                      value={form.floor}
+                      value={form.loadType}
                       onChange={(event) =>
-                        setField("floor", event.target.value)
+                        setField("loadType", event.target.value)
                       }
                     >
-                      <option value="">Select floor</option>
-                      {FLOOR_OPTIONS.map((option) => (
+                      <option value="">Select load type</option>
+                      {LOAD_TYPE_OPTIONS.map((option) => (
                         <option key={option} value={option}>
                           {option}
                         </option>
                       ))}
                     </select>
                   </label>
-                  {renderFieldError("floor")}
+                  {renderFieldError("loadType")}
                 </div>
+
                 <div>
                   <label className="rbac-label">
                     KM Start <span className="text-red-600">*</span>
@@ -611,123 +621,53 @@ export default function TransportFormContent({
                   </label>
                   {renderFieldError("kmEnd")}
                 </div>
-                <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
+                <div className="mt-2 rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
                   <p className="text-xs uppercase text-slate-500">Total KM</p>
                   <p className="text-lg font-semibold">{boleroTotalKm}</p>
                 </div>
+                <div className="mt-2 rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
+                  <p className="text-xs uppercase text-slate-500">
+                    Driver Wages
+                  </p>
+                  <p className="text-lg font-semibold">
+                    ₹{currency(boleroDriverWages)}
+                  </p>
+                </div>
                 <div>
                   <label className="rbac-label">
-                    Load Type <span className="text-red-600">*</span>
+                    Floor <span className="text-red-600">*</span>
                     <select
                       className="rbac-input rbac-select"
-                      value={form.loadType}
+                      value={form.floor}
                       onChange={(event) =>
-                        setField("loadType", event.target.value)
+                        setField("floor", event.target.value)
                       }
                     >
-                      <option value="">Select load type</option>
-                      {LOAD_TYPE_OPTIONS.map((option) => (
+                      <option value="">Select floor</option>
+                      {FLOOR_OPTIONS.map((option) => (
                         <option key={option} value={option}>
                           {option}
                         </option>
                       ))}
                     </select>
                   </label>
-                  {renderFieldError("loadType")}
+                  {renderFieldError("floor")}
                 </div>
-
-                <label className="rbac-label">
-                  Other Expenses
-                  <input
-                    className="rbac-input"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={form.otherExpenses}
-                    onChange={(event) =>
-                      setField("otherExpenses", event.target.value)
-                    }
-                  />
-                </label>
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                    <p className="text-xs uppercase text-slate-500">
-                      Driver Wages
-                    </p>
-                    <p className="text-lg font-semibold">
-                      ₹{currency(boleroDriverWages)}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                    <p className="text-xs uppercase text-slate-500">
-                      {form.transportType === "BOLERO_RETURN_DC"
-                        ? "Return Material Freight"
-                        : "Floor Rent"}
-                    </p>
-                    <p className="text-lg font-semibold">
-                      ₹{currency(boleroFloorRent)}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                    <p className="text-xs uppercase text-slate-500">
-                      Total Amount
-                    </p>
-                    <p className="text-lg font-semibold">
-                      ₹
-                      {currency(
-                        boleroDriverWages +
-                          boleroFloorRent +
-                          numberOrZero(form.otherExpenses),
-                      )}
-                    </p>
-                  </div>
+                <div className="mt-2 rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
+                  <p className="text-xs uppercase text-slate-500">
+                    {form.transportType === "BOLERO_RETURN_DC"
+                      ? "Return Material Freight"
+                      : "Floor Rent"}
+                  </p>
+                  <p className="text-lg font-semibold">
+                    ₹{currency(boleroFloorRent)}
+                  </p>
                 </div>
               </div>
             ) : null}
 
             {form.transportType === "COURIER_DAILY" ? (
               <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label className="rbac-label">
-                    City <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="City"
-                      value={form.city}
-                      onChange={(event) => setField("city", event.target.value)}
-                    />
-                  </label>
-                  {renderFieldError("city")}
-                </div>
-
-                <div>
-                  <label className="rbac-label">
-                    From Location <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="Pickup location"
-                      value={form.fromLocation}
-                      onChange={(event) =>
-                        setField("fromLocation", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("fromLocation")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    To Location <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="Delivery location"
-                      value={form.toLocation}
-                      onChange={(event) =>
-                        setField("toLocation", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("toLocation")}
-                </div>
                 <label className="rbac-label">
                   Mobile Number
                   <input
@@ -755,6 +695,14 @@ export default function TransportFormContent({
                   </label>
                   {renderFieldError("noOfCovers")}
                 </div>
+                <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
+                  <p className="text-xs uppercase text-slate-500">
+                    Cover Charge
+                  </p>
+                  <p className="text-lg font-semibold">
+                    ₹{currency(courierCharges.coverCharge)}
+                  </p>
+                </div>
                 <div>
                   <label className="rbac-label">
                     Total Weight (KG) <span className="text-red-600">*</span>
@@ -771,116 +719,19 @@ export default function TransportFormContent({
                   </label>
                   {renderFieldError("totalWeight")}
                 </div>
-                <label className="rbac-label">
-                  Other Expenses
-                  <input
-                    className="rbac-input"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={form.otherExpenses}
-                    onChange={(event) =>
-                      setField("otherExpenses", event.target.value)
-                    }
-                    />
-                  </label>
-                <label className="rbac-label md:col-span-2">
-                  Remark
-                  <textarea
-                    className="rbac-input"
-                    rows={3}
-                    placeholder="Remark"
-                    value={form.remark}
-                    onChange={(event) => setField("remark", event.target.value)}
-                  />
-                </label>
-
-                <div className="md:col-span-2 grid gap-4 md:grid-cols-3">
-                  <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                    <p className="text-xs uppercase text-slate-500">
-                      Weight Charge
-                    </p>
-                    <p className="text-lg font-semibold">
-                      ₹{currency(courierCharges.weightCharge)}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                    <p className="text-xs uppercase text-slate-500">
-                      Cover Charge
-                    </p>
-                    <p className="text-lg font-semibold">
-                      ₹{currency(courierCharges.coverCharge)}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                    <p className="text-xs uppercase text-slate-500">
-                      Total Amount
-                    </p>
-                    <p className="text-lg font-semibold">
-                      ₹
-                      {currency(
-                        courierCharges.totalAmount +
-                          numberOrZero(form.otherExpenses),
-                      )}
-                    </p>
-                  </div>
+                <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
+                  <p className="text-xs uppercase text-slate-500">
+                    Weight Charge
+                  </p>
+                  <p className="text-lg font-semibold">
+                    ₹{currency(courierCharges.weightCharge)}
+                  </p>
                 </div>
               </div>
             ) : null}
 
             {form.transportType === "PORTER_DAILY" ? (
               <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label className="rbac-label">
-                    City <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="City"
-                      value={form.city}
-                      onChange={(event) => setField("city", event.target.value)}
-                    />
-                  </label>
-                  {renderFieldError("city")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    From Location <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="Pickup location"
-                      value={form.fromLocation}
-                      onChange={(event) =>
-                        setField("fromLocation", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("fromLocation")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    To Location <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="Delivery location"
-                      value={form.toLocation}
-                      onChange={(event) =>
-                        setField("toLocation", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("toLocation")}
-                </div>
-                <label className="rbac-label">
-                  Vehicle Number
-                  <input
-                    className="rbac-input"
-                    placeholder="Vehicle number"
-                    value={form.vehicleNumber}
-                    onChange={(event) =>
-                      setField("vehicleNumber", event.target.value)
-                    }
-                  />
-                </label>
                 <label className="rbac-label">
                   Mobile Number
                   <input
@@ -889,6 +740,17 @@ export default function TransportFormContent({
                     value={form.mobileNumber}
                     onChange={(event) =>
                       setField("mobileNumber", event.target.value)
+                    }
+                  />
+                </label>
+                <label className="rbac-label">
+                  Vehicle Number
+                  <input
+                    className="rbac-input"
+                    placeholder="Vehicle number"
+                    value={form.vehicleNumber}
+                    onChange={(event) =>
+                      setField("vehicleNumber", event.target.value)
                     }
                   />
                 </label>
@@ -908,54 +770,55 @@ export default function TransportFormContent({
                   </label>
                   {renderFieldError("baseAmount")}
                 </div>
-                <label className="rbac-label">
-                  Status
-                  <select
-                    className="rbac-input rbac-select"
-                    value={form.status}
-                    onChange={(event) => setField("status", event.target.value)}
-                  >
-                    <option value="">Select status</option>
-                    {PORTER_STATUS_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                {renderFieldError("status")}
-                <label className="rbac-label md:col-span-2">
-                  Remark
-                  <textarea
-                    className="rbac-input"
-                    rows={3}
-                    placeholder="Remark"
-                    value={form.remark}
-                    onChange={(event) => setField("remark", event.target.value)}
-                  />
-                </label>
-
-                <div className="md:col-span-2 grid gap-4 md:grid-cols-2">
-                  <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                    <p className="text-xs uppercase text-slate-500">GST</p>
-                    <p className="text-lg font-semibold">
-                      ₹{currency(porterCharges.gstAmount)}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                    <p className="text-xs uppercase text-slate-500">
-                      Total Amount
-                    </p>
-                    <p className="text-lg font-semibold">
-                      ₹{currency(porterCharges.totalAmount)}
-                    </p>
-                  </div>
+                <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
+                  <p className="text-xs uppercase text-slate-500">GST</p>
+                  <p className="text-lg font-semibold">
+                    ₹{currency(porterCharges.gstAmount)}
+                  </p>
                 </div>
               </div>
             ) : null}
 
             {form.transportType === "CNG_RICKSHAW" ? (
               <div className="grid gap-4 md:grid-cols-2">
+                <label className="rbac-label">
+                  Mobile Number
+                  <input
+                    className="rbac-input"
+                    placeholder="Mobile number"
+                    value={form.mobileNumber}
+                    onChange={(event) =>
+                      setField("mobileNumber", event.target.value)
+                    }
+                  />
+                </label>
+                <label className="rbac-label">
+                  Vehicle Number
+                  <input
+                    className="rbac-input"
+                    placeholder="Vehicle number"
+                    value={form.vehicleNumber}
+                    onChange={(event) =>
+                      setField("vehicleNumber", event.target.value)
+                    }
+                  />
+                </label>
+                <div>
+                  <label className="rbac-label">
+                    Total KM <span className="text-red-600">*</span>
+                    <input
+                      className="rbac-input"
+                      type="number"
+                      step="1"
+                      min="0"
+                      value={form.totalKm}
+                      onChange={(event) =>
+                        setField("totalKm", event.target.value)
+                      }
+                    />
+                  </label>
+                  {renderFieldError("totalKm")}
+                </div>
                 <div>
                   <label className="rbac-label">
                     Trip Type <span className="text-red-600">*</span>
@@ -976,168 +839,45 @@ export default function TransportFormContent({
                   </label>
                   {renderFieldError("tripType")}
                 </div>
-                <div>
-                  <label className="rbac-label">
-                    From Location <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="Pickup point"
-                      value={form.fromLocation}
-                      onChange={(event) =>
-                        setField("fromLocation", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("fromLocation")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    To Location <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="Delivery point"
-                      value={form.toLocation}
-                      onChange={(event) =>
-                        setField("toLocation", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("toLocation")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    City/Route <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="City or route"
-                      value={form.city}
-                      onChange={(event) => setField("city", event.target.value)}
-                    />
-                  </label>
-                  {renderFieldError("city")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    Total KM <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      type="number"
-                      step="1"
-                      min="0"
-                      value={form.totalKm}
-                      onChange={(event) =>
-                        setField("totalKm", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("totalKm")}
-                </div>
-                <label className="rbac-label">
-                  Vehicle Number
-                  <input
-                    className="rbac-input"
-                    placeholder="Vehicle number"
-                    value={form.vehicleNumber}
-                    onChange={(event) =>
-                      setField("vehicleNumber", event.target.value)
-                    }
-                  />
-                </label>
-                <label className="rbac-label">
-                  Mobile Number
-                  <input
-                    className="rbac-input"
-                    placeholder="Mobile number"
-                    value={form.mobileNumber}
-                    onChange={(event) =>
-                      setField("mobileNumber", event.target.value)
-                    }
-                  />
-                </label>
-
-                <label className="rbac-label">
-                  Payment Mode
-                  <select
-                    className="rbac-input rbac-select"
-                    value={form.paymentMode}
-                    onChange={(event) =>
-                      setField("paymentMode", event.target.value)
-                    }
-                  >
-                    <option value="">Select payment mode</option>
-                    {PAYMENT_MODE_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                {renderFieldError("paymentMode")}
-                <label className="rbac-label">
-                  Status
-                  <select
-                    className="rbac-input rbac-select"
-                    value={form.status}
-                    onChange={(event) => setField("status", event.target.value)}
-                  >
-                    <option value="">Select status</option>
-                    {CNG_STATUS_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                {renderFieldError("status")}
-                <label className="rbac-label md:col-span-2">
-                  Remark
-                  <textarea
-                    className="rbac-input"
-                    rows={3}
-                    placeholder="Remark"
-                    value={form.remark}
-                    onChange={(event) => setField("remark", event.target.value)}
-                  />
-                </label>
-                <label className="rbac-label">
-                  Other Expenses
-                  <input
-                    className="rbac-input"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={form.otherExpenses}
-                    onChange={(event) =>
-                      setField("otherExpenses", event.target.value)
-                    }
-                  />
-                </label>
-                <div className="md:col-span-2 grid gap-4 md:grid-cols-2">
-                  <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                    <p className="text-xs uppercase text-slate-500">
-                      Trip Charge
-                    </p>
-                    <p className="text-lg font-semibold">
-                      ₹{currency(cngTripCharge)}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                    <p className="text-xs uppercase text-slate-500">
-                      Total Amount
-                    </p>
-                    <p className="text-lg font-semibold">
-                      ₹
-                      {currency(
-                        cngTripCharge + numberOrZero(form.otherExpenses),
-                      )}
-                    </p>
-                  </div>
+                <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
+                  <p className="text-xs uppercase text-slate-500">
+                    Trip Charge
+                  </p>
+                  <p className="text-lg font-semibold">
+                    ₹{currency(cngTripCharge)}
+                  </p>
                 </div>
               </div>
             ) : null}
 
             {form.transportType === "LOADING_VEHICLE" ? (
               <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="rbac-label">
+                    Mobile Number
+                    <input
+                      className="rbac-input"
+                      placeholder="Mobile number"
+                      value={form.mobileNumber}
+                      onChange={(event) =>
+                        setField("mobileNumber", event.target.value)
+                      }
+                    />
+                  </label>
+                </div>
+                <div>
+                  <label className="rbac-label">
+                    Vehicle Number
+                    <input
+                      className="rbac-input"
+                      placeholder="Vehicle number"
+                      value={form.vehicleNumber}
+                      onChange={(event) =>
+                        setField("vehicleNumber", event.target.value)
+                      }
+                    />
+                  </label>
+                </div>
                 <div>
                   <label className="rbac-label">
                     Vehicle Type <span className="text-red-600">*</span>
@@ -1158,72 +898,7 @@ export default function TransportFormContent({
                   </label>
                   {renderFieldError("vehicleType")}
                 </div>
-                <div>
-                  <label className="rbac-label">
-                    Vehicle Number
-                    <input
-                      className="rbac-input"
-                      placeholder="Vehicle number"
-                      value={form.vehicleNumber}
-                      onChange={(event) =>
-                        setField("vehicleNumber", event.target.value)
-                      }
-                    />
-                  </label>
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    Mobile Number
-                    <input
-                      className="rbac-input"
-                      placeholder="Mobile number"
-                      value={form.mobileNumber}
-                      onChange={(event) =>
-                        setField("mobileNumber", event.target.value)
-                      }
-                    />
-                  </label>
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    From Location <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="Pickup point"
-                      value={form.fromLocation}
-                      onChange={(event) =>
-                        setField("fromLocation", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("fromLocation")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    To Location <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="Delivery point"
-                      value={form.toLocation}
-                      onChange={(event) =>
-                        setField("toLocation", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("toLocation")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    City/Route <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="City or route"
-                      value={form.city}
-                      onChange={(event) => setField("city", event.target.value)}
-                    />
-                  </label>
-                  {renderFieldError("city")}
-                </div>
+
                 <label className="rbac-label">
                   Loading Charges
                   <input
@@ -1263,6 +938,37 @@ export default function TransportFormContent({
                     }
                   />
                 </label>
+              </div>
+            ) : null}
+
+            <label className="rbac-label">
+              Other Expenses
+              <input
+                className="rbac-input"
+                type="number"
+                step="0.01"
+                min="0"
+                value={form.otherExpenses}
+                onChange={(event) =>
+                  setField("otherExpenses", event.target.value)
+                }
+              />
+            </label>
+            <div className="mt-2 rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
+              <p className="text-xs uppercase text-slate-500">Total Amount</p>
+              <p className="text-lg font-semibold">
+                ₹
+                {currency(
+                  boleroDriverWages +
+                    boleroFloorRent +
+                    numberOrZero(form.otherExpenses),
+                )}
+              </p>
+            </div>
+            {form.transportType === "PORTER_DAILY" ||
+            form.transportType === "CNG_RICKSHAW" ||
+            form.transportType === "LOADING_VEHICLE" ? (
+              <div className="md:col-span-2 grid gap-4 md:grid-cols-2">
                 <label className="rbac-label">
                   Payment Mode
                   <select
@@ -1289,7 +995,7 @@ export default function TransportFormContent({
                     onChange={(event) => setField("status", event.target.value)}
                   >
                     <option value="">Select status</option>
-                    {LOADING_STATUS_OPTIONS.map((option) => (
+                    {CNG_STATUS_OPTIONS.map((option) => (
                       <option key={option} value={option}>
                         {option}
                       </option>
@@ -1297,42 +1003,19 @@ export default function TransportFormContent({
                   </select>
                 </label>
                 {renderFieldError("status")}
-                <label className="rbac-label md:col-span-2">
-                  Remark
-                  <textarea
-                    className="rbac-input"
-                    rows={3}
-                    placeholder="Remark"
-                    value={form.remark}
-                    onChange={(event) => setField("remark", event.target.value)}
-                  />
-                </label>
-                <label className="rbac-label">
-                  Other Expenses
-                  <input
-                    className="rbac-input"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={form.otherExpenses}
-                    onChange={(event) =>
-                      setField("otherExpenses", event.target.value)
-                    }
-                  />
-                </label>
-
-                <div className="md:col-span-2 grid gap-4 md:grid-cols-2">
-                  <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                    <p className="text-xs uppercase text-slate-500">
-                      Total Amount
-                    </p>
-                    <p className="text-lg font-semibold">
-                      ₹{currency(loadingVehicleTotal)}
-                    </p>
-                  </div>
-                </div>
               </div>
             ) : null}
+
+            <label className="rbac-label md:col-span-2">
+              Remark
+              <textarea
+                className="rbac-input"
+                rows={3}
+                placeholder="Remark"
+                value={form.remark}
+                onChange={(event) => setField("remark", event.target.value)}
+              />
+            </label>
           </fieldset>
           <div className="rbac-actions">
             <button className="rbac-button" type="submit" disabled={saving}>

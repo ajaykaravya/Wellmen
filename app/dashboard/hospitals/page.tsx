@@ -305,7 +305,7 @@ function ProjectListContent() {
                 <FaFilter />
                 <span>Filters</span>
               </button>
-              <Link href="/dashboard/projects/new?source=hospital">
+              <Link href="/dashboard/hospitals/new">
                 <button className="rbac-button" type="button">
                   Add Hospital
                 </button>
