@@ -478,7 +478,7 @@ export default function QueryListContent({
                   showCount={false}
                   collapsible={false}
                   renderActions={(query) => (
-                    <div className="flex gap-2">
+                    <div className="flex justify-end">
                       <button
                         className="rbac-link"
                         type="button"

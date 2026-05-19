@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { formatToDDMMYYYY, getTodayInputDate } from "@/lib/dateUtils";
+import { getTodayInputDate } from "@/lib/dateUtils";
 import { toast } from "react-toastify";
 import DashboardShell, {
   clearCachedSession,
@@ -15,11 +15,9 @@ import CustomDatePicker from "../components/CustomDatePicker";
 import {
   FaChevronLeft,
   FaChevronRight,
-  FaEye,
   FaClock,
   FaHourglass,
   FaCheckCircle,
-  FaPlay,
   FaSpinner,
   FaMoon,
   FaSun,
@@ -51,7 +49,6 @@ import {
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
 import { useThemeMode } from "../components/ThemeProvider";
 import { IoIosClose } from "react-icons/io";
-import { MdOutlineFileDownload } from "react-icons/md";
 import { QueryTableCard } from "./_components/QueryTableCard";
 import { ReportingCardList } from "./_components/ReportingCardList";
 import { ReportDetailsDialog } from "./_components/ReportDetailsDialog";

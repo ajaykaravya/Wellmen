@@ -23,6 +23,7 @@ model User {
   queryManagements QueryManagement[] @relation("QueryCreatedBy")
   assignedTodos    Todo[]            @relation("TodoAssignee")
   createdTodos     Todo[]            @relation("TodoCreator")
+  transportLogsCreated TransportLog[] @relation("TransportLogCreator")
   deviceTokens     DeviceToken[]
   role             Role              @relation(fields: [roleId], references: [id])
 }
@@ -155,6 +156,59 @@ model DailyExpense {
   @@index([expenseTypeId])
 }
 
+model TransportLog {
+  id                    String        @id @default(uuid())
+  serialNo              Int
+  transportType         TransportType
+  date                  DateTime
+  dcNumber              String?
+  tripDescription       String?
+  locationType          String?
+  city                  String?
+  floor                 String?
+  kmStart               Int           @default(0)
+  kmEnd                 Int           @default(0)
+  totalKm               Int           @default(0)
+  loadType              String?
+  driverWages           Decimal       @default(0) @db.Decimal(14, 2)
+  otherExpenses         Decimal       @default(0) @db.Decimal(14, 2)
+  floorRent             Decimal       @default(0) @db.Decimal(14, 2)
+  returnMaterialFreight Decimal       @default(0) @db.Decimal(14, 2)
+  courierNumber         String?
+  description           String?
+  fromLocation          String?
+  toLocation            String?
+  mobileNumber          String?
+  noOfCovers            Int           @default(0)
+  totalWeight           Decimal       @default(0) @db.Decimal(14, 2)
+  weightCharge          Decimal       @default(0) @db.Decimal(14, 2)
+  coverCharge           Decimal       @default(0) @db.Decimal(14, 2)
+  materialDescription   String?
+  vehicleNumber         String?
+  baseAmount            Decimal       @default(0) @db.Decimal(14, 2)
+  gstAmount             Decimal       @default(0) @db.Decimal(14, 2)
+  tripType              String?
+  tripCharge            Decimal       @default(0) @db.Decimal(14, 2)
+  vehicleType           String?
+  loadingCharges        Decimal       @default(0) @db.Decimal(14, 2)
+  returnMaterialCharges Decimal       @default(0) @db.Decimal(14, 2)
+  transportCharges      Decimal       @default(0) @db.Decimal(14, 2)
+  paymentMode           String?
+  status                String?
+  remark                String?
+  createdById           String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  createdBy             User?         @relation("TransportLogCreator", fields: [createdById], references: [id])
+
+  @@unique([transportType, serialNo])
+  @@index([transportType])
+  @@index([date])
+  @@index([status])
+  @@index([paymentMode])
+  @@index([createdById])
+}
+
 model QueryManagement {
   id          String        @id @default(uuid())
   projectId   String
@@ -238,4 +292,13 @@ enum ExpenseTypeStatus {
 enum TransactionType {
   INCOME
   EXPENSE
+}
+
+enum TransportType {
+  BOLERO_DELIVERY
+  BOLERO_RETURN_DC
+  COURIER_DAILY
+  PORTER_DAILY
+  CNG_RICKSHAW
+  LOADING_VEHICLE
 }
