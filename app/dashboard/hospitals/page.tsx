@@ -273,7 +273,7 @@ function ProjectListContent() {
         ),
       },
     ],
-    [handleDeleteProject],
+    [handleDeleteProject, handleView],
   );
 
   const completedProjects = projects.filter((project) => {
@@ -305,9 +305,9 @@ function ProjectListContent() {
                 <FaFilter />
                 <span>Filters</span>
               </button>
-              <Link href="/dashboard/users/new">
+              <Link href="/dashboard/hospitals/new">
                 <button className="rbac-button" type="button">
-                  Add User
+                  Add Hospital
                 </button>
               </Link>
             </div>
