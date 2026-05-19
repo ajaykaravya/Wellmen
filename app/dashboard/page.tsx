@@ -9,6 +9,7 @@ import DashboardShell, {
   clearCachedSession,
   useDashboardContext,
 } from "./_components/DashboardShell";
+import { TaskTableCard } from "./_components/TaskTableCard";
 import ConfirmDialog from "../components/ConfirmDialog";
 import CustomDatePicker from "../components/CustomDatePicker";
 import {
@@ -22,6 +23,8 @@ import {
   FaSpinner,
   FaMoon,
   FaSun,
+  FaEdit,
+  FaTrash,
 } from "react-icons/fa";
 import Link from "next/link";
 import {
@@ -48,9 +51,10 @@ import {
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
 import { useThemeMode } from "../components/ThemeProvider";
 import { IoIosClose } from "react-icons/io";
-import { FaEdit } from "react-icons/fa";
 import { MdOutlineFileDownload } from "react-icons/md";
-import { FaLink } from "react-icons/fa6";
+import { QueryTableCard } from "./_components/QueryTableCard";
+import { ReportingCardList } from "./_components/ReportingCardList";
+import { ReportDetailsDialog } from "./_components/ReportDetailsDialog";
 
 ChartJS.register(
   CategoryScale,
@@ -76,6 +80,7 @@ type TodoRow = {
   projectName?: string | null;
   projectCity?: string | null;
   categoryName?: string | null;
+  canManage?: boolean;
   assignee: {
     id: string;
     firstName: string;
@@ -114,69 +119,7 @@ type AdminReportRow = {
   imageUrls: string[];
   videoUrl: string | null;
   videoUrls?: string[];
-};
-
-type TaskTableCardProps = {
-  title: string;
-  rows: TodoRow[];
-  loading: boolean;
-  emptyLabel: string;
-  addTaskType: TodoRow["type"];
-  onUpdate?: (row: TodoRow) => void;
-};
-
-type QueryTableCardProps = {
-  title: string;
-  rows: QueryRow[];
-  loading: boolean;
-  emptyLabel: string;
-  viewAllHref: string;
-  addQueryHref: string;
-};
-
-const formatText = (text: string) => {
-  const formation = text.replaceAll("_", " ").toLowerCase();
-  const formatted = formation.charAt(0).toUpperCase() + formation.slice(1);
-  return formatted;
-};
-
-const getTaskStatusBadgeClass = (status: TodoStatus) => {
-  switch (status) {
-    case "TODO":
-      return "bg-amber-100 text-amber-800 ring-1 ring-amber-200";
-    case "IN_PROGRESS":
-      return "bg-blue-100 text-blue-800 ring-1 ring-blue-200";
-    case "ON_HOLD":
-      return "bg-orange-100 text-orange-800 ring-1 ring-orange-200";
-    case "COMPLETED":
-      return "bg-green-100 text-green-800 ring-1 ring-green-200";
-    default:
-      return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
-  }
-};
-
-const getQueryStatusBadgeClass = (status: QueryRow["status"]) => {
-  switch (status) {
-    case "PENDING":
-      return "bg-rose-100 text-rose-800 ring-1 ring-rose-200";
-    case "COMPLETED":
-      return "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200";
-    default:
-      return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
-  }
-};
-
-const getQueryPriorityBadgeClass = (priority: QueryRow["priority"]) => {
-  switch (priority) {
-    case "LOW":
-      return "bg-amber-100 text-amber-800 ring-1 ring-amber-200";
-    case "MEDIUM":
-      return "bg-orange-100 text-orange-800 ring-1 ring-orange-200";
-    case "HIGH":
-      return "bg-red-100 text-red-800 ring-1 ring-red-200";
-    default:
-      return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
-  }
+  canManage?: boolean;
 };
 
 const shiftInputDate = (value: string, diffDays: number) => {
@@ -212,238 +155,6 @@ const formatAmount = (value: number) =>
     maximumFractionDigits: 2,
   });
 
-function TaskTableCard({
-  title,
-  rows,
-  loading,
-  emptyLabel,
-  addTaskType,
-  onUpdate,
-}: TaskTableCardProps) {
-  const [collapsed, setCollapsed] = useState(true);
-
-  return (
-    <div className="rbac-card">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center justify-between gap-2 w-full">
-          <h3 className="sm:text-base text-sm font-medium w-full">{title}</h3>
-          <div className="flex items-center gap-2 justify-end w-full">
-            <Link href={`/dashboard/task-management/new?type=${addTaskType}`}>
-              <button className="rbac-button" type="button">
-                Add Task
-              </button>
-            </Link>
-            <button
-              className="change-button change-button-secondary px-3 py-2 rounded-md"
-              type="button"
-              onClick={() => setCollapsed((prev) => !prev)}
-              aria-expanded={!collapsed}
-              aria-label={`${collapsed ? "Expand" : "Collapse"} ${title}`}
-            >
-              <FaChevronRight
-                className={`transition-transform duration-200 ${
-                  collapsed ? "" : "rotate-90"
-                }`}
-                size={14}
-              />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div
-        className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${
-          collapsed
-            ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none"
-            : "mt-4 max-h-[4000px] opacity-100 translate-y-0"
-        }`}
-        aria-hidden={collapsed}
-      >
-        <div className="space-y-3">
-          {loading && (
-            <div className="flex items-center justify-center py-4">
-              <FaSpinner className="animate-spin mr-2" size={16} />
-            </div>
-          )}
-          {!loading && rows.length === 0 && (
-            <div className="rbac-card py-4 text-sm ">{emptyLabel}</div>
-          )}
-          {!loading &&
-            rows.map((task) => (
-              <div key={task.id} className="flex rbac-card p-4 sm:p-5">
-                <div className="w-full mt-3 grid text-sm">
-                  {task.projectName && (
-                    <p className="font-semibold text-base">
-                      {task.projectName}
-                    </p>
-                  )}
-                  {task.projectCity && (
-                    <p className="text-sm text-slate-500">{task.projectCity}</p>
-                  )}
-                  {"categoryName" in task && (
-                    <p className="text-sm mt-1">{task.categoryName || "-"}</p>
-                  )}
-                  {task.description && (
-                    <p className="text-sm">{task.description}</p>
-                  )}
-                  {"comments" in task && (
-                    <p className="text-sm">{task.comments || "-"}</p>
-                  )}
-                  {task.assignee && (
-                    <p className="text-sm">
-                      {task.assignee.firstName} {task.assignee.lastName}
-                    </p>
-                  )}
-                </div>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <h4 className="mt-1 text-base font-semibold theme-text">
-                      {task.title}
-                    </h4>
-                  </div>
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] w-max ${getTaskStatusBadgeClass(
-                      task.status,
-                    )}`}
-                  >
-                    {formatText(task.status)}
-                  </span>
-                </div>
-
-                <div className="flex gap-2 justify-end">
-                  {onUpdate && (
-                    <button
-                      className="h-fit"
-                      type="button"
-                      onClick={() => onUpdate(task)}
-                    >
-                      <FaEdit />
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function QueryTableCard({
-  title,
-  rows,
-  loading,
-  emptyLabel,
-  viewAllHref,
-  addQueryHref,
-}: QueryTableCardProps) {
-  const [collapsed, setCollapsed] = useState(true);
-  const { theme } = useThemeMode();
-
-  return (
-    <div className="rbac-card">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center justify-between gap-2 w-full">
-          <h3 className="sm:text-base text-sm font-medium w-full">{title}</h3>
-          <div className="flex items-center gap-2 justify-end w-full">
-            <Link href={addQueryHref}>
-              <button className="rbac-button" type="button">
-                Add Query
-              </button>
-            </Link>
-            <Link href={viewAllHref}>
-              <button
-                className="rbac-button rbac-button-secondary"
-                type="button"
-              >
-                View All
-              </button>
-            </Link>
-            <button
-              className="change-button change-button-secondary px-3 py-2 rounded-md"
-              type="button"
-              onClick={() => setCollapsed((prev) => !prev)}
-              aria-expanded={!collapsed}
-              aria-label={`${collapsed ? "Expand" : "Collapse"} ${title}`}
-            >
-              <FaChevronRight
-                className={`transition-transform duration-200 ${
-                  theme === "dark" ? "text-white" : "text-black"
-                } ${collapsed ? "" : "rotate-90"}`}
-                size={14}
-              />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div
-        className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${
-          collapsed
-            ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none"
-            : "mt-4 max-h-[4000px] opacity-100 translate-y-0"
-        }`}
-        aria-hidden={collapsed}
-      >
-        <div className="space-y-3">
-          {loading && (
-            <div className="flex items-center justify-center py-4">
-              <FaSpinner className="animate-spin mr-2" size={16} />
-            </div>
-          )}
-          {!loading && rows.length === 0 && (
-            <div className="rbac-card py-4 text-sm">{emptyLabel}</div>
-          )}
-          {!loading &&
-            rows.map((query) => (
-              <div key={query.id} className="rbac-card p-4 sm:p-5">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-base font-semibold ">
-                      {query.projectName || "Project"}
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      {query.projectCity || "Project"}
-                    </p>
-                    <h4 className="mt-1 text-sm">
-                      {query.category ? formatText(query.category) : "Query"}
-                    </h4>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] ${getQueryStatusBadgeClass(
-                        query.status,
-                      )}`}
-                    >
-                      {formatText(query.status)}
-                    </span>
-                    <p>
-                      <span
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-medium tracking-[0.2em] ${getQueryPriorityBadgeClass(
-                          query.priority,
-                        )}`}
-                      >
-                        {formatText(query.priority)}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid text-sm">
-                  <p>{query.description || "No description"}</p>
-
-                  <p>
-                    <span>By:</span> {query.createdByName || "-"}
-                  </p>
-                </div>
-              </div>
-            ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function OverviewContent() {
   const { user, isAdmin } = useDashboardContext();
   const { theme, toggleTheme } = useThemeMode();
@@ -475,6 +186,18 @@ function OverviewContent() {
   );
   const [reportImageIndex, setReportImageIndex] = useState<number | null>(null);
   const [reportVideoIndex, setReportVideoIndex] = useState<number | null>(null);
+
+  const [confirmTodoOpen, setConfirmTodoOpen] = useState(false);
+  const [confirmTodoTarget, setConfirmTodoTarget] = useState<TodoRow | null>(null);
+  const [deletingTodo, setDeletingTodo] = useState(false);
+
+  const [confirmQueryOpen, setConfirmQueryOpen] = useState(false);
+  const [confirmQueryTarget, setConfirmQueryTarget] = useState<QueryRow | null>(null);
+  const [deletingQuery, setDeletingQuery] = useState(false);
+
+  const [confirmReportOpen, setConfirmReportOpen] = useState(false);
+  const [confirmReportTarget, setConfirmReportTarget] = useState<AdminReportRow | null>(null);
+  const [deletingReport, setDeletingReport] = useState(false);
 
   const [collapsed, setCollapsed] = useState(true);
   const [logoutLoading, setLogoutLoading] = useState(false);
@@ -523,8 +246,8 @@ function OverviewContent() {
         ? reportViewData.videoUrls?.length
           ? reportViewData.videoUrls
           : reportViewData.videoUrl
-          ? [reportViewData.videoUrl]
-          : []
+            ? [reportViewData.videoUrl]
+            : []
         : [],
     [reportViewData],
   );
@@ -583,7 +306,7 @@ function OverviewContent() {
     setAdminLoading(true);
     try {
       const params = new URLSearchParams({
-        fromDate: adminDate,
+        date: adminDate,
         page: "1",
         pageSize: "50",
       });
@@ -703,10 +426,10 @@ function OverviewContent() {
         prev.map((item) =>
           item.id === row.id
             ? {
-                ...item,
-                comments: updated.comments ?? null,
-                status: updated.status,
-              }
+              ...item,
+              comments: updated.comments ?? null,
+              status: updated.status,
+            }
             : item,
         ),
       );
@@ -817,6 +540,97 @@ function OverviewContent() {
     ((modalDraft.comments || "") !== (modalTarget.comments || "") ||
       modalDraft.status !== modalTarget.status);
   const isModalSaving = savingId === modalTarget?.id;
+
+  const handleDeleteTodo = useCallback((row: TodoRow) => {
+    setConfirmTodoTarget(row);
+    setConfirmTodoOpen(true);
+  }, []);
+
+  const confirmDeleteTodo = useCallback(async () => {
+    if (!confirmTodoTarget) return;
+    setDeletingTodo(true);
+    try {
+      const endpoint = isAdmin ? "/api/todos" : "/api/my-todos";
+      const res = await fetch(`${endpoint}/${confirmTodoTarget.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        toast.error(payload.error || "Failed to delete task.");
+        return;
+      }
+      await loadTodos();
+      toast.success("Task deleted successfully.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to delete task.");
+    } finally {
+      setDeletingTodo(false);
+      setConfirmTodoOpen(false);
+      setConfirmTodoTarget(null);
+    }
+  }, [confirmTodoTarget, isAdmin, loadTodos]);
+
+  const handleDeleteQuery = useCallback((row: QueryRow) => {
+    setConfirmQueryTarget(row);
+    setConfirmQueryOpen(true);
+  }, []);
+
+  const confirmDeleteQuery = useCallback(async () => {
+    if (!confirmQueryTarget) return;
+    setDeletingQuery(true);
+    try {
+      const endpoint = isAdmin ? "/api/query-management" : "/api/my-query-management";
+      const res = await fetch(`${endpoint}/${confirmQueryTarget.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        toast.error(payload.error || "Failed to delete query.");
+        return;
+      }
+      await loadQuery();
+      toast.success("Query deleted successfully.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to delete query.");
+    } finally {
+      setDeletingQuery(false);
+      setConfirmQueryOpen(false);
+      setConfirmQueryTarget(null);
+    }
+  }, [confirmQueryTarget, isAdmin, loadQuery]);
+
+  const handleEditReport = useCallback((row: AdminReportRow) => {
+    router.push(`/dashboard/reports/${row.id}`);
+  }, [router]);
+
+  const handleDeleteReport = useCallback((row: AdminReportRow) => {
+    setConfirmReportTarget(row);
+    setConfirmReportOpen(true);
+  }, []);
+
+  const confirmDeleteReport = useCallback(async () => {
+    if (!confirmReportTarget) return;
+    setDeletingReport(true);
+    try {
+      const res = await fetch(`/api/reports/${confirmReportTarget.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        toast.error(payload.error || "Failed to delete reporting.");
+        return;
+      }
+      if (isAdmin) {
+        await loadAdminReports();
+      } else {
+        await loadUserReports();
+      }
+      toast.success("Reporting deleted successfully.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to delete reporting.");
+    } finally {
+      setDeletingReport(false);
+      setConfirmReportOpen(false);
+      setConfirmReportTarget(null);
+    }
+  }, [confirmReportTarget, isAdmin, loadAdminReports, loadUserReports]);
 
   const closeChangePasswordModal = useCallback(() => {
     setChangePasswordOpen(false);
@@ -931,9 +745,8 @@ function OverviewContent() {
             className="rbac-theme-toggle hidden xl:inline-flex"
             type="button"
             onClick={toggleTheme}
-            aria-label={`Switch to ${
-              theme === "light" ? "dark" : "light"
-            } mode`}
+            aria-label={`Switch to ${theme === "light" ? "dark" : "light"
+              } mode`}
             title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
           >
             {theme === "light" ? <FaMoon size={14} /> : <FaSun size={14} />}
@@ -962,11 +775,10 @@ function OverviewContent() {
               {({ focus }) => (
                 <button
                   type="button"
-                  className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors ${
-                    focus
-                      ? "theme-button-secondary theme-text"
-                      : "theme-text-muted"
-                  }`}
+                  className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors ${focus
+                    ? "theme-button-secondary theme-text"
+                    : "theme-text-muted"
+                    }`}
                   onClick={() => {
                     setPasswordNotice(null);
                     setChangePasswordOpen(true);
@@ -980,11 +792,10 @@ function OverviewContent() {
               {({ focus }) => (
                 <button
                   type="button"
-                  className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors ${
-                    focus
-                      ? "theme-status-danger"
-                      : "text-[color:var(--theme-danger-text)]"
-                  }`}
+                  className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors ${focus
+                    ? "theme-status-danger"
+                    : "text-[color:var(--theme-danger-text)]"
+                    }`}
                   onClick={() => setConfirmLogoutOpen(true)}
                 >
                   Logout
@@ -1074,11 +885,10 @@ function OverviewContent() {
 
               {passwordNotice && (
                 <div
-                  className={`rounded-xl px-3 py-2 text-sm ${
-                    passwordNotice.type === "success"
-                      ? "bg-emerald-50 text-emerald-700"
-                      : "bg-rose-50 text-rose-700"
-                  }`}
+                  className={`rounded-xl px-3 py-2 text-sm ${passwordNotice.type === "success"
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "bg-rose-50 text-rose-700"
+                    }`}
                 >
                   {passwordNotice.message}
                 </div>
@@ -1119,6 +929,40 @@ function OverviewContent() {
         onClose={() => setConfirmLogoutOpen(false)}
       />
 
+      <ConfirmDialog
+        open={confirmTodoOpen}
+        title="Delete task?"
+        description="Are you sure you want to delete this task?"
+        confirmLabel="Delete"
+        confirmLoading={deletingTodo}
+        confirmLoadingLabel="Deleting..."
+        cancelLabel="Cancel"
+        onConfirm={confirmDeleteTodo}
+        onClose={() => setConfirmTodoOpen(false)}
+      />
+      <ConfirmDialog
+        open={confirmQueryOpen}
+        title="Delete query?"
+        description="Are you sure you want to delete this query?"
+        confirmLabel="Delete"
+        confirmLoading={deletingQuery}
+        confirmLoadingLabel="Deleting..."
+        cancelLabel="Cancel"
+        onConfirm={confirmDeleteQuery}
+        onClose={() => setConfirmQueryOpen(false)}
+      />
+      <ConfirmDialog
+        open={confirmReportOpen}
+        title="Delete reporting?"
+        description="Are you sure you want to delete this reporting?"
+        confirmLabel="Delete"
+        confirmLoading={deletingReport}
+        confirmLoadingLabel="Deleting..."
+        cancelLabel="Cancel"
+        onConfirm={confirmDeleteReport}
+        onClose={() => setConfirmReportOpen(false)}
+      />
+
       <section className="rbac-section mt-4 rbac-container">
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
           <div className="rbac-card p-4 sm:p-6 flex items-center gap-4">
@@ -1141,20 +985,32 @@ function OverviewContent() {
           </div>
         </div>
         <QueryTableCard
-          title="Pending Queries"
+          title="Queries"
           rows={pendingQuery}
           loading={loading}
-          emptyLabel="No pending queries for today"
-          viewAllHref={
-            isAdmin
-              ? "/dashboard/query-management?status=PENDING"
-              : "/dashboard/my-query-management?status=PENDING"
-          }
-          addQueryHref={
-            isAdmin
-              ? "/dashboard/query-management/new"
-              : "/dashboard/my-query-management/new"
-          }
+          emptyLabel="No queries found"
+          addHref={isAdmin ? "/dashboard/query-management/new" : "/dashboard/my-query-management/new"}
+          addLabel="Add Query"
+          secondaryHref={isAdmin ? "/dashboard/query-management" : "/dashboard/my-query-management"}
+          secondaryLabel="View All"
+          renderActions={(q) => (
+            <div className="flex gap-2">
+              <Link className="mt-1" href={isAdmin ? `/dashboard/query-management/${q.id}` : `/dashboard/my-query-management/${q.id}`}>
+                <button className="rbac-link" type="button" title="Edit">
+                  <FaEdit size={18} />
+                </button>
+              </Link>
+              <button
+                style={{ padding: "2px" }}
+                className="rbac-link danger"
+                type="button"
+                onClick={() => handleDeleteQuery(q)}
+                title="Delete"
+              >
+                <FaTrash size={18} />
+              </button>
+            </div>
+          )}
         />
       </section>
       <section className="rbac-section mt-4 rbac-container">
@@ -1210,16 +1066,76 @@ function OverviewContent() {
               rows={projectTasks}
               loading={loading}
               emptyLabel="No project work tasks for today"
-              addTaskType="PROJECT"
-              onUpdate={isAdmin ? undefined : openUpdateModal}
+              addTaskHref="/dashboard/task-management/new?type=PROJECT"
+              renderActions={(task) => (
+                <>
+                  {(isAdmin || task.canManage) && (
+                    <div className="flex justify-end gap-2 items-center">
+                      <Link className="mt-1" href={`/dashboard/task-management/${task.id}`}>
+                        <button className="rbac-link" type="button" title="Edit">
+                          <FaEdit size={18} />
+                        </button>
+                      </Link>
+                      <button
+                        style={{ padding: "2px" }}
+                        className="rbac-link danger"
+                        type="button"
+                        onClick={() => handleDeleteTodo(task)}
+                        title="Delete"
+                      >
+                        <FaTrash size={18} />
+                      </button>
+                    </div>
+                  )}
+                  {!isAdmin && (
+                    <button
+                      className="rbac-button rbac-button-secondary ml-2"
+                      type="button"
+                      onClick={() => openUpdateModal(task)}
+                    >
+                      Update
+                    </button>
+                  )}
+                </>
+              )}
             />
             <TaskTableCard
               title="Office Work"
               rows={officeTasks}
               loading={loading}
               emptyLabel="No office work tasks for today"
-              addTaskType="OFFICE"
-              onUpdate={isAdmin ? undefined : openUpdateModal}
+              addTaskHref="/dashboard/task-management/new?type=OFFICE"
+              renderActions={(task) => (
+                <>
+                  {(isAdmin || task.canManage) && (
+                    <div className="flex justify-end gap-2 items-center">
+                      <Link className="mt-1" href={`/dashboard/task-management/${task.id}`}>
+                        <button className="rbac-link" type="button" title="Edit">
+                          <FaEdit size={18} />
+                        </button>
+                      </Link>
+                      <button
+                        style={{ padding: "2px" }}
+                        className="rbac-link danger"
+                        type="button"
+                        onClick={() => handleDeleteTodo(task)}
+                        title="Delete"
+                      >
+                        <FaTrash size={18} />
+                      </button>
+                    </div>
+                  )}
+                  {!isAdmin && (
+                    <button
+                      className="rbac-button rbac-button-secondary ml-2"
+                      type="button"
+                      onClick={() => openUpdateModal(task)}
+                    >
+                      Update
+                    </button>
+                  )}
+                </>
+              )}
             />
           </div>
           <div className="flex flex-col gap-4">
@@ -1228,15 +1144,48 @@ function OverviewContent() {
               rows={serviceTasks}
               loading={loading}
               emptyLabel="No service work tasks for today"
-              addTaskType="SERVICE"
-              onUpdate={isAdmin ? undefined : openUpdateModal}
+              addTaskHref="/dashboard/task-management/new?type=SERVICE"
+              renderActions={(task) => (
+                <>
+                  {(isAdmin || task.canManage) && (
+                    <div className="flex justify-end gap-2 items-center">
+                      <Link className="mt-1" href={`/dashboard/task-management/${task.id}`}>
+                        <button className="rbac-link" type="button" title="Edit">
+                          <FaEdit size={18} />
+                        </button>
+                      </Link>
+                      <button
+                        style={{ padding: "2px" }}
+                        className="rbac-link danger"
+                        type="button"
+                        onClick={() => handleDeleteTodo(task)}
+                        title="Delete"
+                      >
+                        <FaTrash size={18} />
+                      </button>
+                    </div>
+                  )}
+                  {!isAdmin && (
+                    <button
+                      className="rbac-button rbac-button-secondary ml-2"
+                      type="button"
+                      onClick={() => openUpdateModal(task)}
+                    >
+                      Update
+                    </button>
+                  )}
+                </>
+              )}
             />
             <div className="grid gap-4">
               <div className="rbac-card">
                 <div className="flex items-center justify-between gap-2 w-full">
-                  <h3 className="sm:text-base text-sm font-medium w-full">
-                    {isAdmin ? "Employees reporting" : "Today's reporting"}
-                  </h3>
+                  <div className="flex items-center">
+                    <h3 className="sm:text-base text-sm font-medium w-full">
+                      {isAdmin ? "Employees reporting" : "Today's reporting"}
+                    </h3>
+                    <p className=" text-white text-sm font-normal bg-[#2596be] px-2 py-1 rounded-full">{isAdmin ? adminReports.length : userReports.length}</p>
+                  </div>
                   <div className="flex items-center gap-2 justify-end w-full">
                     {!isAdmin && (
                       <Link href="/dashboard/reports/new">
@@ -1252,9 +1201,8 @@ function OverviewContent() {
                       aria-expanded={!collapsed}
                     >
                       <FaChevronRight
-                        className={`transition-transform duration-200 ${
-                          collapsed ? "" : "rotate-90"
-                        }`}
+                        className={`transition-transform duration-200 ${collapsed ? "" : "rotate-90"
+                          }`}
                         size={14}
                       />
                     </button>
@@ -1263,13 +1211,12 @@ function OverviewContent() {
 
                 {isAdmin ? (
                   <div
-                    className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${
-                      collapsed
-                        ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none"
-                        : "mt-4 max-h-[4000px] opacity-100 translate-y-0"
-                    }`}
+                    className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${collapsed
+                      ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none"
+                      : "mt-4 max-h-[4000px] opacity-100 translate-y-0"
+                      }`}
                   >
-                    <div className="flex flex-wrap items-center justify-end gap-2">
+                    <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2">
                       <button
                         className="change-button change-button-secondary p-2 rounded-md"
                         type="button"
@@ -1308,55 +1255,24 @@ function OverviewContent() {
                         </div>
                       )}
                       {!adminLoading && adminReports.length > 0 && (
-                        <div className="space-y-3">
-                          {adminReports.map((report) => (
-                            <div
-                              key={report.id}
-                              className="rbac-card p-4 sm:p-5"
-                            >
-                              <div className="flex flex-wrap items-start justify-between gap-3">
-                                <div>
-                                  <p className="text-xs uppercase tracking-[0.2em]">
-                                    {formatToDDMMYYYY(report.reportDate)}
-                                  </p>
-                                  <p className="font-semibold text-base">
-                                    {report.projectName}
-                                  </p>
-                                  <p className="text-sm text-slate-500">
-                                    {report.projectCity || "-"}
-                                  </p>
-                                </div>
-                                <div className="flex justify-center items-center gap-4">
-                                  {((report.imageUrls?.length ?? 0) > 0 ||
-                                    (report.videoUrls?.length ?? 0) > 0 ||
-                                    !!report.videoUrl) && <FaLink />}
-                                  <button
-                                    className="rbac-link"
-                                    type="button"
-                                    onClick={() => openReportView(report)}
-                                  >
-                                    <FaEye size={15} />
-                                  </button>
-                                </div>
-                              </div>
-
-                              <div className="mt-1 grid text-sm">
-                                <p>{report.categoryName || "-"}</p>
-                                <p>{report.description}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                        <ReportingCardList
+                          rows={adminReports}
+                          loading={adminLoading}
+                          emptyLabel="No reporting found for selected date."
+                          onView={openReportView}
+                          onEdit={handleEditReport}
+                          onDelete={handleDeleteReport}
+                          showEmployee={true}
+                        />
                       )}
                     </div>
                   </div>
                 ) : (
                   <div
-                    className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${
-                      collapsed
-                        ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none"
-                        : "mt-4 max-h-[4000px] opacity-100 translate-y-0"
-                    }`}
+                    className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${collapsed
+                      ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none"
+                      : "mt-4 max-h-[4000px] opacity-100 translate-y-0"
+                      }`}
                   >
                     {userReportsLoading && (
                       <div className="flex items-center justify-center py-4">
@@ -1369,41 +1285,14 @@ function OverviewContent() {
                       </div>
                     )}
                     {!userReportsLoading && userReports.length > 0 && (
-                      <div className="space-y-3">
-                        {userReports.map((report) => (
-                          <div key={report.id} className="rbac-card p-4 sm:p-5">
-                            <div className="flex flex-wrap items-start justify-between gap-3">
-                              <div>
-                                <p className="text-xs uppercase tracking-[0.2em] ">
-                                  {formatToDDMMYYYY(report.reportDate)}
-                                </p>
-                                <p className="font-semibold">
-                                  {report.projectName || "-"}
-                                </p>
-                                <p className="text-sm text-slate-500">
-                                  {report.projectCity || "-"}
-                                </p>
-                              </div>
-                              <button
-                                className="rbac-link"
-                                type="button"
-                                onClick={() => openReportView(report)}
-                              >
-                                <FaEye size={15} />
-                              </button>
-                            </div>
-
-                            <div className="mt-3 grid gap-2 text-sm theme-text-muted">
-                              <p>
-                                <span className="theme-text">
-                                  Reporting Category:
-                                </span>{" "}
-                                {report.categoryName || "-"}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      <ReportingCardList
+                        rows={userReports}
+                        loading={userReportsLoading}
+                        emptyLabel="No reporting found for today."
+                        onView={openReportView}
+                        onEdit={handleEditReport}
+                        onDelete={handleDeleteReport}
+                      />
                     )}
                   </div>
                 )}
@@ -1425,8 +1314,8 @@ function OverviewContent() {
                   {balanceLoading
                     ? "Loading..."
                     : currentBalance === null
-                    ? "—"
-                    : formatAmount(currentBalance)}
+                      ? "0"
+                      : formatAmount(currentBalance)}
                 </p>
               </div>
               <div className="mt-4 flex gap-3">
@@ -1520,137 +1409,21 @@ function OverviewContent() {
       )}
 
       {reportViewOpen && (
-        <div className="theme-modal-overlay fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="theme-modal-surface w-full max-w-4xl rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-auto">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-semibold theme-text">
-                  Report details
-                </h2>
-              </div>
-              <button type="button" onClick={closeReportView}>
-                <IoIosClose size={30} />
-              </button>
-            </div>
-
-            {reportViewLoading && (
-              <div className="flex items-center justify-center py-4">
-                <FaSpinner className="animate-spin mr-2" size={16} />
-              </div>
-            )}
-
-            {!reportViewLoading && reportViewData && (
-              <div className="mt-4 grid gap-3">
-                <p className="text-xs uppercase tracking-[0.2em]">
-                  {formatToDDMMYYYY(reportViewData.reportDate)}
-                </p>
-                <p className="text-base font-semibold">
-                  {reportViewData.projectName}
-                </p>
-                <p className="text-sm">{reportViewData.createdByName || "-"}</p>
-
-                <p className="text-sm">{reportViewData.categoryName || "-"}</p>
-                <p className="text-sm whitespace-pre-wrap">
-                  {reportViewData.description}
-                </p>
-
-                <div>
-                  {reportViewData.imageUrls?.length > 0 && (
-                    <>
-                      <p className="text-sm font-semibold text-slate-800">
-                        Images
-                      </p>
-                      <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        {reportViewData.imageUrls.map((url, index) => (
-                          <div
-                            key={url}
-                            className="rounded-xl border p-2"
-                            style={{ borderColor: "var(--theme-border)" }}
-                          >
-                            <button
-                              type="button"
-                              className="block w-full text-left"
-                              onClick={() => openReportImage(index)}
-                            >
-                              <Image
-                                src={url}
-                                alt={`Report image ${index + 1}`}
-                                width={640}
-                                height={320}
-                                unoptimized
-                                className="h-40 w-full rounded-lg object-cover transition-transform duration-200 hover:scale-[1.01]"
-                              />
-                            </button>
-                            <a
-                              className="rbac-link mt-2 inline-block"
-                              href={url}
-                              download
-                            >
-                              <MdOutlineFileDownload size={25} />
-                            </a>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                <div>
-                  {(reportViewData.videoUrls &&
-                  reportViewData.videoUrls.length > 0
-                    ? reportViewData.videoUrls
-                    : reportViewData.videoUrl
-                    ? [reportViewData.videoUrl]
-                    : []
-                  ).length > 0 && (
-                    <>
-                      <p className="text-sm font-semibold text-slate-800">
-                        Video
-                      </p>
-                      <div
-                        className="mt-2 rounded-xl border p-3"
-                        style={{ borderColor: "var(--theme-border)" }}
-                      >
-                        <div className="grid gap-3">
-                          {reportVideoUrls.map((url, index) => (
-                            <div key={url}>
-                              <button
-                                type="button"
-                                className="group relative block w-full overflow-hidden rounded-lg theme-surface-2"
-                                onClick={() => openReportVideo(index)}
-                                aria-label={`Open video ${index + 1}`}
-                              >
-                                <video
-                                  className="h-48 w-full object-cover"
-                                  src={url}
-                                  muted
-                                  playsInline
-                                  preload="metadata"
-                                />
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 transition group-hover:bg-black/30">
-                                  <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-slate-900 shadow-lg">
-                                    <FaPlay className="ml-1" size={18} />
-                                  </span>
-                                </div>
-                              </button>
-                              <a
-                                className="rbac-link mt-2 inline-block"
-                                href={url}
-                                download
-                              >
-                                <MdOutlineFileDownload size={25} />
-                              </a>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <ReportDetailsDialog
+          open={reportViewOpen}
+          loading={reportViewLoading}
+          report={reportViewData}
+          showEmployee={true}
+          viewImageUrls={reportViewData?.imageUrls ?? []}
+          viewVideoUrls={reportViewData?.videoUrls?.length
+            ? reportViewData.videoUrls
+            : reportViewData?.videoUrl
+              ? [reportViewData.videoUrl]
+              : []}
+          onClose={closeReportView}
+          onOpenImage={openReportImage}
+          onOpenVideo={openReportVideo}
+        />
       )}
 
       <Dialog
@@ -1692,9 +1465,8 @@ function OverviewContent() {
                 {selectedReportImage && (
                   <Image
                     src={selectedReportImage}
-                    alt={`Report image ${
-                      reportImageIndex !== null ? reportImageIndex + 1 : 1
-                    }`}
+                    alt={`Report image ${reportImageIndex !== null ? reportImageIndex + 1 : 1
+                      }`}
                     width={1400}
                     height={900}
                     unoptimized

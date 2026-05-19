@@ -3,14 +3,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { flexRender, useReactTable } from "@tanstack/react-table";
 import { ColumnDef, getCoreRowModel } from "@tanstack/table-core";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { formatToDDMMYYYY } from "@/lib/dateUtils";
 import useDebounce from "@/app/hooks/useDebounce";
 import DashboardShell, {
   useDashboardContext,
 } from "../_components/DashboardShell";
+import { TaskTableCard } from "../_components/TaskTableCard";
+import AppliedFilterSummary from "../../components/AppliedFilterSummary";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import CustomDatePicker from "../../components/CustomDatePicker";
+import ListingFilterDialog from "../../components/ListingFilterDialog";
 import { toast } from "react-toastify";
 import {
   FaChevronLeft,
@@ -18,6 +21,7 @@ import {
   FaEdit,
   FaTrash,
   FaSpinner,
+  FaFilter,
 } from "react-icons/fa";
 import Link from "next/link";
 
@@ -80,6 +84,7 @@ const renderProjectName = (name?: string | null, city?: string | null) => (
 );
 
 function TodoListContent() {
+  const router = useRouter();
   const { isAdmin } = useDashboardContext();
   const searchParams = useSearchParams();
   const taskTypeFromQuery = (() => {
@@ -87,7 +92,7 @@ function TodoListContent() {
     if (value === "PROJECT" || value === "OFFICE" || value === "SERVICE") {
       return value;
     }
-    return "";
+    return "PROJECT";
   })();
   const [todos, setTodos] = useState<TodoRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -103,6 +108,15 @@ function TodoListContent() {
   const [toDate, setToDate] = useState("");
   const [assigneeFilter, setAssigneeFilter] = useState("");
   const [assignees, setAssignees] = useState<UserOption[]>([]);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftQuery, setDraftQuery] = useState("");
+  const [draftStatusFilter, setDraftStatusFilter] = useState("");
+  const [draftTaskTypeFilter, setDraftTaskTypeFilter] =
+    useState(taskTypeFromQuery);
+  const [draftCategoryFilter, setDraftCategoryFilter] = useState("");
+  const [draftFromDate, setDraftFromDate] = useState("");
+  const [draftToDate, setDraftToDate] = useState("");
+  const [draftAssigneeFilter, setDraftAssigneeFilter] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<TodoRow | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -111,6 +125,86 @@ function TodoListContent() {
     setTaskTypeFilter(taskTypeFromQuery);
     setPageIndex(0);
   }, [taskTypeFromQuery]);
+
+  const activeFilterCount = [
+    query.trim(),
+    statusFilter,
+    categoryFilter.trim(),
+    fromDate,
+    toDate,
+    assigneeFilter,
+  ].filter(Boolean).length;
+
+  const openFilters = useCallback(() => {
+    setDraftQuery(query);
+    setDraftStatusFilter(statusFilter);
+    setDraftTaskTypeFilter(taskTypeFilter);
+    setDraftCategoryFilter(categoryFilter);
+    setDraftFromDate(fromDate);
+    setDraftToDate(toDate);
+    setDraftAssigneeFilter(assigneeFilter);
+    setFilterOpen(true);
+  }, [assigneeFilter, categoryFilter, fromDate, query, statusFilter, taskTypeFilter, toDate]);
+
+  const closeFilters = useCallback(() => {
+    setFilterOpen(false);
+  }, []);
+
+  const applyFilters = useCallback(() => {
+    setPageIndex(0);
+    setQuery(draftQuery);
+    setStatusFilter(draftStatusFilter);
+    setTaskTypeFilter(draftTaskTypeFilter);
+    setCategoryFilter(draftCategoryFilter);
+    setFromDate(draftFromDate);
+    setToDate(draftToDate);
+    setAssigneeFilter(draftAssigneeFilter);
+    setFilterOpen(false);
+  }, [
+    draftAssigneeFilter,
+    draftCategoryFilter,
+    draftFromDate,
+    draftQuery,
+    draftStatusFilter,
+    draftTaskTypeFilter,
+    draftToDate,
+  ]);
+
+  const statusLabel = (value: string) => {
+    switch (value) {
+      case "TODO":
+        return "To do";
+      case "IN_PROGRESS":
+        return "In progress";
+      case "ON_HOLD":
+        return "On hold";
+      case "COMPLETED":
+        return "Completed";
+      default:
+        return value.replaceAll("_", " ");
+    }
+  };
+
+  const selectedAssignee = assigneeFilter
+    ? assignees.find((user) => user.id === assigneeFilter)
+    : null;
+  const selectedAssigneeLabel = selectedAssignee
+    ? `${selectedAssignee.firstName} ${selectedAssignee.lastName}`
+    : assigneeFilter;
+
+  const appliedFilters = [
+    query.trim(),
+    statusFilter ? statusLabel(statusFilter) : "",
+    categoryFilter.trim(),
+    selectedAssigneeLabel || "",
+    fromDate,
+    toDate,
+  ].filter(Boolean);
+
+  const getTaskTypeButtonClass = (type: TodoRow["type"]) =>
+    taskTypeFilter === type
+      ? "rbac-button"
+      : "rbac-button rbac-button-secondary";
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTarget, setModalTarget] = useState<TodoRow | null>(null);
@@ -188,6 +282,13 @@ function TodoListContent() {
       setPageIndex(Math.max(pageCount - 1, 0));
     }
   }, [pageCount, pageIndex]);
+1
+  const handleEdit = useCallback(
+    (row: TodoRow) => {
+      router.push(`/dashboard/task-management/${row.id}`);
+    },
+    [router],
+  );
 
   const handleDeleteTodo = useCallback(
     (row: TodoRow) => {
@@ -379,11 +480,13 @@ function TodoListContent() {
         id: "action",
         cell: ({ row }) => (
           <div className="rbac-inline-actions flex gap-4">
-            <Link href={`/dashboard/task-management/${row.original.id}`}>
-              <button className="rbac-link" type="button">
-                <FaEdit />
-              </button>
-            </Link>
+            <button
+              className="rbac-link"
+              type="button"
+              onClick={() => handleEdit(row.original)}
+            >
+              <FaEdit />
+            </button>
             <button
               className="rbac-link danger"
               type="button"
@@ -477,16 +580,15 @@ function TodoListContent() {
             <div className="rbac-inline-actions flex gap-4">
               {canManage && (
                 <>
-                  <Link href={`/dashboard/task-management/${row.original.id}`}>
-                    <button
-                      className="rbac-link"
-                      type="button"
-                      disabled={!canManage}
-                      title={"Edit"}
-                    >
-                      <FaEdit />
-                    </button>
-                  </Link>
+                  <button
+                    className="rbac-link"
+                    type="button"
+                    onClick={() => handleEdit(row.original)}
+                    disabled={!canManage}
+                    title={"Edit"}
+                  >
+                    <FaEdit />
+                  </button>
                   <button
                     className="rbac-link danger"
                     type="button"
@@ -530,114 +632,75 @@ function TodoListContent() {
 
   const isModalSaving = savingId === modalTarget?.id;
 
-  const statusLabel = (value: string) => {
-    switch (value) {
-      case "TODO":
-        return "To Do";
-      case "IN_PROGRESS":
-        return "In Progress";
-      case "ON_HOLD":
-        return "On Hold";
-      case "COMPLETED":
-        return "Completed";
-      default:
-        return value.replaceAll("_", " ");
-    }
-  };
-
   return (
     <>
       <section className="rbac-section rbac-container">
         <div className="rbac-card">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="rbac-title-lg">Task Management</h3>
-            <Link href="/dashboard/task-management/new">
-              <button className="rbac-button" type="button">
-                Add Task
+            <div className="flex items-center gap-2">
+              <button
+                className="rbac-button rbac-button-secondary theme-button-secondary inline-flex items-center gap-2"
+                type="button"
+                onClick={openFilters}
+              >
+                <FaFilter /> <span>Filters</span>
               </button>
-            </Link>
+              <Link href="/dashboard/task-management/new">
+                <button className="rbac-button" type="button">
+                  Add Task
+                </button>
+              </Link>
+            </div>
           </div>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <input
-              className="rbac-input-filter"
-              type="text"
-              placeholder="Search..."
-              value={query}
-              onChange={(event) => {
-                setPageIndex(0);
-                setQuery(event.target.value);
-              }}
-            />
-            <select
-              className="rbac-input-filter rbac-select"
-              value={statusFilter}
-              onChange={(event) => {
-                setPageIndex(0);
-                setStatusFilter(event.target.value);
-              }}
-            >
-              <option value="">All status</option>
-              <option value="TODO">To do</option>
-              <option value="IN_PROGRESS">In progress</option>
-              <option value="ON_HOLD">On hold</option>
-              <option value="COMPLETED">Completed</option>
-            </select>
-            <select
-              className="rbac-input-filter rbac-select"
-              value={taskTypeFilter}
-              onChange={(event) => {
-                setPageIndex(0);
-                setTaskTypeFilter(event.target.value);
-              }}
-            >
-              <option value="">All task types</option>
-              <option value="PROJECT">Project Work</option>
-              <option value="OFFICE">Office Work</option>
-              <option value="SERVICE">Service Work</option>
-            </select>
-            {isAdmin && (
-              <select
-                className="rbac-input-filter rbac-select"
-                value={assigneeFilter}
-                onChange={(event) => {
+
+          <AppliedFilterSummary
+            items={appliedFilters}
+            onClear={() => {
+              setPageIndex(0);
+              setQuery("");
+              setStatusFilter("");
+              setTaskTypeFilter("PROJECT");
+              setCategoryFilter("");
+              setAssigneeFilter("");
+              setFromDate("");
+              setToDate("");
+              setFilterOpen(false);
+            }}
+          />
+
+            <div className="flex items-center gap-2 mt-2">
+              <button
+                type="button"
+                className={getTaskTypeButtonClass("PROJECT")}
+                onClick={() => {
                   setPageIndex(0);
-                  setAssigneeFilter(event.target.value);
+                  setTaskTypeFilter("PROJECT");
                 }}
               >
-                <option value="">All assignees</option>
-                {assignees.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.firstName} {user.lastName}
-                  </option>
-                ))}
-              </select>
-            )}
-            <CustomDatePicker
-              value={fromDate}
-              onChange={(value) => {
-                setPageIndex(0);
-                setFromDate(value);
-              }}
-              placeholder="date"
-              className="rbac-input-filter"
-            />
-            <button
-              className="rbac-button rbac-button-secondary"
-              type="button"
-              onClick={() => {
-                setPageIndex(0);
-                setQuery("");
-                setStatusFilter("");
-                setTaskTypeFilter("");
-                setCategoryFilter("");
-                setAssigneeFilter("");
-                setFromDate("");
-                setToDate("");
-              }}
-            >
-              Clear filters
-            </button>
-          </div>
+                Project
+              </button>
+              <button
+                type="button"
+                className={getTaskTypeButtonClass("OFFICE")}
+                onClick={() => {
+                  setPageIndex(0);
+                  setTaskTypeFilter("OFFICE");
+                }}
+              >
+                Office
+              </button>
+              <button
+                type="button"
+                className={getTaskTypeButtonClass("SERVICE")}
+                onClick={() => {
+                  setPageIndex(0);
+                  setTaskTypeFilter("SERVICE");
+                }}
+              >
+                Service
+              </button>
+            </div>
 
           <div className="mt-4">
             <div className="hidden md:block overflow-x-auto">
@@ -708,88 +771,49 @@ function TodoListContent() {
                 </tbody>
               </table>
             </div>
-            <div className="md:hidden space-y-3">
-              {loading && (
-                <div className="flex items-center justify-center py-4">
-                  <FaSpinner className="animate-spin mr-2" size={16} />
-                </div>
-              )}
-              {!loading && todos.length === 0 && (
-                <div className="rbac-card py-4 text-sm text-slate-500">
-                  No tasks found.
-                </div>
-              )}
-              {!loading &&
-                todos.map((todo) => (
-                  <div key={todo.id} className="rbac-card p-4">
-                    <div className="mb-2 flex items-center justify-between">
-                      <div className="mb-1">
-                        <h4 className="text-sm font-semibold">
-                          {todo.projectName || "-"}
-                        </h4>
-                        <p className="text-xs text-slate-500">
-                          {todo.projectCity || "-"}
-                        </p>
-                      </div>
-                      {(isAdmin || todo.canManage) && (
-                        <div className="flex gap-2">
-                          <Link href={`/dashboard/task-management/${todo.id}`}>
-                            <button
-                              className="rbac-link"
-                              type="button"
-                              title="Edit"
-                            >
-                              <FaEdit />
-                            </button>
-                          </Link>
-                          <button
-                            className="rbac-link danger"
-                            type="button"
-                            onClick={() => handleDeleteTodo(todo)}
-                            title="Delete"
-                          >
-                            <FaTrash />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    <div className="grid gap-1 text-sm">
-                      <p>
-                        <strong>Description:</strong>{" "}
-                        {todo.description || "No description"}
-                      </p>
-                      <p>
-                        <strong>Date:</strong>{" "}
-                        {todo.startDate
-                          ? formatToDDMMYYYY(todo.startDate)
-                          : "-"}
-                      </p>
-                      <p>
-                        <strong>Status:</strong> {statusLabel(todo.status)}
-                      </p>
-                      <p>
-                        <strong>Comments:</strong> {todo.comments || "-"}
-                      </p>
-                      <p>
-                        <strong>Assignee:</strong>{" "}
-                        {todo.assignee
-                          ? `${todo.assignee.firstName} ${todo.assignee.lastName}`
-                          : "Unassigned"}
-                      </p>
-                    </div>
-                    {!isAdmin && (
-                      <div className="mt-2 flex gap-2  justify-end">
+            <div className="md:hidden">
+              <TaskTableCard
+                title="Tasks"
+                rows={todos}
+                loading={loading}
+                emptyLabel="No tasks found."
+                showHeader={false}
+                collapsible={false}
+                renderActions={(todo) => (
+                  <>
+                    {(isAdmin || todo.canManage) && (
+                      <div className="flex justify-end">
                         <button
-                          className="rbac-button rbac-button-secondary"
+                          className="rbac-link"
                           type="button"
-                          onClick={() => openModal(todo)}
+                          title="Edit"
+                          onClick={() => handleEdit(todo)}
                         >
-                          Update
+                          <FaEdit size={18} />
+                        </button>
+                        <button
+                          style={{ padding: "2px" }}
+                          className="rbac-link danger"
+                          type="button"
+                          onClick={() => handleDeleteTodo(todo)}
+                          title="Delete"
+                        >
+                          <FaTrash size={18} />
                         </button>
                       </div>
                     )}
-                  </div>
-                ))}
+                    {!isAdmin && (
+                      <button
+                        className="rbac-button rbac-button-secondary"
+                        type="button"
+                        onClick={() => openModal(todo)}
+                      >
+                        Update
+                      </button>
+                    )}
+                  </>
+                )}
+              />
             </div>
           </div>
 
@@ -919,6 +943,66 @@ function TodoListContent() {
           setConfirmTarget(null);
         }}
       />
+      <ListingFilterDialog
+        open={filterOpen}
+        title="Task Filters"
+        description="Update the filters and apply them when you're ready."
+        onClose={closeFilters}
+        onApply={applyFilters}
+        activeCount={activeFilterCount}
+      >
+        <input
+          className="rbac-input-filter"
+          type="text"
+          placeholder="Search..."
+          value={draftQuery}
+          onChange={(event) => setDraftQuery(event.target.value)}
+        />
+        <select
+          className="rbac-input-filter rbac-select"
+          value={draftStatusFilter}
+          onChange={(event) => setDraftStatusFilter(event.target.value)}
+        >
+          <option value="">All status</option>
+          <option value="TODO">To do</option>
+          <option value="IN_PROGRESS">In progress</option>
+          <option value="ON_HOLD">On hold</option>
+          <option value="COMPLETED">Completed</option>
+        </select>
+        <input
+          className="rbac-input-filter"
+          type="text"
+          placeholder="Category"
+          value={draftCategoryFilter}
+          onChange={(event) => setDraftCategoryFilter(event.target.value)}
+        />
+        {isAdmin && (
+          <select
+            className="rbac-input-filter rbac-select"
+            value={draftAssigneeFilter}
+            onChange={(event) => setDraftAssigneeFilter(event.target.value)}
+          >
+            <option value="">All assignees</option>
+            {assignees.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.firstName} {user.lastName}
+              </option>
+            ))}
+          </select>
+        )}
+        <CustomDatePicker
+          value={draftFromDate}
+          onChange={setDraftFromDate}
+          placeholder="From date"
+          className="rbac-input-filter"
+        />
+        <CustomDatePicker
+          value={draftToDate}
+          onChange={setDraftToDate}
+          placeholder="To date"
+          className="rbac-input-filter"
+        />
+      </ListingFilterDialog>
     </>
   );
 }
