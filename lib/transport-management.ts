@@ -88,6 +88,9 @@ export const getTransportTypeLabel = (value?: string | null) =>
 export const getTransportTypeShortLabel = (value?: string | null) =>
   TRANSPORT_TYPES.find((item) => item.key === value)?.shortLabel ?? value ?? "-";
 
+export const getTransportReferenceLabel = (transportType: TransportType) =>
+  transportType === "COURIER_DAILY" ? "Courier Number" : "DC Number";
+
 export const getDriverWages = (totalKm: number) => {
   if (!Number.isFinite(totalKm) || totalKm <= 0) return 0;
   if (totalKm <= 100) return 850;
@@ -280,4 +283,3 @@ export const parseTransportDate = (value: unknown) => {
 
 export const isTransportType = (value: string): value is TransportType =>
   TRANSPORT_TYPES.some((item) => item.key === value);
-

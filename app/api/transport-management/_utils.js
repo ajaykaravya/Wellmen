@@ -1,7 +1,6 @@
 import { Prisma } from "@prisma/client";
 import {
   CNG_STATUS_OPTIONS,
-  COURIER_STATUS_OPTIONS,
   FLOOR_OPTIONS,
   LOAD_TYPE_OPTIONS,
   LOADING_STATUS_OPTIONS,
@@ -60,8 +59,8 @@ const ensureValidTransportType = (value) => {
 const buildBaseRecord = ({ transportType, date, body }) => ({
   transportType,
   date,
-  dcNumber: textOrNull(body.dcNumber),
-  tripDescription: textOrNull(body.tripDescription),
+  referenceNumber: textOrNull(body.referenceNumber),
+  description: textOrNull(body.description),
   locationType: textOrNull(body.locationType),
   city: textOrNull(body.city),
   floor: textOrNull(body.floor),
@@ -73,8 +72,6 @@ const buildBaseRecord = ({ transportType, date, body }) => ({
   otherExpenses: money(parseDecimalValue(body.otherExpenses) ?? 0),
   floorRent: money(0),
   returnMaterialFreight: money(0),
-  courierNumber: textOrNull(body.courierNumber),
-  description: textOrNull(body.description),
   fromLocation: textOrNull(body.fromLocation),
   toLocation: textOrNull(body.toLocation),
   mobileNumber: textOrNull(body.mobileNumber),
@@ -82,7 +79,6 @@ const buildBaseRecord = ({ transportType, date, body }) => ({
   totalWeight: money(parseDecimalValue(body.totalWeight) ?? 0),
   weightCharge: money(0),
   coverCharge: money(0),
-  materialDescription: textOrNull(body.materialDescription),
   vehicleNumber: textOrNull(body.vehicleNumber),
   baseAmount: money(parseDecimalValue(body.baseAmount) ?? 0),
   gstAmount: money(0),
@@ -107,11 +103,7 @@ const validateChoice = (value, options, label) => {
 };
 
 const validateStatusByType = (transportType, status) => {
-  if (!status) return null;
-
   switch (transportType) {
-    case "COURIER_DAILY":
-      return validateChoice(status, COURIER_STATUS_OPTIONS, "Status");
     case "PORTER_DAILY":
       return validateChoice(status, PORTER_STATUS_OPTIONS, "Status");
     case "CNG_RICKSHAW":
@@ -119,7 +111,17 @@ const validateStatusByType = (transportType, status) => {
     case "LOADING_VEHICLE":
       return validateChoice(status, LOADING_STATUS_OPTIONS, "Status");
     default:
-      return textOrNull(status);
+      return null;
+  }
+};
+
+const validatePaymentModeByType = (transportType, paymentMode) => {
+  switch (transportType) {
+    case "CNG_RICKSHAW":
+    case "LOADING_VEHICLE":
+      return validateChoice(paymentMode, PAYMENT_MODE_OPTIONS, "Payment mode");
+    default:
+      return null;
   }
 };
 
@@ -237,10 +239,9 @@ export const buildTransportRecord = (body) => {
   const date = parseRequiredDate(body.date);
   let record = buildBaseRecord({ transportType, date, body });
   record.status = validateStatusByType(transportType, record.status);
-  record.paymentMode = validateChoice(
+  record.paymentMode = validatePaymentModeByType(
+    transportType,
     record.paymentMode,
-    PAYMENT_MODE_OPTIONS,
-    "Payment mode",
   );
   record.locationType = validateChoice(
     record.locationType,
@@ -252,27 +253,27 @@ export const buildTransportRecord = (body) => {
 
   switch (transportType) {
     case "BOLERO_DELIVERY": {
-      if (!record.tripDescription) {
-        throw new Error("Trip description is required.");
+      if (!record.city) {
+        throw new Error("City is required.");
       }
       if (!record.locationType) {
         throw new Error("Location type is required.");
       }
-      if (!record.city) {
-        throw new Error("City is required.");
+      if (!record.fromLocation || !record.toLocation) {
+        throw new Error("From and to locations are required.");
       }
       record = buildBoleroRecord(transportType, body, record, "floorRent");
       break;
     }
     case "BOLERO_RETURN_DC": {
-      if (!record.tripDescription) {
-        throw new Error("Trip description is required.");
+      if (!record.city) {
+        throw new Error("City is required.");
       }
       if (!record.locationType) {
         throw new Error("Location type is required.");
       }
-      if (!record.city) {
-        throw new Error("City is required.");
+      if (!record.fromLocation || !record.toLocation) {
+        throw new Error("From and to locations are required.");
       }
       record = buildBoleroRecord(
         transportType,
@@ -283,37 +284,40 @@ export const buildTransportRecord = (body) => {
       break;
     }
     case "COURIER_DAILY": {
-      if (!record.courierNumber) {
-        throw new Error("Courier number is required.");
-      }
-      if (!record.description) {
-        throw new Error("Description is required.");
+      if (!record.city) {
+        throw new Error("City is required.");
       }
       if (!record.fromLocation || !record.toLocation) {
         throw new Error("From and to locations are required.");
-      }
-      if (!record.city) {
-        throw new Error("City is required.");
       }
       record = buildCourierRecord(record, body);
       break;
     }
     case "PORTER_DAILY": {
-      if (!record.materialDescription) {
-        throw new Error("Material description is required.");
+      if (!record.city) {
+        throw new Error("City is required.");
+      }
+      if (!record.mobileNumber) {
+        throw new Error("Mobile number is required.");
+      }
+      if (!record.vehicleNumber) {
+        throw new Error("Vehicle number is required.");
       }
       if (!record.fromLocation || !record.toLocation) {
         throw new Error("From and to locations are required.");
-      }
-      if (!record.city) {
-        throw new Error("City is required.");
       }
       record = buildPorterRecord(record, body);
       break;
     }
     case "CNG_RICKSHAW": {
-      if (!record.dcNumber) {
-        throw new Error("DC number is required.");
+      if (!record.city) {
+        throw new Error("City/route is required.");
+      }
+      if (!record.mobileNumber) {
+        throw new Error("Mobile number is required.");
+      }
+      if (!record.vehicleNumber) {
+        throw new Error("Vehicle number is required.");
       }
       if (!record.tripType) {
         throw new Error("Trip type is required.");
@@ -321,24 +325,24 @@ export const buildTransportRecord = (body) => {
       if (!record.fromLocation || !record.toLocation) {
         throw new Error("From and to locations are required.");
       }
-      if (!record.city) {
-        throw new Error("City/route is required.");
-      }
       record = buildCngRecord(record, body);
       break;
     }
     case "LOADING_VEHICLE": {
+      if (!record.city) {
+        throw new Error("City/route is required.");
+      }
+      if (!record.mobileNumber) {
+        throw new Error("Mobile number is required.");
+      }
+      if (!record.vehicleNumber) {
+        throw new Error("Vehicle number is required.");
+      }
       if (!record.vehicleType) {
         throw new Error("Vehicle type is required.");
       }
       if (!record.fromLocation || !record.toLocation) {
         throw new Error("From and to locations are required.");
-      }
-      if (!record.city) {
-        throw new Error("City/route is required.");
-      }
-      if (!record.materialDescription) {
-        throw new Error("Material description is required.");
       }
       record = buildLoadingRecord(record, body);
       break;
@@ -378,8 +382,8 @@ export const serializeTransportLog = (row) => {
       TRANSPORT_TYPES.find((item) => item.key === row.transportType)?.label ||
       row.transportType,
     date: row.date,
-    dcNumber: row.dcNumber || null,
-    tripDescription: row.tripDescription || null,
+    referenceNumber: row.referenceNumber || null,
+    description: row.description || null,
     locationType: row.locationType || null,
     city: row.city || null,
     floor: row.floor || null,
@@ -391,8 +395,6 @@ export const serializeTransportLog = (row) => {
     otherExpenses: Number(row.otherExpenses || 0),
     floorRent: Number(row.floorRent || 0),
     returnMaterialFreight: Number(row.returnMaterialFreight || 0),
-    courierNumber: row.courierNumber || null,
-    description: row.description || null,
     fromLocation: row.fromLocation || null,
     toLocation: row.toLocation || null,
     mobileNumber: row.mobileNumber || null,
@@ -400,7 +402,6 @@ export const serializeTransportLog = (row) => {
     totalWeight: Number(row.totalWeight || 0),
     weightCharge: Number(row.weightCharge || 0),
     coverCharge: Number(row.coverCharge || 0),
-    materialDescription: row.materialDescription || null,
     vehicleNumber: row.vehicleNumber || null,
     baseAmount: Number(row.baseAmount || 0),
     gstAmount: Number(row.gstAmount || 0),
@@ -424,18 +425,15 @@ export const serializeTransportLog = (row) => {
 };
 
 export const transportSearchFields = [
-  "dcNumber",
-  "tripDescription",
+  "referenceNumber",
+  "description",
   "locationType",
   "city",
   "floor",
   "loadType",
-  "courierNumber",
-  "description",
   "fromLocation",
   "toLocation",
   "mobileNumber",
-  "materialDescription",
   "vehicleNumber",
   "tripType",
   "vehicleType",

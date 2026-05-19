@@ -161,8 +161,8 @@ model TransportLog {
   serialNo              Int
   transportType         TransportType
   date                  DateTime
-  dcNumber              String?
-  tripDescription       String?
+  referenceNumber       String?
+  description           String?
   locationType          String?
   city                  String?
   floor                 String?
@@ -174,8 +174,6 @@ model TransportLog {
   otherExpenses         Decimal       @default(0) @db.Decimal(14, 2)
   floorRent             Decimal       @default(0) @db.Decimal(14, 2)
   returnMaterialFreight Decimal       @default(0) @db.Decimal(14, 2)
-  courierNumber         String?
-  description           String?
   fromLocation          String?
   toLocation            String?
   mobileNumber          String?
@@ -183,7 +181,6 @@ model TransportLog {
   totalWeight           Decimal       @default(0) @db.Decimal(14, 2)
   weightCharge          Decimal       @default(0) @db.Decimal(14, 2)
   coverCharge           Decimal       @default(0) @db.Decimal(14, 2)
-  materialDescription   String?
   vehicleNumber         String?
   baseAmount            Decimal       @default(0) @db.Decimal(14, 2)
   gstAmount             Decimal       @default(0) @db.Decimal(14, 2)
