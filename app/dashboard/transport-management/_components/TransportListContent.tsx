@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { flexRender, useReactTable } from "@tanstack/react-table";
 import { ColumnDef, getCoreRowModel } from "@tanstack/table-core";
+import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import {
   FaChevronLeft,
@@ -332,6 +333,7 @@ const getTypeDetails = (row: TransportRow): DetailSection => {
 };
 
 function TransportListView() {
+  const router = useRouter();
   const [rows, setRows] = useState<TransportRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
@@ -466,6 +468,10 @@ function TransportListView() {
     setConfirmTarget(row);
     setConfirmOpen(true);
   }, []);
+
+  const handleEdit = useCallback((row: TransportRow) => {
+    router.push(`/dashboard/transport-management/${row.id}`);
+  }, [router]);
 
   const getTransportTypeButtonClass = (type: TransportType) =>
     transportTypeFilter === type
@@ -618,30 +624,29 @@ function TransportListView() {
               onClick={() => handleView(row.original)}
               aria-label="View transport log"
             >
-              <FaEye size={18} />
+              <FaEye />
             </button>
-            <Link href={`/dashboard/transport-management/${row.original.id}`}>
-              <button
-                className="rbac-link"
-                type="button"
-                aria-label="Edit transport log"
-              >
-                <FaEdit size={18} />
-              </button>
-            </Link>
+            <button
+              className="rbac-link"
+              type="button"
+              onClick={() => handleEdit(row.original)}
+              aria-label="Edit transport log"
+            >
+              <FaEdit />
+            </button>
             <button
               className="rbac-link danger"
               type="button"
               onClick={() => handleDelete(row.original)}
               aria-label="Delete transport log"
             >
-              <FaTrash size={18} />
+              <FaTrash />
             </button>
           </div>
         ),
       },
     ],
-    [handleDelete, handleView],
+    [handleDelete, handleEdit, handleView],
   );
 
   const table = useReactTable({
@@ -786,9 +791,6 @@ function TransportListView() {
                       <div className="flex items-start justify-between gap-3">
                         <div className="space-y-2">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="inline-flex rounded-full bg-[#2596be] px-3 py-1 text-xs font-medium text-white">
-                              #{row.serialNo}
-                            </span>
                             <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
                               {getTransportTypeShortLabel(row.transportType)}
                             </span>
@@ -817,8 +819,9 @@ function TransportListView() {
                             )}
                           </div>
                         </div>
-                        <div className="flex items-start gap-2">
+                        <div className="flex justify-end">
                           <button
+                            style={{padding:"2px"}}
                             className="rbac-link"
                             type="button"
                             onClick={() => handleView(row)}
@@ -827,18 +830,16 @@ function TransportListView() {
                           >
                             <FaEye size={18} />
                           </button>
-                          <Link
-                            href={`/dashboard/transport-management/${row.id}`}
-                          >
-                            <button
-                              className="rbac-link"
-                              type="button"
-                              title="Edit"
-                            >
-                              <FaEdit size={18} />
-                            </button>
-                          </Link>
                           <button
+                            className="rbac-link"
+                            type="button"
+                            title="Edit"
+                            onClick={() => handleEdit(row)}
+                            >
+                            <FaEdit size={18} />
+                          </button>
+                          <button
+                            style={{padding:"2px"}}
                             className="rbac-link danger"
                             type="button"
                             title="Delete"
@@ -990,8 +991,8 @@ function TransportListView() {
 
       <Dialog open={viewOpen} onClose={closeView} className="relative z-50">
         <div className="fixed inset-0 bg-black/40" aria-hidden="true" />
-        <div className="fixed inset-0 overflow-y-auto px-4 py-6">
-          <div className="flex min-h-full items-center justify-center">
+        <div className="fixed inset-0 overflow-y-auto px-4 py-6 flex justify-center">
+          <div style={{width:"60%"}} className="flex min-h-full items-center justify-center">
             <DialogPanel className="theme-modal-surface w-full max-w-4xl rounded-2xl p-4 shadow-2xl sm:p-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -1019,7 +1020,7 @@ function TransportListView() {
               )}
 
               {!viewLoading && viewData && (
-                <div className="mt-5 space-y-4">
+                <div style={{overflowY:"auto" , height:"50vh"}} className="mt-5 space-y-4">
                   {[getCommonDetails(viewData), getTypeDetails(viewData)].map(
                     (section) => (
                       <div
