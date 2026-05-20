@@ -1,3 +1,4 @@
+import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import {
   CNG_STATUS_OPTIONS,
@@ -10,10 +11,10 @@ import {
   PORTER_STATUS_OPTIONS,
   TRIP_TYPE_OPTIONS,
   TRANSPORT_TYPES,
+  buildFloorRentConfigKey,
   getCngTripCharge,
-  getCourierCharges,
+  getCourierChargesWithConfigs,
   getDriverWages,
-  getFloorRent,
   getPorterCharges,
   isTransportType,
   parseDecimalValue,
@@ -140,7 +141,21 @@ const validateVehicleType = (transportType, vehicleType) => {
   );
 };
 
-const buildBoleroRecord = (transportType, body, record, rentField) => {
+const loadTransportConfigs = async (transportType, configTypes) =>
+  prisma.transportConfig.findMany({
+    where: {
+      transportType,
+      configType: { in: configTypes },
+    },
+    orderBy: [{ configType: "asc" }, { createdAt: "desc" }],
+  });
+
+const buildBoleroRecord = async (
+  transportType,
+  body,
+  record,
+  rentField,
+) => {
   const kmStart = parseInteger(body.kmStart);
   const kmEnd = parseInteger(body.kmEnd);
 
@@ -152,8 +167,23 @@ const buildBoleroRecord = (transportType, body, record, rentField) => {
   }
 
   const totalKm = kmEnd - kmStart;
-  const driverWages = getDriverWages(totalKm);
-  const rentAmount = getFloorRent(transportType, record.floor, record.loadType);
+  const configs = await loadTransportConfigs(transportType, [
+    "DRIVER_WAGE_SLAB",
+    "FLOOR_RENT",
+  ]);
+  const driverWages = getDriverWages(totalKm, configs, transportType);
+  let rentAmount = 0;
+
+  if (transportType === "BOLERO_DELIVERY" || transportType === "BOLERO_RETURN_DC") {
+    const configKey = buildFloorRentConfigKey(
+      record.floor,
+      record.loadType,
+    );
+    const config = configs.find(
+      (item) => item.configType === "FLOOR_RENT" && item.configKey === configKey,
+    );
+    rentAmount = Number(config?.rate || 0);
+  }
 
   return {
     ...record,
@@ -165,14 +195,17 @@ const buildBoleroRecord = (transportType, body, record, rentField) => {
   };
 };
 
-const buildCourierRecord = (record, body) => {
+const buildCourierRecord = async (record, body) => {
   const noOfCovers = parseInteger(body.noOfCovers);
   const totalWeight = parseDecimalValue(body.totalWeight);
   if (noOfCovers === null || totalWeight === null) {
     throw new Error("No. of covers and total weight are required.");
   }
-
-  const charges = getCourierCharges(totalWeight, noOfCovers);
+  const configs = await loadTransportConfigs(record.transportType, [
+    "COURIER_WEIGHT_RATE",
+    "COURIER_COVER_RATE",
+  ]);
+  const charges = getCourierChargesWithConfigs(totalWeight, noOfCovers, configs);
   return {
     ...record,
     noOfCovers,
@@ -195,7 +228,7 @@ const buildPorterRecord = (record, body) => {
   };
 };
 
-const buildCngRecord = (record, body) => {
+const buildCngRecord = async (record, body) => {
   const totalKm = parseInteger(body.totalKm);
   const tripType = validateTripType(record.transportType, record.tripType);
   if (totalKm === null) {
@@ -205,7 +238,10 @@ const buildCngRecord = (record, body) => {
     throw new Error("Trip type is required.");
   }
 
-  const tripCharge = getCngTripCharge(totalKm, tripType);
+  const configs = await loadTransportConfigs(record.transportType, [
+    "CNG_TRIP_SLAB",
+  ]);
+  const tripCharge = getCngTripCharge(totalKm, tripType, configs);
   return {
     ...record,
     tripType,
@@ -235,7 +271,7 @@ const buildLoadingRecord = (record, body) => {
   };
 };
 
-export const buildTransportRecord = (body) => {
+export const buildTransportRecord = async (body) => {
   const transportType = ensureValidTransportType(body.transportType);
   const date = parseRequiredDate(body.date);
   let record = buildBaseRecord({ transportType, date, body });
@@ -263,7 +299,7 @@ export const buildTransportRecord = (body) => {
       if (!record.fromLocation || !record.toLocation) {
         throw new Error("From and to locations are required.");
       }
-      record = buildBoleroRecord(transportType, body, record, "floorRent");
+      record = await buildBoleroRecord(transportType, body, record, "floorRent");
       break;
     }
     case "BOLERO_RETURN_DC": {
@@ -276,7 +312,7 @@ export const buildTransportRecord = (body) => {
       if (!record.fromLocation || !record.toLocation) {
         throw new Error("From and to locations are required.");
       }
-      record = buildBoleroRecord(
+      record = await buildBoleroRecord(
         transportType,
         body,
         record,
@@ -291,7 +327,7 @@ export const buildTransportRecord = (body) => {
       if (!record.fromLocation || !record.toLocation) {
         throw new Error("From and to locations are required.");
       }
-      record = buildCourierRecord(record, body);
+      record = await buildCourierRecord(record, body);
       break;
     }
     case "PORTER_DAILY": {
@@ -326,7 +362,7 @@ export const buildTransportRecord = (body) => {
       if (!record.fromLocation || !record.toLocation) {
         throw new Error("From and to locations are required.");
       }
-      record = buildCngRecord(record, body);
+      record = await buildCngRecord(record, body);
       break;
     }
     case "LOADING_VEHICLE": {

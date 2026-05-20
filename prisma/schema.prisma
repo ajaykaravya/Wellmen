@@ -206,6 +206,27 @@ model TransportLog {
   @@index([createdById])
 }
 
+model TransportConfig {
+  id           String              @id @default(uuid())
+  transportType TransportType
+  configType   TransportConfigType
+  configKey    String
+  configData   Json
+  floor        String?
+  loadType     String?
+  tripType     String?
+  minKm        Int?
+  maxKm        Int?
+  rate         Decimal             @default(0) @db.Decimal(14, 2)
+  isActive     Boolean             @default(true)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@unique([transportType, configType, configKey])
+  @@index([transportType, configType])
+  @@index([isActive])
+}
+
 model QueryManagement {
   id          String        @id @default(uuid())
   projectId   String
@@ -298,4 +319,12 @@ enum TransportType {
   PORTER_DAILY
   CNG_RICKSHAW
   LOADING_VEHICLE
+}
+
+enum TransportConfigType {
+  DRIVER_WAGE_SLAB
+  FLOOR_RENT
+  COURIER_WEIGHT_RATE
+  COURIER_COVER_RATE
+  CNG_TRIP_SLAB
 }

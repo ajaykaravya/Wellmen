@@ -17,8 +17,12 @@ import {
   PAYMENT_MODE_OPTIONS,
   TRIP_TYPE_OPTIONS,
   TRANSPORT_TYPES,
+  findCngTripConfig,
+  findCourierRateConfig,
+  findDriverWageConfig,
+  findFloorRentConfig,
   getCngTripCharge,
-  getCourierCharges,
+  getCourierChargesWithConfigs,
   getDriverWages,
   getFloorRent,
   getLoadingVehicleTotal,
@@ -29,6 +33,7 @@ import {
   PORTER_STATUS_OPTIONS,
   COURIER_STATUS_OPTIONS,
 } from "@/lib/transport-management";
+import type { FloorRentConfig } from "@/lib/transport-management";
 import { formatToDDMMYYYY, getTodayInputDate } from "@/lib/dateUtils";
 
 type TransportType = (typeof TRANSPORT_TYPES)[number]["key"];
@@ -114,15 +119,19 @@ export default function TransportFormContent({
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialType = useMemo(() => {
-    const raw = (searchParams.get("type") || "").toUpperCase();
+    const raw = (searchParams?.get("type") || "").toUpperCase();
     return TRANSPORT_TYPES.some((option) => option.key === raw)
       ? (raw as TransportType)
       : "BOLERO_DELIVERY";
   }, [searchParams]);
   const [form, setForm] = useState<TransportFormState>(emptyForm(initialType));
   const [loading, setLoading] = useState(true);
+  const [transportConfigs, setTransportConfigs] = useState<FloorRentConfig[]>(
+    [],
+  );
+  const [transportConfigLoaded, setTransportConfigLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [, setNote] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
 
   useEffect(() => {
@@ -183,6 +192,61 @@ export default function TransportFormContent({
     loadData();
   }, [transportId]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadTransportConfigs = async () => {
+      const transportConfigTypes =
+        form.transportType === "BOLERO_DELIVERY" ||
+        form.transportType === "BOLERO_RETURN_DC"
+          ? ["DRIVER_WAGE_SLAB", "FLOOR_RENT"]
+          : form.transportType === "COURIER_DAILY"
+            ? ["COURIER_WEIGHT_RATE", "COURIER_COVER_RATE"]
+            : form.transportType === "CNG_RICKSHAW"
+              ? ["CNG_TRIP_SLAB"]
+              : [];
+
+      if (!transportConfigTypes.length) {
+        setTransportConfigs([]);
+        setTransportConfigLoaded(true);
+        return;
+      }
+
+      setTransportConfigLoaded(false);
+
+      try {
+        const res = await fetch(
+          `/api/transport-configs?transportType=${form.transportType}`,
+        );
+        if (!res.ok) {
+          const payload = await res.json().catch(() => ({}));
+          if (!cancelled) {
+            setNote(payload.error || "Failed to load transport configs.");
+          }
+          return;
+        }
+
+        const data = await res.json();
+        if (!cancelled) {
+          setTransportConfigs(Array.isArray(data?.data) ? data.data : []);
+        }
+      } catch (error) {
+        console.error("Failed to load transport configs", error);
+        if (!cancelled) {
+          setNote("Failed to load transport configs.");
+        }
+      } finally {
+        if (!cancelled) setTransportConfigLoaded(true);
+      }
+    };
+
+    loadTransportConfigs();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [form.transportType]);
+
   const selectedTypeLabel = useMemo(
     () => getTransportTypeLabel(form.transportType),
     [form.transportType],
@@ -208,22 +272,112 @@ export default function TransportFormContent({
   );
 
   const boleroDriverWages = useMemo(
-    () => getDriverWages(boleroTotalKm),
-    [boleroTotalKm],
+    () => getDriverWages(boleroTotalKm, transportConfigs, form.transportType),
+    [boleroTotalKm, form.transportType, transportConfigs],
   );
 
   const boleroFloorRent = useMemo(
-    () => getFloorRent(form.transportType, form.floor, form.loadType),
-    [form.floor, form.loadType, form.transportType],
+    () =>
+      getFloorRent(
+        form.transportType,
+        form.floor,
+        form.loadType,
+        transportConfigs,
+      ),
+    [form.floor, form.loadType, form.transportType, transportConfigs],
   );
+
+  const boleroFloorRentWarning = useMemo(() => {
+    if (
+      form.transportType !== "BOLERO_DELIVERY" &&
+      form.transportType !== "BOLERO_RETURN_DC"
+    )
+      return null;
+    if (!form.floor || !form.loadType) return null;
+    if (!transportConfigLoaded) return null;
+
+    const config = findFloorRentConfig(
+      transportConfigs,
+      form.transportType,
+      form.floor,
+      form.loadType,
+    );
+
+    return config
+      ? null
+      : "No transport config found for this floor and load type. Rate is calculated as 0.";
+  }, [
+    transportConfigLoaded,
+    transportConfigs,
+    form.floor,
+    form.loadType,
+    form.transportType,
+  ]);
+
+  const driverWageWarning = useMemo(() => {
+    if (
+      form.transportType !== "BOLERO_DELIVERY" &&
+      form.transportType !== "BOLERO_RETURN_DC"
+    )
+      return null;
+    if (!transportConfigLoaded) return null;
+    const config = findDriverWageConfig(
+      transportConfigs,
+      form.transportType,
+      boleroTotalKm,
+    );
+    return config ? null : "No driver wage slab found. Rate is calculated as 0.";
+  }, [
+    boleroTotalKm,
+    form.transportType,
+    transportConfigLoaded,
+    transportConfigs,
+  ]);
+
+  const courierWarning = useMemo(() => {
+    if (form.transportType !== "COURIER_DAILY") return null;
+    if (!transportConfigLoaded) return null;
+    const weightRate = findCourierRateConfig(
+      transportConfigs,
+      form.transportType,
+      "COURIER_WEIGHT_RATE",
+    );
+    const coverRate = findCourierRateConfig(
+      transportConfigs,
+      form.transportType,
+      "COURIER_COVER_RATE",
+    );
+    return weightRate && coverRate
+      ? null
+      : "Courier config is missing. Charges are calculated as 0.";
+  }, [form.transportType, transportConfigLoaded, transportConfigs]);
+
+  const cngWarning = useMemo(() => {
+    if (form.transportType !== "CNG_RICKSHAW") return null;
+    if (!form.tripType || !form.totalKm) return null;
+    if (!transportConfigLoaded) return null;
+    const config = findCngTripConfig(
+      transportConfigs,
+      form.tripType,
+      numberOrZero(form.totalKm),
+    );
+    return config ? null : "No CNG trip slab found. Rate is calculated as 0.";
+  }, [
+    form.totalKm,
+    form.tripType,
+    form.transportType,
+    transportConfigLoaded,
+    transportConfigs,
+  ]);
 
   const courierCharges = useMemo(
     () =>
-      getCourierCharges(
+      getCourierChargesWithConfigs(
         numberOrZero(form.totalWeight),
         numberOrZero(form.noOfCovers),
+        transportConfigs,
       ),
-    [form.noOfCovers, form.totalWeight],
+    [form.noOfCovers, form.totalWeight, transportConfigs],
   );
 
   const porterCharges = useMemo(
@@ -232,8 +386,13 @@ export default function TransportFormContent({
   );
 
   const cngTripCharge = useMemo(
-    () => getCngTripCharge(numberOrZero(form.totalKm), form.tripType || null),
-    [form.totalKm, form.tripType],
+    () =>
+      getCngTripCharge(
+        numberOrZero(form.totalKm),
+        form.tripType || null,
+        transportConfigs,
+      ),
+    [form.totalKm, form.tripType, transportConfigs],
   );
 
   const loadingVehicleTotal = useMemo(
@@ -659,6 +818,11 @@ export default function TransportFormContent({
                     <p className="text-lg font-semibold">
                       ₹{currency(boleroDriverWages)}
                     </p>
+                    {driverWageWarning && (
+                      <p className="mt-2 text-xs text-red-600">
+                        {driverWageWarning}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="grid gap-2 mt-2 md:gap-4 md:grid-cols-2">
@@ -691,6 +855,11 @@ export default function TransportFormContent({
                     <p className="text-lg font-semibold">
                       ₹{currency(boleroFloorRent)}
                     </p>
+                    {boleroFloorRentWarning && (
+                      <p className="mt-2 text-xs text-red-600">
+                        {boleroFloorRentWarning}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -744,6 +913,11 @@ export default function TransportFormContent({
                     ₹{currency(courierCharges.coverCharge)}
                   </p>
                 </div>
+                {courierWarning && (
+                  <div className="md:col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-700">
+                    {courierWarning}
+                  </div>
+                )}
                 <div>
                   <label className="rbac-label">
                     Total Weight (KG) <span className="text-red-600">*</span>
@@ -867,6 +1041,9 @@ export default function TransportFormContent({
                   <p className="text-lg font-semibold">
                     ₹{currency(cngTripCharge)}
                   </p>
+                  {cngWarning && (
+                    <p className="mt-2 text-xs text-red-600">{cngWarning}</p>
+                  )}
                 </div>
               </div>
             ) : null}
@@ -1015,7 +1192,8 @@ export default function TransportFormContent({
                 onChange={(event) => setField("remark", event.target.value)}
               />
             </label>
-          </fieldset>
+            </fieldset>
+          {note && <p className="text-sm text-red-600 mb-4">{note}</p>}
           <div className="rbac-actions">
             <button className="rbac-button" type="submit" disabled={saving}>
               {saving ? (

@@ -130,7 +130,7 @@ export async function POST(req) {
 
   try {
     const body = await req.json();
-    const record = buildTransportRecord(body);
+    const record = await buildTransportRecord(body);
 
     const created = await prisma.$transaction(async (tx) => {
       const maxSerial = await tx.transportLog.aggregate({

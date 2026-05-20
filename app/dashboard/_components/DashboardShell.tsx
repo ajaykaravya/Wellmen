@@ -38,6 +38,7 @@ type MenuKey =
   | "projects"
   | "hospitals"
   | "masterData"
+  | "transportConfigs"
   | "projectcategories"
   | "officeCategories"
   | "serviceCategories"
@@ -85,6 +86,7 @@ const routeByMenu: Record<MenuKey, string> = {
   projects: "/dashboard/projects",
   hospitals: "/dashboard/hospitals",
   masterData: "/dashboard/master-data",
+  transportConfigs: "/dashboard/transport-configs",
   projectcategories: "/dashboard/project-categories",
   officeCategories: "/dashboard/office-categories",
   serviceCategories: "/dashboard/service-categories",
@@ -105,6 +107,9 @@ const getActiveMenu = (pathname: string): MenuKey => {
     return "reportingCategories";
   if (pathname.startsWith("/dashboard/projects")) return "projects";
   if (pathname.startsWith("/dashboard/hospitals")) return "hospitals";
+  if (pathname.startsWith("/dashboard/transport-configs"))
+    return "transportConfigs";
+  if (pathname.startsWith("/dashboard/master-data")) return "masterData";
   if (pathname.startsWith("/dashboard/task-management"))
     return "task-management";
   if (pathname.startsWith("/dashboard/transport-management"))
@@ -163,6 +168,8 @@ export default function DashboardShell({
       "serviceCategories",
       "reportingCategories",
       "expenseTypes",
+      "masterData",
+      "transportConfigs",
     ].includes(activeMenu);
   }, [activeMenu]);
 
@@ -212,7 +219,7 @@ export default function DashboardShell({
 
   useEffect(() => {
     if (isNestedShell) return;
-    // Auto-expand Master Data section when on category pages
+    // Auto-expand Master Data section when on any master data page
     if (isMasterDataActive && !masterDataExpanded) {
       setMasterDataExpanded(true);
     }
@@ -240,6 +247,7 @@ export default function DashboardShell({
           { key: "serviceCategories", label: "Service work Categories" },
           { key: "reportingCategories", label: "Reporting work Categories" },
           { key: "expenseTypes", label: "Expense Types" },
+          { key: "transportConfigs", label: "Transport" },
         ],
       });
       items.push({ key: "dailyExpenses", label: "Daily Expense" });
