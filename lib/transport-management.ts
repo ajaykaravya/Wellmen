@@ -214,11 +214,11 @@ export const getCourierCharges = (totalWeight: number, noOfCovers: number) => {
   };
 };
 
-export const getPorterCharges = (baseAmount: number) => {
+export const getPorterCharges = (baseAmount: number, otherExpenses: number) => {
   const gstAmount = Number(baseAmount || 0) * 0.18;
   return {
     gstAmount,
-    totalAmount: Number(baseAmount || 0) + gstAmount,
+    totalAmount: Number(baseAmount || 0) + gstAmount + Number(otherExpenses || 0),
   };
 };
 
@@ -227,11 +227,28 @@ export const getCngTripCharge = (
   tripType?: string | null,
 ) => {
   const km = Number(totalKm || 0);
-  if (!tripType || km <= 50) return 0;
-  if (km <= 100) return tripType === "Return" ? 500 : 1000;
-  if (km <= 150) return tripType === "Return" ? 1000 : 2000;
-  if (km <= 200) return tripType === "Return" ? 1500 : 3000;
-  return tripType === "Return" ? 2000 : 4000;
+
+  if (!tripType || km <= 0) return 0;
+
+  const isReturn = tripType === "Return";
+
+  if (km <= 50) {
+    return 0;
+  }
+
+  if (km <= 100) {
+    return isReturn ? 500 : 1000;
+  }
+
+  if (km <= 150) {
+    return isReturn ? 1000 : 2000;
+  }
+
+  if (km <= 200) {
+    return isReturn ? 1500 : 3000;
+  }
+
+  return isReturn ? 2000 : 4000;
 };
 
 export const getLoadingVehicleTotal = (
