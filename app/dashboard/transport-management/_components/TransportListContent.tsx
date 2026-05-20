@@ -30,7 +30,6 @@ import {
   PAYMENT_MODE_OPTIONS,
   PORTER_STATUS_OPTIONS,
   TRANSPORT_TYPES,
-  formatTransportMoney,
   getTransportTypeShortLabel,
 } from "@/lib/transport-management";
 import { formatToDDMMYYYY } from "@/lib/dateUtils";
@@ -43,8 +42,8 @@ type TransportRow = {
   transportType: TransportType;
   transportTypeLabel: string;
   date: string;
-  dcNumber: string | null;
-  tripDescription: string | null;
+  referenceNumber: string | null;
+  description: string | null;
   locationType: string | null;
   city: string | null;
   floor: string | null;
@@ -56,8 +55,6 @@ type TransportRow = {
   otherExpenses: number;
   floorRent: number;
   returnMaterialFreight: number;
-  courierNumber: string | null;
-  description: string | null;
   fromLocation: string | null;
   toLocation: string | null;
   mobileNumber: string | null;
@@ -65,7 +62,6 @@ type TransportRow = {
   totalWeight: number;
   weightCharge: number;
   coverCharge: number;
-  materialDescription: string | null;
   vehicleNumber: string | null;
   baseAmount: number;
   gstAmount: number;
@@ -126,11 +122,12 @@ const buildRowSummary = (row: TransportRow) => {
   switch (row.transportType) {
     case "BOLERO_DELIVERY":
     case "BOLERO_RETURN_DC":
-      return [row.tripDescription, row.locationType, row.city, row.loadType]
+      return [row.referenceNumber, row.description, row.city, row.loadType]
         .map((item) => formatText(item))
         .join(" · ");
     case "COURIER_DAILY":
       return [
+        row.referenceNumber,
         row.description,
         row.fromLocation && row.toLocation
           ? `${row.fromLocation} -> ${row.toLocation}`
@@ -141,7 +138,8 @@ const buildRowSummary = (row: TransportRow) => {
         .join(" · ");
     case "PORTER_DAILY":
       return [
-        row.materialDescription,
+        row.referenceNumber,
+        row.description,
         row.fromLocation && row.toLocation
           ? `${row.fromLocation} -> ${row.toLocation}`
           : "",
@@ -151,7 +149,8 @@ const buildRowSummary = (row: TransportRow) => {
         .join(" · ");
     case "CNG_RICKSHAW":
       return [
-        row.dcNumber ? `DC ${row.dcNumber}` : "",
+        row.referenceNumber ? `No ${row.referenceNumber}` : "",
+        row.description,
         row.tripType || "",
         row.fromLocation && row.toLocation
           ? `${row.fromLocation} -> ${row.toLocation}`
@@ -162,7 +161,8 @@ const buildRowSummary = (row: TransportRow) => {
         .join(" · ");
     case "LOADING_VEHICLE":
       return [
-        row.materialDescription,
+        row.referenceNumber,
+        row.description,
         row.vehicleType,
         row.vehicleNumber ? `Vehicle ${row.vehicleNumber}` : "",
         row.fromLocation && row.toLocation
@@ -183,9 +183,9 @@ const getCommonDetails = (row: TransportRow): DetailSection => ({
     { label: "Log No.", value: `#${row.serialNo}` },
     { label: "Transport Type", value: row.transportTypeLabel },
     { label: "Date", value: formatDate(row.date) },
+    { label: "DC / Courier Number", value: formatText(row.referenceNumber) },
+    { label: "Description", value: formatText(row.description) },
     { label: "City", value: formatText(row.city) },
-    { label: "Status", value: formatStatus(row.status) },
-    { label: "Payment Mode", value: formatText(row.paymentMode) },
     { label: "Total Amount", value: `₹${formatMoney(row.totalAmount)}` },
     { label: "Created By", value: formatText(row.createdByName) },
     { label: "Remark", value: formatText(row.remark) },
@@ -198,13 +198,17 @@ const getTypeDetails = (row: TransportRow): DetailSection => {
       return {
         title: "Trip Details",
         fields: [
-          { label: "Trip Description", value: formatText(row.tripDescription) },
+          { label: "DC Number", value: formatText(row.referenceNumber) },
+          { label: "Description", value: formatText(row.description) },
           { label: "Location Type", value: formatText(row.locationType) },
+          { label: "From Location", value: formatText(row.fromLocation) },
+          { label: "To Location", value: formatText(row.toLocation) },
+          { label: "City", value: formatText(row.city) },
           { label: "Floor", value: formatText(row.floor) },
+          { label: "Total KM", value: String(row.totalKm) },
           { label: "Load Type", value: formatText(row.loadType) },
           { label: "KM Start", value: String(row.kmStart) },
           { label: "KM End", value: String(row.kmEnd) },
-          { label: "Total KM", value: String(row.totalKm) },
           { label: "Driver Wages", value: `₹${formatMoney(row.driverWages)}` },
           { label: "Floor Rent", value: `₹${formatMoney(row.floorRent)}` },
           {
@@ -217,13 +221,17 @@ const getTypeDetails = (row: TransportRow): DetailSection => {
       return {
         title: "Trip Details",
         fields: [
-          { label: "Trip Description", value: formatText(row.tripDescription) },
+          { label: "DC Number", value: formatText(row.referenceNumber) },
+          { label: "Description", value: formatText(row.description) },
           { label: "Location Type", value: formatText(row.locationType) },
+          { label: "From Location", value: formatText(row.fromLocation) },
+          { label: "To Location", value: formatText(row.toLocation) },
+          { label: "City", value: formatText(row.city) },
           { label: "Floor", value: formatText(row.floor) },
+          { label: "Total KM", value: String(row.totalKm) },
           { label: "Load Type", value: formatText(row.loadType) },
           { label: "KM Start", value: String(row.kmStart) },
           { label: "KM End", value: String(row.kmEnd) },
-          { label: "Total KM", value: String(row.totalKm) },
           { label: "Driver Wages", value: `₹${formatMoney(row.driverWages)}` },
           {
             label: "Return Material Freight",
@@ -239,8 +247,9 @@ const getTypeDetails = (row: TransportRow): DetailSection => {
       return {
         title: "Delivery Details",
         fields: [
-          { label: "Courier Number", value: formatText(row.courierNumber) },
+          { label: "Courier Number", value: formatText(row.referenceNumber) },
           { label: "Description", value: formatText(row.description) },
+          { label: "City", value: formatText(row.city) },
           { label: "From Location", value: formatText(row.fromLocation) },
           { label: "To Location", value: formatText(row.toLocation) },
           { label: "Mobile Number", value: formatText(row.mobileNumber) },
@@ -264,30 +273,38 @@ const getTypeDetails = (row: TransportRow): DetailSection => {
       return {
         title: "Delivery Details",
         fields: [
-          {
-            label: "Material Description",
-            value: formatText(row.materialDescription),
-          },
+          { label: "DC Number", value: formatText(row.referenceNumber) },
+          { label: "Description", value: formatText(row.description) },
+          { label: "City", value: formatText(row.city) },
           { label: "From Location", value: formatText(row.fromLocation) },
           { label: "To Location", value: formatText(row.toLocation) },
+          { label: "Mobile Number", value: formatText(row.mobileNumber) },
+          { label: "Vehicle Number", value: formatText(row.vehicleNumber) },
           { label: "Base Amount", value: `₹${formatMoney(row.baseAmount)}` },
           { label: "GST Amount", value: `₹${formatMoney(row.gstAmount)}` },
           {
             label: "Other Expenses",
             value: `₹${formatMoney(row.otherExpenses)}`,
           },
+          { label: "Status", value: formatStatus(row.status) },
         ],
       };
     case "CNG_RICKSHAW":
       return {
         title: "Trip Details",
         fields: [
-          { label: "DC Number", value: formatText(row.dcNumber) },
+          { label: "DC Number", value: formatText(row.referenceNumber) },
+          { label: "Description", value: formatText(row.description) },
+          { label: "City", value: formatText(row.city) },
           { label: "Trip Type", value: formatText(row.tripType) },
           { label: "From Location", value: formatText(row.fromLocation) },
           { label: "To Location", value: formatText(row.toLocation) },
+          { label: "Mobile Number", value: formatText(row.mobileNumber) },
+          { label: "Vehicle Number", value: formatText(row.vehicleNumber) },
           { label: "Total KM", value: String(row.totalKm) },
           { label: "Trip Charge", value: `₹${formatMoney(row.tripCharge)}` },
+          { label: "Payment Mode", value: formatText(row.paymentMode) },
+          { label: "Status", value: formatStatus(row.status) },
           {
             label: "Other Expenses",
             value: `₹${formatMoney(row.otherExpenses)}`,
@@ -298,14 +315,14 @@ const getTypeDetails = (row: TransportRow): DetailSection => {
       return {
         title: "Vehicle Details",
         fields: [
-          {
-            label: "Material Description",
-            value: formatText(row.materialDescription),
-          },
+          { label: "DC Number", value: formatText(row.referenceNumber) },
+          { label: "Description", value: formatText(row.description) },
+          { label: "City", value: formatText(row.city) },
           { label: "Vehicle Type", value: formatText(row.vehicleType) },
           { label: "Vehicle Number", value: formatText(row.vehicleNumber) },
           { label: "From Location", value: formatText(row.fromLocation) },
           { label: "To Location", value: formatText(row.toLocation) },
+          { label: "Mobile Number", value: formatText(row.mobileNumber) },
           {
             label: "Loading Charges",
             value: `₹${formatMoney(row.loadingCharges)}`,
@@ -318,6 +335,8 @@ const getTypeDetails = (row: TransportRow): DetailSection => {
             label: "Transport Charges",
             value: `₹${formatMoney(row.transportCharges)}`,
           },
+          { label: "Payment Mode", value: formatText(row.paymentMode) },
+          { label: "Status", value: formatStatus(row.status) },
           {
             label: "Other Expenses",
             value: `₹${formatMoney(row.otherExpenses)}`,
@@ -576,8 +595,8 @@ function TransportListView() {
           ),
       },
       {
-        header: "Description",
-        accessorKey: "tripDescription",
+        header: "Reference No.",
+        accessorKey: "referenceNumber",
         size: 300,
         cell: (info) => (
           <span className="rbac-muted">{String(info.getValue() || "-")}</span>

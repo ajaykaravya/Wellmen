@@ -161,8 +161,8 @@ model TransportLog {
   serialNo              Int
   transportType         TransportType
   date                  DateTime
-  dcNumber              String?
-  tripDescription       String?
+  referenceNumber       String?
+  description           String?
   locationType          String?
   city                  String?
   floor                 String?
@@ -174,8 +174,6 @@ model TransportLog {
   otherExpenses         Decimal       @default(0) @db.Decimal(14, 2)
   floorRent             Decimal       @default(0) @db.Decimal(14, 2)
   returnMaterialFreight Decimal       @default(0) @db.Decimal(14, 2)
-  courierNumber         String?
-  description           String?
   fromLocation          String?
   toLocation            String?
   mobileNumber          String?
@@ -183,7 +181,6 @@ model TransportLog {
   totalWeight           Decimal       @default(0) @db.Decimal(14, 2)
   weightCharge          Decimal       @default(0) @db.Decimal(14, 2)
   coverCharge           Decimal       @default(0) @db.Decimal(14, 2)
-  materialDescription   String?
   vehicleNumber         String?
   baseAmount            Decimal       @default(0) @db.Decimal(14, 2)
   gstAmount             Decimal       @default(0) @db.Decimal(14, 2)
@@ -207,6 +204,27 @@ model TransportLog {
   @@index([status])
   @@index([paymentMode])
   @@index([createdById])
+}
+
+model TransportConfig {
+  id           String              @id @default(uuid())
+  transportType TransportType
+  configType   TransportConfigType
+  configKey    String
+  configData   Json
+  floor        String?
+  loadType     String?
+  tripType     String?
+  minKm        Int?
+  maxKm        Int?
+  rate         Decimal             @default(0) @db.Decimal(14, 2)
+  isActive     Boolean             @default(true)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@unique([transportType, configType, configKey])
+  @@index([transportType, configType])
+  @@index([isActive])
 }
 
 model QueryManagement {
@@ -301,4 +319,12 @@ enum TransportType {
   PORTER_DAILY
   CNG_RICKSHAW
   LOADING_VEHICLE
+}
+
+enum TransportConfigType {
+  DRIVER_WAGE_SLAB
+  FLOOR_RENT
+  COURIER_WEIGHT_RATE
+  COURIER_COVER_RATE
+  CNG_TRIP_SLAB
 }

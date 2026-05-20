@@ -26,7 +26,7 @@ export function ButtonGroup<T extends string | number>({
 }: ButtonGroupProps<T>) {
   return (
     <div className="space-y-2">
-      <p className="text-sm font-medium">
+      <p className="text-sm">
         {title}
         {required && <span className="text-red-600"> *</span>}
       </p>

@@ -10,25 +10,30 @@ import CustomDatePicker from "../../../components/CustomDatePicker";
 import { ButtonGroup } from "../../_components/ButtonGroup";
 import {
   CNG_STATUS_OPTIONS,
-  COURIER_STATUS_OPTIONS,
   FLOOR_OPTIONS,
   LOAD_TYPE_OPTIONS,
-  LOADING_STATUS_OPTIONS,
   LOADING_VEHICLE_TYPE_OPTIONS,
   LOCATION_TYPE_OPTIONS,
   PAYMENT_MODE_OPTIONS,
-  PORTER_STATUS_OPTIONS,
   TRIP_TYPE_OPTIONS,
   TRANSPORT_TYPES,
+  findCngTripConfig,
+  findCourierRateConfig,
+  findDriverWageConfig,
+  findFloorRentConfig,
   getCngTripCharge,
-  getCourierCharges,
+  getCourierChargesWithConfigs,
   getDriverWages,
   getFloorRent,
   getLoadingVehicleTotal,
   getPorterCharges,
+  getTransportReferenceLabel,
   getTransportTypeLabel,
-  getTransportTypeShortLabel,
+  LOADING_STATUS_OPTIONS,
+  PORTER_STATUS_OPTIONS,
+  COURIER_STATUS_OPTIONS,
 } from "@/lib/transport-management";
+import type { FloorRentConfig } from "@/lib/transport-management";
 import { formatToDDMMYYYY, getTodayInputDate } from "@/lib/dateUtils";
 
 type TransportType = (typeof TRANSPORT_TYPES)[number]["key"];
@@ -36,8 +41,8 @@ type TransportType = (typeof TRANSPORT_TYPES)[number]["key"];
 type TransportFormState = {
   transportType: TransportType;
   date: string;
-  dcNumber: string;
-  tripDescription: string;
+  referenceNumber: string;
+  description: string;
   locationType: string;
   city: string;
   floor: string;
@@ -46,14 +51,11 @@ type TransportFormState = {
   totalKm: string;
   loadType: string;
   otherExpenses: string;
-  courierNumber: string;
-  description: string;
   fromLocation: string;
   toLocation: string;
   mobileNumber: string;
   noOfCovers: string;
   totalWeight: string;
-  materialDescription: string;
   vehicleNumber: string;
   baseAmount: string;
   tripType: string;
@@ -76,8 +78,8 @@ const emptyForm = (
 ): TransportFormState => ({
   transportType,
   date,
-  dcNumber: "",
-  tripDescription: "",
+  referenceNumber: "",
+  description: "",
   locationType: "",
   city: "",
   floor: "",
@@ -86,14 +88,11 @@ const emptyForm = (
   totalKm: "",
   loadType: "",
   otherExpenses: "",
-  courierNumber: "",
-  description: "",
   fromLocation: "",
   toLocation: "",
   mobileNumber: "",
   noOfCovers: "",
   totalWeight: "",
-  materialDescription: "",
   vehicleNumber: "",
   baseAmount: "",
   tripType: "",
@@ -120,14 +119,17 @@ export default function TransportFormContent({
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialType = useMemo(() => {
-    const raw = (searchParams.get("type") || "").toUpperCase();
+    const raw = (searchParams?.get("type") || "").toUpperCase();
     return TRANSPORT_TYPES.some((option) => option.key === raw)
       ? (raw as TransportType)
       : "BOLERO_DELIVERY";
   }, [searchParams]);
   const [form, setForm] = useState<TransportFormState>(emptyForm(initialType));
-  const [serialNo, setSerialNo] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [transportConfigs, setTransportConfigs] = useState<FloorRentConfig[]>(
+    [],
+  );
+  const [transportConfigLoaded, setTransportConfigLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
@@ -147,15 +149,14 @@ export default function TransportFormContent({
         }
 
         const data = await res.json();
-        setSerialNo(typeof data.serialNo === "number" ? data.serialNo : null);
         setForm({
           transportType: data.transportType || "BOLERO_DELIVERY",
           date:
             formatToDDMMYYYY(data.date) === "-"
               ? getTodayInputDate()
               : formatToDDMMYYYY(data.date),
-          dcNumber: data.dcNumber || "",
-          tripDescription: data.tripDescription || "",
+          referenceNumber: data.referenceNumber || "",
+          description: data.description || "",
           locationType: data.locationType || "",
           city: data.city || "",
           floor: data.floor || "",
@@ -164,14 +165,11 @@ export default function TransportFormContent({
           totalKm: String(data.totalKm ?? ""),
           loadType: data.loadType || "",
           otherExpenses: String(data.otherExpenses ?? ""),
-          courierNumber: data.courierNumber || "",
-          description: data.description || "",
           fromLocation: data.fromLocation || "",
           toLocation: data.toLocation || "",
           mobileNumber: data.mobileNumber || "",
           noOfCovers: String(data.noOfCovers ?? ""),
           totalWeight: String(data.totalWeight ?? ""),
-          materialDescription: data.materialDescription || "",
           vehicleNumber: data.vehicleNumber || "",
           baseAmount: String(data.baseAmount ?? ""),
           tripType: data.tripType || "",
@@ -193,6 +191,61 @@ export default function TransportFormContent({
 
     loadData();
   }, [transportId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadTransportConfigs = async () => {
+      const transportConfigTypes =
+        form.transportType === "BOLERO_DELIVERY" ||
+        form.transportType === "BOLERO_RETURN_DC"
+          ? ["DRIVER_WAGE_SLAB", "FLOOR_RENT"]
+          : form.transportType === "COURIER_DAILY"
+            ? ["COURIER_WEIGHT_RATE", "COURIER_COVER_RATE"]
+            : form.transportType === "CNG_RICKSHAW"
+              ? ["CNG_TRIP_SLAB"]
+              : [];
+
+      if (!transportConfigTypes.length) {
+        setTransportConfigs([]);
+        setTransportConfigLoaded(true);
+        return;
+      }
+
+      setTransportConfigLoaded(false);
+
+      try {
+        const res = await fetch(
+          `/api/transport-configs?transportType=${form.transportType}`,
+        );
+        if (!res.ok) {
+          const payload = await res.json().catch(() => ({}));
+          if (!cancelled) {
+            setNote(payload.error || "Failed to load transport configs.");
+          }
+          return;
+        }
+
+        const data = await res.json();
+        if (!cancelled) {
+          setTransportConfigs(Array.isArray(data?.data) ? data.data : []);
+        }
+      } catch (error) {
+        console.error("Failed to load transport configs", error);
+        if (!cancelled) {
+          setNote("Failed to load transport configs.");
+        }
+      } finally {
+        if (!cancelled) setTransportConfigLoaded(true);
+      }
+    };
+
+    loadTransportConfigs();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [form.transportType]);
 
   const selectedTypeLabel = useMemo(
     () => getTransportTypeLabel(form.transportType),
@@ -219,32 +272,127 @@ export default function TransportFormContent({
   );
 
   const boleroDriverWages = useMemo(
-    () => getDriverWages(boleroTotalKm),
-    [boleroTotalKm],
+    () => getDriverWages(boleroTotalKm, transportConfigs, form.transportType),
+    [boleroTotalKm, form.transportType, transportConfigs],
   );
 
   const boleroFloorRent = useMemo(
-    () => getFloorRent(form.transportType, form.floor, form.loadType),
-    [form.floor, form.loadType, form.transportType],
+    () =>
+      getFloorRent(
+        form.transportType,
+        form.floor,
+        form.loadType,
+        transportConfigs,
+      ),
+    [form.floor, form.loadType, form.transportType, transportConfigs],
   );
+
+  const boleroFloorRentWarning = useMemo(() => {
+    if (
+      form.transportType !== "BOLERO_DELIVERY" &&
+      form.transportType !== "BOLERO_RETURN_DC"
+    )
+      return null;
+    if (!form.floor || !form.loadType) return null;
+    if (!transportConfigLoaded) return null;
+
+    const config = findFloorRentConfig(
+      transportConfigs,
+      form.transportType,
+      form.floor,
+      form.loadType,
+    );
+
+    return config
+      ? null
+      : "No transport config found for this floor and load type. Rate is calculated as 0.";
+  }, [
+    transportConfigLoaded,
+    transportConfigs,
+    form.floor,
+    form.loadType,
+    form.transportType,
+  ]);
+
+  const driverWageWarning = useMemo(() => {
+    if (
+      form.transportType !== "BOLERO_DELIVERY" &&
+      form.transportType !== "BOLERO_RETURN_DC"
+    )
+      return null;
+    if (!transportConfigLoaded) return null;
+    const config = findDriverWageConfig(
+      transportConfigs,
+      form.transportType,
+      boleroTotalKm,
+    );
+    return config ? null : "No driver wage slab found. Rate is calculated as 0.";
+  }, [
+    boleroTotalKm,
+    form.transportType,
+    transportConfigLoaded,
+    transportConfigs,
+  ]);
+
+  const courierWarning = useMemo(() => {
+    if (form.transportType !== "COURIER_DAILY") return null;
+    if (!transportConfigLoaded) return null;
+    const weightRate = findCourierRateConfig(
+      transportConfigs,
+      form.transportType,
+      "COURIER_WEIGHT_RATE",
+    );
+    const coverRate = findCourierRateConfig(
+      transportConfigs,
+      form.transportType,
+      "COURIER_COVER_RATE",
+    );
+    return weightRate && coverRate
+      ? null
+      : "Courier config is missing. Charges are calculated as 0.";
+  }, [form.transportType, transportConfigLoaded, transportConfigs]);
+
+  const cngWarning = useMemo(() => {
+    if (form.transportType !== "CNG_RICKSHAW") return null;
+    if (!form.tripType || !form.totalKm) return null;
+    if (!transportConfigLoaded) return null;
+    const config = findCngTripConfig(
+      transportConfigs,
+      form.tripType,
+      numberOrZero(form.totalKm),
+    );
+    return config ? null : "No CNG trip slab found. Rate is calculated as 0.";
+  }, [
+    form.totalKm,
+    form.tripType,
+    form.transportType,
+    transportConfigLoaded,
+    transportConfigs,
+  ]);
 
   const courierCharges = useMemo(
     () =>
-      getCourierCharges(
+      getCourierChargesWithConfigs(
         numberOrZero(form.totalWeight),
         numberOrZero(form.noOfCovers),
+        transportConfigs,
       ),
-    [form.noOfCovers, form.totalWeight],
+    [form.noOfCovers, form.totalWeight, transportConfigs],
   );
 
   const porterCharges = useMemo(
-    () => getPorterCharges(numberOrZero(form.baseAmount)),
-    [form.baseAmount],
+    () => getPorterCharges(numberOrZero(form.baseAmount), numberOrZero(form.otherExpenses)),
+    [form.baseAmount, form.otherExpenses],
   );
 
   const cngTripCharge = useMemo(
-    () => getCngTripCharge(numberOrZero(form.totalKm), form.tripType || null),
-    [form.totalKm, form.tripType],
+    () =>
+      getCngTripCharge(
+        numberOrZero(form.totalKm),
+        form.tripType || null,
+        transportConfigs,
+      ),
+    [form.totalKm, form.tripType, transportConfigs],
   );
 
   const loadingVehicleTotal = useMemo(
@@ -262,6 +410,33 @@ export default function TransportFormContent({
       form.transportCharges,
     ],
   );
+
+  const totalAmount = useMemo(() => {
+    switch (form.transportType) {
+      case "BOLERO_DELIVERY":
+      case "BOLERO_RETURN_DC":
+        return boleroDriverWages + boleroFloorRent + numberOrZero(form.otherExpenses);
+      case "COURIER_DAILY":
+        return courierCharges.totalAmount + numberOrZero(form.otherExpenses);
+      case "PORTER_DAILY":
+        return porterCharges.totalAmount;
+      case "CNG_RICKSHAW":
+        return cngTripCharge + numberOrZero(form.otherExpenses);
+      case "LOADING_VEHICLE":
+        return loadingVehicleTotal;
+      default:
+        return numberOrZero(form.otherExpenses);
+    }
+  }, [
+    boleroDriverWages,
+    boleroFloorRent,
+    cngTripCharge,
+    courierCharges.totalAmount,
+    form.otherExpenses,
+    form.transportType,
+    loadingVehicleTotal,
+    porterCharges.totalAmount,
+  ]);
 
   const handleTypeChange = (value: TransportType) => {
     setForm((prev) => ({
@@ -283,10 +458,12 @@ export default function TransportFormContent({
     switch (form.transportType) {
       case "BOLERO_DELIVERY":
       case "BOLERO_RETURN_DC":
-        if (!form.tripDescription.trim())
-          nextErrors.tripDescription = "Trip description is required.";
         if (!form.locationType.trim())
           nextErrors.locationType = "Location type is required.";
+        if (!form.fromLocation.trim())
+          nextErrors.fromLocation = "From location is required.";
+        if (!form.toLocation.trim())
+          nextErrors.toLocation = "To location is required.";
         if (!form.city.trim()) nextErrors.city = "City is required.";
         if (!form.floor.trim()) nextErrors.floor = "Floor is required.";
         if (!form.kmStart.trim()) nextErrors.kmStart = "KM start is required.";
@@ -295,10 +472,6 @@ export default function TransportFormContent({
           nextErrors.loadType = "Load type is required.";
         break;
       case "COURIER_DAILY":
-        if (!form.courierNumber.trim())
-          nextErrors.courierNumber = "Courier number is required.";
-        if (!form.description.trim())
-          nextErrors.description = "Description is required.";
         if (!form.fromLocation.trim())
           nextErrors.fromLocation = "From location is required.";
         if (!form.toLocation.trim())
@@ -310,8 +483,6 @@ export default function TransportFormContent({
           nextErrors.totalWeight = "Total weight is required.";
         break;
       case "PORTER_DAILY":
-        if (!form.materialDescription.trim())
-          nextErrors.materialDescription = "Material description is required.";
         if (!form.fromLocation.trim())
           nextErrors.fromLocation = "From location is required.";
         if (!form.toLocation.trim())
@@ -319,10 +490,13 @@ export default function TransportFormContent({
         if (!form.city.trim()) nextErrors.city = "City is required.";
         if (!form.baseAmount.trim())
           nextErrors.baseAmount = "Base amount is required.";
+        if (!form.mobileNumber.trim())
+          nextErrors.mobileNumber = "Mobile number is required.";
+        if (!form.vehicleNumber.trim())
+          nextErrors.vehicleNumber = "Vehicle number is required.";
+        if (!form.status.trim()) nextErrors.status = "Status is required.";
         break;
       case "CNG_RICKSHAW":
-        if (!form.dcNumber.trim())
-          nextErrors.dcNumber = "DC number is required.";
         if (!form.tripType.trim())
           nextErrors.tripType = "Trip type is required.";
         if (!form.fromLocation.trim())
@@ -330,7 +504,12 @@ export default function TransportFormContent({
         if (!form.toLocation.trim())
           nextErrors.toLocation = "To location is required.";
         if (!form.city.trim()) nextErrors.city = "City/route is required.";
+        if (!form.mobileNumber.trim())
+          nextErrors.mobileNumber = "Mobile number is required.";
+        if (!form.vehicleNumber.trim())
+          nextErrors.vehicleNumber = "Vehicle number is required.";
         if (!form.totalKm.trim()) nextErrors.totalKm = "Total KM is required.";
+        if (!form.status.trim()) nextErrors.status = "Status is required.";
         break;
       case "LOADING_VEHICLE":
         if (!form.vehicleType.trim())
@@ -340,8 +519,11 @@ export default function TransportFormContent({
         if (!form.toLocation.trim())
           nextErrors.toLocation = "To location is required.";
         if (!form.city.trim()) nextErrors.city = "City/route is required.";
-        if (!form.materialDescription.trim())
-          nextErrors.materialDescription = "Material description is required.";
+        if (!form.mobileNumber.trim())
+          nextErrors.mobileNumber = "Mobile number is required.";
+        if (!form.vehicleNumber.trim())
+          nextErrors.vehicleNumber = "Vehicle number is required.";
+        if (!form.status.trim()) nextErrors.status = "Status is required.";
         break;
       default:
         break;
@@ -355,8 +537,8 @@ export default function TransportFormContent({
     const basePayload: Record<string, unknown> = {
       transportType: form.transportType,
       date: form.date,
-      dcNumber: form.dcNumber,
-      tripDescription: form.tripDescription,
+      referenceNumber: form.referenceNumber,
+      description: form.description,
       locationType: form.locationType,
       city: form.city,
       floor: form.floor,
@@ -365,14 +547,11 @@ export default function TransportFormContent({
       totalKm: form.totalKm,
       loadType: form.loadType,
       otherExpenses: form.otherExpenses,
-      courierNumber: form.courierNumber,
-      description: form.description,
       fromLocation: form.fromLocation,
       toLocation: form.toLocation,
       mobileNumber: form.mobileNumber,
       noOfCovers: form.noOfCovers,
       totalWeight: form.totalWeight,
-      materialDescription: form.materialDescription,
       vehicleNumber: form.vehicleNumber,
       baseAmount: form.baseAmount,
       tripType: form.tripType,
@@ -386,6 +565,27 @@ export default function TransportFormContent({
     };
 
     return basePayload;
+  };
+
+  const getStatusOptions = (
+    transportType?: TransportType,
+  ): readonly string[] => {
+    switch (transportType) {
+      case "COURIER_DAILY":
+        return COURIER_STATUS_OPTIONS;
+
+      case "PORTER_DAILY":
+        return PORTER_STATUS_OPTIONS;
+
+      case "CNG_RICKSHAW":
+        return CNG_STATUS_OPTIONS;
+
+      case "LOADING_VEHICLE":
+        return LOADING_STATUS_OPTIONS;
+
+      default:
+        return [];
+    }
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -463,177 +663,188 @@ export default function TransportFormContent({
             </div>
             {renderFieldError("transportType")}
 
-            <label className="rbac-label">
-              Date <span className="text-red-600">*</span>
-              <CustomDatePicker
-                value={form.date}
-                onChange={(value) => setField("date", value)}
-                placeholder="DD/MM/YYYY"
-                className="rbac-input mb-2"
+            <div className="grid gap-2 md:gap-4 md:grid-cols-2">
+              <label className="rbac-label">
+                Date <span className="text-red-600">*</span>
+                <CustomDatePicker
+                  value={form.date}
+                  onChange={(value) => setField("date", value)}
+                  placeholder="DD/MM/YYYY"
+                  className="rbac-input"
+                />
+              </label>
+              {renderFieldError("date")}
+              <label className="rbac-label">
+                {getTransportReferenceLabel(form.transportType)}
+                <input
+                  className="rbac-input mb-2"
+                  placeholder={
+                    form.transportType === "COURIER_DAILY"
+                      ? "Courier number"
+                      : "DC number"
+                  }
+                  value={form.referenceNumber}
+                  onChange={(event) =>
+                    setField("referenceNumber", event.target.value)
+                  }
+                />
+              </label>
+            </div>
+            <label className="rbac-label md:col-span-2 mt-2">
+              Description
+              <textarea
+                className="rbac-input"
+                rows={3}
+                placeholder="Description"
+                value={form.description}
+                onChange={(event) =>
+                  setField("description", event.target.value)
+                }
               />
             </label>
-            {renderFieldError("date")}
             {form.transportType === "BOLERO_DELIVERY" ||
-            form.transportType === "BOLERO_RETURN_DC" ? (
-              <div className="grid gap-4 md:grid-cols-2">
+              form.transportType === "BOLERO_RETURN_DC" ? (
+              <div>
+                <ButtonGroup
+                  title="Location Type"
+                  selected={form.locationType || null}
+                  options={LOCATION_TYPE_OPTIONS.map((option) => ({
+                    key: option,
+                    label: option,
+                  }))}
+                  onSelect={(value) => setField("locationType", value)}
+                  required
+                  error={errors.locationType}
+                />
+              </div>
+            ) : null}
+            <div className="grid gap-2 md:gap-4 md:grid-cols-4">
+              <div>
                 <label className="rbac-label">
-                  DC Number
+                  From Location <span className="text-red-600">*</span>
                   <input
                     className="rbac-input"
-                    placeholder="DC-001"
-                    value={form.dcNumber}
+                    placeholder="Pickup location"
+                    value={form.fromLocation}
                     onChange={(event) =>
-                      setField("dcNumber", event.target.value)
+                      setField("fromLocation", event.target.value)
                     }
                   />
                 </label>
-
-                <div>
-                  <label className="rbac-label">
-                    Location Type <span className="text-red-600">*</span>
-                    <select
-                      className="rbac-input rbac-select"
-                      value={form.locationType}
-                      onChange={(event) =>
-                        setField("locationType", event.target.value)
-                      }
-                    >
-                      <option value="">Select location type</option>
-                      {LOCATION_TYPE_OPTIONS.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  {renderFieldError("locationType")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    City <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="City"
-                      value={form.city}
-                      onChange={(event) => setField("city", event.target.value)}
-                    />
-                  </label>
-                  {renderFieldError("city")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    Floor <span className="text-red-600">*</span>
-                    <select
-                      className="rbac-input rbac-select"
-                      value={form.floor}
-                      onChange={(event) =>
-                        setField("floor", event.target.value)
-                      }
-                    >
-                      <option value="">Select floor</option>
-                      {FLOOR_OPTIONS.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  {renderFieldError("floor")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    KM Start <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      type="number"
-                      step="1"
-                      min="0"
-                      value={form.kmStart}
-                      onChange={(event) =>
-                        setField("kmStart", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("kmStart")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    KM End <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      type="number"
-                      step="1"
-                      min="0"
-                      value={form.kmEnd}
-                      onChange={(event) =>
-                        setField("kmEnd", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("kmEnd")}
-                </div>
-                <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                  <p className="text-xs uppercase text-slate-500">Total KM</p>
-                  <p className="text-lg font-semibold">{boleroTotalKm}</p>
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    Load Type <span className="text-red-600">*</span>
-                    <select
-                      className="rbac-input rbac-select"
-                      value={form.loadType}
-                      onChange={(event) =>
-                        setField("loadType", event.target.value)
-                      }
-                    >
-                      <option value="">Select load type</option>
-                      {LOAD_TYPE_OPTIONS.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  {renderFieldError("loadType")}
-                </div>
-
+                {renderFieldError("fromLocation")}
+              </div>
+              <div>
                 <label className="rbac-label">
-                  Other Expenses
+                  To Location <span className="text-red-600">*</span>
                   <input
                     className="rbac-input"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={form.otherExpenses}
+                    placeholder="Delivery location"
+                    value={form.toLocation}
                     onChange={(event) =>
-                      setField("otherExpenses", event.target.value)
+                      setField("toLocation", event.target.value)
                     }
                   />
                 </label>
-                <div>
-                  <label className="rbac-label md:col-span-2">
-                    Trip Description <span className="text-red-600">*</span>
-                    <textarea
-                      className="rbac-input"
-                      rows={3}
-                      placeholder="Trip description"
-                      value={form.tripDescription}
-                      onChange={(event) =>
-                        setField("tripDescription", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("tripDescription")}
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
+                {renderFieldError("toLocation")}
+              </div>
+              <div>
+                <label className="rbac-label">
+                  City <span className="text-red-600">*</span>
+                  <input
+                    className="rbac-input mb-2"
+                    placeholder="City"
+                    value={form.city}
+                    onChange={(event) => setField("city", event.target.value)}
+                  />
+                </label>
+                {renderFieldError("city")}
+              </div>
+            </div>
+            {form.transportType === "BOLERO_DELIVERY" ||
+              form.transportType === "BOLERO_RETURN_DC" ? (
+              <div>
+                <ButtonGroup
+                  title="Load Type"
+                  selected={form.loadType || null}
+                  options={LOAD_TYPE_OPTIONS.map((option) => ({
+                    key: option,
+                    label: option,
+                  }))}
+                  onSelect={(value) => setField("loadType", value)}
+                  required
+                  error={errors.loadType}
+                />
+                <div className="grid gap-1 mt-2 md:gap-4 md:grid-cols-4">
+                  <div>
+                    <label className="rbac-label">
+                      KM Start <span className="text-red-600">*</span>
+                      <input
+                        className="rbac-input"
+                        type="number"
+                        step="1"
+                        min="0"
+                        value={form.kmStart}
+                        onChange={(event) =>
+                          setField("kmStart", event.target.value)
+                        }
+                      />
+                    </label>
+                    {renderFieldError("kmStart")}
+                  </div>
+                  <div>
+                    <label className="rbac-label">
+                      KM End <span className="text-red-600">*</span>
+                      <input
+                        className="rbac-input"
+                        type="number"
+                        step="1"
+                        min="0"
+                        value={form.kmEnd}
+                        onChange={(event) =>
+                          setField("kmEnd", event.target.value)
+                        }
+                      />
+                    </label>
+                    {renderFieldError("kmEnd")}
+                  </div>
+                  <div className="mt-2 rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
+                    <p className="text-xs uppercase text-slate-500">Total KM</p>
+                    <p className="text-lg font-semibold">{boleroTotalKm}</p>
+                  </div>
+                  <div className="mt-2 rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
                     <p className="text-xs uppercase text-slate-500">
                       Driver Wages
                     </p>
                     <p className="text-lg font-semibold">
                       ₹{currency(boleroDriverWages)}
                     </p>
+                    {driverWageWarning && (
+                      <p className="mt-2 text-xs text-red-600">
+                        {driverWageWarning}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="grid gap-2 mt-2 md:gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="rbac-label">
+                      Floor <span className="text-red-600">*</span>
+                      <select
+                        className="rbac-input rbac-select"
+                        value={form.floor}
+                        onChange={(event) =>
+                          setField("floor", event.target.value)
+                        }
+                      >
+                        <option value="">Select floor</option>
+                        {FLOOR_OPTIONS.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    {renderFieldError("floor")}
                   </div>
                   <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
                     <p className="text-xs uppercase text-slate-500">
@@ -644,92 +855,40 @@ export default function TransportFormContent({
                     <p className="text-lg font-semibold">
                       ₹{currency(boleroFloorRent)}
                     </p>
-                  </div>
-                  <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                    <p className="text-xs uppercase text-slate-500">
-                      Total Amount
-                    </p>
-                    <p className="text-lg font-semibold">
-                      ₹
-                      {currency(
-                        boleroDriverWages +
-                          boleroFloorRent +
-                          numberOrZero(form.otherExpenses),
-                      )}
-                    </p>
+                    {boleroFloorRentWarning && (
+                      <p className="mt-2 text-xs text-red-600">
+                        {boleroFloorRentWarning}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
             ) : null}
 
-            {form.transportType === "COURIER_DAILY" ? (
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label className="rbac-label">
-                    Courier Number <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="CUR-001"
-                      value={form.courierNumber}
-                      onChange={(event) =>
-                        setField("courierNumber", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("courierNumber")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    City <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="City"
-                      value={form.city}
-                      onChange={(event) => setField("city", event.target.value)}
-                    />
-                  </label>
-                  {renderFieldError("city")}
-                </div>
-
-                <div>
-                  <label className="rbac-label">
-                    From Location <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="Pickup location"
-                      value={form.fromLocation}
-                      onChange={(event) =>
-                        setField("fromLocation", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("fromLocation")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    To Location <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="Delivery location"
-                      value={form.toLocation}
-                      onChange={(event) =>
-                        setField("toLocation", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("toLocation")}
-                </div>
+            {form.transportType === "COURIER_DAILY" || form.transportType === "PORTER_DAILY" || form.transportType === "CNG_RICKSHAW" || form.transportType === "LOADING_VEHICLE" ? (
+              <div>
                 <label className="rbac-label">
-                  Mobile Number
+                  Mobile Number <span className="text-red-600">*</span>
                   <input
                     className="rbac-input"
                     placeholder="Mobile number"
                     value={form.mobileNumber}
-                    onChange={(event) =>
-                      setField("mobileNumber", event.target.value)
-                    }
+                    maxLength={10}
+                    onChange={(event) => {
+                      const onlyNumbers = event.target.value.replace(
+                          /\D/g,
+                          "",
+                        );
+                      setField("mobileNumber", onlyNumbers);
+                    }}
                   />
+                  {renderFieldError("mobileNumber")}
                 </label>
+              </div>
+            ) : null}
+
+            {form.transportType === "COURIER_DAILY" ? (
+              <div className="grid gap-2 md:gap-4 md:grid-cols-2 mt-2">
                 <div>
                   <label className="rbac-label">
                     No. of Covers <span className="text-red-600">*</span>
@@ -746,6 +905,19 @@ export default function TransportFormContent({
                   </label>
                   {renderFieldError("noOfCovers")}
                 </div>
+                <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
+                  <p className="text-xs uppercase text-slate-500">
+                    Cover Charge
+                  </p>
+                  <p className="text-lg font-semibold">
+                    ₹{currency(courierCharges.coverCharge)}
+                  </p>
+                </div>
+                {courierWarning && (
+                  <div className="md:col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-700">
+                    {courierWarning}
+                  </div>
+                )}
                 <div>
                   <label className="rbac-label">
                     Total Weight (KG) <span className="text-red-600">*</span>
@@ -762,170 +934,34 @@ export default function TransportFormContent({
                   </label>
                   {renderFieldError("totalWeight")}
                 </div>
-                <label className="rbac-label">
-                  Other Expenses
-                  <input
-                    className="rbac-input"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={form.otherExpenses}
-                    onChange={(event) =>
-                      setField("otherExpenses", event.target.value)
-                    }
-                  />
-                </label>
-                <label className="rbac-label">
-                  Status
-                  <select
-                    className="rbac-input rbac-select"
-                    value={form.status}
-                    onChange={(event) => setField("status", event.target.value)}
-                  >
-                    <option value="">Select status</option>
-                    {COURIER_STATUS_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <div className="md:col-span-2">
-                  <label className="rbac-label md:col-span-2">
-                    Description <span className="text-red-600">*</span>
-                    <textarea
-                      className="rbac-input"
-                      rows={3}
-                      placeholder="Description"
-                      value={form.description}
-                      onChange={(event) =>
-                        setField("description", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("description")}
-                </div>
-                <label className="rbac-label md:col-span-2">
-                  Remark
-                  <textarea
-                    className="rbac-input"
-                    rows={3}
-                    placeholder="Remark"
-                    value={form.remark}
-                    onChange={(event) => setField("remark", event.target.value)}
-                  />
-                </label>
-
-                <div className="md:col-span-2 grid gap-4 md:grid-cols-3">
-                  <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                    <p className="text-xs uppercase text-slate-500">
-                      Weight Charge
-                    </p>
-                    <p className="text-lg font-semibold">
-                      ₹{currency(courierCharges.weightCharge)}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                    <p className="text-xs uppercase text-slate-500">
-                      Cover Charge
-                    </p>
-                    <p className="text-lg font-semibold">
-                      ₹{currency(courierCharges.coverCharge)}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                    <p className="text-xs uppercase text-slate-500">
-                      Total Amount
-                    </p>
-                    <p className="text-lg font-semibold">
-                      ₹
-                      {currency(
-                        courierCharges.totalAmount +
-                          numberOrZero(form.otherExpenses),
-                      )}
-                    </p>
-                  </div>
+                <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
+                  <p className="text-xs uppercase text-slate-500">
+                    Weight Charge
+                  </p>
+                  <p className="text-lg font-semibold">
+                    ₹{currency(courierCharges.weightCharge)}
+                  </p>
                 </div>
               </div>
             ) : null}
 
             {form.transportType === "PORTER_DAILY" ? (
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-2 md:gap-4 md:grid-cols-4 mt-2">
                 <div>
+
                   <label className="rbac-label">
-                    DC Number
+                    Vehicle Number <span className="text-red-600">*</span>
                     <input
                       className="rbac-input"
-                      placeholder="DC-P001"
-                      value={form.dcNumber}
+                      placeholder="Vehicle number"
+                      value={form.vehicleNumber}
                       onChange={(event) =>
-                        setField("dcNumber", event.target.value)
+                        setField("vehicleNumber", event.target.value)
                       }
                     />
+                    {renderFieldError("vehicleNumber")}
                   </label>
                 </div>
-                <div>
-                  <label className="rbac-label">
-                    City <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="City"
-                      value={form.city}
-                      onChange={(event) => setField("city", event.target.value)}
-                    />
-                  </label>
-                  {renderFieldError("city")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    From Location <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="Pickup location"
-                      value={form.fromLocation}
-                      onChange={(event) =>
-                        setField("fromLocation", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("fromLocation")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    To Location <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="Delivery location"
-                      value={form.toLocation}
-                      onChange={(event) =>
-                        setField("toLocation", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("toLocation")}
-                </div>
-                <label className="rbac-label">
-                  Vehicle Number
-                  <input
-                    className="rbac-input"
-                    placeholder="Vehicle number"
-                    value={form.vehicleNumber}
-                    onChange={(event) =>
-                      setField("vehicleNumber", event.target.value)
-                    }
-                  />
-                </label>
-                <label className="rbac-label">
-                  Mobile Number
-                  <input
-                    className="rbac-input"
-                    placeholder="Mobile number"
-                    value={form.mobileNumber}
-                    onChange={(event) =>
-                      setField("mobileNumber", event.target.value)
-                    }
-                  />
-                </label>
                 <div>
                   <label className="rbac-label">
                     Base Amount <span className="text-red-600">*</span>
@@ -942,158 +978,31 @@ export default function TransportFormContent({
                   </label>
                   {renderFieldError("baseAmount")}
                 </div>
-                <label className="rbac-label">
-                  Status
-                  <select
-                    className="rbac-input rbac-select"
-                    value={form.status}
-                    onChange={(event) => setField("status", event.target.value)}
-                  >
-                    <option value="">Select status</option>
-                    {PORTER_STATUS_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="rbac-label">
-                  Payment Mode
-                  <select
-                    className="rbac-input rbac-select"
-                    value={form.paymentMode}
-                    onChange={(event) =>
-                      setField("paymentMode", event.target.value)
-                    }
-                  >
-                    <option value="">Select payment mode</option>
-                    {PAYMENT_MODE_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <div className="md:col-span-2">
-                  <label className="rbac-label md:col-span-2">
-                    Material Description <span className="text-red-600">*</span>
-                    <textarea
-                      className="rbac-input"
-                      rows={3}
-                      placeholder="Material description"
-                      value={form.materialDescription}
-                      onChange={(event) =>
-                        setField("materialDescription", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("materialDescription")}
-                </div>
-                <label className="rbac-label md:col-span-2">
-                  Remark
-                  <textarea
-                    className="rbac-input"
-                    rows={3}
-                    placeholder="Remark"
-                    value={form.remark}
-                    onChange={(event) => setField("remark", event.target.value)}
-                  />
-                </label>
-
-                <div className="md:col-span-2 grid gap-4 md:grid-cols-2">
-                  <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                    <p className="text-xs uppercase text-slate-500">GST</p>
-                    <p className="text-lg font-semibold">
-                      ₹{currency(porterCharges.gstAmount)}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                    <p className="text-xs uppercase text-slate-500">
-                      Total Amount
-                    </p>
-                    <p className="text-lg font-semibold">
-                      ₹{currency(porterCharges.totalAmount)}
-                    </p>
-                  </div>
+                <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
+                  <p className="text-xs uppercase text-slate-500">GST</p>
+                  <p className="text-lg font-semibold">
+                    ₹{currency(porterCharges.gstAmount)}
+                  </p>
                 </div>
               </div>
             ) : null}
 
             {form.transportType === "CNG_RICKSHAW" ? (
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-2 md:gap-4 md:grid-cols-2 mt-2">
                 <div>
+
                   <label className="rbac-label">
-                    DC Number <span className="text-red-600">*</span>
+                    Vehicle Number <span className="text-red-600">*</span>
                     <input
                       className="rbac-input"
-                      placeholder="DC-CNG-001"
-                      value={form.dcNumber}
+                      placeholder="Vehicle number"
+                      value={form.vehicleNumber}
                       onChange={(event) =>
-                        setField("dcNumber", event.target.value)
+                        setField("vehicleNumber", event.target.value)
                       }
                     />
+                    {renderFieldError("vehicleNumber")}
                   </label>
-                  {renderFieldError("dcNumber")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    Trip Type <span className="text-red-600">*</span>
-                    <select
-                      className="rbac-input rbac-select"
-                      value={form.tripType}
-                      onChange={(event) =>
-                        setField("tripType", event.target.value)
-                      }
-                    >
-                      <option value="">Select trip type</option>
-                      {TRIP_TYPE_OPTIONS.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  {renderFieldError("tripType")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    From Location <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="Pickup point"
-                      value={form.fromLocation}
-                      onChange={(event) =>
-                        setField("fromLocation", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("fromLocation")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    To Location <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="Delivery point"
-                      value={form.toLocation}
-                      onChange={(event) =>
-                        setField("toLocation", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("toLocation")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    City/Route <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="City or route"
-                      value={form.city}
-                      onChange={(event) => setField("city", event.target.value)}
-                    />
-                  </label>
-                  {renderFieldError("city")}
                 </div>
                 <div>
                   <label className="rbac-label">
@@ -1111,146 +1020,39 @@ export default function TransportFormContent({
                   </label>
                   {renderFieldError("totalKm")}
                 </div>
-                <label className="rbac-label">
-                  Vehicle Number
-                  <input
-                    className="rbac-input"
-                    placeholder="Vehicle number"
-                    value={form.vehicleNumber}
-                    onChange={(event) =>
-                      setField("vehicleNumber", event.target.value)
-                    }
+                <div>
+                  <ButtonGroup
+                    title="Trip Type"
+                    selected={form.tripType || null}
+                    options={TRIP_TYPE_OPTIONS.map((option) => ({
+                      key: option,
+                      label: option,
+                    }))}
+                    onSelect={(value) => setField("tripType", value)}
+                    required
+                    error={errors.tripType}
                   />
-                </label>
-                <label className="rbac-label">
-                  Mobile Number
-                  <input
-                    className="rbac-input"
-                    placeholder="Mobile number"
-                    value={form.mobileNumber}
-                    onChange={(event) =>
-                      setField("mobileNumber", event.target.value)
-                    }
-                  />
-                </label>
-
-                <label className="rbac-label">
-                  Payment Mode
-                  <select
-                    className="rbac-input rbac-select"
-                    value={form.paymentMode}
-                    onChange={(event) =>
-                      setField("paymentMode", event.target.value)
-                    }
-                  >
-                    <option value="">Select payment mode</option>
-                    {PAYMENT_MODE_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="rbac-label">
-                  Status
-                  <select
-                    className="rbac-input rbac-select"
-                    value={form.status}
-                    onChange={(event) => setField("status", event.target.value)}
-                  >
-                    <option value="">Select status</option>
-                    {CNG_STATUS_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="rbac-label md:col-span-2">
-                  Remark
-                  <textarea
-                    className="rbac-input"
-                    rows={3}
-                    placeholder="Remark"
-                    value={form.remark}
-                    onChange={(event) => setField("remark", event.target.value)}
-                  />
-                </label>
-                <label className="rbac-label">
-                  Other Expenses
-                  <input
-                    className="rbac-input"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={form.otherExpenses}
-                    onChange={(event) =>
-                      setField("otherExpenses", event.target.value)
-                    }
-                  />
-                </label>
-                <div className="md:col-span-2 grid gap-4 md:grid-cols-2">
-                  <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                    <p className="text-xs uppercase text-slate-500">
-                      Trip Charge
-                    </p>
-                    <p className="text-lg font-semibold">
-                      ₹{currency(cngTripCharge)}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                    <p className="text-xs uppercase text-slate-500">
-                      Total Amount
-                    </p>
-                    <p className="text-lg font-semibold">
-                      ₹
-                      {currency(
-                        cngTripCharge + numberOrZero(form.otherExpenses),
-                      )}
-                    </p>
-                  </div>
+                  {renderFieldError("tripType")}
+                </div>
+                <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
+                  <p className="text-xs uppercase text-slate-500">
+                    Trip Charge
+                  </p>
+                  <p className="text-lg font-semibold">
+                    ₹{currency(cngTripCharge)}
+                  </p>
+                  {cngWarning && (
+                    <p className="mt-2 text-xs text-red-600">{cngWarning}</p>
+                  )}
                 </div>
               </div>
             ) : null}
 
             {form.transportType === "LOADING_VEHICLE" ? (
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-2 md:gap-4 md:grid-cols-2 mt-2">
                 <div>
                   <label className="rbac-label">
-                    DC Number
-                    <input
-                      className="rbac-input"
-                      placeholder="DC-LV-001"
-                      value={form.dcNumber}
-                      onChange={(event) =>
-                        setField("dcNumber", event.target.value)
-                      }
-                    />
-                  </label>
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    Vehicle Type <span className="text-red-600">*</span>
-                    <select
-                      className="rbac-input rbac-select"
-                      value={form.vehicleType}
-                      onChange={(event) =>
-                        setField("vehicleType", event.target.value)
-                      }
-                    >
-                      <option value="">Select vehicle type</option>
-                      {LOADING_VEHICLE_TYPE_OPTIONS.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  {renderFieldError("vehicleType")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    Vehicle Number
+                    Vehicle Number <span className="text-red-600">*</span>
                     <input
                       className="rbac-input"
                       placeholder="Vehicle number"
@@ -1260,60 +1062,23 @@ export default function TransportFormContent({
                       }
                     />
                   </label>
+                  {renderFieldError("vehicleNumber")}
                 </div>
                 <div>
-                  <label className="rbac-label">
-                    Mobile Number
-                    <input
-                      className="rbac-input"
-                      placeholder="Mobile number"
-                      value={form.mobileNumber}
-                      onChange={(event) =>
-                        setField("mobileNumber", event.target.value)
-                      }
-                    />
-                  </label>
+                  <ButtonGroup
+                    title="Vehicle Type"
+                    selected={form.vehicleType || null}
+                    options={LOADING_VEHICLE_TYPE_OPTIONS.map((option) => ({
+                      key: option,
+                      label: option,
+                    }))}
+                    onSelect={(value) => setField("vehicleType", value)}
+                    required
+                    error={errors.vehicleType}
+                  />
+                  {renderFieldError("vehicleType")}
                 </div>
-                <div>
-                  <label className="rbac-label">
-                    From Location <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="Pickup point"
-                      value={form.fromLocation}
-                      onChange={(event) =>
-                        setField("fromLocation", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("fromLocation")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    To Location <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="Delivery point"
-                      value={form.toLocation}
-                      onChange={(event) =>
-                        setField("toLocation", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("toLocation")}
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    City/Route <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="City or route"
-                      value={form.city}
-                      onChange={(event) => setField("city", event.target.value)}
-                    />
-                  </label>
-                  {renderFieldError("city")}
-                </div>
+
                 <label className="rbac-label">
                   Loading Charges
                   <input
@@ -1353,90 +1118,82 @@ export default function TransportFormContent({
                     }
                   />
                 </label>
-                <label className="rbac-label">
-                  Payment Mode
-                  <select
-                    className="rbac-input rbac-select"
-                    value={form.paymentMode}
-                    onChange={(event) =>
-                      setField("paymentMode", event.target.value)
-                    }
-                  >
-                    <option value="">Select payment mode</option>
-                    {PAYMENT_MODE_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="rbac-label">
-                  Status
-                  <select
-                    className="rbac-input rbac-select"
-                    value={form.status}
-                    onChange={(event) => setField("status", event.target.value)}
-                  >
-                    <option value="">Select status</option>
-                    {LOADING_STATUS_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <div className="md:col-span-2">
-                  <label className="rbac-label md:col-span-2">
-                    Material Description <span className="text-red-600">*</span>
-                    <textarea
-                      className="rbac-input"
-                      rows={3}
-                      placeholder="Material description"
-                      value={form.materialDescription}
-                      onChange={(event) =>
-                        setField("materialDescription", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("materialDescription")}
-                </div>
-                <label className="rbac-label md:col-span-2">
-                  Remark
-                  <textarea
-                    className="rbac-input"
-                    rows={3}
-                    placeholder="Remark"
-                    value={form.remark}
-                    onChange={(event) => setField("remark", event.target.value)}
-                  />
-                </label>
-                <label className="rbac-label">
-                  Other Expenses
-                  <input
-                    className="rbac-input"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={form.otherExpenses}
-                    onChange={(event) =>
-                      setField("otherExpenses", event.target.value)
-                    }
-                  />
-                </label>
+              </div>
+            ) : null}
 
-                <div className="md:col-span-2 grid gap-4 md:grid-cols-2">
-                  <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                    <p className="text-xs uppercase text-slate-500">
-                      Total Amount
-                    </p>
-                    <p className="text-lg font-semibold">
-                      ₹{currency(loadingVehicleTotal)}
-                    </p>
-                  </div>
+            <div className="grid gap-2 mt-2 md:gap-4 md:grid-cols-2">
+              <label className="rbac-label">
+                Other Expenses
+                <input
+                  className="rbac-input"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={form.otherExpenses}
+                  onChange={(event) =>
+                    setField("otherExpenses", event.target.value)
+                  }
+                />
+              </label>
+              <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
+                <p className="text-xs uppercase text-slate-500">Total Amount</p>
+                <p className="text-lg font-semibold">
+                  ₹{currency(totalAmount)}
+                </p>
+              </div>
+            </div>
+            {form.transportType === "PORTER_DAILY" ||
+              form.transportType === "CNG_RICKSHAW" ||
+              form.transportType === "LOADING_VEHICLE" ? (
+              <div className="md:col-span-2 grid gap-4 md:grid-cols-2 my-2">
+                <div>
+                  <label className="rbac-label">
+                    Payment Mode
+                    <select
+                      className="rbac-input rbac-select"
+                      value={form.paymentMode}
+                      onChange={(event) =>
+                        setField("paymentMode", event.target.value)
+                      }
+                    >
+                      <option value="">Select payment mode</option>
+                      {PAYMENT_MODE_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {renderFieldError("paymentMode")}
+                </div>
+                <div>
+                  <ButtonGroup
+                    title="Status"
+                    selected={form.status || null}
+                    options={getStatusOptions(form.transportType).map((option) => ({
+                      key: option,
+                      label: option,
+                    }))}
+                    required
+                    onSelect={(value) => setField("status", value)}
+                    error={errors.status}
+                  />
                 </div>
               </div>
             ) : null}
-          </fieldset>
+
+            <label className="rbac-label md:col-span-2">
+              Remark
+              <textarea
+                className="rbac-input"
+                rows={3}
+                placeholder="Remark"
+                value={form.remark}
+                onChange={(event) => setField("remark", event.target.value)}
+              />
+            </label>
+            </fieldset>
+          {note && <p className="text-sm text-red-600 mb-4">{note}</p>}
           <div className="rbac-actions">
             <button className="rbac-button" type="submit" disabled={saving}>
               {saving ? (

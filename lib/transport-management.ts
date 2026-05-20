@@ -6,6 +6,63 @@ export type TransportType =
   | "CNG_RICKSHAW"
   | "LOADING_VEHICLE";
 
+export type TransportConfigType =
+  | "DRIVER_WAGE_SLAB"
+  | "FLOOR_RENT"
+  | "COURIER_WEIGHT_RATE"
+  | "COURIER_COVER_RATE"
+  | "CNG_TRIP_SLAB";
+
+export type FloorRentConfig = {
+  id?: string;
+  transportType: TransportType;
+  configType: TransportConfigType;
+  configKey: string;
+  floor?: string | null;
+  loadType?: string | null;
+  minKm?: number | null;
+  maxKm?: number | null;
+  tripType?: string | null;
+  rateType?: string | null;
+  configData?: {
+    floor?: string | null;
+    loadType?: string | null;
+    minKm?: number | null;
+    maxKm?: number | null;
+    tripType?: string | null;
+    rateType?: string | null;
+  } | null;
+  rate: number;
+  isActive?: boolean;
+};
+
+export type DeliveryFloorRentConfig = FloorRentConfig;
+export type DriverWageConfig = FloorRentConfig;
+export type CourierRateConfig = FloorRentConfig;
+export type CngTripConfig = FloorRentConfig;
+
+export const TRANSPORT_CONFIG_TYPE_LABELS: Record<string, string> = {
+  DRIVER_WAGE_SLAB: "Driver Wage Slab",
+  FLOOR_RENT: "Floor Rent",
+  COURIER_WEIGHT_RATE: "Courier Weight Rate",
+  COURIER_COVER_RATE: "Courier Cover Rate",
+  CNG_TRIP_SLAB: "CNG Trip Slab",
+};
+
+export const getTransportConfigTypeLabel = (value?: string | null) =>
+  TRANSPORT_CONFIG_TYPE_LABELS[String(value || "").trim()] ?? value ?? "-";
+
+export const TRANSPORT_CONFIG_TYPES: Array<{
+  key: TransportConfigType;
+  label: string;
+}> = [
+  { key: "DRIVER_WAGE_SLAB", label: "Driver Wage Slab" },
+  { key: "FLOOR_RENT", label: "Floor Rent" },
+  { key: "COURIER_WEIGHT_RATE", label: "Courier Weight Rate" },
+  { key: "COURIER_COVER_RATE", label: "Courier Cover Rate" },
+  { key: "CNG_TRIP_SLAB", label: "CNG Trip Slab" },
+];
+
 export const TRANSPORT_TYPES: Array<{
   key: TransportType;
   label: string;
@@ -88,8 +145,103 @@ export const getTransportTypeLabel = (value?: string | null) =>
 export const getTransportTypeShortLabel = (value?: string | null) =>
   TRANSPORT_TYPES.find((item) => item.key === value)?.shortLabel ?? value ?? "-";
 
-export const getDriverWages = (totalKm: number) => {
+export const getTransportReferenceLabel = (transportType: TransportType) =>
+  transportType === "COURIER_DAILY" ? "Courier Number" : "DC Number";
+
+export const buildFloorRentConfigKey = (
+  floor?: string | null,
+  loadType?: string | null,
+) =>
+  [String(floor || "").trim().toLowerCase(), String(loadType || "").trim().toLowerCase()]
+    .map((value) => value || "-")
+    .join("::");
+
+export const buildDeliveryFloorRentConfigKey = buildFloorRentConfigKey;
+
+export const buildDriverWageConfigKey = (
+  minKm?: number | null,
+  maxKm?: number | null,
+) =>
+  [
+    String(minKm ?? "").trim(),
+    String(maxKm ?? "").trim(),
+  ].map((value) => value || "-").join("::");
+
+export const buildCourierRateConfigKey = (rateType?: string | null) =>
+  String(rateType || "").trim().toLowerCase() || "-";
+
+export const buildCngTripConfigKey = (
+  tripType?: string | null,
+  minKm?: number | null,
+  maxKm?: number | null,
+) =>
+  [
+    String(tripType || "").trim().toLowerCase(),
+    String(minKm ?? "").trim(),
+    String(maxKm ?? "").trim(),
+  ]
+    .map((value) => value || "-")
+    .join("::");
+
+export const findFloorRentConfig = (
+  configs: FloorRentConfig[] | undefined,
+  transportType: TransportType,
+  floor?: string | null,
+  loadType?: string | null,
+) => {
+  if (!configs?.length || !floor || !loadType) return null;
+
+  const configKey = buildFloorRentConfigKey(floor, loadType);
+  return (
+    configs.find(
+      (item) =>
+        item.transportType === transportType &&
+        item.configKey === configKey &&
+        item.isActive !== false,
+    ) ?? null
+  );
+};
+
+export const findDeliveryFloorRentConfig = (
+  configs: FloorRentConfig[] | undefined,
+  floor?: string | null,
+  loadType?: string | null,
+) => findFloorRentConfig(configs, "BOLERO_DELIVERY", floor, loadType);
+
+export const findDriverWageConfig = (
+  configs: DriverWageConfig[] | undefined,
+  transportType: TransportType,
+  totalKm?: number | null,
+) => {
+  const km = Number(totalKm || 0);
+  if (!configs?.length || !Number.isFinite(km) || km <= 0) {
+    return null;
+  }
+
+  return (
+    configs.find(
+      (item) =>
+        item.transportType === transportType &&
+        item.configType === "DRIVER_WAGE_SLAB" &&
+        item.isActive !== false &&
+        Number(item.configData?.minKm ?? item.minKm ?? 0) <= km &&
+        km <= Number(item.configData?.maxKm ?? item.maxKm ?? 0),
+    ) ?? null
+  );
+};
+
+export const getDriverWages = (
+  totalKm: number,
+  configs?: DriverWageConfig[],
+  transportType: TransportType = "BOLERO_DELIVERY",
+) => {
   if (!Number.isFinite(totalKm) || totalKm <= 0) return 0;
+
+  if (configs?.length) {
+    const config = findDriverWageConfig(configs, transportType, totalKm);
+    return Number(config?.rate || 0);
+  }
+
   if (totalKm <= 100) return 850;
   if (totalKm <= 200) return 1000;
   if (totalKm <= 300) return 1280;
@@ -98,107 +250,19 @@ export const getDriverWages = (totalKm: number) => {
   return 1500;
 };
 
-const deliveryFloorRentMap: Record<
-  string,
-  Record<string, number>
-> = {
-  "Ground Floor": {
-    "Part Load": 400,
-    "Half Load": 800,
-    "Full Load": 1200,
-  },
-  "1st Floor": {
-    "Part Load": 500,
-    "Half Load": 1000,
-    "Full Load": 1800,
-  },
-  "2nd Floor": {
-    "Part Load": 600,
-    "Half Load": 1200,
-    "Full Load": 2150,
-  },
-  "3rd Floor": {
-    "Part Load": 750,
-    "Half Load": 1500,
-    "Full Load": 2550,
-  },
-  "4th Floor": {
-    "Part Load": 1000,
-    "Half Load": 2000,
-    "Full Load": 3200,
-  },
-  "5th Floor": {
-    "Part Load": 1250,
-    "Half Load": 2500,
-    "Full Load": 4000,
-  },
-  "6th Floor": {
-    "Part Load": 1500,
-    "Half Load": 3000,
-    "Full Load": 4500,
-  },
-  "Above 6th Floor": {
-    "Part Load": 1500,
-    "Half Load": 2550,
-    "Full Load": 3000,
-  },
-};
-
-const returnFloorRentMap: Record<string, Record<string, number>> = {
-  "Ground Floor": {
-    "Part Load": 300,
-    "Half Load": 550,
-    "Full Load": 800,
-  },
-  "1st Floor": {
-    "Part Load": 450,
-    "Half Load": 1050,
-    "Full Load": 1200,
-  },
-  "2nd Floor": {
-    "Part Load": 500,
-    "Half Load": 1350,
-    "Full Load": 1500,
-  },
-  "3rd Floor": {
-    "Part Load": 650,
-    "Half Load": 1500,
-    "Full Load": 1700,
-  },
-  "4th Floor": {
-    "Part Load": 800,
-    "Half Load": 1850,
-    "Full Load": 2000,
-  },
-  "5th Floor": {
-    "Part Load": 1000,
-    "Half Load": 2050,
-    "Full Load": 2500,
-  },
-  "6th Floor": {
-    "Part Load": 1000,
-    "Half Load": 2050,
-    "Full Load": 2500,
-  },
-  "Above 6th Floor": {
-    "Part Load": 1500,
-    "Half Load": 2550,
-    "Full Load": 3000,
-  },
-};
-
 export const getFloorRent = (
   transportType: TransportType,
   floor?: string | null,
   loadType?: string | null,
+  configs?: DeliveryFloorRentConfig[],
 ) => {
   if (!floor || !loadType) return 0;
 
-  const map =
-    transportType === "BOLERO_RETURN_DC"
-      ? returnFloorRentMap
-      : deliveryFloorRentMap;
-  return map[floor]?.[loadType] ?? 0;
+  if (transportType === "BOLERO_DELIVERY" || transportType === "BOLERO_RETURN_DC") {
+    const config = findFloorRentConfig(configs, transportType, floor, loadType);
+    return Number(config?.rate || 0);
+  }
+  return 0;
 };
 
 export const getCourierCharges = (totalWeight: number, noOfCovers: number) => {
@@ -211,24 +275,116 @@ export const getCourierCharges = (totalWeight: number, noOfCovers: number) => {
   };
 };
 
-export const getPorterCharges = (baseAmount: number) => {
+export const getCourierChargesWithConfigs = (
+  totalWeight: number,
+  noOfCovers: number,
+  configs?: CourierRateConfig[],
+) => {
+  if (configs?.length) {
+    const weightRate = configs.find(
+      (item) =>
+        item.configType === "COURIER_WEIGHT_RATE" &&
+        item.isActive !== false,
+    );
+    const coverRate = configs.find(
+      (item) =>
+        item.configType === "COURIER_COVER_RATE" &&
+        item.isActive !== false,
+    );
+    const weightCharge = Number(totalWeight || 0) * Number(weightRate?.rate || 0);
+    const coverCharge = Number(noOfCovers || 0) * Number(coverRate?.rate || 0);
+    return {
+      weightCharge,
+      coverCharge,
+      totalAmount: weightCharge + coverCharge,
+    };
+  }
+
+  return getCourierCharges(totalWeight, noOfCovers);
+};
+
+export const findCourierRateConfig = (
+  configs: CourierRateConfig[] | undefined,
+  transportType: TransportType,
+  configType: "COURIER_WEIGHT_RATE" | "COURIER_COVER_RATE",
+) =>
+  configs?.find(
+    (item) =>
+      item.transportType === transportType &&
+      item.configType === configType &&
+      item.isActive !== false,
+  ) ?? null;
+
+export const findCngTripConfig = (
+  configs: CngTripConfig[] | undefined,
+  tripType?: string | null,
+  totalKm?: number | null,
+) => {
+  const km = Number(totalKm || 0);
+  if (!configs?.length || !tripType || !Number.isFinite(km) || km <= 0) {
+    return null;
+  }
+
+  return (
+    configs.find(
+      (item) =>
+        item.configType === "CNG_TRIP_SLAB" &&
+        item.tripType === tripType &&
+        item.isActive !== false &&
+        km >= Number(item.configData?.minKm ?? item.minKm ?? 0) &&
+        km <= Number(item.configData?.maxKm ?? item.maxKm ?? 0),
+    ) ?? null
+  );
+};
+
+export const getPorterCharges = (baseAmount: number, otherExpenses: number) => {
   const gstAmount = Number(baseAmount || 0) * 0.18;
   return {
     gstAmount,
-    totalAmount: Number(baseAmount || 0) + gstAmount,
+    totalAmount: Number(baseAmount || 0) + gstAmount + Number(otherExpenses || 0),
   };
 };
 
 export const getCngTripCharge = (
   totalKm: number,
   tripType?: string | null,
+  configs?: CngTripConfig[],
 ) => {
   const km = Number(totalKm || 0);
-  if (!tripType || km <= 50) return 0;
-  if (km <= 100) return tripType === "Return" ? 500 : 1000;
-  if (km <= 150) return tripType === "Return" ? 1000 : 2000;
-  if (km <= 200) return tripType === "Return" ? 1500 : 3000;
-  return tripType === "Return" ? 2000 : 4000;
+
+  if (!tripType || km <= 0) return 0;
+
+  if (configs?.length) {
+    const config = configs.find(
+      (item) =>
+        item.configType === "CNG_TRIP_SLAB" &&
+        item.tripType === tripType &&
+        item.isActive !== false &&
+        km >= Number(item.configData?.minKm ?? item.minKm ?? 0) &&
+        km <= Number(item.configData?.maxKm ?? item.maxKm ?? 0),
+    );
+    return Number(config?.rate || 0);
+  }
+
+  const isReturn = tripType === "Return";
+
+  if (km <= 50) {
+    return 0;
+  }
+
+  if (km <= 100) {
+    return isReturn ? 500 : 1000;
+  }
+
+  if (km <= 150) {
+    return isReturn ? 1000 : 2000;
+  }
+
+  if (km <= 200) {
+    return isReturn ? 1500 : 3000;
+  }
+
+  return isReturn ? 2000 : 4000;
 };
 
 export const getLoadingVehicleTotal = (
@@ -280,4 +436,3 @@ export const parseTransportDate = (value: unknown) => {
 
 export const isTransportType = (value: string): value is TransportType =>
   TRANSPORT_TYPES.some((item) => item.key === value);
-

@@ -56,7 +56,7 @@ export async function PUT(req, { params }) {
 
   try {
     const body = await req.json();
-    const record = buildTransportRecord(body);
+    const record = await buildTransportRecord(body);
 
     const updated = await prisma.transportLog.update({
       where: { id },
