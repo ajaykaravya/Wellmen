@@ -18,6 +18,7 @@ import {
   FaFilter,
 } from "react-icons/fa";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type ServiceCategoryRow = {
   id: string;
@@ -25,6 +26,7 @@ type ServiceCategoryRow = {
 };
 
 function ServiceCategoryListContent() {
+  const router = useRouter();
   const [categories, setCategories] = useState<ServiceCategoryRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
@@ -84,6 +86,10 @@ function ServiceCategoryListContent() {
     setConfirmOpen(true);
   }, []);
 
+  const handleEditCategory = useCallback((row:ServiceCategoryRow) => {
+    router.push(`/dashboard/service-categories/${row.id}`);
+  }, [router]);
+
   const activeFilterCount = [query.trim()].filter(Boolean).length;
 
   const openFilters = useCallback(() => {
@@ -141,11 +147,9 @@ function ServiceCategoryListContent() {
         id: "action",
         cell: ({ row }) => (
           <div className="justify-end flex gap-4">
-            <Link href={`/dashboard/service-categories/${row.original.id}`}>
-              <button className="rbac-link" type="button">
-                <FaEdit />
-              </button>
-            </Link>
+            <button onClick={() => handleEditCategory(row.original)} className="rbac-link" type="button">
+              <FaEdit />
+            </button>
             <button
               className="rbac-link danger"
               type="button"
@@ -157,7 +161,7 @@ function ServiceCategoryListContent() {
         ),
       },
     ],
-    [handleDeleteCategory],
+    [handleDeleteCategory, handleEditCategory],
   );
 
   const table = useReactTable({
@@ -297,13 +301,9 @@ function ServiceCategoryListContent() {
                         </h4>
                       </div>
                       <div className="flex">
-                        <Link
-                          href={`/dashboard/service-categories/${category.id}`}
-                        >
-                          <button className="rbac-link" type="button">
+                          <button onClick={()=> handleEditCategory(category)} className="rbac-link" type="button">
                             <FaEdit size={18} />
                           </button>
-                        </Link>
                         <button
                           style={{ padding: "2px" }}
                           className="rbac-link danger"

@@ -18,6 +18,7 @@ import {
   FaFilter
 } from "react-icons/fa";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type ExpenseTypeRow = {
   id: string;
@@ -26,6 +27,7 @@ type ExpenseTypeRow = {
 };
 
 function ExpenseTypeListContent() {
+  const router = useRouter();
   const [expenseTypes, setExpenseTypes] = useState<ExpenseTypeRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
@@ -88,6 +90,10 @@ function ExpenseTypeListContent() {
     setConfirmOpen(true);
   }, []);
 
+  const handleEditExpenseType = useCallback((row: ExpenseTypeRow) => {
+    router.push(`/dashboard/expense-types/${row.id}`);
+  }, [router]);
+
   const confirmDeleteExpenseType = useCallback(async () => {
     if (!confirmTarget) return;
     setDeleting(true);
@@ -139,11 +145,9 @@ function ExpenseTypeListContent() {
         id: "action",
         cell: ({ row }) => (
           <div className="justify-end flex gap-4">
-            <Link href={`/dashboard/expense-types/${row.original.id}`}>
-              <button className="rbac-link" type="button">
+              <button onClick={() => handleEditExpenseType(row.original)} className="rbac-link" type="button">
                 <FaEdit />
               </button>
-            </Link>
             <button
               className="rbac-link danger"
               type="button"
@@ -155,7 +159,7 @@ function ExpenseTypeListContent() {
         ),
       },
     ],
-    [handleDeleteExpenseType],
+    [handleDeleteExpenseType, handleEditExpenseType],
   );
 
   const table = useReactTable({
@@ -334,13 +338,9 @@ function ExpenseTypeListContent() {
                         </span>
                       </div>
                       <div className="flex">
-                        <Link
-                          href={`/dashboard/expense-types/${expenseType.id}`}
-                        >
-                          <button className="rbac-link" type="button">
+                          <button onClick={()=> handleEditExpenseType(expenseType)} className="rbac-link" type="button">
                             <FaEdit size={18} />
                           </button>
-                        </Link>
                         <button
                           style={{ padding: "2px" }}
                           className="rbac-link danger"

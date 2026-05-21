@@ -9,6 +9,7 @@ import ConfirmDialog from "../../components/ConfirmDialog";
 import ListingFilterDialog from "../../components/ListingFilterDialog";
 import useDebounce from "@/app/hooks/useDebounce";
 import { toast } from "react-toastify";
+import { useRouter } from "next/navigation"
 import {
   FaChevronLeft,
   FaChevronRight,
@@ -25,6 +26,7 @@ type ReportingCategoryRow = {
 };
 
 function ReportingCategoryListContent() {
+  const router = useRouter();
   const [categories, setCategories] = useState<ReportingCategoryRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
@@ -83,6 +85,10 @@ function ReportingCategoryListContent() {
     setConfirmOpen(true);
   }, []);
 
+  const handleEditCategory = useCallback((row: ReportingCategoryRow) => {
+    router.push(`/dashboard/reporting-categories/${row.id}`);
+  }, [router]);
+
   const activeFilterCount = [query.trim()].filter(Boolean).length;
 
   const openFilters = useCallback(() => {
@@ -140,11 +146,9 @@ function ReportingCategoryListContent() {
         id: "action",
         cell: ({ row }) => (
           <div className="justify-end flex gap-4">
-            <Link href={`/dashboard/reporting-categories/${row.original.id}`}>
-              <button className="rbac-link" type="button">
+              <button onClick={()=> handleEditCategory(row.original)} className="rbac-link" type="button">
                 <FaEdit />
               </button>
-            </Link>
             <button
               className="rbac-link danger"
               type="button"
@@ -156,7 +160,7 @@ function ReportingCategoryListContent() {
         ),
       },
     ],
-    [handleDeleteCategory],
+    [handleDeleteCategory, handleEditCategory],
   );
 
   const table = useReactTable({
@@ -296,13 +300,9 @@ function ReportingCategoryListContent() {
                         </h4>
                       </div>
                       <div className="flex">
-                        <Link
-                          href={`/dashboard/reporting-categories/${category.id}`}
-                        >
-                          <button className="rbac-link" type="button">
+                          <button onClick={()=> handleEditCategory(category)} className="rbac-link" type="button">
                             <FaEdit size={18} />
                           </button>
-                        </Link>
                         <button
                         style={{padding:"2px"}}
                           className="rbac-link danger"

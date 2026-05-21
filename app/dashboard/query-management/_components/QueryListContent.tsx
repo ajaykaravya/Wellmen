@@ -99,7 +99,7 @@ export default function QueryListContent({
   const [total, setTotal] = useState(0);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<QueryStatus | "">(() => {
-    const initialStatus = searchParams.get("status")?.toUpperCase();
+    const initialStatus = searchParams?.get("status")?.toUpperCase();
     return initialStatus === "PENDING" || initialStatus === "COMPLETED"
       ? (initialStatus as QueryStatus)
       : "";
@@ -164,7 +164,7 @@ export default function QueryListContent({
   }, [loadQueries]);
 
   useEffect(() => {
-    const status = searchParams.get("status")?.toUpperCase();
+    const status = searchParams?.get("status")?.toUpperCase();
     if (status === "PENDING" || status === "COMPLETED") {
       setStatusFilter(status as QueryStatus);
     } else {
@@ -329,7 +329,7 @@ export default function QueryListContent({
         ),
       },
     ],
-    [basePath, handleDelete],
+    [basePath, handleDelete , handleEdit],
   );
 
   const table = useReactTable({

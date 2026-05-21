@@ -22,6 +22,7 @@ import {
 } from "react-icons/fa";
 import { IoIosClose } from "react-icons/io";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type ProjectRow = {
   id: string;
@@ -37,6 +38,7 @@ type ProjectRow = {
 };
 
 function ProjectListContent() {
+  const router = useRouter();
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
@@ -117,6 +119,10 @@ function ProjectListContent() {
     setConfirmTarget(row);
     setConfirmOpen(true);
   }, []);
+
+  const handleEditProject = useCallback((row: ProjectRow) => {
+    router.push(`/dashboard/hospitals/${row.id}`);
+  }, [router]);
 
   const activeFilterCount = [query.trim(), cityFilter, fromDate, toDate].filter(Boolean).length;
 
@@ -257,11 +263,13 @@ function ProjectListContent() {
             >
               <FaEye />
             </button>
-            <Link href={`/dashboard/hospitals/${row.original.id}`}>
-              <button className="rbac-link" type="button">
-                <FaEdit />
-              </button>
-            </Link>
+            <button
+              onClick={() => handleEditProject(row.original)}
+              className="rbac-link"
+              type="button"
+            >
+              <FaEdit />
+            </button>
             <button
               className="rbac-link danger"
               type="button"
@@ -273,7 +281,7 @@ function ProjectListContent() {
         ),
       },
     ],
-    [handleDeleteProject, handleView],
+    [handleDeleteProject, handleView, handleEditProject],
   );
 
   const completedProjects = projects.filter((project) => {
@@ -419,17 +427,20 @@ function ProjectListContent() {
                       </div>
                       <div className="flex">
                         <button
+                          style={{padding:'2px'}}
                           className="rbac-link"
                           type="button"
                           onClick={() => handleView(project)}
                         >
                           <FaEye size={18} />
                         </button>
-                        <Link href={`/dashboard/projects/${project.id}`}>
-                          <button className="rbac-link" type="button">
-                            <FaEdit size={18} />
-                          </button>
-                        </Link>
+                        <button
+                          onClick={() => handleEditProject(project)}
+                          className="rbac-link"
+                          type="button"
+                        >
+                          <FaEdit size={18} />
+                        </button>
                         <button
                         style={{padding:"2px"}}
                           className="rbac-link danger"

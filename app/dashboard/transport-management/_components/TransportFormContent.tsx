@@ -618,7 +618,9 @@ export default function TransportFormContent({
       toast.success(
         `Transport log ${transportId ? "updated" : "created"} successfully.`,
       );
-      router.push("/dashboard/transport-management");
+      router.push(
+        `/dashboard/transport-management?type=${form.transportType}`,
+      );
     } catch (error) {
       console.error("Failed to save transport log", error);
       setNote("Failed to save transport log.");
@@ -1205,7 +1207,9 @@ export default function TransportFormContent({
                 "Save"
               )}
             </button>
-            <Link href="/dashboard/transport-management">
+            <Link
+              href={`/dashboard/transport-management?type=${form.transportType}`}
+            >
               <button className="text-red-500" type="button" disabled={saving}>
                 Cancel
               </button>
