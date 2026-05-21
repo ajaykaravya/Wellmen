@@ -1,11 +1,10 @@
 "use client";
 
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { flexRender, useReactTable } from "@tanstack/react-table";
 import { ColumnDef, getCoreRowModel } from "@tanstack/table-core";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-toastify";
 import {
   FaChevronLeft,
@@ -98,6 +97,13 @@ const allStatusOptions = Array.from(
 );
 
 const defaultTransportType = TRANSPORT_TYPES[0]?.key ?? "BOLERO_DELIVERY";
+const isValidTransportType = (value: string | null): value is TransportType =>
+  Boolean(value && TRANSPORT_TYPES.some((option) => option.key === value));
+const showStatusAndPaymentForTypes = new Set<TransportType>([
+  "PORTER_DAILY",
+  "CNG_RICKSHAW",
+  "LOADING_VEHICLE",
+]);
 
 const formatMoney = (value: number) =>
   Number(value || 0).toLocaleString(undefined, {
@@ -106,7 +112,7 @@ const formatMoney = (value: number) =>
   });
 
 const formatText = (value: string | null | undefined) =>
-  value && String(value).trim() ? String(value) : "-";
+  value && String(value).trim() ? String(value) : "";
 
 const formatDate = (value: string) => (value ? formatToDDMMYYYY(value) : "-");
 
@@ -353,6 +359,7 @@ const getTypeDetails = (row: TransportRow): DetailSection => {
 
 function TransportListView() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [rows, setRows] = useState<TransportRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
@@ -377,6 +384,17 @@ function TransportListView() {
   const [viewOpen, setViewOpen] = useState(false);
   const [viewLoading, setViewLoading] = useState(false);
   const [viewData, setViewData] = useState<TransportRow | null>(null);
+
+  useEffect(() => {
+    const urlTransportType = searchParams?.get("type") ?? null;
+    const nextTransportType = isValidTransportType(urlTransportType)
+      ? urlTransportType
+      : defaultTransportType;
+    setTransportTypeFilter((prev) =>
+      prev === nextTransportType ? prev : nextTransportType,
+    );
+    setPageIndex(0);
+  }, [searchParams]);
 
   const debouncedQuery = useDebounce(query, 400);
 
@@ -492,6 +510,12 @@ function TransportListView() {
     router.push(`/dashboard/transport-management/${row.id}`);
   }, [router]);
 
+  const handleAddLog = useCallback(() => {
+    router.push(
+      `/dashboard/transport-management/new?type=${transportTypeFilter}`,
+    );
+  }, [router, transportTypeFilter]);
+
   const getTransportTypeButtonClass = (type: TransportType) =>
     transportTypeFilter === type
       ? "rbac-button"
@@ -552,120 +576,128 @@ function TransportListView() {
   }, [confirmTarget, loadRows]);
 
   const columns = useMemo<ColumnDef<TransportRow>[]>(
-    () => [
-      {
-        header: "Date",
-        accessorKey: "date",
-        size: 160,
-        cell: ({ row }) => (
-            <div>
-              {formatDate(row.original.date)}
+    () => {
+      const baseColumns: ColumnDef<TransportRow>[] = [
+        {
+          header: "Date",
+          accessorKey: "date",
+          size: 160,
+          cell: ({ row }) => <div>{formatDate(row.original.date)}</div>,
+        },
+        {
+          header: "City",
+          accessorKey: "city",
+          size: 300,
+          cell: (info) => (
+            <span className="rbac-muted">{String(info.getValue() || "-")}</span>
+          ),
+        },
+        {
+          header: "Summary",
+          id: "summary",
+          size: 420,
+          cell: ({ row }) => (
+            <div className="max-w-[420px] whitespace-normal text-sm text-slate-700">
+              {buildRowSummary(row.original)}
             </div>
-        ),
-      },
-      {
-        header: "City",
-        accessorKey: "city",
-        size: 300,
-        cell: (info) => (
-          <span className="rbac-muted">{String(info.getValue() || "-")}</span>
-        ),
-      },
-      {
-        header: "Summary",
-        id: "summary",
-        size: 420,
-        cell: ({ row }) => (
-          <div className="max-w-[420px] whitespace-normal text-sm text-slate-700">
-            {buildRowSummary(row.original)}
-          </div>
-        ),
-      },
-      {
-        header: "Status",
-        accessorKey: "status",
-        size: 140,
-        cell: ({ row }) =>
-          row.original.status ? (
-            <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-              {formatStatus(row.original.status)}
-            </span>
-          ) : (
-            "-"
           ),
-      },
-      {
-        header: "Reference No.",
-        accessorKey: "referenceNumber",
-        size: 300,
-        cell: (info) => (
-          <span className="rbac-muted">{String(info.getValue() || "-")}</span>
-        ),
-      },
-      {
-        header: "Payment",
-        accessorKey: "paymentMode",
-        size: 140,
-        cell: ({ row }) =>
-          row.original.paymentMode ? (
-            <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-              {row.original.paymentMode}
-            </span>
-          ) : (
-            "-"
+        },
+      ];
+
+      if (showStatusAndPaymentForTypes.has(transportTypeFilter)) {
+        baseColumns.push(
+          {
+            header: "Status",
+            accessorKey: "status",
+            size: 140,
+            cell: ({ row }) =>
+              row.original.status ? (
+                <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                  {formatStatus(row.original.status)}
+                </span>
+              ) : (
+                "-"
+              ),
+          },
+          {
+            header: "Payment",
+            accessorKey: "paymentMode",
+            size: 140,
+            cell: ({ row }) =>
+              row.original.paymentMode ? (
+                <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                  {row.original.paymentMode}
+                </span>
+              ) : (
+                "-"
+              ),
+          },
+        );
+      }
+
+      baseColumns.push(
+        {
+          header: "Reference No.",
+          accessorKey: "referenceNumber",
+          size: 300,
+          cell: (info) => (
+            <span className="rbac-muted">{String(info.getValue() || "-")}</span>
           ),
-      },
-      {
-        header: "Total",
-        accessorKey: "totalAmount",
-        size: 140,
-        cell: ({ row }) => (
-          <span className="font-semibold text-slate-900">
-            ₹{formatMoney(row.original.totalAmount)}
-          </span>
-        ),
-      },
-      {
-        header: "Created By",
-        accessorKey: "createdByName",
-        size: 180,
-        cell: ({ row }) => <span>{row.original.createdByName || "-"}</span>,
-      },
-      {
-        header: "Action",
-        id: "action",
-        size: 160,
-        cell: ({ row }) => (
-          <div className="flex items-center gap-2">
-            <button
-              className="rbac-link"
-              type="button"
-              onClick={() => handleView(row.original)}
-              aria-label="View transport log"
-            >
-              <FaEye />
-            </button>
-            <button
-              className="rbac-link"
-              type="button"
-              onClick={() => handleEdit(row.original)}
-              aria-label="Edit transport log"
-            >
-              <FaEdit />
-            </button>
-            <button
-              className="rbac-link danger"
-              type="button"
-              onClick={() => handleDelete(row.original)}
-              aria-label="Delete transport log"
-            >
-              <FaTrash />
-            </button>
-          </div>
-        ),
-      },
-    ],
-    [handleDelete, handleEdit, handleView],
+        },
+        {
+          header: "Total",
+          accessorKey: "totalAmount",
+          size: 140,
+          cell: ({ row }) => (
+            <span className="font-semibold text-slate-900">
+              ₹{formatMoney(row.original.totalAmount)}
+            </span>
+          ),
+        },
+        {
+          header: "Created By",
+          accessorKey: "createdByName",
+          size: 180,
+          cell: ({ row }) => <span>{row.original.createdByName || "-"}</span>,
+        },
+        {
+          header: "Action",
+          id: "action",
+          size: 160,
+          cell: ({ row }) => (
+            <div className="flex items-center gap-2">
+              <button
+                className="rbac-link"
+                type="button"
+                onClick={() => handleView(row.original)}
+                aria-label="View transport log"
+              >
+                <FaEye />
+              </button>
+              <button
+                className="rbac-link"
+                type="button"
+                onClick={() => handleEdit(row.original)}
+                aria-label="Edit transport log"
+              >
+                <FaEdit />
+              </button>
+              <button
+                className="rbac-link danger"
+                type="button"
+                onClick={() => handleDelete(row.original)}
+                aria-label="Delete transport log"
+              >
+                <FaTrash />
+              </button>
+            </div>
+          ),
+        },
+      );
+
+      return baseColumns;
+    },
+    [handleDelete, handleEdit, handleView, transportTypeFilter],
   );
 
   const table = useReactTable({
@@ -693,11 +725,9 @@ function TransportListView() {
                 <FaFilter />
                 <span>Filters</span>
               </button>
-              <Link href="/dashboard/transport-management/new">
-                <button className="rbac-button" type="button">
-                  Add Log
-                </button>
-              </Link>
+              <button className="rbac-button" type="button" onClick={handleAddLog}>
+                Add Log
+              </button>
             </div>
           </div>
 
@@ -715,6 +745,10 @@ function TransportListView() {
                 onClick={() => {
                   setPageIndex(0);
                   setTransportTypeFilter(option.key);
+                  router.replace(
+                    `/dashboard/transport-management?type=${option.key}`,
+                    { scroll: false },
+                  );
                 }}
               >
                 {option.shortLabel}
@@ -821,16 +855,20 @@ function TransportListView() {
                             <p className="font-semibold text-slate-900">
                               {formatDate(row.date)}
                             </p>
-                            <p className="text-slate-500">{row.city || "-"}</p>
+                            <p className="text-slate-500">{row.city || ""}</p>
                             <p className="mt-1">{buildRowSummary(row)}</p>
-                            <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                              <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
-                                Status: {formatStatus(row.status)}
-                              </span>
-                              <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
-                                Payment: {formatText(row.paymentMode)}
-                              </span>
-                            </div>
+                            {showStatusAndPaymentForTypes.has(
+                              row.transportType,
+                            ) && (
+                              <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                                <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
+                                  Status: {formatStatus(row.status)}
+                                </span>
+                                <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
+                                  Payment: {formatText(row.paymentMode)}
+                                </span>
+                              </div>
+                            )}
                             {row.createdByName && (
                               <p className="mt-2 text-xs text-slate-500">
                                 By {row.createdByName}

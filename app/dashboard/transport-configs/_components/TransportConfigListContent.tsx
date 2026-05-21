@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import {
   ColumnDef,
   flexRender,
@@ -25,6 +24,7 @@ import {
   getTransportTypeLabel,
   TRANSPORT_TYPES,
 } from "@/lib/transport-management";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 type TransportConfigRow = {
   id: string;
@@ -45,6 +45,12 @@ type TransportConfigRow = {
 
 type TransportType = (typeof TRANSPORT_TYPES)[number]["key"];
 
+const DEFAULT_TRANSPORT_TYPE =
+  TRANSPORT_TYPES[0]?.key ?? "BOLERO_DELIVERY";
+
+const isValidTransportType = (value: string | null): value is TransportType =>
+  Boolean(value && TRANSPORT_TYPES.some((option) => option.key === value));
+
 const formatMoney = (value: number) =>
   Number(value || 0).toLocaleString(undefined, {
     minimumFractionDigits: 2,
@@ -52,6 +58,9 @@ const formatMoney = (value: number) =>
   });
 
 export default function TransportConfigListContent() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [rows, setRows] = useState<TransportConfigRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
@@ -63,16 +72,40 @@ export default function TransportConfigListContent() {
   const [confirmTarget, setConfirmTarget] =
     useState<TransportConfigRow | null>(null);
   const [selectedTransportType, setSelectedTransportType] =
-    useState<TransportType>(TRANSPORT_TYPES[0]?.key ?? "BOLERO_DELIVERY");
+    useState<TransportType>(DEFAULT_TRANSPORT_TYPE);
 
   const transportTypeOptions = useMemo(
     () =>
-      TRANSPORT_TYPES.map((option) => ({
-        key: option.key,
-        label: option.shortLabel,
-      })),
+      TRANSPORT_TYPES
+        .filter(
+          (option) =>
+            option.key !== "LOADING_VEHICLE" &&
+            option.key !== "PORTER_DAILY",
+        )
+        .map((option) => ({
+          key: option.key,
+          label: option.shortLabel,
+        })),
     [],
   );
+
+  const buildListUrl = useCallback(
+    (transportType: TransportType) =>
+      `${pathname}?transportType=${encodeURIComponent(transportType)}`,
+    [pathname],
+  );
+
+useEffect(() => {
+  const urlTransportType = searchParams?.get("transportType") ?? null;
+
+  const nextTransportType = isValidTransportType(urlTransportType)
+    ? urlTransportType
+    : DEFAULT_TRANSPORT_TYPE;
+
+  setSelectedTransportType((prev) =>
+    prev === nextTransportType ? prev : nextTransportType,
+  );
+}, [searchParams]);
 
   const buildRuleSummary = useCallback((row: TransportConfigRow) => {
     switch (row.configType) {
@@ -121,10 +154,29 @@ export default function TransportConfigListContent() {
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
   }, [selectedTransportType]);
 
+  const handleSelectTransportType = useCallback(
+    (value: string) => {
+      if (!isValidTransportType(value)) return;
+      setSelectedTransportType(value);
+      router.replace(buildListUrl(value), { scroll: false });
+    },
+    [buildListUrl, router],
+  );
+
+  const handleAddConfig = useCallback(() => {
+    router.push(
+      `/dashboard/transport-configs/new?transportType=${encodeURIComponent(selectedTransportType)}`,
+    );
+  }, [router, selectedTransportType]);
+
   const handleDelete = useCallback((row: TransportConfigRow) => {
     setConfirmTarget(row);
     setConfirmOpen(true);
   }, []);
+
+  const handleEdit = useCallback((row: TransportConfigRow) => {
+    router.push(`/dashboard/transport-configs/${row.id}`);
+  }, [router]);
 
   const confirmDelete = useCallback(async () => {
     if (!confirmTarget) return;
@@ -183,28 +235,18 @@ export default function TransportConfigListContent() {
         cell: ({ row }) => <span>₹{formatMoney(row.original.rate)}</span>,
       },
       {
-        header: "Status",
-        accessorKey: "isActive",
-        cell: ({ row }) => (
-          <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-            {row.original.isActive ? "Active" : "Inactive"}
-          </span>
-        ),
-      },
-      {
         header: "Action",
         id: "action",
         cell: ({ row }) => (
           <div className="flex justify-end gap-4">
-            <Link href={`/dashboard/transport-configs/${row.original.id}`}>
               <button
                 className="rbac-link"
                 type="button"
                 aria-label="Edit transport config"
+                onClick={() => handleEdit(row.original)}
               >
                 <FaEdit />
               </button>
-            </Link>
             <button
               className="rbac-link danger"
               type="button"
@@ -217,7 +259,7 @@ export default function TransportConfigListContent() {
         ),
       },
     ],
-    [buildRuleSummary, handleDelete],
+    [buildRuleSummary, handleDelete , handleEdit],
   );
 
   const table = useReactTable({
@@ -244,11 +286,9 @@ export default function TransportConfigListContent() {
                 Manage transport config rules by transport type.
               </p>
             </div>
-            <Link href="/dashboard/transport-configs/new">
-              <button className="rbac-button" type="button">
-                Add Config
-              </button>
-            </Link>
+            <button className="rbac-button" type="button" onClick={handleAddConfig}>
+              Add Config
+            </button>
           </div>
 
           <div className="mt-4">
@@ -256,7 +296,7 @@ export default function TransportConfigListContent() {
               title="Transport Type"
               selected={selectedTransportType}
               options={transportTypeOptions}
-              onSelect={(value) => setSelectedTransportType(value as TransportType)}
+              onSelect={(value) => handleSelectTransportType(value)}
             />
           </div>
 
@@ -365,21 +405,17 @@ export default function TransportConfigListContent() {
                           <p className="text-slate-500">
                             {buildRuleSummary(row.original)}
                           </p>
-                          <p className="mt-1 text-xs text-slate-500">
-                            {row.original.isActive ? "Active" : "Inactive"}
-                          </p>
                         </div>
                       </div>
                       <div className="flex justify-end">
-                        <Link href={`/dashboard/transport-configs/${row.original.id}`}>
                           <button
                             className="rbac-link"
                             type="button"
                             aria-label="Edit transport config"
+                            onClick={() => handleEdit(row.original)}
                           >
                             <FaEdit size={18} />
                           </button>
-                        </Link>
                         <button
                           className="rbac-link danger"
                           type="button"

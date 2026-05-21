@@ -331,7 +331,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
       }
 
       toast.success(`Task ${todoId ? "updated" : "created"} successfully.`);
-      router.push("/dashboard/task-management");
+      router.push(`/dashboard/task-management?type=${form.taskType.toUpperCase()}`);
     } catch (error) {
       console.error("Failed to save task", error);
       setNote("Failed to save task.");
@@ -724,7 +724,11 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
               <button
                 className="text-red-500"
                 type="button"
-                onClick={() => router.push("/dashboard/task-management")}
+                onClick={() =>
+                  router.push(
+                    `/dashboard/task-management?type=${form.taskType.toUpperCase()}`,
+                  )
+                }
                 disabled={saving}
               >
                 Cancel

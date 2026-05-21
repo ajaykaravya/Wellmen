@@ -33,6 +33,7 @@ import {
   ListboxOptions,
 } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
+import { useRouter } from "next/navigation";
 
 type TransactionType = "INCOME" | "EXPENSE";
 
@@ -81,6 +82,7 @@ const transactionTypeOptions: Array<{
 const getExpenseTypeLabel = (option: ExpenseTypeOption) => option.name;
 
 function DailyExpenseListContent() {
+  const router = useRouter();
   const [dailyExpenses, setDailyExpenses] = useState<DailyExpenseRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
@@ -241,6 +243,10 @@ function DailyExpenseListContent() {
     setConfirmOpen(true);
   }, []);
 
+  const handleEditDailyExpense = useCallback((row: DailyExpenseRow) => {
+    router.push(`/dashboard/daily-expenses/${row.id}`);
+  }, [router]);
+
   const confirmDeleteDailyExpense = useCallback(async () => {
     if (!confirmTarget) return;
     setDeleting(true);
@@ -376,28 +382,6 @@ function DailyExpenseListContent() {
         ),
       },
       {
-        header: "Type",
-        accessorKey: "transactionType",
-        cell: (info) => {
-          const value = String(info.getValue() || "")
-            .replaceAll("_", " ")
-            .toLowerCase();
-
-          const formatted = value.charAt(0).toUpperCase() + value.slice(1);
-
-          return <span className="rbac-muted">{formatted}</span>;
-        },
-      },
-      {
-        header: "Amount",
-        accessorKey: "amount",
-        cell: ({ row }) => (
-          <span className="rbac-muted">
-            {formatAmount(row.original.amount)}
-          </span>
-        ),
-      },
-      {
         header: "Expense Type",
         accessorKey: "expenseTypeName",
         cell: ({ row }) => (
@@ -414,15 +398,23 @@ function DailyExpenseListContent() {
         ),
       },
       {
+        header: "Amount",
+        accessorKey: "amount",
+        cell: ({ row }) => (
+          <span className={`${getTransactionBadgeClass(row.original.transactionType)} rbac-muted rounded-full px-2.5 py-1 text-xs font-medium`}>
+            {row.original.transactionType === "INCOME" ? "+" : "-"}
+            {formatAmount(row.original.amount)}
+          </span>
+        ),
+      },
+      {
         header: "Action",
         id: "action",
         cell: ({ row }) => (
           <div className="justify-end flex gap-4">
-            <Link href={`/dashboard/daily-expenses/${row.original.id}`}>
-              <button className="rbac-link" type="button">
+              <button onClick={()=> handleEditDailyExpense(row.original)} className="rbac-link" type="button">
                 <FaEdit />
               </button>
-            </Link>
             <button
               className="rbac-link danger"
               type="button"
@@ -434,7 +426,7 @@ function DailyExpenseListContent() {
         ),
       },
     ],
-    [handleDeleteDailyExpense],
+    [handleDeleteDailyExpense, handleEditDailyExpense],
   );
 
   const table = useReactTable({
@@ -618,11 +610,9 @@ function DailyExpenseListContent() {
                         )}
                       </div>
                       <div className="flex justify-end w-full">
-                        <Link href={`/dashboard/daily-expenses/${expense.id}`}>
-                          <button className="rbac-link" type="button">
+                          <button onClick={()=> handleEditDailyExpense(expense)} className="rbac-link" type="button">
                             <FaEdit size={18} />
                           </button>
-                        </Link>
                         <button
                           className="rbac-link danger"
                           type="button"

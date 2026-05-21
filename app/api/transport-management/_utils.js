@@ -401,7 +401,7 @@ export const serializeTransportLog = (row) => {
       case "COURIER_DAILY":
         return Number(row.weightCharge || 0) + Number(row.coverCharge || 0) + Number(row.otherExpenses || 0);
       case "PORTER_DAILY":
-        return Number(row.baseAmount || 0) + Number(row.gstAmount || 0);
+        return Number(row.baseAmount || 0) + Number(row.gstAmount || 0) + Number(row.otherExpenses || 0);
       case "CNG_RICKSHAW":
         return Number(row.tripCharge || 0) + Number(row.otherExpenses || 0);
       case "LOADING_VEHICLE":

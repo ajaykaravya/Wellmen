@@ -18,6 +18,7 @@ import {
   FaFilter,
 } from "react-icons/fa";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type OfficeCategoryRow = {
   id: string;
@@ -25,6 +26,7 @@ type OfficeCategoryRow = {
 };
 
 function OfficeCategoryListContent() {
+  const router = useRouter();
   const [categories, setCategories] = useState<OfficeCategoryRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
@@ -84,6 +86,10 @@ function OfficeCategoryListContent() {
     setConfirmOpen(true);
   }, []);
 
+  const handleEditCategory = useCallback((row: OfficeCategoryRow) => {
+    router.push(`/dashboard/office-categories/${row.id}`);
+  }, [router]);
+
   const activeFilterCount = [query.trim()].filter(Boolean).length;
 
   const openFilters = useCallback(() => {
@@ -141,11 +147,9 @@ function OfficeCategoryListContent() {
         id: "action",
         cell: ({ row }) => (
           <div className="justify-end flex gap-4">
-            <Link href={`/dashboard/office-categories/${row.original.id}`}>
-              <button className="rbac-link" type="button">
-                <FaEdit />
-              </button>
-            </Link>
+            <button onClick={() => handleEditCategory(row.original)} className="rbac-link" type="button">
+              <FaEdit />
+            </button>
             <button
               className="rbac-link danger"
               type="button"
@@ -157,7 +161,7 @@ function OfficeCategoryListContent() {
         ),
       },
     ],
-    [handleDeleteCategory],
+    [handleDeleteCategory, handleEditCategory],
   );
 
   const table = useReactTable({
@@ -297,13 +301,13 @@ function OfficeCategoryListContent() {
                         </h4>
                       </div>
                       <div className="flex">
-                        <Link
-                          href={`/dashboard/office-categories/${category.id}`}
+                        <button
+                          onClick={() => handleEditCategory(category)}
+                          className="rbac-link"
+                          type="button"
                         >
-                          <button className="rbac-link" type="button">
-                            <FaEdit size={18} />
-                          </button>
-                        </Link>
+                          <FaEdit size={18} />
+                        </button>
                         <button
                         style={{padding:"2px"}}
                           className="rbac-link danger"

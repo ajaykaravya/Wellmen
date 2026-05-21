@@ -29,6 +29,7 @@ type TransportConfigFormState = {
 
 type TransportConfigFormContentProps = {
   transportConfigId?: string;
+  initialTransportType?: string;
 };
 
 const transportTypeOptions = TRANSPORT_TYPES.filter((option) =>
@@ -37,6 +38,8 @@ const transportTypeOptions = TRANSPORT_TYPES.filter((option) =>
   key: option.key,
   label: option.label,
 }));
+
+const DEFAULT_TRANSPORT_TYPE = transportTypeOptions[0]?.key ?? "BOLERO_DELIVERY";
 
 const CONFIG_TYPES_BY_TRANSPORT: Record<string, Array<{ key: string; label: string }>> = {
   BOLERO_DELIVERY: [
@@ -97,10 +100,16 @@ const clearRuleFields = (next: TransportConfigFormState, configType: string) => 
 
 export default function TransportConfigFormContent({
   transportConfigId,
+  initialTransportType,
 }: TransportConfigFormContentProps) {
   const router = useRouter();
+  const initialType = transportTypeOptions.some(
+    (option) => option.key === initialTransportType,
+  )
+    ? initialTransportType
+    : DEFAULT_TRANSPORT_TYPE;
   const [form, setForm] = useState<TransportConfigFormState>(
-    createEmptyForm(),
+    createEmptyForm(initialType),
   );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -261,7 +270,9 @@ export default function TransportConfigFormContent({
       toast.success(
         `Transport config ${transportConfigId ? "updated" : "created"} successfully.`,
       );
-      router.push("/dashboard/transport-configs");
+      router.push(
+        `/dashboard/transport-configs?transportType=${encodeURIComponent(form.transportType)}`,
+      );
     } catch (error) {
       console.error("Failed to save transport config", error);
       setNote("Failed to save transport config.");
@@ -514,7 +525,9 @@ export default function TransportConfigFormContent({
                   "Save"
                 )}
               </button>
-              <Link href="/dashboard/transport-configs">
+              <Link
+                href={`/dashboard/transport-configs?transportType=${encodeURIComponent(form.transportType)}`}
+              >
                 <button className="text-red-500" type="button" disabled={saving}>
                   Cancel
                 </button>

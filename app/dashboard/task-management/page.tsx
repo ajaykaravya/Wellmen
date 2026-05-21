@@ -23,7 +23,6 @@ import {
   FaSpinner,
   FaFilter,
 } from "react-icons/fa";
-import Link from "next/link";
 
 type TodoStatus = "TODO" | "IN_PROGRESS" | "ON_HOLD" | "COMPLETED";
 
@@ -88,7 +87,7 @@ function TodoListContent() {
   const { isAdmin } = useDashboardContext();
   const searchParams = useSearchParams();
   const taskTypeFromQuery = (() => {
-    const value = searchParams.get("type");
+    const value = searchParams?.get("type");
     if (value === "PROJECT" || value === "OFFICE" || value === "SERVICE") {
       return value;
     }
@@ -213,6 +212,10 @@ function TodoListContent() {
     status: "TODO",
   });
   const [savingId, setSavingId] = useState<string | null>(null);
+  const buildTaskListUrl = useCallback(
+    (type: TodoRow["type"]) => `/dashboard/task-management?type=${type}`,
+    [],
+  );
 
   const loadAssignees = useCallback(async () => {
     if (!isAdmin) return;
@@ -282,7 +285,7 @@ function TodoListContent() {
       setPageIndex(Math.max(pageCount - 1, 0));
     }
   }, [pageCount, pageIndex]);
-1
+
   const handleEdit = useCallback(
     (row: TodoRow) => {
       router.push(`/dashboard/task-management/${row.id}`);
@@ -498,7 +501,7 @@ function TodoListContent() {
         ),
       },
     ],
-    [handleDeleteTodo],
+    [handleDeleteTodo, handleEdit],
   );
 
   const employeeColumns = useMemo<ColumnDef<TodoRow>[]>(
@@ -612,7 +615,7 @@ function TodoListContent() {
         },
       },
     ],
-    [handleDeleteTodo, openModal],
+    [handleDeleteTodo, handleEdit, openModal],
   );
 
   const columns = isAdmin ? adminColumns : employeeColumns;
@@ -646,11 +649,17 @@ function TodoListContent() {
               >
                 <FaFilter /> <span>Filters</span>
               </button>
-              <Link href="/dashboard/task-management/new">
-                <button className="rbac-button" type="button">
-                  Add Task
-                </button>
-              </Link>
+              <button
+                className="rbac-button"
+                type="button"
+                onClick={() =>
+                  router.push(
+                    `/dashboard/task-management/new?type=${taskTypeFilter}`,
+                  )
+                }
+              >
+                Add Task
+              </button>
             </div>
           </div>
 
@@ -676,6 +685,7 @@ function TodoListContent() {
                 onClick={() => {
                   setPageIndex(0);
                   setTaskTypeFilter("PROJECT");
+                  router.replace(buildTaskListUrl("PROJECT"), { scroll: false });
                 }}
               >
                 Project
@@ -686,6 +696,7 @@ function TodoListContent() {
                 onClick={() => {
                   setPageIndex(0);
                   setTaskTypeFilter("OFFICE");
+                  router.replace(buildTaskListUrl("OFFICE"), { scroll: false });
                 }}
               >
                 Office
@@ -696,6 +707,7 @@ function TodoListContent() {
                 onClick={() => {
                   setPageIndex(0);
                   setTaskTypeFilter("SERVICE");
+                  router.replace(buildTaskListUrl("SERVICE"), { scroll: false });
                 }}
               >
                 Service
