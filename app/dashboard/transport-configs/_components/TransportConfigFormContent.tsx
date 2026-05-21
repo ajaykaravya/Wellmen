@@ -30,6 +30,9 @@ type TransportConfigFormState = {
 type TransportConfigFormContentProps = {
   transportConfigId?: string;
   initialTransportType?: string;
+  embedded?: boolean;
+  onSaved?: () => void;
+  onCancel?: () => void;
 };
 
 const transportTypeOptions = TRANSPORT_TYPES.filter((option) =>
@@ -77,6 +80,9 @@ const formatMoney = (value: string) =>
     maximumFractionDigits: 2,
   });
 
+const isCourierRateConfig = (configType: string) =>
+  configType === "COURIER_WEIGHT_RATE" || configType === "COURIER_COVER_RATE";
+
 const clearRuleFields = (next: TransportConfigFormState, configType: string) => {
   next.floor = "";
   next.loadType = "";
@@ -101,6 +107,9 @@ const clearRuleFields = (next: TransportConfigFormState, configType: string) => 
 export default function TransportConfigFormContent({
   transportConfigId,
   initialTransportType,
+  embedded = false,
+  onSaved,
+  onCancel,
 }: TransportConfigFormContentProps) {
   const router = useRouter();
   const initialType = transportTypeOptions.some(
@@ -155,6 +164,51 @@ export default function TransportConfigFormContent({
     loadData();
   }, [transportConfigId]);
 
+  useEffect(() => {
+    if (transportConfigId) return;
+    if (form.transportType !== "COURIER_DAILY") return;
+    if (!isCourierRateConfig(form.configType)) return;
+    if (form.rate.trim()) return;
+
+    let cancelled = false;
+
+    const loadCourierRate = async () => {
+      try {
+        const res = await fetch(
+          `/api/transport-configs?transportType=${form.transportType}`,
+        );
+        if (!res.ok) return;
+
+        const data = await res.json();
+        const existingConfig = Array.isArray(data?.data)
+          ? data.data.find(
+            (item: { configType?: string; rate?: number | string }) =>
+              item.configType === form.configType,
+          )
+          : null;
+
+        if (!cancelled && existingConfig?.rate !== undefined && existingConfig?.rate !== null) {
+          setForm((prev) =>
+            prev.rate.trim()
+              ? prev
+              : {
+                ...prev,
+                rate: String(existingConfig.rate),
+              },
+          );
+        }
+      } catch (error) {
+        console.error("Failed to load courier config rate", error);
+      }
+    };
+
+    loadCourierRate();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [form.configType, form.rate, form.transportType, transportConfigId]);
+
   const configTypeOptions = useMemo(
     () => CONFIG_TYPES_BY_TRANSPORT[form.transportType] ?? [],
     [form.transportType],
@@ -197,6 +251,11 @@ export default function TransportConfigFormContent({
       clearRuleFields(
         {
           ...prev,
+          rate:
+            prev.transportType === "COURIER_DAILY" &&
+              isCourierRateConfig(value)
+              ? ""
+              : prev.rate,
           configType: value,
         },
         value,
@@ -270,9 +329,11 @@ export default function TransportConfigFormContent({
       toast.success(
         `Transport config ${transportConfigId ? "updated" : "created"} successfully.`,
       );
-      router.push(
-        `/dashboard/transport-configs?transportType=${encodeURIComponent(form.transportType)}`,
-      );
+      if (embedded) {
+        onSaved?.();
+      } else {
+        router.push("/dashboard/transport-configs");
+      }
     } catch (error) {
       console.error("Failed to save transport config", error);
       setNote("Failed to save transport config.");
@@ -288,26 +349,26 @@ export default function TransportConfigFormContent({
       </div>
     );
 
-  return (
-    <DashboardShell>
-      <section className="rbac-section rbac-container">
-        <div className="rbac-card">
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <h3 className="rbac-title-lg">
-                {transportConfigId ? "Edit Transport Config" : "Add New Transport Config"}
-              </h3>
-              <p className="rbac-muted">
-                {selectedTransportTypeLabel} - {selectedConfigTypeLabel}
-              </p>
-            </div>
+  const content = (
+    <section className={embedded ? "" : "rbac-section rbac-container"}>
+      <div className="rbac-card">
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h3 className="rbac-title-lg">
+              {transportConfigId ? "Edit Transport Config" : "Add New Transport Config"}
+            </h3>
+            <p className="rbac-muted">
+              {selectedTransportTypeLabel} - {selectedConfigTypeLabel}
+            </p>
           </div>
+        </div>
 
-          <form className="rbac-form" onSubmit={handleSubmit}>
-            <fieldset
-              disabled={saving}
-              className={saving ? "opacity-70 pointer-events-none" : ""}
-            >
+        <form className="rbac-form" onSubmit={handleSubmit}>
+          <fieldset
+            disabled={saving}
+            className={saving ? "opacity-70 pointer-events-none" : ""}
+          >
+            {!embedded && (
               <ButtonGroup
                 title="Transport Type"
                 selected={form.transportType}
@@ -316,226 +377,233 @@ export default function TransportConfigFormContent({
                 required
                 error={errors.transportType}
               />
+            )}
 
-              <div className="mt-4">
-                <ButtonGroup
-                  title="Config Type"
-                  selected={form.configType}
-                  options={configTypeOptions}
-                  onSelect={(value) => updateConfigType(value)}
-                  required
-                  error={errors.configType}
-                />
-              </div>
+            <div className={embedded ? "" : "mt-4"}>
+              <ButtonGroup
+                title="Config Type"
+                selected={form.configType}
+                options={configTypeOptions}
+                onSelect={(value) => updateConfigType(value)}
+                required
+                error={errors.configType}
+              />
+            </div>
 
-              <div className="grid gap-4 md:grid-cols-2 mt-4">
-                {form.configType === "FLOOR_RENT" && (
-                  <>
-                    <label className="rbac-label">
-                      Floor <span className="text-red-600">*</span>
-                      <select
-                        className="rbac-input rbac-select mb-2"
-                        value={form.floor}
-                        onChange={(event) =>
-                          setForm((prev) => ({ ...prev, floor: event.target.value }))
-                        }
-                      >
-                        <option value="">Select floor</option>
-                        {FLOOR_OPTIONS.map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.floor && (
-                        <p className="text-sm text-red-600">{errors.floor}</p>
-                      )}
-                    </label>
+            <div className="grid gap-4 md:grid-cols-2 mt-4">
+              {form.configType === "FLOOR_RENT" && (
+                <>
+                  <label className="rbac-label">
+                    Floor <span className="text-red-600">*</span>
+                    <select
+                      className="rbac-input rbac-select mb-2"
+                      value={form.floor}
+                      onChange={(event) =>
+                        setForm((prev) => ({ ...prev, floor: event.target.value }))
+                      }
+                    >
+                      <option value="">Select floor</option>
+                      {FLOOR_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.floor && (
+                      <p className="text-sm text-red-600">{errors.floor}</p>
+                    )}
+                  </label>
 
-                    <label className="rbac-label">
-                      Load Type <span className="text-red-600">*</span>
-                      <select
-                        className="rbac-input rbac-select mb-2"
-                        value={form.loadType}
-                        onChange={(event) =>
-                          setForm((prev) => ({
-                            ...prev,
-                            loadType: event.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">Select load type</option>
-                        {LOAD_TYPE_OPTIONS.map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.loadType && (
-                        <p className="text-sm text-red-600">{errors.loadType}</p>
-                      )}
-                    </label>
-                  </>
-                )}
+                  <label className="rbac-label">
+                    Load Type <span className="text-red-600">*</span>
+                    <select
+                      className="rbac-input rbac-select mb-2"
+                      value={form.loadType}
+                      onChange={(event) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          loadType: event.target.value,
+                        }))
+                      }
+                    >
+                      <option value="">Select load type</option>
+                      {LOAD_TYPE_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.loadType && (
+                      <p className="text-sm text-red-600">{errors.loadType}</p>
+                    )}
+                  </label>
+                </>
+              )}
 
-                {form.configType === "DRIVER_WAGE_SLAB" && (
-                  <>
-                    <label className="rbac-label">
-                      Min KM <span className="text-red-600">*</span>
-                      <input
-                        className="rbac-input mb-2"
-                        type="number"
-                        step="1"
-                        min="0"
-                        value={form.minKm}
-                        onChange={(event) =>
-                          setForm((prev) => ({ ...prev, minKm: event.target.value }))
-                        }
-                      />
-                      {errors.minKm && (
-                        <p className="text-sm text-red-600">{errors.minKm}</p>
-                      )}
-                    </label>
+              {form.configType === "DRIVER_WAGE_SLAB" && (
+                <>
+                  <label className="rbac-label">
+                    Min KM <span className="text-red-600">*</span>
+                    <input
+                      className="rbac-input mb-2"
+                      type="number"
+                      step="1"
+                      min="0"
+                      value={form.minKm}
+                      onChange={(event) =>
+                        setForm((prev) => ({ ...prev, minKm: event.target.value }))
+                      }
+                    />
+                    {errors.minKm && (
+                      <p className="text-sm text-red-600">{errors.minKm}</p>
+                    )}
+                  </label>
 
-                    <label className="rbac-label">
-                      Max KM <span className="text-red-600">*</span>
-                      <input
-                        className="rbac-input mb-2"
-                        type="number"
-                        step="1"
-                        min="0"
-                        value={form.maxKm}
-                        onChange={(event) =>
-                          setForm((prev) => ({ ...prev, maxKm: event.target.value }))
-                        }
-                      />
-                      {errors.maxKm && (
-                        <p className="text-sm text-red-600">{errors.maxKm}</p>
-                      )}
-                    </label>
-                  </>
-                )}
+                  <label className="rbac-label">
+                    Max KM <span className="text-red-600">*</span>
+                    <input
+                      className="rbac-input mb-2"
+                      type="number"
+                      step="1"
+                      min="0"
+                      value={form.maxKm}
+                      onChange={(event) =>
+                        setForm((prev) => ({ ...prev, maxKm: event.target.value }))
+                      }
+                    />
+                    {errors.maxKm && (
+                      <p className="text-sm text-red-600">{errors.maxKm}</p>
+                    )}
+                  </label>
+                </>
+              )}
 
-                {form.configType === "CNG_TRIP_SLAB" && (
-                  <>
-                    <label className="rbac-label">
-                      Trip Type <span className="text-red-600">*</span>
-                      <select
-                        className="rbac-input rbac-select mb-2"
-                        value={form.tripType}
-                        onChange={(event) =>
-                          setForm((prev) => ({ ...prev, tripType: event.target.value }))
-                        }
-                      >
-                        <option value="">Select trip type</option>
-                        {TRIP_TYPE_OPTIONS.map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.tripType && (
-                        <p className="text-sm text-red-600">{errors.tripType}</p>
-                      )}
-                    </label>
+              {form.configType === "CNG_TRIP_SLAB" && (
+                <>
 
-                    <label className="rbac-label">
-                      Min KM <span className="text-red-600">*</span>
-                      <input
-                        className="rbac-input mb-2"
-                        type="number"
-                        step="1"
-                        min="0"
-                        value={form.minKm}
-                        onChange={(event) =>
-                          setForm((prev) => ({ ...prev, minKm: event.target.value }))
-                        }
-                      />
-                      {errors.minKm && (
-                        <p className="text-sm text-red-600">{errors.minKm}</p>
-                      )}
-                    </label>
 
-                    <label className="rbac-label">
-                      Max KM <span className="text-red-600">*</span>
-                      <input
-                        className="rbac-input mb-2"
-                        type="number"
-                        step="1"
-                        min="0"
-                        value={form.maxKm}
-                        onChange={(event) =>
-                          setForm((prev) => ({ ...prev, maxKm: event.target.value }))
-                        }
-                      />
-                      {errors.maxKm && (
-                        <p className="text-sm text-red-600">{errors.maxKm}</p>
-                      )}
-                    </label>
-                  </>
-                )}
+                  <label className="rbac-label">
+                    Min KM <span className="text-red-600">*</span>
+                    <input
+                      className="rbac-input mb-2"
+                      type="number"
+                      step="1"
+                      min="0"
+                      value={form.minKm}
+                      onChange={(event) =>
+                        setForm((prev) => ({ ...prev, minKm: event.target.value }))
+                      }
+                    />
+                    {errors.minKm && (
+                      <p className="text-sm text-red-600">{errors.minKm}</p>
+                    )}
+                  </label>
 
-                {form.configType === "COURIER_WEIGHT_RATE" && (
-                  <div className="md:col-span-2 rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                    <p className="text-sm text-slate-600">
-                      Set the per KG courier rate.
-                    </p>
+                  <label className="rbac-label">
+                    Max KM <span className="text-red-600">*</span>
+                    <input
+                      className="rbac-input mb-2"
+                      type="number"
+                      step="1"
+                      min="0"
+                      value={form.maxKm}
+                      onChange={(event) =>
+                        setForm((prev) => ({ ...prev, maxKm: event.target.value }))
+                      }
+                    />
+                    {errors.maxKm && (
+                      <p className="text-sm text-red-600">{errors.maxKm}</p>
+                    )}
+                  </label>
+                  <div>
+                    <ButtonGroup
+                      title="Trip Type"
+                      selected={form.tripType}
+                      options={TRIP_TYPE_OPTIONS.map((option) => ({
+                        key: option,
+                        label: option,
+                      }))}
+                      onSelect={(value) =>
+                        setForm((prev) => ({ ...prev, tripType: value }))
+                      }
+                      required
+                      error={errors.tripType}
+                    />
                   </div>
-                )}
+                </>
+              )}
 
-                {form.configType === "COURIER_COVER_RATE" && (
-                  <div className="md:col-span-2 rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                    <p className="text-sm text-slate-600">
-                      Set the per cover courier rate.
-                    </p>
-                  </div>
-                )}
-
-                <label className="rbac-label md:col-span-2">
-                  Rate <span className="text-red-600">*</span>
-                  <input
-                    className="rbac-input mb-2"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="Rate"
-                    value={form.rate}
-                    onChange={(event) =>
-                      setForm((prev) => ({ ...prev, rate: event.target.value }))
-                    }
-                  />
-                  {errors.rate && <p className="text-sm text-red-600">{errors.rate}</p>}
-                  <p className="text-xs text-slate-500">
-                    Preview: ₹{formatMoney(form.rate)}
+              {form.configType === "COURIER_WEIGHT_RATE" && (
+                <div className="md:col-span-2 rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
+                  <p className="text-sm text-slate-600">
+                    Set the per KG courier rate.
                   </p>
-                </label>
-              </div>
-            </fieldset>
+                </div>
+              )}
 
-            {note && <p className="text-sm text-red-600 mb-4">{note}</p>}
+              {form.configType === "COURIER_COVER_RATE" && (
+                <div className="md:col-span-2 rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
+                  <p className="text-sm text-slate-600">
+                    Set the per cover courier rate.
+                  </p>
+                </div>
+              )}
 
-            <div className="rbac-actions">
-              <button className="rbac-button" type="submit" disabled={saving}>
-                {saving ? (
-                  <span className="inline-flex items-center gap-2">
-                    <FaSpinner className="animate-spin" size={16} />
-                    Saving...
-                  </span>
-                ) : (
-                  "Save"
-                )}
-              </button>
-              <Link
-                href={`/dashboard/transport-configs?transportType=${encodeURIComponent(form.transportType)}`}
+              <label className="rbac-label md:col-span-2">
+                Rate <span className="text-red-600">*</span>
+                <input
+                  className="rbac-input mb-2"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Rate"
+                  value={form.rate}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, rate: event.target.value }))
+                  }
+                />
+                {errors.rate && <p className="text-sm text-red-600">{errors.rate}</p>}
+                <p className="text-xs text-slate-500">
+                  Preview: ₹{formatMoney(form.rate)}
+                </p>
+              </label>
+            </div>
+          </fieldset>
+
+          {note && <p className="text-sm text-red-600 mb-4">{note}</p>}
+
+          <div className="rbac-actions">
+            <button className="rbac-button" type="submit" disabled={saving}>
+              {saving ? (
+                <span className="inline-flex items-center gap-2">
+                  <FaSpinner className="animate-spin" size={16} />
+                  Saving...
+                </span>
+              ) : (
+                transportConfigId ? "Edit" : "Save"
+              )}
+            </button>
+            {embedded ? (
+              <button
+                className="text-red-500"
+                type="button"
+                onClick={() => onCancel?.()}
+                disabled={saving}
               >
+                Clear
+              </button>
+            ) : (
+              <Link href="/dashboard/transport-configs">
                 <button className="text-red-500" type="button" disabled={saving}>
                   Cancel
                 </button>
               </Link>
-            </div>
-          </form>
-        </div>
-      </section>
-    </DashboardShell>
+            )}
+          </div>
+        </form>
+      </div>
+    </section>
   );
+
+  return embedded ? content : <DashboardShell>{content}</DashboardShell>;
 }

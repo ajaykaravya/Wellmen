@@ -19,12 +19,12 @@ import {
 import DashboardShell from "../../_components/DashboardShell";
 import ConfirmDialog from "../../../components/ConfirmDialog";
 import { ButtonGroup } from "../../_components/ButtonGroup";
+import TransportConfigFormContent from "./TransportConfigFormContent";
 import {
   getTransportConfigTypeLabel,
   getTransportTypeLabel,
   TRANSPORT_TYPES,
 } from "@/lib/transport-management";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 type TransportConfigRow = {
   id: string;
@@ -58,9 +58,6 @@ const formatMoney = (value: number) =>
   });
 
 export default function TransportConfigListContent() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [rows, setRows] = useState<TransportConfigRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
@@ -73,6 +70,8 @@ export default function TransportConfigListContent() {
     useState<TransportConfigRow | null>(null);
   const [selectedTransportType, setSelectedTransportType] =
     useState<TransportType>(DEFAULT_TRANSPORT_TYPE);
+  const [editingConfigId, setEditingConfigId] = useState<string | null>(null);
+  const [formResetKey, setFormResetKey] = useState(0);
 
   const transportTypeOptions = useMemo(
     () =>
@@ -88,24 +87,6 @@ export default function TransportConfigListContent() {
         })),
     [],
   );
-
-  const buildListUrl = useCallback(
-    (transportType: TransportType) =>
-      `${pathname}?transportType=${encodeURIComponent(transportType)}`,
-    [pathname],
-  );
-
-useEffect(() => {
-  const urlTransportType = searchParams?.get("transportType") ?? null;
-
-  const nextTransportType = isValidTransportType(urlTransportType)
-    ? urlTransportType
-    : DEFAULT_TRANSPORT_TYPE;
-
-  setSelectedTransportType((prev) =>
-    prev === nextTransportType ? prev : nextTransportType,
-  );
-}, [searchParams]);
 
   const buildRuleSummary = useCallback((row: TransportConfigRow) => {
     switch (row.configType) {
@@ -158,16 +139,11 @@ useEffect(() => {
     (value: string) => {
       if (!isValidTransportType(value)) return;
       setSelectedTransportType(value);
-      router.replace(buildListUrl(value), { scroll: false });
+      setEditingConfigId(null);
+      setFormResetKey((prev) => prev + 1);
     },
-    [buildListUrl, router],
+    [],
   );
-
-  const handleAddConfig = useCallback(() => {
-    router.push(
-      `/dashboard/transport-configs/new?transportType=${encodeURIComponent(selectedTransportType)}`,
-    );
-  }, [router, selectedTransportType]);
 
   const handleDelete = useCallback((row: TransportConfigRow) => {
     setConfirmTarget(row);
@@ -175,8 +151,22 @@ useEffect(() => {
   }, []);
 
   const handleEdit = useCallback((row: TransportConfigRow) => {
-    router.push(`/dashboard/transport-configs/${row.id}`);
-  }, [router]);
+    if (!isValidTransportType(row.transportType)) return;
+    setSelectedTransportType(row.transportType);
+    setEditingConfigId(row.id);
+    setFormResetKey((prev) => prev + 1);
+  }, []);
+
+  const handleFormSaved = useCallback(() => {
+    setEditingConfigId(null);
+    setFormResetKey((prev) => prev + 1);
+    loadRows();
+  }, [loadRows]);
+
+  const handleFormCancel = useCallback(() => {
+    setEditingConfigId(null);
+    setFormResetKey((prev) => prev + 1);
+  }, []);
 
   const confirmDelete = useCallback(async () => {
     if (!confirmTarget) return;
@@ -286,9 +276,6 @@ useEffect(() => {
                 Manage transport config rules by transport type.
               </p>
             </div>
-            <button className="rbac-button" type="button" onClick={handleAddConfig}>
-              Add Config
-            </button>
           </div>
 
           <div className="mt-4">
@@ -300,7 +287,18 @@ useEffect(() => {
             />
           </div>
 
-          <div className="hidden md:block mt-5 overflow-x-auto">
+          <div className="mt-6">
+            <TransportConfigFormContent
+              key={`${selectedTransportType}-${editingConfigId || "new"}-${formResetKey}`}
+              embedded
+              transportConfigId={editingConfigId ?? undefined}
+              initialTransportType={selectedTransportType}
+              onSaved={handleFormSaved}
+              onCancel={handleFormCancel}
+            />
+          </div>
+
+          <div className="mt-6 hidden md:block overflow-x-auto">
             <table className="theme-table min-w-full border border-slate-200 border-separate border-spacing-0">
               <thead className="bg-slate-50">
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -472,6 +470,7 @@ useEffect(() => {
               </select>
             </div>
           </div>
+
         </div>
       </section>
 
