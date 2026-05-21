@@ -56,49 +56,49 @@ export const TRANSPORT_CONFIG_TYPES: Array<{
   key: TransportConfigType;
   label: string;
 }> = [
-  { key: "DRIVER_WAGE_SLAB", label: "Driver Wage Slab" },
-  { key: "FLOOR_RENT", label: "Floor Rent" },
-  { key: "COURIER_WEIGHT_RATE", label: "Courier Weight Rate" },
-  { key: "COURIER_COVER_RATE", label: "Courier Cover Rate" },
-  { key: "CNG_TRIP_SLAB", label: "CNG Trip Slab" },
-];
+    { key: "DRIVER_WAGE_SLAB", label: "Driver Wage Slab" },
+    { key: "FLOOR_RENT", label: "Floor Rent" },
+    { key: "COURIER_WEIGHT_RATE", label: "Courier Weight Rate" },
+    { key: "COURIER_COVER_RATE", label: "Courier Cover Rate" },
+    { key: "CNG_TRIP_SLAB", label: "CNG Trip Slab" },
+  ];
 
 export const TRANSPORT_TYPES: Array<{
   key: TransportType;
   label: string;
   shortLabel: string;
 }> = [
-  {
-    key: "BOLERO_DELIVERY",
-    label: "Bolero - Delivery Log",
-    shortLabel: "Bolero Delivery",
-  },
-  {
-    key: "BOLERO_RETURN_DC",
-    label: "Bolero - Return DC Log",
-    shortLabel: "Bolero Return",
-  },
-  {
-    key: "COURIER_DAILY",
-    label: "Courier Daily Log",
-    shortLabel: "Courier",
-  },
-  {
-    key: "PORTER_DAILY",
-    label: "Porter Daily Log",
-    shortLabel: "Porter",
-  },
-  {
-    key: "CNG_RICKSHAW",
-    label: "CNG Rickshaw Log",
-    shortLabel: "CNG Rickshaw",
-  },
-  {
-    key: "LOADING_VEHICLE",
-    label: "Loading Vehicle Log",
-    shortLabel: "Loading Vehicle",
-  },
-];
+    {
+      key: "BOLERO_DELIVERY",
+      label: "Bolero - Delivery Log",
+      shortLabel: "Bolero Delivery",
+    },
+    {
+      key: "BOLERO_RETURN_DC",
+      label: "Bolero - Return DC Log",
+      shortLabel: "Bolero Return",
+    },
+    {
+      key: "CNG_RICKSHAW",
+      label: "CNG Rickshaw Log",
+      shortLabel: "CNG Rickshaw",
+    },
+    {
+      key: "LOADING_VEHICLE",
+      label: "Loading Vehicle Log",
+      shortLabel: "Loading Vehicle",
+    },
+    {
+      key: "COURIER_DAILY",
+      label: "Courier Daily Log",
+      shortLabel: "Courier",
+    },
+    {
+      key: "PORTER_DAILY",
+      label: "Porter Daily Log",
+      shortLabel: "Porter",
+    },
+  ];
 
 export const FLOOR_OPTIONS = [
   "Ground Floor",

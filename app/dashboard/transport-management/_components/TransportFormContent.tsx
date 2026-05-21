@@ -198,7 +198,7 @@ export default function TransportFormContent({
     const loadTransportConfigs = async () => {
       const transportConfigTypes =
         form.transportType === "BOLERO_DELIVERY" ||
-        form.transportType === "BOLERO_RETURN_DC"
+          form.transportType === "BOLERO_RETURN_DC"
           ? ["DRIVER_WAGE_SLAB", "FLOOR_RENT"]
           : form.transportType === "COURIER_DAILY"
             ? ["COURIER_WEIGHT_RATE", "COURIER_COVER_RATE"]
@@ -809,23 +809,31 @@ export default function TransportFormContent({
                     </label>
                     {renderFieldError("kmEnd")}
                   </div>
-                  <div className="mt-2 rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                    <p className="text-xs uppercase text-slate-500">Total KM</p>
-                    <p className="text-lg font-semibold">{boleroTotalKm}</p>
-                  </div>
-                  <div className="mt-2 rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                    <p className="text-xs uppercase text-slate-500">
-                      Driver Wages
-                    </p>
-                    <p className="text-lg font-semibold">
-                      ₹{currency(boleroDriverWages)}
-                    </p>
+                  <label className="rbac-label mt-2">
+                    Total KM
+                    <input
+                      className="rbac-input"
+                      type="text"
+                      value={boleroTotalKm}
+                      readOnly
+                      aria-readonly="true"
+                    />
+                  </label>
+                  <label className="rbac-label mt-2">
+                    Driver Wages
+                    <input
+                      className="rbac-input"
+                      type="text"
+                      value={`₹${currency(boleroDriverWages)}`}
+                      readOnly
+                      aria-readonly="true"
+                    />
                     {driverWageWarning && (
                       <p className="mt-2 text-xs text-red-600">
                         {driverWageWarning}
                       </p>
                     )}
-                  </div>
+                  </label>
                 </div>
                 <div className="grid gap-2 mt-2 md:gap-4 md:grid-cols-2">
                   <div>
@@ -848,45 +856,64 @@ export default function TransportFormContent({
                     </label>
                     {renderFieldError("floor")}
                   </div>
-                  <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                    <p className="text-xs uppercase text-slate-500">
-                      {form.transportType === "BOLERO_RETURN_DC"
-                        ? "Return Material Freight"
-                        : "Floor Rent"}
-                    </p>
-                    <p className="text-lg font-semibold">
-                      ₹{currency(boleroFloorRent)}
-                    </p>
+                  <label className="rbac-label">
+                    {form.transportType === "BOLERO_RETURN_DC"
+                      ? "Return Material Freight"
+                      : "Floor Rent"}
+                    <input
+                      className="rbac-input"
+                      type="text"
+                      value={`₹${currency(boleroFloorRent)}`}
+                      readOnly
+                      aria-readonly="true"
+                    />
                     {boleroFloorRentWarning && (
                       <p className="mt-2 text-xs text-red-600">
                         {boleroFloorRentWarning}
                       </p>
                     )}
-                  </div>
+                  </label>
                 </div>
               </div>
             ) : null}
 
             {form.transportType === "COURIER_DAILY" || form.transportType === "PORTER_DAILY" || form.transportType === "CNG_RICKSHAW" || form.transportType === "LOADING_VEHICLE" ? (
-              <div>
-                <label className="rbac-label">
-                  Mobile Number <span className="text-red-600">*</span>
-                  <input
-                    className="rbac-input"
-                    placeholder="Mobile number"
-                    value={form.mobileNumber}
-                    maxLength={10}
-                    onChange={(event) => {
-                      const onlyNumbers = event.target.value.replace(
+              <div className="grid gap-2 md:gap-4 md:grid-cols-2 mt-2">
+                <div>
+                  <label className="rbac-label">
+                    Mobile Number <span className="text-red-600">*</span>
+                    <input
+                      className="rbac-input"
+                      placeholder="Mobile number"
+                      value={form.mobileNumber}
+                      maxLength={10}
+                      onChange={(event) => {
+                        const onlyNumbers = event.target.value.replace(
                           /\D/g,
                           "",
                         );
-                      setField("mobileNumber", onlyNumbers);
-                    }}
-                  />
-                  {renderFieldError("mobileNumber")}
-                </label>
+                        setField("mobileNumber", onlyNumbers);
+                      }}
+                    />
+                    {renderFieldError("mobileNumber")}
+                  </label>
+                </div>
+                <div>
+                  <label className="rbac-label">
+                    Vehicle Number <span className="text-red-600">*</span>
+                    <input
+                      className="rbac-input"
+                      placeholder="Vehicle number"
+                      value={form.vehicleNumber}
+                      onChange={(event) =>
+                        setField("vehicleNumber", event.target.value)
+                      }
+                    />
+                    {renderFieldError("vehicleNumber")}
+                  </label>
+                </div>
               </div>
+
             ) : null}
 
             {form.transportType === "COURIER_DAILY" ? (
@@ -907,14 +934,16 @@ export default function TransportFormContent({
                   </label>
                   {renderFieldError("noOfCovers")}
                 </div>
-                <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                  <p className="text-xs uppercase text-slate-500">
-                    Cover Charge
-                  </p>
-                  <p className="text-lg font-semibold">
-                    ₹{currency(courierCharges.coverCharge)}
-                  </p>
-                </div>
+                <label className="rbac-label">
+                  Cover Charge
+                  <input
+                    className="rbac-input"
+                    type="text"
+                    value={`₹${currency(courierCharges.coverCharge)}`}
+                    readOnly
+                    aria-readonly="true"
+                  />
+                </label>
                 {courierWarning && (
                   <div className="md:col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-700">
                     {courierWarning}
@@ -936,34 +965,21 @@ export default function TransportFormContent({
                   </label>
                   {renderFieldError("totalWeight")}
                 </div>
-                <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                  <p className="text-xs uppercase text-slate-500">
-                    Weight Charge
-                  </p>
-                  <p className="text-lg font-semibold">
-                    ₹{currency(courierCharges.weightCharge)}
-                  </p>
-                </div>
+                <label className="rbac-label">
+                  Weight Charge
+                  <input
+                    className="rbac-input"
+                    type="text"
+                    value={`₹${currency(courierCharges.weightCharge)}`}
+                    readOnly
+                    aria-readonly="true"
+                  />
+                </label>
               </div>
             ) : null}
 
             {form.transportType === "PORTER_DAILY" ? (
               <div className="grid gap-2 md:gap-4 md:grid-cols-4 mt-2">
-                <div>
-
-                  <label className="rbac-label">
-                    Vehicle Number <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="Vehicle number"
-                      value={form.vehicleNumber}
-                      onChange={(event) =>
-                        setField("vehicleNumber", event.target.value)
-                      }
-                    />
-                    {renderFieldError("vehicleNumber")}
-                  </label>
-                </div>
                 <div>
                   <label className="rbac-label">
                     Base Amount <span className="text-red-600">*</span>
@@ -980,48 +996,21 @@ export default function TransportFormContent({
                   </label>
                   {renderFieldError("baseAmount")}
                 </div>
-                <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                  <p className="text-xs uppercase text-slate-500">GST</p>
-                  <p className="text-lg font-semibold">
-                    ₹{currency(porterCharges.gstAmount)}
-                  </p>
-                </div>
+                <label className="rbac-label">
+                  GST
+                  <input
+                    className="rbac-input"
+                    type="text"
+                    value={`₹${currency(porterCharges.gstAmount)}`}
+                    readOnly
+                    aria-readonly="true"
+                  />
+                </label>
               </div>
             ) : null}
 
             {form.transportType === "CNG_RICKSHAW" ? (
-              <div className="grid gap-2 md:gap-4 md:grid-cols-2 mt-2">
-                <div>
-
-                  <label className="rbac-label">
-                    Vehicle Number <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="Vehicle number"
-                      value={form.vehicleNumber}
-                      onChange={(event) =>
-                        setField("vehicleNumber", event.target.value)
-                      }
-                    />
-                    {renderFieldError("vehicleNumber")}
-                  </label>
-                </div>
-                <div>
-                  <label className="rbac-label">
-                    Total KM <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      type="number"
-                      step="1"
-                      min="0"
-                      value={form.totalKm}
-                      onChange={(event) =>
-                        setField("totalKm", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("totalKm")}
-                </div>
+              <div className="mt-2">
                 <div>
                   <ButtonGroup
                     title="Trip Type"
@@ -1036,36 +1025,43 @@ export default function TransportFormContent({
                   />
                   {renderFieldError("tripType")}
                 </div>
-                <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                  <p className="text-xs uppercase text-slate-500">
+                <div className="grid gap-2 md:gap-4 md:grid-cols-2 mt-2">
+                  <div>
+                    <label className="rbac-label">
+                      Total KM <span className="text-red-600">*</span>
+                      <input
+                        className="rbac-input"
+                        type="number"
+                        step="1"
+                        min="0"
+                        value={form.totalKm}
+                        onChange={(event) =>
+                          setField("totalKm", event.target.value)
+                        }
+                      />
+                    </label>
+                    {renderFieldError("totalKm")}
+                  </div>
+
+                  <label className="rbac-label">
                     Trip Charge
-                  </p>
-                  <p className="text-lg font-semibold">
-                    ₹{currency(cngTripCharge)}
-                  </p>
-                  {cngWarning && (
-                    <p className="mt-2 text-xs text-red-600">{cngWarning}</p>
-                  )}
+                    <input
+                      className="rbac-input"
+                      type="text"
+                      value={`₹${currency(cngTripCharge)}`}
+                      readOnly
+                      aria-readonly="true"
+                    />
+                    {cngWarning && (
+                      <p className="mt-2 text-xs text-red-600">{cngWarning}</p>
+                    )}
+                  </label>
                 </div>
               </div>
             ) : null}
 
             {form.transportType === "LOADING_VEHICLE" ? (
-              <div className="grid gap-2 md:gap-4 md:grid-cols-2 mt-2">
-                <div>
-                  <label className="rbac-label">
-                    Vehicle Number <span className="text-red-600">*</span>
-                    <input
-                      className="rbac-input"
-                      placeholder="Vehicle number"
-                      value={form.vehicleNumber}
-                      onChange={(event) =>
-                        setField("vehicleNumber", event.target.value)
-                      }
-                    />
-                  </label>
-                  {renderFieldError("vehicleNumber")}
-                </div>
+              <div className="mt-2">
                 <div>
                   <ButtonGroup
                     title="Vehicle Type"
@@ -1080,46 +1076,47 @@ export default function TransportFormContent({
                   />
                   {renderFieldError("vehicleType")}
                 </div>
-
-                <label className="rbac-label">
-                  Loading Charges
-                  <input
-                    className="rbac-input"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={form.loadingCharges}
-                    onChange={(event) =>
-                      setField("loadingCharges", event.target.value)
-                    }
-                  />
-                </label>
-                <label className="rbac-label">
-                  Return Material Charges
-                  <input
-                    className="rbac-input"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={form.returnMaterialCharges}
-                    onChange={(event) =>
-                      setField("returnMaterialCharges", event.target.value)
-                    }
-                  />
-                </label>
-                <label className="rbac-label">
-                  Transport Charges
-                  <input
-                    className="rbac-input"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={form.transportCharges}
-                    onChange={(event) =>
-                      setField("transportCharges", event.target.value)
-                    }
-                  />
-                </label>
+                <div className="grid gap-2 md:gap-4 md:grid-cols-4 mt-2">
+                  <label className="rbac-label">
+                    Loading Charges
+                    <input
+                      className="rbac-input"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={form.loadingCharges}
+                      onChange={(event) =>
+                        setField("loadingCharges", event.target.value)
+                      }
+                    />
+                  </label>
+                  <label className="rbac-label">
+                    Return Material Charges
+                    <input
+                      className="rbac-input"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={form.returnMaterialCharges}
+                      onChange={(event) =>
+                        setField("returnMaterialCharges", event.target.value)
+                      }
+                    />
+                  </label>
+                  <label className="rbac-label">
+                    Transport Charges
+                    <input
+                      className="rbac-input"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={form.transportCharges}
+                      onChange={(event) =>
+                        setField("transportCharges", event.target.value)
+                      }
+                    />
+                  </label>
+                </div>
               </div>
             ) : null}
 
@@ -1137,19 +1134,24 @@ export default function TransportFormContent({
                   }
                 />
               </label>
-              <div className="rounded-xl border border-[color:var(--theme-border)] bg-[color:var(--theme-surface-2)] p-4">
-                <p className="text-xs uppercase text-slate-500">Total Amount</p>
-                <p className="text-lg font-semibold">
-                  ₹{currency(totalAmount)}
-                </p>
-              </div>
+              <label className="rbac-label">
+                Total Amount
+                <input
+                  className="rbac-input"
+                  type="text"
+                  value={`₹${currency(totalAmount)}`}
+                  readOnly
+                  aria-readonly="true"
+                />
+              </label>
             </div>
             {form.transportType === "PORTER_DAILY" ||
               form.transportType === "CNG_RICKSHAW" ||
+              form.transportType === "COURIER_DAILY" ||
               form.transportType === "LOADING_VEHICLE" ? (
               <div className="md:col-span-2 grid gap-4 md:grid-cols-2 my-2">
-                <div>
-                  <label className="rbac-label">
+                <div className="col-start-1 col-end-3">
+                  <label className="rbac-label" style={{ display: 'flex', flexDirection: "column", width: "50%" }}>
                     Payment Mode
                     <select
                       className="rbac-input rbac-select"
@@ -1194,7 +1196,7 @@ export default function TransportFormContent({
                 onChange={(event) => setField("remark", event.target.value)}
               />
             </label>
-            </fieldset>
+          </fieldset>
           {note && <p className="text-sm text-red-600 mb-4">{note}</p>}
           <div className="rbac-actions">
             <button className="rbac-button" type="submit" disabled={saving}>
