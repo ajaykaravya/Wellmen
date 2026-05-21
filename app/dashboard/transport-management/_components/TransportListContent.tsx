@@ -1049,7 +1049,7 @@ function TransportListView() {
       <Dialog open={viewOpen} onClose={closeView} className="relative z-50">
         <div className="fixed inset-0 bg-black/40" aria-hidden="true" />
         <div className="fixed inset-0 overflow-y-auto px-4 py-6 flex justify-center">
-          <div style={{width:"60%"}} className="flex min-h-full items-center justify-center">
+          <div style={{width:"80%"}} className="flex min-h-full items-center justify-center">
             <DialogPanel className="theme-modal-surface w-full max-w-4xl rounded-2xl p-4 shadow-2xl sm:p-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
