@@ -21,6 +21,10 @@ function ProfileContent() {
               <p className="rbac-name">{user?.email}</p>
             </div>
             <div className="rbac-profile-item">
+              <p className="rbac-label">Mobile Number</p>
+              <p className="rbac-name">{user?.mobileNumber}</p>
+            </div>
+            <div className="rbac-profile-item">
               <p className="rbac-label">Role</p>
               <p className="rbac-name">{user?.role}</p>
             </div>

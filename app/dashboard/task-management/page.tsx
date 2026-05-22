@@ -249,7 +249,7 @@ function TodoListContent() {
       if (toDate) params.set("toDate", toDate);
       if (isAdmin && assigneeFilter) params.set("assigneeId", assigneeFilter);
 
-      const endpoint = isAdmin ? "/api/todos" : "/api/my-todos";
+      const endpoint = "/api/task-management";
       const res = await fetch(`${endpoint}?${params.toString()}`);
       if (!res.ok) return;
 
@@ -309,7 +309,7 @@ function TodoListContent() {
     async (row: TodoRow, draft: TodoUpdateDraft) => {
       setSavingId(row.id);
       try {
-        const res = await fetch(`/api/my-todos/${row.id}`, {
+        const res = await fetch(`/api/task-management/${row.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -372,7 +372,7 @@ function TodoListContent() {
     if (!confirmTarget) return;
     setDeleting(true);
     try {
-      const endpoint = isAdmin ? "/api/todos" : "/api/my-todos";
+      const endpoint = "/api/task-management";
       const res = await fetch(`${endpoint}/${confirmTarget.id}`, {
         method: "DELETE",
       });
@@ -393,7 +393,7 @@ function TodoListContent() {
       setConfirmOpen(false);
       setConfirmTarget(null);
     }
-  }, [confirmTarget, isAdmin, loadTodos]);
+  }, [confirmTarget, loadTodos]);
 
   const adminColumns = useMemo<ColumnDef<TodoRow>[]>(
     () => [

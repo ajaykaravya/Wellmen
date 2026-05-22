@@ -691,7 +691,7 @@ function ReportingListContent() {
             <option value="">All employees</option>
             {employees.map((employee) => (
               <option key={employee.id} value={employee.id}>
-                {employee.firstName} {employee.lastName}
+                {employee.firstName} {employee.lastName} - {employee.role || ""}
               </option>
             ))}
           </select>

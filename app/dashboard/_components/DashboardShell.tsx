@@ -251,9 +251,9 @@ export default function DashboardShell({
         ],
       });
       items.push({ key: "dailyExpenses", label: "Daily Expense" });
+      items.push({ key: "transport-management", label: "Transport Management" });
     }
     items.push({ key: "task-management", label: "Task Management" });
-    items.push({ key: "transport-management", label: "Transport Management" });
     items.push(
       isAdmin
         ? { key: "query-management", label: "Query Management" }
@@ -307,11 +307,10 @@ export default function DashboardShell({
                 <Link href="/dashboard">
                   <div className="rbac-logo">
                     <img
-                      src={`${
-                        theme === "dark"
+                      src={`${theme === "dark"
                           ? "/images/logo_white.png"
                           : "/images/logo.svg"
-                      }`}
+                        }`}
                       className="w-full"
                       alt="WellMen"
                     />
@@ -328,18 +327,16 @@ export default function DashboardShell({
                   return (
                     <div key={item.key}>
                       <button
-                        className={`rbac-nav-item w-full text-left flex items-center justify-between ${
-                          isMasterDataActive ? "active" : ""
-                        }`}
+                        className={`rbac-nav-item w-full text-left flex items-center justify-between ${isMasterDataActive ? "active" : ""
+                          }`}
                         onClick={() =>
                           setMasterDataExpanded(!masterDataExpanded)
                         }
                       >
                         {item.label}
                         <span
-                          className={`ml-2 transition-transform ${
-                            masterDataExpanded ? "rotate-90" : ""
-                          }`}
+                          className={`ml-2 transition-transform ${masterDataExpanded ? "rotate-90" : ""
+                            }`}
                         >
                           <FaChevronRight size={20} />
                         </span>
@@ -350,9 +347,8 @@ export default function DashboardShell({
                             <Link
                               key={dropdownItem.key}
                               href={routeByMenu[dropdownItem.key]}
-                              className={`rbac-nav-item block text-sm ${
-                                activeMenu === dropdownItem.key ? "active" : ""
-                              }`}
+                              className={`rbac-nav-item block text-sm ${activeMenu === dropdownItem.key ? "active" : ""
+                                }`}
                               onClick={() => setNavOpen(false)}
                               prefetch={true}
                             >
@@ -369,9 +365,8 @@ export default function DashboardShell({
                   <Link
                     key={item.key}
                     href={routeByMenu[item.key]}
-                    className={`rbac-nav-item ${
-                      activeMenu === item.key ? "active" : ""
-                    }`}
+                    className={`rbac-nav-item ${activeMenu === item.key ? "active" : ""
+                      }`}
                     onClick={() => setNavOpen(false)}
                     prefetch={true}
                   >
@@ -409,11 +404,10 @@ export default function DashboardShell({
             <Link href="/dashboard">
               <div className="rbac-logo">
                 <img
-                  src={`${
-                    theme === "dark"
+                  src={`${theme === "dark"
                       ? "/images/logo_white.png"
                       : "/images/logo.svg"
-                  }`}
+                    }`}
                   alt="WellMen"
                 />
               </div>
@@ -423,9 +417,8 @@ export default function DashboardShell({
                 className="rbac-theme-toggle-mobile"
                 type="button"
                 onClick={toggleTheme}
-                aria-label={`Switch to ${
-                  theme === "light" ? "dark" : "light"
-                } mode`}
+                aria-label={`Switch to ${theme === "light" ? "dark" : "light"
+                  } mode`}
                 title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
               >
                 {theme === "light" ? <FaMoon size={14} /> : <FaSun size={14} />}

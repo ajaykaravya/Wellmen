@@ -162,7 +162,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const endpoint = isAdmin ? "/api/todos" : "/api/my-todos";
+        const endpoint = "/api/task-management";
 
         const [usersRes, projectsRes, todoRes] = await Promise.all([
           isAdmin ? fetch("/api/users/options") : Promise.resolve(null),
@@ -317,7 +317,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
 
     try {
       setSaving(true);
-      const endpoint = isAdmin ? "/api/todos" : "/api/my-todos";
+      const endpoint = "/api/task-management";
       const res = await fetch(todoId ? `${endpoint}/${todoId}` : endpoint, {
         method: todoId ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
