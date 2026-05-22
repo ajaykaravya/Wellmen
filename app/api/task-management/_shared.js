@@ -66,6 +66,21 @@ export const ensureEndDateIsValid = (startDate, endDate) => {
   return null;
 };
 
+export const resolveCompletedDate = (currentTodo, nextStatus) => {
+  if (nextStatus !== "COMPLETED") {
+    return nextStatus ? null : undefined;
+  }
+
+  if (
+    currentTodo?.status === "COMPLETED" &&
+    currentTodo?.completedDate
+  ) {
+    return currentTodo.completedDate;
+  }
+
+  return new Date();
+};
+
 const buildAssignee = (todo) =>
   todo.assignee
     ? {
@@ -79,11 +94,11 @@ const buildAssignee = (todo) =>
 
 export const serializeTodo = (todo, userId) => ({
   id: todo.id,
-  title: todo.description || "-",
   description: todo.description,
   comments: todo.comments,
   startDate: todo.startDate,
   endDate: todo.endDate || null,
+  completedDate: todo.completedDate || null,
   status: todo.status,
   projectId: todo.projectId,
   projectName: todo.project?.name || "-",

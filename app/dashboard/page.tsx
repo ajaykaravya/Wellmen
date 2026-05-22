@@ -279,9 +279,7 @@ function OverviewContent() {
 
   const loadQuery = useCallback(async () => {
     try {
-      const endpoint = isAdmin
-        ? "/api/query-management"
-        : "/api/my-query-management";
+      const endpoint = "/api/query-management";
       const res = await fetch(endpoint);
       if (!res.ok) return;
 
@@ -291,7 +289,7 @@ function OverviewContent() {
     } catch (error) {
       console.error("Failed to load query", error);
     }
-  }, [isAdmin]);
+  }, []);
 
   useEffect(() => {
     loadQuery();
@@ -575,7 +573,7 @@ function OverviewContent() {
     if (!confirmQueryTarget) return;
     setDeletingQuery(true);
     try {
-      const endpoint = isAdmin ? "/api/query-management" : "/api/my-query-management";
+      const endpoint = "/api/query-management";
       const res = await fetch(`${endpoint}/${confirmQueryTarget.id}`, { method: "DELETE" });
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
@@ -592,7 +590,7 @@ function OverviewContent() {
       setConfirmQueryOpen(false);
       setConfirmQueryTarget(null);
     }
-  }, [confirmQueryTarget, isAdmin, loadQuery]);
+  }, [confirmQueryTarget, loadQuery]);
 
   const handleEditReport = useCallback((row: AdminReportRow) => {
     router.push(`/dashboard/reports/${row.id}`);

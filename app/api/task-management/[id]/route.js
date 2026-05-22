@@ -8,6 +8,7 @@ import {
   parseProjectId,
   parseStatus,
   serializeTodo,
+  resolveCompletedDate,
   validateCategoryForType,
 } from "../_shared";
 
@@ -129,6 +130,8 @@ export async function PUT(req, { params }) {
     }
   }
 
+  const completedDate = resolveCompletedDate(loaded.todo, status);
+
   const parsedStartDate = parseDate(startDate);
   if (!parsedStartDate) {
     return NextResponse.json({ error: "Invalid start date." }, { status: 400 });
@@ -173,6 +176,7 @@ export async function PUT(req, { params }) {
       comments: comments || null,
       startDate: parsedStartDate,
       endDate: parsedEndDate || null,
+      completedDate,
       status,
       projectId: projectId || null,
       assigneeId: loaded.isAdmin ? assigneeId || null : loaded.todo.assigneeId,
@@ -228,6 +232,7 @@ export async function PATCH(req, { params }) {
 
   if (status) {
     data.status = status;
+    data.completedDate = resolveCompletedDate(loaded.todo, status);
   }
 
   if (!isLimitedUser) {

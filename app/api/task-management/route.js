@@ -8,6 +8,7 @@ import {
   parseProjectId,
   parseStatus,
   serializeTodo,
+  resolveCompletedDate,
   validateCategoryForType,
 } from "./_shared";
 
@@ -26,6 +27,7 @@ const buildListWhere = ({ searchParams, userId, isAdmin }) => {
   const includePendingOld = searchParams.get("includePendingOld") === "true";
 
   const where = {};
+  const andConditions = [];
 
   if (!isAdmin) {
     where.assigneeId = userId || undefined;
@@ -34,36 +36,40 @@ const buildListWhere = ({ searchParams, userId, isAdmin }) => {
   }
 
   if (q) {
-    where.OR = [
-      { description: { contains: q, mode: "insensitive" } },
-      { category: { name: { contains: q, mode: "insensitive" } } },
-    ];
+    andConditions.push({
+      OR: [
+        { description: { contains: q, mode: "insensitive" } },
+        { category: { name: { contains: q, mode: "insensitive" } } },
+      ],
+    });
   }
 
   if (status) {
-    where.status = status;
+    andConditions.push({ status });
   }
 
   if (projectId) {
-    where.projectId = projectId;
+    andConditions.push({ projectId });
   }
 
   if (type) {
-    where.type = type;
+    andConditions.push({ type });
   }
 
   if (priority) {
-    where.priority = priority.toUpperCase();
+    andConditions.push({ priority: priority.toUpperCase() });
   }
 
   if (categoryId) {
-    where.categoryId = categoryId;
+    andConditions.push({ categoryId });
   }
 
   if (category) {
-    where.category = {
-      name: { contains: category, mode: "insensitive" },
-    };
+    andConditions.push({
+      category: {
+        name: { contains: category, mode: "insensitive" },
+      },
+    });
   }
 
   const parsedFromDate = parseDate(fromDate);
@@ -75,45 +81,39 @@ const buildListWhere = ({ searchParams, userId, isAdmin }) => {
     return { error: NextResponse.json({ error: "Invalid toDate." }, { status: 400 }) };
   }
 
-  if (isAdmin && includePendingOld) {
+  if (includePendingOld) {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
 
-    where.OR = [
-      {
-        startDate: {
-          gte: todayStart,
-          lte: todayEnd,
+    andConditions.push({
+      OR: [
+        {
+          status: {
+            not: "COMPLETED",
+          },
         },
-      },
-      {
-        AND: [
-          {
-            startDate: {
-              lt: todayStart,
-            },
+        {
+          completedDate: {
+            gte: todayStart,
+            lte: todayEnd,
           },
-          {
-            status: {
-              not: "COMPLETED",
-            },
-          },
-        ],
-      },
-    ];
+        },
+      ],
+    });
   } else if (parsedFromDate || parsedToDate) {
-    where.startDate = {};
+    const startDateWhere = {};
     if (parsedFromDate) {
-      where.startDate.gte = parsedFromDate;
+      startDateWhere.gte = parsedFromDate;
     }
     if (parsedToDate) {
       const end = new Date(parsedToDate);
       end.setHours(23, 59, 59, 999);
-      where.startDate.lte = end;
+      startDateWhere.lte = end;
     }
+    andConditions.push({ startDate: startDateWhere });
   } else if (date) {
     const start = new Date(date);
     if (Number.isNaN(start.getTime())) {
@@ -123,10 +123,16 @@ const buildListWhere = ({ searchParams, userId, isAdmin }) => {
     const end = new Date(date);
     end.setDate(end.getDate() + 1);
 
-    where.startDate = {
-      gte: start,
-      lt: end,
-    };
+    andConditions.push({
+      startDate: {
+        gte: start,
+        lt: end,
+      },
+    });
+  }
+
+  if (andConditions.length) {
+    where.AND = andConditions;
   }
 
   return { where };
@@ -243,6 +249,8 @@ export async function POST(req) {
     }
   }
 
+  const completedDate = resolveCompletedDate(null, status);
+
   const parsedStartDate = parseDate(startDate);
   if (!parsedStartDate) {
     return NextResponse.json({ error: "Invalid start date." }, { status: 400 });
@@ -286,6 +294,7 @@ export async function POST(req) {
         comments: comments || null,
         startDate: parsedStartDate,
         endDate: parsedEndDate || null,
+        completedDate,
         status,
         projectId: projectId || null,
         assigneeId: assigneeId || null,
