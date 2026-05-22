@@ -14,7 +14,7 @@ export default function MyQueryEditPage() {
     <DashboardShell>
       <QueryFormContent
         queryId={queryId}
-        apiBase="/api/my-query-management"
+        apiBase="/api/query-management"
         returnPath="/dashboard/my-query-management"
         title="Edit Query"
         submitLabel="Update"

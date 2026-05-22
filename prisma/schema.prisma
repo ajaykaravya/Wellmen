@@ -34,6 +34,7 @@ model Todo {
   comments    String?
   startDate   DateTime
   endDate     DateTime?
+  completedDate DateTime?
   status      TodoStatus @default(TODO)
   projectId   String?
   assigneeId  String?
@@ -53,6 +54,7 @@ model Todo {
   @@index([priority])
   @@index([categoryId])
   @@index([projectId])
+  @@index([completedDate])
 }
 
 model Project {

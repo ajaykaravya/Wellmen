@@ -7,7 +7,7 @@ export default function MyQueryManagementPage() {
   return (
     <DashboardShell>
       <QueryListContent
-        apiBase="/api/my-query-management"
+        apiBase="/api/query-management"
         basePath="/dashboard/my-query-management"
         title="My Query Management"
         addLabel="Add Query"

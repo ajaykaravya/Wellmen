@@ -257,7 +257,7 @@ function OverviewContent() {
     setLoading(true);
     try {
       const today = getTodayInputDate();
-      const endpoint = isAdmin ? "/api/todos" : "/api/my-todos";
+      const endpoint = "/api/task-management";
       const res = await fetch(
         `${endpoint}?fromDate=${today}&includePendingOld=true&page=1&pageSize=10`,
       );
@@ -271,7 +271,7 @@ function OverviewContent() {
     } finally {
       setLoading(false);
     }
-  }, [isAdmin]);
+  }, []);
 
   useEffect(() => {
     loadTodos();
@@ -279,9 +279,7 @@ function OverviewContent() {
 
   const loadQuery = useCallback(async () => {
     try {
-      const endpoint = isAdmin
-        ? "/api/query-management"
-        : "/api/my-query-management";
+      const endpoint = "/api/query-management";
       const res = await fetch(endpoint);
       if (!res.ok) return;
 
@@ -291,7 +289,7 @@ function OverviewContent() {
     } catch (error) {
       console.error("Failed to load query", error);
     }
-  }, [isAdmin]);
+  }, []);
 
   useEffect(() => {
     loadQuery();
@@ -403,7 +401,7 @@ function OverviewContent() {
 
     setSavingId(row.id);
     try {
-      const res = await fetch(`/api/my-todos/${row.id}`, {
+      const res = await fetch(`/api/task-management/${row.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -547,7 +545,7 @@ function OverviewContent() {
     if (!confirmTodoTarget) return;
     setDeletingTodo(true);
     try {
-      const endpoint = isAdmin ? "/api/todos" : "/api/my-todos";
+      const endpoint = "/api/task-management";
       const res = await fetch(`${endpoint}/${confirmTodoTarget.id}`, { method: "DELETE" });
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
@@ -564,7 +562,7 @@ function OverviewContent() {
       setConfirmTodoOpen(false);
       setConfirmTodoTarget(null);
     }
-  }, [confirmTodoTarget, isAdmin, loadTodos]);
+  }, [confirmTodoTarget, loadTodos]);
 
   const handleDeleteQuery = useCallback((row: QueryRow) => {
     setConfirmQueryTarget(row);
@@ -575,7 +573,7 @@ function OverviewContent() {
     if (!confirmQueryTarget) return;
     setDeletingQuery(true);
     try {
-      const endpoint = isAdmin ? "/api/query-management" : "/api/my-query-management";
+      const endpoint = "/api/query-management";
       const res = await fetch(`${endpoint}/${confirmQueryTarget.id}`, { method: "DELETE" });
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
@@ -592,7 +590,7 @@ function OverviewContent() {
       setConfirmQueryOpen(false);
       setConfirmQueryTarget(null);
     }
-  }, [confirmQueryTarget, isAdmin, loadQuery]);
+  }, [confirmQueryTarget, loadQuery]);
 
   const handleEditReport = useCallback((row: AdminReportRow) => {
     router.push(`/dashboard/reports/${row.id}`);

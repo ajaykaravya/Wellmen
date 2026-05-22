@@ -7,7 +7,7 @@ export default function MyQueryNewPage() {
   return (
     <DashboardShell>
       <QueryFormContent
-        apiBase="/api/my-query-management"
+        apiBase="/api/query-management"
         returnPath="/dashboard/my-query-management"
         title="Add New Query"
         submitLabel="Save"
