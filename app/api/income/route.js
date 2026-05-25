@@ -3,24 +3,29 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
 
+const PAYMENT_MODES = ["CASH", "BANK"];
+
 const parsePayload = (body) => {
   const amountRaw = String(body.amount || "").trim();
   const projectId = String(body.projectId || "").trim();
-  const expenseTypeId = String(body.expenseTypeId || "").trim();
-  const expenseById = String(body.expenseById || "").trim();
-  const expenseCompanyId = String(body.expenseCompanyId || "").trim();
+  const incomeCompanyId = String(body.incomeCompanyId || body.expenseCompanyId || "").trim();
+  const receivedById = String(body.receivedById || body.expenseById || "").trim();
+  const paymentMode = String(body.paymentMode || "").trim().toUpperCase();
   const date = String(body.date || "").trim();
   const remark = String(body.remark || "").trim();
+
   return {
     amountRaw,
     projectId,
-    expenseTypeId,
-    expenseById,
-    expenseCompanyId,
+    incomeCompanyId,
+    receivedById,
+    paymentMode,
     date,
     remark,
   };
 };
+
+const isValidPaymentMode = (value) => PAYMENT_MODES.includes(value);
 
 const parseDate = (value) => {
   if (!value) return null;
@@ -43,19 +48,18 @@ const parseDate = (value) => {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 
-const serializeDailyExpense = (row) => ({
+const serializeIncome = (row) => ({
   id: row.id,
   transactionType: row.transactionType,
   amount: Number(row.amount),
   projectId: row.projectId,
   projectName: row.project?.name || null,
   projectCity: row.project?.city || null,
-  expenseTypeId: row.expenseTypeId,
-  expenseTypeName: row.expenseType?.name || null,
-  expenseById: row.expenseById,
-  expenseByName: row.expenseBy?.fullName || null,
-  expenseCompanyId: row.expenseCompanyId,
-  expenseCompanyName: row.expenseCompany?.name || null,
+  incomeCompanyId: row.expenseCompanyId,
+  incomeCompanyName: row.expenseCompany?.name || null,
+  receivedById: row.expenseById,
+  receivedByName: row.expenseBy?.fullName || null,
+  paymentMode: row.paymentMode || null,
   date: row.date,
   remark: row.remark,
   createdAt: row.createdAt,
@@ -67,11 +71,13 @@ export async function GET(req) {
   if (!gate.ok) return gate.res;
 
   const { searchParams } = new URL(req.url);
-  const query = String(searchParams.get("q") || "").trim();
+  const q = String(searchParams.get("q") || "").trim();
   const projectId = String(searchParams.get("projectId") || "").trim();
-  const expenseTypeId = String(searchParams.get("expenseTypeId") || "").trim();
-  const expenseById = String(searchParams.get("expenseById") || "").trim();
-  const expenseCompanyId = String(searchParams.get("expenseCompanyId") || "").trim();
+  const incomeCompanyId = String(searchParams.get("incomeCompanyId") || "").trim();
+  const receivedById = String(searchParams.get("receivedById") || "").trim();
+  const paymentMode = String(searchParams.get("paymentMode") || "")
+    .trim()
+    .toUpperCase();
   const fromDate = String(searchParams.get("fromDate") || "").trim();
   const toDate = String(searchParams.get("toDate") || "").trim();
   const pageParam = Number(searchParams.get("page") || "1");
@@ -82,67 +88,47 @@ export async function GET(req) {
       ? Math.min(pageSizeParam, 100)
       : 10;
 
-  const where = {};
-  if (query) {
+  const where = { transactionType: "INCOME" };
+  if (q) {
     where.OR = [
-      { remark: { contains: query, mode: "insensitive" } },
-      { expenseType: { name: { contains: query, mode: "insensitive" } } },
-      {
-        expenseBy: {
-          is: {
-            fullName: { contains: query, mode: "insensitive" },
-          },
-        },
-      },
-      {
-        expenseBy: {
-          is: {
-            firstName: { contains: query, mode: "insensitive" },
-          },
-        },
-      },
-      {
-        expenseBy: {
-          is: {
-            lastName: { contains: query, mode: "insensitive" },
-          },
-        },
-      },
+      { remark: { contains: q, mode: "insensitive" } },
+      { project: { is: { name: { contains: q, mode: "insensitive" } } } },
+      { project: { is: { city: { contains: q, mode: "insensitive" } } } },
       {
         expenseCompany: {
-          is: {
-            name: { contains: query, mode: "insensitive" },
-          },
+          is: { name: { contains: q, mode: "insensitive" } },
         },
       },
       {
-        project: {
-          is: {
-            name: { contains: query, mode: "insensitive" },
-          },
+        expenseBy: {
+          is: { fullName: { contains: q, mode: "insensitive" } },
         },
       },
       {
-        project: {
-          is: {
-            city: { contains: query, mode: "insensitive" },
-          },
+        expenseBy: {
+          is: { firstName: { contains: q, mode: "insensitive" } },
         },
       },
-      ];
+      {
+        expenseBy: {
+          is: { lastName: { contains: q, mode: "insensitive" } },
+        },
+      },
+    ];
   }
-  where.transactionType = "EXPENSE";
-  if (projectId) {
-    where.projectId = projectId;
-  }
-  if (expenseTypeId) {
-    where.expenseTypeId = expenseTypeId;
-  }
-  if (expenseById) {
-    where.expenseById = expenseById;
-  }
-  if (expenseCompanyId) {
-    where.expenseCompanyId = expenseCompanyId;
+
+  if (projectId) where.projectId = projectId;
+  if (incomeCompanyId) where.expenseCompanyId = incomeCompanyId;
+  if (receivedById) where.expenseById = receivedById;
+
+  if (paymentMode) {
+    if (!isValidPaymentMode(paymentMode)) {
+      return NextResponse.json(
+        { error: "Invalid payment mode filter." },
+        { status: 400 },
+      );
+    }
+    where.paymentMode = paymentMode;
   }
 
   if (fromDate || toDate) {
@@ -165,41 +151,27 @@ export async function GET(req) {
     }
   }
 
-  const [total, dailyExpenses, incomeSum, expenseSum] = await Promise.all([
+  const [total, incomes] = await Promise.all([
     prisma.dailyExpense.count({ where }),
     prisma.dailyExpense.findMany({
       where,
       include: {
-        project: true,
-        expenseType: true,
-        expenseBy: true,
+        project: { select: { id: true, name: true, city: true } },
         expenseCompany: true,
+        expenseBy: { include: { role: true } },
       },
       orderBy: { date: "desc" },
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
-    prisma.dailyExpense.aggregate({
-      _sum: { amount: true },
-      where: { transactionType: "INCOME" },
-    }),
-    prisma.dailyExpense.aggregate({
-      _sum: { amount: true },
-      where: { transactionType: "EXPENSE" },
-    }),
   ]);
 
-  const income = Number(incomeSum._sum.amount || 0);
-  const expense = Number(expenseSum._sum.amount || 0);
-  const balance = income - expense;
-
   return NextResponse.json({
-    data: dailyExpenses.map(serializeDailyExpense),
+    data: incomes.map(serializeIncome),
     page,
     pageSize,
     total,
     totalPages: Math.max(1, Math.ceil(total / pageSize)),
-    balance,
   });
 }
 
@@ -224,93 +196,84 @@ export async function POST(req) {
     return NextResponse.json({ error: "Project is required." }, { status: 400 });
   }
 
-  const project = await prisma.project.findUnique({
-    where: { id: payload.projectId },
-  });
+  if (!payload.incomeCompanyId) {
+    return NextResponse.json(
+      { error: "Income company is required." },
+      { status: 400 },
+    );
+  }
+
+  if (!payload.receivedById) {
+    return NextResponse.json(
+      { error: "Received by is required." },
+      { status: 400 },
+    );
+  }
+
+  if (!isValidPaymentMode(payload.paymentMode)) {
+    return NextResponse.json(
+      { error: "Payment mode is required." },
+      { status: 400 },
+    );
+  }
+
+  const [project, incomeCompany, receivedBy] = await Promise.all([
+    prisma.project.findUnique({
+      where: { id: payload.projectId },
+      select: { id: true },
+    }),
+    prisma.company.findUnique({
+      where: { id: payload.incomeCompanyId },
+      select: { id: true, name: true },
+    }),
+    prisma.user.findUnique({
+      where: { id: payload.receivedById },
+      select: { id: true, fullName: true },
+    }),
+  ]);
+
   if (!project) {
     return NextResponse.json({ error: "Project not found." }, { status: 404 });
   }
 
-  let expenseTypeId = null;
-  if (!payload.expenseTypeId) {
+  if (!incomeCompany) {
     return NextResponse.json(
-      { error: "Expense type is required." },
-      { status: 400 },
-    );
-  }
-
-  const expenseType = await prisma.expenseType.findUnique({
-    where: { id: payload.expenseTypeId },
-  });
-  if (!expenseType) {
-    return NextResponse.json(
-      { error: "Expense type not found." },
-      { status: 404 },
-    );
-  }
-  expenseTypeId = expenseType.id;
-
-  if (!payload.expenseById) {
-    return NextResponse.json(
-      { error: "Expense by is required." },
-      { status: 400 },
-    );
-  }
-
-  const expenseBy = await prisma.user.findUnique({
-    where: { id: payload.expenseById },
-  });
-  if (!expenseBy) {
-    return NextResponse.json(
-      { error: "Expense by user not found." },
+      { error: "Income company not found." },
       { status: 404 },
     );
   }
 
-  if (!payload.expenseCompanyId) {
+  if (!receivedBy) {
     return NextResponse.json(
-      { error: "Expense company is required." },
-      { status: 400 },
-    );
-  }
-
-  const expenseCompany = await prisma.company.findUnique({
-    where: { id: payload.expenseCompanyId },
-  });
-  if (!expenseCompany) {
-    return NextResponse.json(
-      { error: "Expense company not found." },
+      { error: "Received by user not found." },
       { status: 404 },
     );
   }
 
   try {
-    const dailyExpense = await prisma.dailyExpense.create({
+    const income = await prisma.dailyExpense.create({
       data: {
-        transactionType: "EXPENSE",
+        transactionType: "INCOME",
         amount: new Prisma.Decimal(amount),
         projectId: project.id,
-        expenseTypeId,
-        expenseById: expenseBy.id,
-        expenseCompanyId: expenseCompany.id,
+        expenseCompanyId: incomeCompany.id,
+        expenseById: receivedBy.id,
+        paymentMode: payload.paymentMode,
         date: parsedDate,
         remark: payload.remark || null,
       },
       include: {
-        project: true,
-        expenseType: true,
-        expenseBy: true,
+        project: { select: { id: true, name: true, city: true } },
         expenseCompany: true,
+        expenseBy: { include: { role: true } },
       },
     });
 
-    return NextResponse.json(serializeDailyExpense(dailyExpense), {
-      status: 201,
-    });
+    return NextResponse.json(serializeIncome(income), { status: 201 });
   } catch (error) {
-    console.error("Failed to create daily expense", error);
+    console.error("Failed to create income", error);
     return NextResponse.json(
-      { error: "Failed to create daily expense." },
+      { error: "Failed to create income." },
       { status: 500 },
     );
   }

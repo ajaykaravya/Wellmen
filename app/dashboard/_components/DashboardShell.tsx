@@ -44,7 +44,9 @@ type MenuKey =
   | "serviceCategories"
   | "reportingCategories"
   | "expenseTypes"
-  | "dailyExpenses";
+  | "dailyExpenses"
+  | "income"
+  | "cash";
 
 type DashboardContextValue = {
   user: SessionUser | null;
@@ -93,38 +95,43 @@ const routeByMenu: Record<MenuKey, string> = {
   reportingCategories: "/dashboard/reporting-categories",
   expenseTypes: "/dashboard/expense-types",
   dailyExpenses: "/dashboard/daily-expenses",
+  income: "/dashboard/income",
+  cash: "/dashboard/cash",
 };
 
-const getActiveMenu = (pathname: string): MenuKey => {
-  if (pathname.startsWith("/dashboard/users")) return "users";
-  if (pathname.startsWith("/dashboard/office-categories"))
+const getActiveMenu = (pathname: string | null): MenuKey => {
+  const safePathname = pathname || "";
+  if (safePathname.startsWith("/dashboard/users")) return "users";
+  if (safePathname.startsWith("/dashboard/office-categories"))
     return "officeCategories";
-  if (pathname.startsWith("/dashboard/project-categories"))
+  if (safePathname.startsWith("/dashboard/project-categories"))
     return "projectcategories";
-  if (pathname.startsWith("/dashboard/service-categories"))
+  if (safePathname.startsWith("/dashboard/service-categories"))
     return "serviceCategories";
-  if (pathname.startsWith("/dashboard/reporting-categories"))
+  if (safePathname.startsWith("/dashboard/reporting-categories"))
     return "reportingCategories";
-  if (pathname.startsWith("/dashboard/projects")) return "projects";
-  if (pathname.startsWith("/dashboard/hospitals")) return "hospitals";
-  if (pathname.startsWith("/dashboard/transport-configs"))
+  if (safePathname.startsWith("/dashboard/projects")) return "projects";
+  if (safePathname.startsWith("/dashboard/hospitals")) return "hospitals";
+  if (safePathname.startsWith("/dashboard/transport-configs"))
     return "transportConfigs";
-  if (pathname.startsWith("/dashboard/master-data")) return "masterData";
-  if (pathname.startsWith("/dashboard/task-management"))
+  if (safePathname.startsWith("/dashboard/master-data")) return "masterData";
+  if (safePathname.startsWith("/dashboard/task-management"))
     return "task-management";
-  if (pathname.startsWith("/dashboard/transport-management"))
+  if (safePathname.startsWith("/dashboard/transport-management"))
     return "transport-management";
-  if (pathname.startsWith("/dashboard/query-management"))
+  if (safePathname.startsWith("/dashboard/query-management"))
     return "query-management";
-  if (pathname.startsWith("/dashboard/my-query-management"))
+  if (safePathname.startsWith("/dashboard/my-query-management"))
     return "my-query-management";
-  if (pathname.startsWith("/dashboard/roles")) return "roles";
-  if (pathname.startsWith("/dashboard/permissions")) return "permissions";
-  if (pathname.startsWith("/dashboard/reports")) return "reports";
-  if (pathname.startsWith("/dashboard/expense-types")) return "expenseTypes";
-  if (pathname.startsWith("/dashboard/daily-expenses")) return "dailyExpenses";
-  if (pathname.startsWith("/dashboard/team")) return "team";
-  if (pathname.startsWith("/dashboard/profile")) return "profile";
+  if (safePathname.startsWith("/dashboard/roles")) return "roles";
+  if (safePathname.startsWith("/dashboard/permissions")) return "permissions";
+  if (safePathname.startsWith("/dashboard/reports")) return "reports";
+  if (safePathname.startsWith("/dashboard/expense-types")) return "expenseTypes";
+  if (safePathname.startsWith("/dashboard/daily-expenses")) return "dailyExpenses";
+  if (safePathname.startsWith("/dashboard/income")) return "income";
+  if (safePathname.startsWith("/dashboard/cash")) return "cash";
+  if (safePathname.startsWith("/dashboard/team")) return "team";
+  if (safePathname.startsWith("/dashboard/profile")) return "profile";
   return "dashboard";
 };
 
@@ -250,7 +257,9 @@ export default function DashboardShell({
           { key: "transportConfigs", label: "Transport" },
         ],
       });
-      items.push({ key: "dailyExpenses", label: "Daily Expense" });
+      items.push({ key: "dailyExpenses", label: "Expense" });
+      items.push({ key: "income", label: "Income" });
+      items.push({ key: "cash", label: "Cash" });
       items.push({ key: "transport-management", label: "Transport Management" });
     }
     items.push({ key: "task-management", label: "Task Management" });
