@@ -27,22 +27,26 @@ import {
   ComboboxInput,
   ComboboxOption,
   ComboboxOptions,
-  Listbox,
-  ListboxButton,
-  ListboxOption,
-  ListboxOptions,
 } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
 import { useRouter } from "next/navigation";
+import { FinanceCardList } from "../_components/FinanceCardList";
 
-type TransactionType = "INCOME" | "EXPENSE";
+type TransactionType = "EXPENSE";
 
 type DailyExpenseRow = {
   id: string;
   transactionType: TransactionType;
   amount: number;
+  projectId: string | null;
+  projectName: string | null;
+  projectCity: string | null;
   expenseTypeId: string | null;
   expenseTypeName: string | null;
+  expenseById: string | null;
+  expenseByName: string | null;
+  expenseCompanyId: string | null;
+  expenseCompanyName: string | null;
   date: string;
   remark: string | null;
 };
@@ -53,33 +57,39 @@ type ExpenseTypeOption = {
   status: "ACTIVE" | "INACTIVE";
 };
 
+type ProjectOption = {
+  id: string;
+  name: string;
+  city?: string | null;
+};
+
+type UserOption = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  role?: string | null;
+};
+
+type CompanyOption = {
+  id: string;
+  name: string;
+};
+
 const formatAmount = (value: number) =>
   Number(value || 0).toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 
-const getTransactionBadgeClass = (value: TransactionType) => {
-  switch (value) {
-    case "INCOME":
-      return "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200";
-    case "EXPENSE":
-      return "bg-rose-100 text-rose-800 ring-1 ring-rose-200";
-    default:
-      return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
-  }
-};
-
-const transactionTypeOptions: Array<{
-  key: TransactionType | "";
-  label: string;
-}> = [
-  { key: "", label: "All types" },
-  { key: "INCOME", label: "Income" },
-  { key: "EXPENSE", label: "Expense" },
-];
-
 const getExpenseTypeLabel = (option: ExpenseTypeOption) => option.name;
+
+const getProjectLabel = (option: ProjectOption) =>
+  option.city ? `${option.name} (${option.city})` : option.name;
+
+const getUserLabel = (option: UserOption) =>
+  `${option.firstName} ${option.lastName}`.trim();
+
+const getCompanyLabel = (option: CompanyOption) => option.name;
 
 function DailyExpenseListContent() {
   const router = useRouter();
@@ -91,11 +101,15 @@ function DailyExpenseListContent() {
   const [balance, setBalance] = useState(0);
   const [query, setQuery] = useState("");
   const [expenseTypes, setExpenseTypes] = useState<ExpenseTypeOption[]>([]);
+  const [projects, setProjects] = useState<ProjectOption[]>([]);
+  const [users, setUsers] = useState<UserOption[]>([]);
+  const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [expenseTypeFilter, setExpenseTypeFilter] =
     useState<ExpenseTypeOption | null>(null);
-  const [transactionTypeFilter, setTransactionTypeFilter] = useState<
-    TransactionType | ""
-  >("");
+  const [projectFilter, setProjectFilter] = useState<ProjectOption | null>(null);
+  const [expenseByFilter, setExpenseByFilter] = useState<UserOption | null>(null);
+  const [expenseCompanyFilter, setExpenseCompanyFilter] =
+    useState<CompanyOption | null>(null);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -103,9 +117,14 @@ function DailyExpenseListContent() {
   const [draftExpenseTypeFilter, setDraftExpenseTypeFilter] =
     useState<ExpenseTypeOption | null>(null);
   const [draftExpenseTypeQuery, setDraftExpenseTypeQuery] = useState("");
-  const [draftTransactionTypeFilter, setDraftTransactionTypeFilter] = useState<
-    TransactionType | ""
-  >("");
+  const [draftProjectFilter, setDraftProjectFilter] = useState<ProjectOption | null>(null);
+  const [draftProjectQuery, setDraftProjectQuery] = useState("");
+  const [draftExpenseByFilter, setDraftExpenseByFilter] =
+    useState<UserOption | null>(null);
+  const [draftExpenseByQuery, setDraftExpenseByQuery] = useState("");
+  const [draftExpenseCompanyFilter, setDraftExpenseCompanyFilter] =
+    useState<CompanyOption | null>(null);
+  const [draftExpenseCompanyQuery, setDraftExpenseCompanyQuery] = useState("");
   const [draftFromDate, setDraftFromDate] = useState("");
   const [draftToDate, setDraftToDate] = useState("");
   const debouncedQuery = useDebounce(query, 400);
@@ -118,21 +137,38 @@ function DailyExpenseListContent() {
 
   const activeFilterCount = [
     query.trim(),
-    transactionTypeFilter,
     fromDate,
     toDate,
+    projectFilter?.id,
     expenseTypeFilter?.id,
+    expenseByFilter?.id,
+    expenseCompanyFilter?.id,
   ].filter(Boolean).length;
 
   const openFilters = useCallback(() => {
     setDraftQuery(query);
-    setDraftTransactionTypeFilter(transactionTypeFilter);
     setDraftFromDate(fromDate);
     setDraftToDate(toDate);
+    setDraftProjectFilter(projectFilter);
+    setDraftProjectQuery(projectFilter ? getProjectLabel(projectFilter) : "");
     setDraftExpenseTypeFilter(expenseTypeFilter);
     setDraftExpenseTypeQuery(expenseTypeFilter ? getExpenseTypeLabel(expenseTypeFilter) : "");
+    setDraftExpenseByFilter(expenseByFilter);
+    setDraftExpenseByQuery(expenseByFilter ? getUserLabel(expenseByFilter) : "");
+    setDraftExpenseCompanyFilter(expenseCompanyFilter);
+    setDraftExpenseCompanyQuery(
+      expenseCompanyFilter ? getCompanyLabel(expenseCompanyFilter) : "",
+    );
     setFilterOpen(true);
-  }, [expenseTypeFilter, fromDate, query, transactionTypeFilter, toDate]);
+  }, [
+    expenseByFilter,
+    expenseCompanyFilter,
+    expenseTypeFilter,
+    fromDate,
+    projectFilter,
+    query,
+    toDate,
+  ]);
 
   const closeFilters = useCallback(() => {
     setFilterOpen(false);
@@ -141,26 +177,29 @@ function DailyExpenseListContent() {
   const applyFilters = useCallback(() => {
     setPageIndex(0);
     setQuery(draftQuery);
-    setTransactionTypeFilter(draftTransactionTypeFilter);
     setFromDate(draftFromDate);
     setToDate(draftToDate);
+    setProjectFilter(draftProjectFilter);
     setExpenseTypeFilter(draftExpenseTypeFilter);
+    setExpenseByFilter(draftExpenseByFilter);
+    setExpenseCompanyFilter(draftExpenseCompanyFilter);
     setFilterOpen(false);
   }, [
+    draftExpenseByFilter,
+    draftExpenseCompanyFilter,
     draftExpenseTypeFilter,
     draftFromDate,
     draftQuery,
+    draftProjectFilter,
     draftToDate,
-    draftTransactionTypeFilter,
   ]);
 
   const appliedFilters = [
     query.trim(),
-    transactionTypeFilter
-      ? transactionTypeOptions.find((item) => item.key === transactionTypeFilter)
-          ?.label || ""
-      : "",
+    projectFilter ? getProjectLabel(projectFilter) : "",
     expenseTypeFilter ? getExpenseTypeLabel(expenseTypeFilter) : "",
+    expenseByFilter ? getUserLabel(expenseByFilter) : "",
+    expenseCompanyFilter ? getCompanyLabel(expenseCompanyFilter) : "",
     fromDate,
     toDate,
   ].filter(Boolean);
@@ -168,21 +207,82 @@ function DailyExpenseListContent() {
   useEffect(() => {
     const loadExpenseTypes = async () => {
       try {
-        const res = await fetch("/api/expense-types/options");
-        if (!res.ok) return;
-        const data = await res.json();
-        setExpenseTypes(
-          Array.isArray(data)
-            ? data.filter((item: ExpenseTypeOption) => item.status === "ACTIVE")
-            : [],
-        );
+        const [projectsRes, expenseTypesRes, usersRes, companiesRes] = await Promise.all([
+          fetch("/api/projects/options"),
+          fetch("/api/expense-types/options"),
+          fetch("/api/users/options"),
+          fetch("/api/companies/options"),
+        ]);
+
+        if (projectsRes.ok) {
+          const data = await projectsRes.json();
+          setProjects(Array.isArray(data) ? data : []);
+        }
+
+        if (expenseTypesRes.ok) {
+          const data = await expenseTypesRes.json();
+          setExpenseTypes(
+            Array.isArray(data)
+              ? data.filter((item: ExpenseTypeOption) => item.status === "ACTIVE")
+              : [],
+          );
+        }
+
+        if (usersRes.ok) {
+          const data = await usersRes.json();
+          setUsers(Array.isArray(data) ? data : []);
+        }
+
+        if (companiesRes.ok) {
+          const data = await companiesRes.json();
+          setCompanies(Array.isArray(data) ? data : []);
+        }
       } catch (error) {
-        console.error("Failed to load expense types", error);
+        console.error("Failed to load expense filter options", error);
       }
     };
 
     loadExpenseTypes();
   }, []);
+
+  const filteredProjects = useMemo(() => {
+    const query = draftProjectQuery.trim().toLowerCase();
+    if (!query) return projects;
+    return projects.filter((project) =>
+      getProjectLabel(project).toLowerCase().includes(query),
+    );
+  }, [draftProjectQuery, projects]);
+
+  const filteredExpenseByUsers = useMemo(() => {
+    const query = draftExpenseByQuery.trim().toLowerCase();
+    if (!query) return users;
+    return users.filter((user) => getUserLabel(user).toLowerCase().includes(query));
+  }, [draftExpenseByQuery, users]);
+
+  const filteredExpenseCompanies = useMemo(() => {
+    const query = draftExpenseCompanyQuery.trim().toLowerCase();
+    if (!query) return companies;
+    return companies.filter((company) =>
+      getCompanyLabel(company).toLowerCase().includes(query),
+    );
+  }, [companies, draftExpenseCompanyQuery]);
+
+  const expenseCards = useMemo(
+    () =>
+      dailyExpenses.map((row) => ({
+        ...row,
+        details: [
+          row.projectName
+            ? `Project: ${row.projectName}${row.projectCity ? ` (${row.projectCity})` : ""}`
+            : "Project: -",
+          `Expense type: ${row.expenseTypeName || "-"}`,
+          `Expense by: ${row.expenseByName || "-"}`,
+          `Company: ${row.expenseCompanyName || "-"}`,
+          row.remark || "",
+        ],
+      })),
+    [dailyExpenses],
+  );
 
   const loadDailyExpenses = useCallback(async () => {
     setLoading(true);
@@ -192,10 +292,12 @@ function DailyExpenseListContent() {
         pageSize: String(pageSize),
       });
       if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
-      if (transactionTypeFilter)
-        params.set("transactionType", transactionTypeFilter);
+      if (projectFilter?.id) params.set("projectId", projectFilter.id);
       if (expenseTypeFilter?.id)
         params.set("expenseTypeId", expenseTypeFilter.id);
+      if (expenseByFilter?.id) params.set("expenseById", expenseByFilter.id);
+      if (expenseCompanyFilter?.id)
+        params.set("expenseCompanyId", expenseCompanyFilter.id);
       if (fromDate) params.set("fromDate", fromDate);
       if (toDate) params.set("toDate", toDate);
 
@@ -220,8 +322,10 @@ function DailyExpenseListContent() {
     pageIndex,
     pageSize,
     debouncedQuery,
-    transactionTypeFilter,
+    projectFilter,
     expenseTypeFilter,
+    expenseByFilter,
+    expenseCompanyFilter,
     fromDate,
     toDate,
   ]);
@@ -282,10 +386,12 @@ function DailyExpenseListContent() {
         pageSize: "100",
       });
       if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
-      if (transactionTypeFilter)
-        params.set("transactionType", transactionTypeFilter);
+      if (projectFilter?.id) params.set("projectId", projectFilter.id);
       if (expenseTypeFilter?.id)
         params.set("expenseTypeId", expenseTypeFilter.id);
+      if (expenseByFilter?.id) params.set("expenseById", expenseByFilter.id);
+      if (expenseCompanyFilter?.id)
+        params.set("expenseCompanyId", expenseCompanyFilter.id);
       if (fromDate) params.set("fromDate", fromDate);
       if (toDate) params.set("toDate", toDate);
 
@@ -308,8 +414,10 @@ function DailyExpenseListContent() {
     return accumulated;
   }, [
     debouncedQuery,
-    transactionTypeFilter,
+    projectFilter,
     expenseTypeFilter,
+    expenseByFilter,
+    expenseCompanyFilter,
     fromDate,
     toDate,
   ]);
@@ -322,17 +430,23 @@ function DailyExpenseListContent() {
         [
           "#",
           "Date",
-          "Transaction Type",
           "Amount",
+          "Project",
           "Expense Type",
+          "Expense By",
+          "Company",
           "Remark",
         ],
         ...rows.map((row, index) => [
           index + 1,
           formatToDDMMYYYY(row.date),
-          row.transactionType.toLowerCase(),
           Number(row.amount || 0),
+          row.projectName
+            ? `${row.projectName}${row.projectCity ? ` (${row.projectCity})` : ""}`
+            : "-",
           row.expenseTypeName || "-",
+          row.expenseByName || "-",
+          row.expenseCompanyName || "-",
           row.remark || "-",
         ]),
       ];
@@ -391,6 +505,33 @@ function DailyExpenseListContent() {
         ),
       },
       {
+        header: "Project",
+        accessorKey: "projectName",
+        cell: ({ row }) => (
+          <span className="rbac-muted">
+            {row.original.projectName
+              ? `${row.original.projectName}${row.original.projectCity ? ` (${row.original.projectCity})` : ""}`
+              : "-"}
+          </span>
+        ),
+      },
+      {
+        header: "Expense By",
+        accessorKey: "expenseByName",
+        cell: ({ row }) => (
+          <span className="rbac-muted">{row.original.expenseByName || "-"}</span>
+        ),
+      },
+      {
+        header: "Company",
+        accessorKey: "expenseCompanyName",
+        cell: ({ row }) => (
+          <span className="rbac-muted">
+            {row.original.expenseCompanyName || "-"}
+          </span>
+        ),
+      },
+      {
         header: "Remark",
         accessorKey: "remark",
         cell: ({ row }) => (
@@ -401,8 +542,7 @@ function DailyExpenseListContent() {
         header: "Amount",
         accessorKey: "amount",
         cell: ({ row }) => (
-          <span className={`${getTransactionBadgeClass(row.original.transactionType)} rbac-muted rounded-full px-2.5 py-1 text-xs font-medium`}>
-            {row.original.transactionType === "INCOME" ? "+" : "-"}
+          <span className="rbac-muted">
             {formatAmount(row.original.amount)}
           </span>
         ),
@@ -448,7 +588,7 @@ function DailyExpenseListContent() {
         <div className="rbac-card">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-3">
-              <h3 className="rbac-title-lg">Daily Expenses</h3>
+              <h3 className="rbac-title-lg">Expenses</h3>
               <span
                 className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${balanceClass}`}
               >
@@ -473,7 +613,7 @@ function DailyExpenseListContent() {
               </button>
               <Link href="/dashboard/daily-expenses/new">
                 <button className="rbac-button" type="button">
-                  Add Daily Expense
+                  Add Expense
                 </button>
               </Link>
             </div>
@@ -484,12 +624,21 @@ function DailyExpenseListContent() {
             onClear={() => {
               setPageIndex(0);
               setQuery("");
-              setTransactionTypeFilter("");
               setFromDate("");
               setToDate("");
+              setProjectFilter(null);
               setExpenseTypeFilter(null);
+              setExpenseByFilter(null);
+              setExpenseCompanyFilter(null);
+              setDraftQuery("");
+              setDraftProjectFilter(null);
+              setDraftProjectQuery("");
               setDraftExpenseTypeFilter(null);
               setDraftExpenseTypeQuery("");
+              setDraftExpenseByFilter(null);
+              setDraftExpenseByQuery("");
+              setDraftExpenseCompanyFilter(null);
+              setDraftExpenseCompanyQuery("");
               setFilterOpen(false);
             }}
           />
@@ -538,7 +687,7 @@ function DailyExpenseListContent() {
                         colSpan={columns.length}
                         className="px-4 py-3 text-sm text-slate-500"
                       >
-                        No daily expenses found.
+                        No expenses found.
                       </td>
                     </tr>
                   )}
@@ -566,64 +715,17 @@ function DailyExpenseListContent() {
               </table>
             </div>
 
-            <div className="md:hidden space-y-3">
-              {loading && (
-                <div className="flex items-center justify-center py-4">
-                  <FaSpinner className="animate-spin mr-2" size={16} />
-                </div>
-              )}
-              {!loading && dailyExpenses.length === 0 && (
-                <div className="rbac-card py-4 text-sm text-slate-500">
-                  No daily expenses found.
-                </div>
-              )}
-              {!loading &&
-                dailyExpenses.map((expense) => (
-                  <div key={expense.id} className="rbac-card p-4">
-                    <div className="mb-2 flex items-start justify-between gap-3">
-                      
-                      <div className="space-y-2">
-                        <div className="flex gap-2">
-                        <h4 className="text-sm font-semibold">
-                          {formatToDDMMYYYY(expense.date)}
-                        </h4>
-                        <div className="flex flex-wrap gap-2">
-                          <span
-                            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${getTransactionBadgeClass(
-                              expense.transactionType,
-                            )}`}
-                          >
-                            {expense.transactionType === "INCOME" ? "+" : "-"}
-                            {formatAmount(expense.amount)}
-                          </span>
-                        </div>
-                        </div>
-                        {expense.expenseTypeName && (
-                          <p className="text-sm text-slate-600">
-                            {expense.expenseTypeName || "-"}
-                          </p>
-                        )}
-                        {expense.remark && (
-                          <p className="text-sm text-slate-500">
-                            {expense.remark}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex justify-end w-full">
-                          <button onClick={()=> handleEditDailyExpense(expense)} className="rbac-link" type="button">
-                            <FaEdit size={18} />
-                          </button>
-                        <button
-                          className="rbac-link danger"
-                          type="button"
-                          onClick={() => handleDeleteDailyExpense(expense)}
-                        >
-                          <FaTrash size={18} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+            <div className="md:hidden mt-4">
+              <FinanceCardList
+                rows={expenseCards}
+                loading={loading}
+                emptyLabel="No expenses found."
+                showCount={false}
+                collapsible={false}
+                amountBadgeClassName="bg-rose-100 text-rose-800 ring-1 ring-rose-200"
+                onEdit={handleEditDailyExpense}
+                onDelete={handleDeleteDailyExpense}
+              />
             </div>
           </div>
 
@@ -675,7 +777,7 @@ function DailyExpenseListContent() {
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Delete daily expense?"
+        title="Delete expense?"
         description="Are you sure you want to delete?"
         confirmLabel="Delete"
         confirmLoading={deleting}
@@ -689,40 +791,13 @@ function DailyExpenseListContent() {
       />
       <ListingFilterDialog
         open={filterOpen}
-        title="Daily Expense Filters"
+        title="Expense Filters"
         description="Update the filters and apply them when you're ready."
         onClose={closeFilters}
         onApply={applyFilters}
         activeCount={activeFilterCount}
         maxWidthClassName="max-w-2xl"
       >
-        <Listbox
-          value={draftTransactionTypeFilter}
-          onChange={setDraftTransactionTypeFilter}
-        >
-          <div className="relative min-w-48">
-            <ListboxButton className="rbac-input flex w-full items-center justify-between gap-3 text-left">
-              <span>
-                {transactionTypeOptions.find(
-                  (item) => item.key === draftTransactionTypeFilter,
-                )?.label || "All types"}
-              </span>
-              <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
-            </ListboxButton>
-            <ListboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
-              {transactionTypeOptions.map((option) => (
-                <ListboxOption
-                  key={option.key || "all"}
-                  value={option.key}
-                  className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
-                >
-                  {option.label}
-                </ListboxOption>
-              ))}
-            </ListboxOptions>
-          </div>
-        </Listbox>
-
         <CustomDatePicker
           value={draftFromDate}
           onChange={setDraftFromDate}
@@ -736,6 +811,51 @@ function DailyExpenseListContent() {
           placeholder="To date"
           className="rbac-input-filter"
         />
+
+        <Combobox
+          value={draftProjectFilter}
+          onChange={(option: ProjectOption | null) => {
+            setDraftProjectFilter(option);
+            setDraftProjectQuery("");
+          }}
+          nullable
+        >
+          <div className="relative min-w-64">
+            <ComboboxInput
+              className="theme-input rbac-input w-full pr-10"
+              placeholder="Project"
+              displayValue={(option: ProjectOption | null) =>
+                option ? getProjectLabel(option) : draftProjectQuery
+              }
+              onChange={(event) => {
+                setDraftProjectQuery(event.target.value);
+                setDraftProjectFilter(null);
+              }}
+            />
+            <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+              <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+            </ComboboxButton>
+            <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
+              {filteredProjects.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-[color:var(--theme-text-muted)]">
+                  No projects found
+                </div>
+              ) : (
+                filteredProjects.map((project) => (
+                  <ComboboxOption
+                    key={project.id}
+                    value={project}
+                    className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span>{getProjectLabel(project)}</span>
+                    </div>
+                  </ComboboxOption>
+                ))
+              )}
+            </ComboboxOptions>
+          </div>
+        </Combobox>
 
         <Combobox
           value={draftExpenseTypeFilter}
@@ -778,6 +898,84 @@ function DailyExpenseListContent() {
                     </div>
                   </ComboboxOption>
                 ))}
+            </ComboboxOptions>
+          </div>
+        </Combobox>
+
+        <Combobox
+          value={draftExpenseByFilter}
+          onChange={(option: UserOption | null) => {
+            setDraftExpenseByFilter(option);
+            setDraftExpenseByQuery("");
+          }}
+          nullable
+        >
+          <div className="relative min-w-64">
+            <ComboboxInput
+              className="theme-input rbac-input w-full pr-10"
+              placeholder="Expense By"
+              displayValue={(option: UserOption | null) =>
+                option ? getUserLabel(option) : draftExpenseByQuery
+              }
+              onChange={(event) => {
+                setDraftExpenseByQuery(event.target.value);
+                setDraftExpenseByFilter(null);
+              }}
+            />
+            <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+              <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+            </ComboboxButton>
+            <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
+              {filteredExpenseByUsers.map((user) => (
+                <ComboboxOption
+                  key={user.id}
+                  value={user}
+                  className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span>{getUserLabel(user)}</span>
+                  </div>
+                </ComboboxOption>
+              ))}
+            </ComboboxOptions>
+          </div>
+        </Combobox>
+
+        <Combobox
+          value={draftExpenseCompanyFilter}
+          onChange={(option: CompanyOption | null) => {
+            setDraftExpenseCompanyFilter(option);
+            setDraftExpenseCompanyQuery("");
+          }}
+          nullable
+        >
+          <div className="relative min-w-64">
+            <ComboboxInput
+              className="theme-input rbac-input w-full pr-10"
+              placeholder="Company"
+              displayValue={(option: CompanyOption | null) =>
+                option ? getCompanyLabel(option) : draftExpenseCompanyQuery
+              }
+              onChange={(event) => {
+                setDraftExpenseCompanyQuery(event.target.value);
+                setDraftExpenseCompanyFilter(null);
+              }}
+            />
+            <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+              <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+            </ComboboxButton>
+            <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
+              {filteredExpenseCompanies.map((company) => (
+                <ComboboxOption
+                  key={company.id}
+                  value={company}
+                  className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span>{getCompanyLabel(company)}</span>
+                  </div>
+                </ComboboxOption>
+              ))}
             </ComboboxOptions>
           </div>
         </Combobox>

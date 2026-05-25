@@ -447,14 +447,6 @@ export default function QueryFormContent({
                 </div>
               </Combobox>
             </label>
-            {selectedProject && (
-              <p className="mb-4 text-xs text-slate-500">
-                Selected: {formatProjectLabel(selectedProject)}{" "}
-                <span className="text-slate-400">
-                  ({formatQueryLabel(selectedProject.status)})
-                </span>
-              </p>
-            )}
             {errors.projectId && (
               <p className="text-sm text-red-600 mb-2">{errors.projectId}</p>
             )}
