@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useDashboardContext } from "../../_components/DashboardShell";
 import CustomDatePicker from "../../../components/CustomDatePicker";
+import ConfirmDialog from "../../../components/ConfirmDialog";
 import Loading from "../../../components/Loading";
 import Link from "next/link";
 import { getTodayInputDate, formatToDDMMYYYY } from "@/lib/dateUtils";
@@ -92,6 +93,8 @@ export default function ReportFormContent({
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [videoPreviews, setVideoPreviews] = useState<string[]>([]);
   const [projectQuery, setProjectQuery] = useState("");
+  const [confirmRemoveImageOpen, setConfirmRemoveImageOpen] = useState(false);
+  const [imageToRemove, setImageToRemove] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const videoInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -213,15 +216,32 @@ export default function ReportFormContent({
 
   const isCreateBlocked = isAdmin && !reportId;
 
+  const promptRemoveExistingImage = (url: string) => {
+    setImageToRemove(url);
+    setConfirmRemoveImageOpen(true);
+  };
+
+  const confirmRemoveExistingImage = () => {
+    if (!imageToRemove) return;
+
+    setExistingImages((prev) => prev.filter((item) => item !== imageToRemove));
+    setImageToRemove(null);
+    setConfirmRemoveImageOpen(false);
+  };
+
   const removeImagePreview = (index: number) => {
-    setImageFiles((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
+    setImageFiles((prev) =>
+      prev.filter((_, currentIndex) => currentIndex !== index),
+    );
     if (imageInputRef.current) {
       imageInputRef.current.value = "";
     }
   };
 
   const removeVideoPreview = (index: number) => {
-    setVideoFiles((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
+    setVideoFiles((prev) =>
+      prev.filter((_, currentIndex) => currentIndex !== index),
+    );
     if (videoInputRef.current) {
       videoInputRef.current.value = "";
     }
@@ -639,11 +659,7 @@ export default function ReportFormContent({
                         <button
                           type="button"
                           aria-label="Remove image"
-                          onClick={() =>
-                            setExistingImages((prev) =>
-                              prev.filter((item) => item !== url),
-                            )
-                          }
+                          onClick={() => promptRemoveExistingImage(url)}
                           className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/65 text-white shadow-md transition hover:bg-black"
                         >
                           <FaTimes size={12} />
@@ -702,6 +718,19 @@ export default function ReportFormContent({
 
               {note && <p className="mt-2 text-sm text-red-600">{note}</p>}
             </fieldset>
+
+            <ConfirmDialog
+              open={confirmRemoveImageOpen}
+              title="Remove image?"
+              description="This will remove the image from the form. You can cancel to keep it."
+              confirmLabel="Delete"
+              cancelLabel="Cancel"
+              onConfirm={confirmRemoveExistingImage}
+              onClose={() => {
+                setConfirmRemoveImageOpen(false);
+                setImageToRemove(null);
+              }}
+            />
 
             <div className="rbac-actions">
               <button
