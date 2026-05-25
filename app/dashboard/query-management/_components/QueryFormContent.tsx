@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { FaSpinner, FaTimes } from "react-icons/fa";
 import { toast } from "react-toastify";
 import Link from "next/link";
+import ConfirmDialog from "../../../components/ConfirmDialog";
 import Loading from "../../../components/Loading";
 import { ButtonGroup } from "../../_components/ButtonGroup";
 import {
@@ -92,6 +93,8 @@ export default function QueryFormContent({
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [videoPreviews, setVideoPreviews] = useState<string[]>([]);
   const [projectQuery, setProjectQuery] = useState("");
+  const [confirmRemoveImageOpen, setConfirmRemoveImageOpen] = useState(false);
+  const [imageToRemove, setImageToRemove] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const videoInputRef = useRef<HTMLInputElement | null>(null);
   const [form, setForm] = useState<QueryFormState>({
@@ -202,15 +205,32 @@ export default function QueryFormContent({
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const promptRemoveExistingImage = (url: string) => {
+    setImageToRemove(url);
+    setConfirmRemoveImageOpen(true);
+  };
+
+  const confirmRemoveExistingImage = () => {
+    if (!imageToRemove) return;
+
+    setExistingImages((prev) => prev.filter((item) => item !== imageToRemove));
+    setImageToRemove(null);
+    setConfirmRemoveImageOpen(false);
+  };
+
   const removeImagePreview = (index: number) => {
-    setImageFiles((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
+    setImageFiles((prev) =>
+      prev.filter((_, currentIndex) => currentIndex !== index),
+    );
     if (imageInputRef.current) {
       imageInputRef.current.value = "";
     }
   };
 
   const removeVideoPreview = (index: number) => {
-    setVideoFiles((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
+    setVideoFiles((prev) =>
+      prev.filter((_, currentIndex) => currentIndex !== index),
+    );
     if (videoInputRef.current) {
       videoInputRef.current.value = "";
     }
@@ -595,11 +615,7 @@ export default function QueryFormContent({
                         <button
                           type="button"
                           aria-label="Remove image"
-                          onClick={() =>
-                            setExistingImages((prev) =>
-                              prev.filter((item) => item !== url),
-                            )
-                          }
+                          onClick={() => promptRemoveExistingImage(url)}
                           className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/65 text-white shadow-md transition hover:bg-black"
                         >
                           <FaTimes size={12} />
@@ -686,6 +702,19 @@ export default function QueryFormContent({
               />
             </div>
           </fieldset>
+
+          <ConfirmDialog
+            open={confirmRemoveImageOpen}
+            title="Remove image?"
+            description="This will remove the image from the form. You can cancel to keep it."
+            confirmLabel="Delete"
+            cancelLabel="Cancel"
+            onConfirm={confirmRemoveExistingImage}
+            onClose={() => {
+              setConfirmRemoveImageOpen(false);
+              setImageToRemove(null);
+            }}
+          />
 
           {note && <p className="text-sm text-red-600 mt-4">{note}</p>}
 
