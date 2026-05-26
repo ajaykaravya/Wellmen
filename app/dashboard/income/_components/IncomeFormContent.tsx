@@ -18,7 +18,7 @@ import {
 } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
 
-type PaymentMode = "CASH" | "BANK";
+type PaymentMode = "CASH" | "BANK" | "CHEQUE" | "UPI" | "NEFT_RTGS";
 
 type ProjectOption = {
   id: string;
@@ -69,7 +69,9 @@ type IncomeFormContentProps = {
 
 const paymentModeOptions: Array<{ key: PaymentMode; label: string }> = [
   { key: "CASH", label: "Cash" },
-  { key: "BANK", label: "Bank" },
+  { key: "CHEQUE", label: "Cheque" },
+  { key: "UPI", label: "UPI" },
+  { key: "NEFT_RTGS", label: "NEFT/RTGS" },
 ];
 
 function getProjectLabel(project: ProjectOption) {
@@ -160,7 +162,7 @@ export default function IncomeFormContent({ incomeId }: IncomeFormContentProps) 
             incomeCompanyId: data.incomeCompanyId || "",
             receivedById: data.receivedById || "",
             amount: String(data.amount ?? ""),
-            paymentMode: data.paymentMode === "BANK" ? "BANK" : "CASH",
+            paymentMode: data.paymentMode || "CASH",
             date:
               formatToDDMMYYYY(data.date) === "-"
                 ? getTodayInputDate()

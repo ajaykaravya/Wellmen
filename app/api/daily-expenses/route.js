@@ -3,12 +3,17 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
 
+const PAYMENT_MODES = ["CASH", "BANK", "CHEQUE", "UPI", "NEFT_RTGS"];
+
 const parsePayload = (body) => {
   const amountRaw = String(body.amount || "").trim();
   const projectId = String(body.projectId || "").trim();
   const expenseTypeId = String(body.expenseTypeId || "").trim();
   const expenseById = String(body.expenseById || "").trim();
   const expenseCompanyId = String(body.expenseCompanyId || "").trim();
+  const paymentMode = String(body.paymentMode || "")
+    .trim()
+    .toUpperCase();
   const date = String(body.date || "").trim();
   const remark = String(body.remark || "").trim();
   return {
@@ -17,10 +22,13 @@ const parsePayload = (body) => {
     expenseTypeId,
     expenseById,
     expenseCompanyId,
+    paymentMode,
     date,
     remark,
   };
 };
+
+const isValidPaymentMode = (value) => PAYMENT_MODES.includes(value);
 
 const parseDate = (value) => {
   if (!value) return null;
@@ -56,6 +64,7 @@ const serializeDailyExpense = (row) => ({
   expenseByName: row.expenseBy?.fullName || null,
   expenseCompanyId: row.expenseCompanyId,
   expenseCompanyName: row.expenseCompany?.name || null,
+  paymentMode: row.paymentMode || null,
   date: row.date,
   remark: row.remark,
   createdAt: row.createdAt,
@@ -71,7 +80,12 @@ export async function GET(req) {
   const projectId = String(searchParams.get("projectId") || "").trim();
   const expenseTypeId = String(searchParams.get("expenseTypeId") || "").trim();
   const expenseById = String(searchParams.get("expenseById") || "").trim();
-  const expenseCompanyId = String(searchParams.get("expenseCompanyId") || "").trim();
+  const expenseCompanyId = String(
+    searchParams.get("expenseCompanyId") || "",
+  ).trim();
+  const paymentMode = String(searchParams.get("paymentMode") || "")
+    .trim()
+    .toUpperCase();
   const fromDate = String(searchParams.get("fromDate") || "").trim();
   const toDate = String(searchParams.get("toDate") || "").trim();
   const pageParam = Number(searchParams.get("page") || "1");
@@ -129,7 +143,7 @@ export async function GET(req) {
           },
         },
       },
-      ];
+    ];
   }
   where.transactionType = "EXPENSE";
   if (projectId) {
@@ -143,6 +157,16 @@ export async function GET(req) {
   }
   if (expenseCompanyId) {
     where.expenseCompanyId = expenseCompanyId;
+  }
+
+  if (paymentMode) {
+    if (!isValidPaymentMode(paymentMode)) {
+      return NextResponse.json(
+        { error: "Invalid payment mode filter." },
+        { status: 400 },
+      );
+    }
+    where.paymentMode = paymentMode;
   }
 
   if (fromDate || toDate) {
@@ -221,7 +245,10 @@ export async function POST(req) {
   }
 
   if (!payload.projectId) {
-    return NextResponse.json({ error: "Project is required." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Project is required." },
+      { status: 400 },
+    );
   }
 
   const project = await prisma.project.findUnique({
@@ -274,6 +301,13 @@ export async function POST(req) {
     );
   }
 
+  if (!isValidPaymentMode(payload.paymentMode)) {
+    return NextResponse.json(
+      { error: "Payment mode is required." },
+      { status: 400 },
+    );
+  }
+
   const expenseCompany = await prisma.company.findUnique({
     where: { id: payload.expenseCompanyId },
   });
@@ -294,6 +328,7 @@ export async function POST(req) {
         expenseById: expenseBy.id,
         expenseCompanyId: expenseCompany.id,
         date: parsedDate,
+        paymentMode: payload.paymentMode,
         remark: payload.remark || null,
       },
       include: {

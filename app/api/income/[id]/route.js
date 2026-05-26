@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
 
-const PAYMENT_MODES = ["CASH", "BANK"];
+const PAYMENT_MODES = ["CASH", "BANK",  "CHEQUE", "UPI", "NEFT_RTGS"];
 
 const resolveId = async (params) => String((await params)?.id || "").trim();
 

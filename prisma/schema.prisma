@@ -111,6 +111,7 @@ model Role {
 model Company {
   id        String   @id @default(uuid())
   name      String   @unique
+  code      String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   dailyExpenses DailyExpense[]
@@ -155,11 +156,23 @@ model ExpenseType {
   @@index([status])
 }
 
+model IncomeType {
+  id            String           @id @default(uuid())
+  name          String           @unique
+  status        ExpenseTypeStatus @default(ACTIVE)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  dailyExpenses DailyExpense[]
+
+  @@index([status])
+}
+
 model DailyExpense {
   id              String         @id @default(uuid())
   transactionType TransactionType @default(EXPENSE)
   amount          Decimal        @db.Decimal(14, 2)
   expenseTypeId   String?
+  incomeTypeId    String?
   expenseById     String?
   expenseCompanyId String?
   projectId       String?
@@ -169,6 +182,7 @@ model DailyExpense {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   expenseType     ExpenseType?   @relation(fields: [expenseTypeId], references: [id], onDelete: SetNull)
+  incomeType      IncomeType?    @relation(fields: [incomeTypeId], references: [id], onDelete: SetNull)
   expenseBy       User?         @relation("DailyExpenseExpenseBy", fields: [expenseById], references: [id], onDelete: SetNull)
   expenseCompany  Company?      @relation(fields: [expenseCompanyId], references: [id], onDelete: SetNull)
   project         Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
@@ -176,6 +190,7 @@ model DailyExpense {
   @@index([transactionType])
   @@index([date])
   @@index([expenseTypeId])
+  @@index([incomeTypeId])
   @@index([expenseById])
   @@index([expenseCompanyId])
   @@index([projectId])
@@ -361,7 +376,9 @@ enum TransactionType {
 
 enum CashPaymentMode {
   CASH
-  BANK
+  CHEQUE
+  UPI
+  NEFT_RTGS
 }
 
 enum TransportType {

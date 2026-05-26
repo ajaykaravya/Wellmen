@@ -184,15 +184,15 @@ export function FinanceCardList<T extends FinanceCardListRow>({
 
       <div
         className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${!collapsible
-          ? "mt-4 max-h-[4000px] opacity-100 translate-y-0"
+          ? "mt-0 max-h-[4000px] opacity-100 translate-y-0"
           : collapsed
             ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none"
-            : "mt-4 max-h-[4000px] opacity-100 translate-y-0"
+            : "mt-0 max-h-[4000px] opacity-100 translate-y-0"
           }`}
       >
 
         {showDatePicker && (!collapsible || !collapsed) && (
-          <div className="mt-4">
+          <div className="my-2">
             <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2">
               <button
                 className="change-button change-button-secondary p-2 rounded-md"
