@@ -14,6 +14,7 @@ import {
   FaChevronLeft,
   FaChevronRight,
   FaEdit,
+  FaPlus,
   FaTrash,
   FaSpinner,
   FaFilter,
@@ -29,6 +30,8 @@ import {
 } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
 import { FinanceCardList } from "../_components/FinanceCardList";
+import CompanyCodeBadge from "../_components/CompanyCodeBadge";
+import InfoBadge from "../_components/InfoBadge";
 
 type PaymentMode = "CASH" | "BANK";
 
@@ -43,6 +46,12 @@ type CompanyOption = {
   name: string;
 };
 
+type IncomeTypeOption = {
+  id: string;
+  name: string;
+  status: "ACTIVE" | "INACTIVE";
+};
+
 type UserOption = {
   id: string;
   firstName: string;
@@ -55,8 +64,11 @@ type IncomeRow = {
   projectId: string | null;
   projectName: string | null;
   projectCity: string | null;
+  incomeTypeId: string | null;
+  incomeTypeName: string | null;
   incomeCompanyId: string | null;
   incomeCompanyName: string | null;
+  incomeCompanyCode: string | null;
   receivedById: string | null;
   receivedByName: string | null;
   amount: number;
@@ -76,6 +88,8 @@ const getProjectLabel = (option: ProjectOption) =>
 
 const getCompanyLabel = (option: CompanyOption) => option.name;
 
+const getIncomeTypeLabel = (option: IncomeTypeOption) => option.name;
+
 const getUserLabel = (option: UserOption) =>
   `${option.firstName} ${option.lastName}`.trim();
 
@@ -89,8 +103,11 @@ function IncomeListContent() {
   const [query, setQuery] = useState("");
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
+  const [incomeTypes, setIncomeTypes] = useState<IncomeTypeOption[]>([]);
   const [users, setUsers] = useState<UserOption[]>([]);
   const [projectFilter, setProjectFilter] = useState<ProjectOption | null>(null);
+  const [incomeTypeFilter, setIncomeTypeFilter] =
+    useState<IncomeTypeOption | null>(null);
   const [incomeCompanyFilter, setIncomeCompanyFilter] =
     useState<CompanyOption | null>(null);
   const [receivedByFilter, setReceivedByFilter] = useState<UserOption | null>(null);
@@ -101,6 +118,9 @@ function IncomeListContent() {
   const [draftQuery, setDraftQuery] = useState("");
   const [draftProjectFilter, setDraftProjectFilter] = useState<ProjectOption | null>(null);
   const [draftProjectQuery, setDraftProjectQuery] = useState("");
+  const [draftIncomeTypeFilter, setDraftIncomeTypeFilter] =
+    useState<IncomeTypeOption | null>(null);
+  const [draftIncomeTypeQuery, setDraftIncomeTypeQuery] = useState("");
   const [draftIncomeCompanyFilter, setDraftIncomeCompanyFilter] =
     useState<CompanyOption | null>(null);
   const [draftIncomeCompanyQuery, setDraftIncomeCompanyQuery] = useState("");
@@ -118,6 +138,7 @@ function IncomeListContent() {
   const activeFilterCount = [
     query.trim(),
     projectFilter?.id,
+    incomeTypeFilter?.id,
     incomeCompanyFilter?.id,
     receivedByFilter?.id,
     fromDate,
@@ -129,6 +150,10 @@ function IncomeListContent() {
     setDraftQuery(query);
     setDraftProjectFilter(projectFilter);
     setDraftProjectQuery(projectFilter ? getProjectLabel(projectFilter) : "");
+    setDraftIncomeTypeFilter(incomeTypeFilter);
+    setDraftIncomeTypeQuery(
+      incomeTypeFilter ? getIncomeTypeLabel(incomeTypeFilter) : "",
+    );
     setDraftIncomeCompanyFilter(incomeCompanyFilter);
     setDraftIncomeCompanyQuery(
       incomeCompanyFilter ? getCompanyLabel(incomeCompanyFilter) : "",
@@ -145,6 +170,7 @@ function IncomeListContent() {
     paymentModeFilter,
     projectFilter,
     query,
+    incomeTypeFilter,
     receivedByFilter,
     toDate,
   ]);
@@ -157,6 +183,7 @@ function IncomeListContent() {
     setPageIndex(0);
     setQuery(draftQuery);
     setProjectFilter(draftProjectFilter);
+    setIncomeTypeFilter(draftIncomeTypeFilter);
     setIncomeCompanyFilter(draftIncomeCompanyFilter);
     setReceivedByFilter(draftReceivedByFilter);
     setFromDate(draftFromDate);
@@ -166,6 +193,7 @@ function IncomeListContent() {
   }, [
     draftFromDate,
     draftIncomeCompanyFilter,
+    draftIncomeTypeFilter,
     draftPaymentModeFilter,
     draftProjectFilter,
     draftQuery,
@@ -176,6 +204,7 @@ function IncomeListContent() {
   const appliedFilters = [
     query.trim(),
     projectFilter ? getProjectLabel(projectFilter) : "",
+    incomeTypeFilter ? getIncomeTypeLabel(incomeTypeFilter) : "",
     incomeCompanyFilter ? getCompanyLabel(incomeCompanyFilter) : "",
     receivedByFilter ? getUserLabel(receivedByFilter) : "",
     fromDate,
@@ -186,9 +215,10 @@ function IncomeListContent() {
   useEffect(() => {
     const loadOptions = async () => {
       try {
-        const [projectsRes, companiesRes, usersRes] = await Promise.all([
+        const [projectsRes, companiesRes, incomeTypesRes, usersRes] = await Promise.all([
           fetch("/api/projects/options"),
           fetch("/api/companies/options"),
+          fetch("/api/income-types/options"),
           fetch("/api/users/options"),
         ]);
 
@@ -200,6 +230,15 @@ function IncomeListContent() {
         if (companiesRes.ok) {
           const data = await companiesRes.json();
           setCompanies(Array.isArray(data) ? data : []);
+        }
+
+        if (incomeTypesRes.ok) {
+          const data = await incomeTypesRes.json();
+          setIncomeTypes(
+            Array.isArray(data)
+              ? data.filter((item: IncomeTypeOption) => item.status === "ACTIVE")
+              : [],
+          );
         }
 
         if (usersRes.ok) {
@@ -230,28 +269,19 @@ function IncomeListContent() {
     );
   }, [companies, draftIncomeCompanyQuery]);
 
+  const filteredIncomeTypes = useMemo(() => {
+    const q = draftIncomeTypeQuery.trim().toLowerCase();
+    if (!q) return incomeTypes;
+    return incomeTypes.filter((incomeType) =>
+      getIncomeTypeLabel(incomeType).toLowerCase().includes(q),
+    );
+  }, [draftIncomeTypeQuery, incomeTypes]);
+
   const filteredUsers = useMemo(() => {
     const q = draftReceivedByQuery.trim().toLowerCase();
     if (!q) return users;
     return users.filter((user) => getUserLabel(user).toLowerCase().includes(q));
   }, [draftReceivedByQuery, users]);
-
-  const incomeCards = useMemo(
-    () =>
-      rows.map((row) => ({
-        ...row,
-        details: [
-          row.projectName
-            ? `Project: ${row.projectName}${row.projectCity ? ` (${row.projectCity})` : ""}`
-            : "Project: -",
-          `Income company: ${row.incomeCompanyName || "-"}`,
-          `Received by: ${row.receivedByName || "-"}`,
-          `Payment mode: ${row.paymentMode || "-"}`,
-          row.remark || "",
-        ],
-      })),
-    [rows],
-  );
 
   const loadRows = useCallback(async () => {
     setLoading(true);
@@ -262,6 +292,7 @@ function IncomeListContent() {
       });
       if (query.trim()) params.set("q", query.trim());
       if (projectFilter?.id) params.set("projectId", projectFilter.id);
+      if (incomeTypeFilter?.id) params.set("incomeTypeId", incomeTypeFilter.id);
       if (incomeCompanyFilter?.id)
         params.set("incomeCompanyId", incomeCompanyFilter.id);
       if (receivedByFilter?.id) params.set("receivedById", receivedByFilter.id);
@@ -292,6 +323,7 @@ function IncomeListContent() {
     pageSize,
     paymentModeFilter,
     projectFilter,
+    incomeTypeFilter,
     query,
     receivedByFilter,
     toDate,
@@ -327,8 +359,17 @@ function IncomeListContent() {
         header: "Date",
         accessorKey: "date",
         cell: ({ row }) => (
+          <div className="flex flex-wrap items-center gap-2 text-slate-600">
+            <span>{formatToDDMMYYYY(row.original.date)}</span>
+          </div>
+        ),
+      },
+      {
+        header: "Category",
+        accessorKey: "incomeTypeName",
+        cell: ({ row }) => (
           <span className="text-slate-600">
-            {formatToDDMMYYYY(row.original.date)}
+            {row.original.incomeTypeName || "-"}
           </span>
         ),
       },
@@ -346,7 +387,9 @@ function IncomeListContent() {
         header: "Income Company",
         accessorKey: "incomeCompanyName",
         cell: ({ row }) => (
-          <span className="text-slate-600">{row.original.incomeCompanyName || "-"}</span>
+          <div className="flex flex-wrap items-center gap-2 text-slate-600">
+            <span>{row.original.incomeCompanyName || "-"}</span>
+          </div>
         ),
       },
       {
@@ -456,6 +499,7 @@ function IncomeListContent() {
               setPageIndex(0);
               setQuery("");
               setProjectFilter(null);
+              setIncomeTypeFilter(null);
               setIncomeCompanyFilter(null);
               setReceivedByFilter(null);
               setFromDate("");
@@ -464,6 +508,8 @@ function IncomeListContent() {
               setDraftQuery("");
               setDraftProjectFilter(null);
               setDraftProjectQuery("");
+              setDraftIncomeTypeFilter(null);
+              setDraftIncomeTypeQuery("");
               setDraftIncomeCompanyFilter(null);
               setDraftIncomeCompanyQuery("");
               setDraftReceivedByFilter(null);
@@ -526,14 +572,50 @@ function IncomeListContent() {
             </div>
             <div className="md:hidden mt-4">
               <FinanceCardList
-                rows={incomeCards}
+                rows={rows}
                 loading={loading}
                 emptyLabel="No income found."
                 showCount={false}
                 collapsible={false}
-                amountBadgeClassName="bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200"
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                renderCard={(row, { actionNode }) => (
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                        <CompanyCodeBadge code={row.incomeCompanyCode} />
+                        <span className="min-w-0 truncate text-sm font-semibold text-slate-900">
+                          {row.incomeTypeName || ""}
+                        </span>
+                      </div>
+                      <span className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700">
+                        <FaPlus size={10} />
+                        {formatAmount(row.amount)}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <InfoBadge variant="payment">{row.paymentMode || ""}</InfoBadge>
+                      <InfoBadge variant="project">
+                        {row.projectName
+                          ? `${row.projectName}${row.projectCity ? ` (${row.projectCity})` : ""}`
+                          : ""}
+                      </InfoBadge>
+                      <InfoBadge variant="person">{row.receivedByName || ""}</InfoBadge>
+                    </div>
+
+                    <div className="text-sm text-slate-500">
+                      {formatToDDMMYYYY(row.date)}
+                    </div>
+
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="min-w-0 flex-1 break-words text-sm text-slate-600">
+                        {row.remark || ""}
+                      </p>
+                      {actionNode ? <div className="flex-shrink-0">{actionNode}</div> : null}
+                    </div>
+                  </div>
+                )}
               />
             </div>
           </div>
@@ -642,6 +724,51 @@ function IncomeListContent() {
                   </div>
                 </ComboboxOption>
               ))}
+            </ComboboxOptions>
+          </div>
+        </Combobox>
+
+        <Combobox
+          value={draftIncomeTypeFilter}
+          onChange={(option: IncomeTypeOption | null) => {
+            setDraftIncomeTypeFilter(option);
+            setDraftIncomeTypeQuery("");
+          }}
+          nullable
+        >
+          <div className="relative min-w-64">
+            <ComboboxInput
+              className="theme-input rbac-input w-full pr-10"
+              placeholder="Category"
+              displayValue={(option: IncomeTypeOption | null) =>
+                option ? getIncomeTypeLabel(option) : draftIncomeTypeQuery
+              }
+              onChange={(event) => {
+                setDraftIncomeTypeQuery(event.target.value);
+                setDraftIncomeTypeFilter(null);
+              }}
+            />
+            <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+              <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+            </ComboboxButton>
+            <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
+              {filteredIncomeTypes.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-[color:var(--theme-text-muted)]">
+                  No income types found
+                </div>
+              ) : (
+                filteredIncomeTypes.map((incomeType) => (
+                  <ComboboxOption
+                    key={incomeType.id}
+                    value={incomeType}
+                    className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span>{getIncomeTypeLabel(incomeType)}</span>
+                    </div>
+                  </ComboboxOption>
+                ))
+              )}
             </ComboboxOptions>
           </div>
         </Combobox>

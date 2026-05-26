@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ReactNode, useMemo, useState, useEffect } from "react";
+import { ReactNode, useMemo, useState } from "react";
 import { FaEdit, FaSpinner, FaTrash, FaChevronRight, FaChevronLeft } from "react-icons/fa";
 import { formatToDDMMYYYY, getTodayInputDate } from "../../../lib/dateUtils";
 import CustomDatePicker from "../../components/CustomDatePicker";
@@ -10,7 +10,7 @@ export type FinanceCardListRow = {
   id: string;
   date: string;
   amount: number;
-  details?: Array<string | null | undefined>;
+  details?: Array<ReactNode | null | undefined>;
   canManage?: boolean;
 };
 
@@ -31,6 +31,16 @@ type FinanceCardListProps<T extends FinanceCardListRow> = {
   onEdit?: (row: T) => void;
   onDelete?: (row: T) => void;
   renderActions?: (row: T) => ReactNode;
+  renderAmountBadge?: (row: T) => ReactNode;
+  renderDateLabel?: (row: T) => ReactNode;
+  renderCard?: (
+    row: T,
+    helpers: {
+      actionNode: ReactNode;
+      amountNode: ReactNode;
+      formatAmount: (value: number) => string;
+    },
+  ) => ReactNode;
 };
 
 const formatAmount = (value: number) =>
@@ -56,12 +66,15 @@ export function FinanceCardList<T extends FinanceCardListRow>({
   onEdit,
   onDelete,
   renderActions,
+  renderAmountBadge,
+  renderDateLabel,
+  renderCard,
 }: FinanceCardListProps<T>) {
   const normalizedRows = useMemo(
     () =>
       rows.map((row) => ({
         ...row,
-        details: (row.details || []).filter(Boolean) as string[],
+        details: (row.details || []).filter(Boolean) as ReactNode[],
       })),
     [rows],
   );
@@ -69,13 +82,14 @@ export function FinanceCardList<T extends FinanceCardListRow>({
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const [localDate, setLocalDate] = useState<string>(date ?? getTodayInputDate());
 
-  useEffect(() => {
-    if (date && date !== localDate) setLocalDate(date);
-  }, [date]);
+  const effectiveDate = date ?? localDate;
 
   const handleDateChange = (value: string) => {
+    if (onDateChange) {
+      onDateChange(value);
+      return;
+    }
     setLocalDate(value);
-    if (onDateChange) onDateChange(value);
   };
 
   const shiftInputDate = (value: string, diffDays: number) => {
@@ -104,9 +118,12 @@ export function FinanceCardList<T extends FinanceCardListRow>({
   };
 
   const shiftDate = (diff: number) => {
-    const next = shiftInputDate(localDate, diff);
+    const next = shiftInputDate(effectiveDate, diff);
+    if (onDateChange) {
+      onDateChange(next);
+      return;
+    }
     setLocalDate(next);
-    if (onDateChange) onDateChange(next);
   };
 
   const renderDefaultActions = (row: T) => {
@@ -203,7 +220,7 @@ export function FinanceCardList<T extends FinanceCardListRow>({
               </button>
 
               <CustomDatePicker
-                value={localDate}
+                value={effectiveDate}
                 onChange={handleDateChange}
                 placeholder="Select date"
                 className="date-input"
@@ -232,23 +249,38 @@ export function FinanceCardList<T extends FinanceCardListRow>({
               <div key={row.id} className="rbac-card p-4">
                 {(() => {
                   const actionNode = renderActions ? renderActions(row) : renderDefaultActions(row);
+                  const amountNode = renderAmountBadge ? (
+                    renderAmountBadge(row)
+                  ) : (
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${amountBadgeClassName}`}>
+                      {formatAmount(row.amount)}
+                    </span>
+                  );
+
+                  if (renderCard) {
+                    return renderCard(row, {
+                      actionNode,
+                      amountNode,
+                      formatAmount,
+                    });
+                  }
 
                   return (
                     <div className="mb-2 flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1 space-y-2">
                         <div className="flex gap-2">
-                          <h4 className="text-sm font-semibold">{formatToDDMMYYYY(row.date)}</h4>
+                          <h4 className="text-sm font-semibold">
+                            {renderDateLabel ? renderDateLabel(row) : formatToDDMMYYYY(row.date)}
+                          </h4>
                           <div className="flex flex-wrap gap-2">
-                            <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${amountBadgeClassName}`}>
-                              {formatAmount(row.amount)}
-                            </span>
+                            {amountNode}
                           </div>
                         </div>
 
                         {row.details.length > 0 && (
                           <div className="space-y-1 text-sm text-slate-600">
                             {row.details.map((line, index) => (
-                              <p key={`${row.id}-${index}`}>{line}</p>
+                              <div key={`${row.id}-${index}`}>{line}</div>
                             ))}
                           </div>
                         )}

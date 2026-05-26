@@ -13,6 +13,7 @@ import {
   FaChevronLeft,
   FaChevronRight,
   FaEdit,
+  FaMinus,
   FaTrash,
   FaSpinner,
   FaFilter,
@@ -31,6 +32,8 @@ import {
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
 import { useRouter } from "next/navigation";
 import { FinanceCardList } from "../_components/FinanceCardList";
+import CompanyCodeBadge from "../_components/CompanyCodeBadge";
+import InfoBadge from "../_components/InfoBadge";
 
 type TransactionType = "EXPENSE";
 
@@ -47,6 +50,8 @@ type DailyExpenseRow = {
   expenseByName: string | null;
   expenseCompanyId: string | null;
   expenseCompanyName: string | null;
+  expenseCompanyCode: string | null;
+  paymentMode: string | null;
   date: string;
   remark: string | null;
 };
@@ -267,23 +272,6 @@ function DailyExpenseListContent() {
     );
   }, [companies, draftExpenseCompanyQuery]);
 
-  const expenseCards = useMemo(
-    () =>
-      dailyExpenses.map((row) => ({
-        ...row,
-        details: [
-          row.projectName
-            ? `Project: ${row.projectName}${row.projectCity ? ` (${row.projectCity})` : ""}`
-            : "Project: -",
-          `Expense type: ${row.expenseTypeName || "-"}`,
-          `Expense by: ${row.expenseByName || "-"}`,
-          `Company: ${row.expenseCompanyName || "-"}`,
-          row.remark || "",
-        ],
-      })),
-    [dailyExpenses],
-  );
-
   const loadDailyExpenses = useCallback(async () => {
     setLoading(true);
     try {
@@ -490,13 +478,13 @@ function DailyExpenseListContent() {
         header: "Date",
         accessorKey: "date",
         cell: ({ row }) => (
-          <span className="rbac-muted">
-            {formatToDDMMYYYY(row.original.date)}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rbac-muted">{formatToDDMMYYYY(row.original.date)}</span>
+          </div>
         ),
       },
       {
-        header: "Expense Type",
+        header: "Category",
         accessorKey: "expenseTypeName",
         cell: ({ row }) => (
           <span className="rbac-muted">
@@ -526,9 +514,11 @@ function DailyExpenseListContent() {
         header: "Company",
         accessorKey: "expenseCompanyName",
         cell: ({ row }) => (
-          <span className="rbac-muted">
-            {row.original.expenseCompanyName || "-"}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rbac-muted">
+              {row.original.expenseCompanyName || "-"}
+            </span>
+          </div>
         ),
       },
       {
@@ -717,14 +707,50 @@ function DailyExpenseListContent() {
 
             <div className="md:hidden mt-4">
               <FinanceCardList
-                rows={expenseCards}
+                rows={dailyExpenses}
                 loading={loading}
                 emptyLabel="No expenses found."
                 showCount={false}
                 collapsible={false}
-                amountBadgeClassName="bg-rose-100 text-rose-800 ring-1 ring-rose-200"
                 onEdit={handleEditDailyExpense}
                 onDelete={handleDeleteDailyExpense}
+                renderCard={(row, { actionNode }) => (
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                        <CompanyCodeBadge code={row.expenseCompanyCode} />
+                        <span className="min-w-0 truncate text-sm font-semibold text-slate-900">
+                          {row.expenseTypeName || ""}
+                        </span>
+                      </div>
+                      <span className="inline-flex items-center gap-1 text-sm font-semibold text-rose-700">
+                        <FaMinus size={10} />
+                        {formatAmount(row.amount)}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <InfoBadge variant="payment">{row.paymentMode || ""}</InfoBadge>
+                      <InfoBadge variant="project">
+                        {row.projectName
+                          ? `${row.projectName}${row.projectCity ? ` (${row.projectCity})` : ""}`
+                          : ""}
+                      </InfoBadge>
+                      <InfoBadge variant="person">{row.expenseByName || ""}</InfoBadge>
+                    </div>
+
+                    <div className="text-sm text-slate-500">
+                      {formatToDDMMYYYY(row.date)}
+                    </div>
+
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="min-w-0 flex-1 break-words text-sm text-slate-600">
+                        {row.remark || ""}
+                      </p>
+                      {actionNode ? <div className="flex-shrink-0">{actionNode}</div> : null}
+                    </div>
+                  </div>
+                )}
               />
             </div>
           </div>
@@ -868,7 +894,7 @@ function DailyExpenseListContent() {
           <div className="relative min-w-64">
             <ComboboxInput
               className="theme-input rbac-input w-full pr-10"
-              placeholder="Expense Type"
+              placeholder="Category"
               displayValue={(option: ExpenseTypeOption | null) =>
                 option ? getExpenseTypeLabel(option) : draftExpenseTypeQuery
               }

@@ -66,6 +66,7 @@ const serializeDailyExpense = (row) => ({
   expenseByName: row.expenseBy?.fullName || null,
   expenseCompanyId: row.expenseCompanyId,
   expenseCompanyName: row.expenseCompany?.name || null,
+  expenseCompanyCode: row.expenseCompany?.code || null,
   paymentMode: row.paymentMode || null,
   date: row.date,
   remark: row.remark,

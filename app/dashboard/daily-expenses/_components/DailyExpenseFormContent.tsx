@@ -337,7 +337,7 @@ export default function DailyExpenseFormContent({
 
             <div className="mb-2">
               <label className="rbac-label">
-                Expense Type <span className="text-red-600">*</span>
+                Category <span className="text-red-600">*</span>
               </label>
               <Combobox
                 value={selectedExpenseType}
