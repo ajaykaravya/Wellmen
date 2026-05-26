@@ -18,7 +18,7 @@ import {
 } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
 
-type PaymentMode = "CASH" | "BANK";
+type PaymentMode = "CASH" | "BANK" | "CHEQUE" | "UPI" | "NEFT_RTGS";
 
 type ProjectOption = {
   id: string;
@@ -31,6 +31,12 @@ type CompanyOption = {
   name: string;
 };
 
+type IncomeTypeOption = {
+  id: string;
+  name: string;
+  status: "ACTIVE" | "INACTIVE";
+};
+
 type UserOption = {
   id: string;
   firstName: string;
@@ -39,6 +45,7 @@ type UserOption = {
 };
 
 type IncomeFormState = {
+  incomeTypeId: string;
   projectId: string;
   incomeCompanyId: string;
   receivedById: string;
@@ -53,6 +60,8 @@ type IncomePayload = {
   projectId: string | null;
   projectName: string | null;
   projectCity: string | null;
+  incomeTypeId: string | null;
+  incomeTypeName: string | null;
   incomeCompanyId: string | null;
   incomeCompanyName: string | null;
   receivedById: string | null;
@@ -69,7 +78,9 @@ type IncomeFormContentProps = {
 
 const paymentModeOptions: Array<{ key: PaymentMode; label: string }> = [
   { key: "CASH", label: "Cash" },
-  { key: "BANK", label: "Bank" },
+  { key: "CHEQUE", label: "Cheque" },
+  { key: "UPI", label: "UPI" },
+  { key: "NEFT_RTGS", label: "NEFT/RTGS" },
 ];
 
 function getProjectLabel(project: ProjectOption) {
@@ -78,6 +89,10 @@ function getProjectLabel(project: ProjectOption) {
 
 function getCompanyLabel(company: CompanyOption) {
   return company.name;
+}
+
+function getIncomeTypeLabel(incomeType: IncomeTypeOption) {
+  return incomeType.name;
 }
 
 function getUserLabel(user: UserOption) {
@@ -94,6 +109,7 @@ export default function IncomeFormContent({ incomeId }: IncomeFormContentProps) 
   const router = useRouter();
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
+  const [incomeTypes, setIncomeTypes] = useState<IncomeTypeOption[]>([]);
   const [users, setUsers] = useState<UserOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -102,7 +118,9 @@ export default function IncomeFormContent({ incomeId }: IncomeFormContentProps) 
     Partial<Record<keyof IncomeFormState, string>>
   >({});
   const [projectQuery, setProjectQuery] = useState("");
+  const [incomeTypeQuery, setIncomeTypeQuery] = useState("");
   const [form, setForm] = useState<IncomeFormState>({
+    incomeTypeId: "",
     projectId: "",
     incomeCompanyId: "",
     receivedById: "",
@@ -115,10 +133,11 @@ export default function IncomeFormContent({ incomeId }: IncomeFormContentProps) 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [projectsRes, companiesRes, usersRes, incomeRes] =
+        const [projectsRes, companiesRes, incomeTypesRes, usersRes, incomeRes] =
           await Promise.all([
             fetch("/api/projects/options"),
             fetch("/api/companies/options"),
+            fetch("/api/income-types/options"),
             fetch("/api/users/options"),
             incomeId ? fetch(`/api/income/${incomeId}`) : Promise.resolve(null),
           ]);
@@ -135,6 +154,19 @@ export default function IncomeFormContent({ incomeId }: IncomeFormContentProps) 
           setCompanies(Array.isArray(data) ? data : []);
         } else {
           throw new Error("Failed to load companies");
+        }
+
+        if (incomeTypesRes.ok) {
+          const data = await incomeTypesRes.json();
+          setIncomeTypes(
+            Array.isArray(data)
+              ? data.filter(
+                (incomeType: IncomeTypeOption) => incomeType.status === "ACTIVE",
+              )
+              : [],
+          );
+        } else {
+          throw new Error("Failed to load income types");
         }
 
         if (usersRes.ok) {
@@ -156,18 +188,28 @@ export default function IncomeFormContent({ incomeId }: IncomeFormContentProps) 
 
           const data = (await incomeRes.json()) as IncomePayload;
           setForm({
+            incomeTypeId: data.incomeTypeId || "",
             projectId: data.projectId || "",
             incomeCompanyId: data.incomeCompanyId || "",
             receivedById: data.receivedById || "",
             amount: String(data.amount ?? ""),
-            paymentMode: data.paymentMode === "BANK" ? "BANK" : "CASH",
+            paymentMode: data.paymentMode || "CASH",
             date:
               formatToDDMMYYYY(data.date) === "-"
                 ? getTodayInputDate()
                 : formatToDDMMYYYY(data.date),
             remark: data.remark || "",
           });
-          setProjectQuery(data.projectName ? getProjectLabel({ id: data.projectId || "", name: data.projectName, city: data.projectCity }) : "");
+          setProjectQuery(
+            data.projectName
+              ? getProjectLabel({
+                id: data.projectId || "",
+                name: data.projectName,
+                city: data.projectCity,
+              })
+              : "",
+          );
+          setIncomeTypeQuery(data.incomeTypeName || "");
         }
       } catch (error) {
         console.error("Failed to load income data", error);
@@ -188,9 +230,22 @@ export default function IncomeFormContent({ incomeId }: IncomeFormContentProps) 
     );
   }, [projectQuery, projects]);
 
+  const filteredIncomeTypes = useMemo(() => {
+    const query = incomeTypeQuery.trim().toLowerCase();
+    if (!query) return incomeTypes;
+    return incomeTypes.filter((incomeType) =>
+      getIncomeTypeLabel(incomeType).toLowerCase().includes(query),
+    );
+  }, [incomeTypeQuery, incomeTypes]);
+
   const selectedProject = useMemo(
     () => projects.find((project) => project.id === form.projectId) || null,
     [form.projectId, projects],
+  );
+
+  const selectedIncomeType = useMemo(
+    () => incomeTypes.find((incomeType) => incomeType.id === form.incomeTypeId) || null,
+    [form.incomeTypeId, incomeTypes],
   );
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -198,6 +253,7 @@ export default function IncomeFormContent({ incomeId }: IncomeFormContentProps) 
     setNote(null);
 
     const newErrors: Partial<Record<keyof IncomeFormState, string>> = {};
+    if (!form.incomeTypeId) newErrors.incomeTypeId = "Category is required.";
     if (!form.projectId) newErrors.projectId = "Project is required.";
     if (!form.incomeCompanyId)
       newErrors.incomeCompanyId = "Income company is required.";
@@ -217,6 +273,7 @@ export default function IncomeFormContent({ incomeId }: IncomeFormContentProps) 
         method: incomeId ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          incomeTypeId: form.incomeTypeId,
           projectId: form.projectId,
           incomeCompanyId: form.incomeCompanyId,
           receivedById: form.receivedById,
@@ -257,7 +314,9 @@ export default function IncomeFormContent({ incomeId }: IncomeFormContentProps) 
     <section className="rbac-section rbac-container">
       <div className="rbac-card">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="rbac-title-lg">{incomeId ? "Edit Income" : "Add New Income"}</h3>
+          <h3 className="rbac-title-lg">
+            {incomeId ? "Edit Income" : "Add New Income"}
+          </h3>
         </div>
 
         <form className="rbac-form" onSubmit={handleSubmit}>
@@ -265,8 +324,6 @@ export default function IncomeFormContent({ incomeId }: IncomeFormContentProps) 
             disabled={saving}
             className={saving ? "opacity-70 pointer-events-none" : ""}
           >
-         
-
             <div className="mb-2">
               <ButtonGroup
                 title="Income Company"
@@ -299,7 +356,66 @@ export default function IncomeFormContent({ incomeId }: IncomeFormContentProps) 
               />
             </div>
 
-               <div className="mb-2">
+            <div className="mb-2">
+              <label className="rbac-label">
+                Category <span className="text-red-600">*</span>
+              </label>
+              <Combobox
+                value={selectedIncomeType}
+                onChange={(incomeType: IncomeTypeOption | null) => {
+                  setForm((prev) => ({
+                    ...prev,
+                    incomeTypeId: incomeType?.id || "",
+                  }));
+                  setIncomeTypeQuery("");
+                }}
+                nullable
+              >
+                <div className="relative">
+                  <ComboboxInput
+                    className="theme-input rbac-input w-full pr-10"
+                    placeholder="Search Income Type"
+                    displayValue={(incomeType: IncomeTypeOption | null) =>
+                      incomeType ? getIncomeTypeLabel(incomeType) : incomeTypeQuery
+                    }
+                    onChange={(event) => {
+                      setIncomeTypeQuery(event.target.value);
+                      setForm((prev) => ({ ...prev, incomeTypeId: "" }));
+                    }}
+                  />
+                  <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+                    <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+                  </ComboboxButton>
+                  <ComboboxOptions
+                    modal={false}
+                    className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]"
+                  >
+                    {filteredIncomeTypes.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-[color:var(--theme-text-muted)]">
+                        No income types found
+                      </div>
+                    ) : (
+                      filteredIncomeTypes.map((option) => (
+                        <ComboboxOption
+                          key={option.id}
+                          value={option}
+                          className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <span>{option.name}</span>
+                          </div>
+                        </ComboboxOption>
+                      ))
+                    )}
+                  </ComboboxOptions>
+                </div>
+              </Combobox>
+              {errors.incomeTypeId && (
+                <p className="my-2 text-sm text-red-600">{errors.incomeTypeId}</p>
+              )}
+            </div>
+
+            <div className="mb-2">
               <label className="rbac-label">
                 Project <span className="text-red-600">*</span>
               </label>
@@ -361,7 +477,10 @@ export default function IncomeFormContent({ incomeId }: IncomeFormContentProps) 
                 selected={form.paymentMode}
                 options={paymentModeOptions}
                 onSelect={(value) =>
-                  setForm((prev) => ({ ...prev, paymentMode: value as PaymentMode }))
+                  setForm((prev) => ({
+                    ...prev,
+                    paymentMode: value as PaymentMode,
+                  }))
                 }
                 error={errors.paymentMode}
                 required
@@ -400,7 +519,9 @@ export default function IncomeFormContent({ incomeId }: IncomeFormContentProps) 
                 placeholder="Select date"
               />
             </label>
-            {errors.date && <p className="mb-2 text-sm text-red-600">{errors.date}</p>}
+            {errors.date && (
+              <p className="mb-2 text-sm text-red-600">{errors.date}</p>
+            )}
 
             <label className="rbac-label">
               Remark

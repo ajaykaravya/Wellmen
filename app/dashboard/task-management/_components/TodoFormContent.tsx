@@ -211,7 +211,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
 
   useEffect(() => {
     if (todoId || form.taskType) return;
-    const initialType = resolveTaskTypeFromQuery(searchParams.get("type"));
+    const initialType = resolveTaskTypeFromQuery(searchParams?.get("type") || null);
     if (initialType) {
       setForm((prev) => ({
         ...prev,

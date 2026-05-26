@@ -46,7 +46,8 @@ type MenuKey =
   | "expenseTypes"
   | "dailyExpenses"
   | "income"
-  | "cash";
+  | "cash"
+  | "incomeTypes";
 
 type DashboardContextValue = {
   user: SessionUser | null;
@@ -97,6 +98,7 @@ const routeByMenu: Record<MenuKey, string> = {
   dailyExpenses: "/dashboard/daily-expenses",
   income: "/dashboard/income",
   cash: "/dashboard/cash",
+  incomeTypes: "/dashboard/income-types",
 };
 
 const getActiveMenu = (pathname: string | null): MenuKey => {
@@ -128,6 +130,7 @@ const getActiveMenu = (pathname: string | null): MenuKey => {
   if (safePathname.startsWith("/dashboard/reports")) return "reports";
   if (safePathname.startsWith("/dashboard/expense-types")) return "expenseTypes";
   if (safePathname.startsWith("/dashboard/daily-expenses")) return "dailyExpenses";
+  if (safePathname.startsWith("/dashboard/income-types")) return "incomeTypes";
   if (safePathname.startsWith("/dashboard/income")) return "income";
   if (safePathname.startsWith("/dashboard/cash")) return "cash";
   if (safePathname.startsWith("/dashboard/team")) return "team";
@@ -177,6 +180,7 @@ export default function DashboardShell({
       "expenseTypes",
       "masterData",
       "transportConfigs",
+      "incomeTypes",
     ].includes(activeMenu);
   }, [activeMenu]);
 
@@ -249,11 +253,12 @@ export default function DashboardShell({
         label: "Master Data",
         hasDropdown: true,
         dropdownItems: [
-          { key: "projectcategories", label: "Project work Categories" },
-          { key: "officeCategories", label: "Office work Categories" },
-          { key: "serviceCategories", label: "Service work Categories" },
-          { key: "reportingCategories", label: "Reporting work Categories" },
+          { key: "projectcategories", label: "Project Categories" },
+          { key: "officeCategories", label: "Office Categories" },
+          { key: "serviceCategories", label: "Service Categories" },
+          { key: "reportingCategories", label: "Reporting Categories" },
           { key: "expenseTypes", label: "Expense Types" },
+          { key: "incomeTypes", label: "Income Types" },
           { key: "transportConfigs", label: "Transport" },
         ],
       });

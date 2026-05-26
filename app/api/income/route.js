@@ -3,12 +3,15 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
 
-const PAYMENT_MODES = ["CASH", "BANK"];
+const PAYMENT_MODES = ["CASH", "BANK", "CHEQUE", "UPI", "NEFT_RTGS"];
 
 const parsePayload = (body) => {
   const amountRaw = String(body.amount || "").trim();
   const projectId = String(body.projectId || "").trim();
-  const incomeCompanyId = String(body.incomeCompanyId || body.expenseCompanyId || "").trim();
+  const incomeTypeId = String(body.incomeTypeId || "").trim();
+  const incomeCompanyId = String(
+    body.incomeCompanyId || body.expenseCompanyId || "",
+  ).trim();
   const receivedById = String(body.receivedById || body.expenseById || "").trim();
   const paymentMode = String(body.paymentMode || "").trim().toUpperCase();
   const date = String(body.date || "").trim();
@@ -17,6 +20,7 @@ const parsePayload = (body) => {
   return {
     amountRaw,
     projectId,
+    incomeTypeId,
     incomeCompanyId,
     receivedById,
     paymentMode,
@@ -55,8 +59,11 @@ const serializeIncome = (row) => ({
   projectId: row.projectId,
   projectName: row.project?.name || null,
   projectCity: row.project?.city || null,
+  incomeTypeId: row.incomeTypeId,
+  incomeTypeName: row.incomeType?.name || null,
   incomeCompanyId: row.expenseCompanyId,
   incomeCompanyName: row.expenseCompany?.name || null,
+  incomeCompanyCode: row.expenseCompany?.code || null,
   receivedById: row.expenseById,
   receivedByName: row.expenseBy?.fullName || null,
   paymentMode: row.paymentMode || null,
@@ -73,6 +80,7 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const q = String(searchParams.get("q") || "").trim();
   const projectId = String(searchParams.get("projectId") || "").trim();
+  const incomeTypeId = String(searchParams.get("incomeTypeId") || "").trim();
   const incomeCompanyId = String(searchParams.get("incomeCompanyId") || "").trim();
   const receivedById = String(searchParams.get("receivedById") || "").trim();
   const paymentMode = String(searchParams.get("paymentMode") || "")
@@ -92,6 +100,7 @@ export async function GET(req) {
   if (q) {
     where.OR = [
       { remark: { contains: q, mode: "insensitive" } },
+      { incomeType: { name: { contains: q, mode: "insensitive" } } },
       { project: { is: { name: { contains: q, mode: "insensitive" } } } },
       { project: { is: { city: { contains: q, mode: "insensitive" } } } },
       {
@@ -118,6 +127,7 @@ export async function GET(req) {
   }
 
   if (projectId) where.projectId = projectId;
+  if (incomeTypeId) where.incomeTypeId = incomeTypeId;
   if (incomeCompanyId) where.expenseCompanyId = incomeCompanyId;
   if (receivedById) where.expenseById = receivedById;
 
@@ -157,10 +167,11 @@ export async function GET(req) {
       where,
       include: {
         project: { select: { id: true, name: true, city: true } },
+        incomeType: true,
         expenseCompany: true,
         expenseBy: { include: { role: true } },
       },
-      orderBy: { date: "desc" },
+      orderBy: [{ createdAt: "desc" }, { date: "desc" }],
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
@@ -192,6 +203,10 @@ export async function POST(req) {
     return NextResponse.json({ error: "Date is required." }, { status: 400 });
   }
 
+  if (!payload.incomeTypeId) {
+    return NextResponse.json({ error: "Category is required." }, { status: 400 });
+  }
+
   if (!payload.projectId) {
     return NextResponse.json({ error: "Project is required." }, { status: 400 });
   }
@@ -217,23 +232,34 @@ export async function POST(req) {
     );
   }
 
-  const [project, incomeCompany, receivedBy] = await Promise.all([
+  const [project, incomeType, incomeCompany, receivedBy] = await Promise.all([
     prisma.project.findUnique({
       where: { id: payload.projectId },
       select: { id: true },
     }),
+    prisma.incomeType.findUnique({
+      where: { id: payload.incomeTypeId },
+      select: { id: true },
+    }),
     prisma.company.findUnique({
       where: { id: payload.incomeCompanyId },
-      select: { id: true, name: true },
+      select: { id: true },
     }),
     prisma.user.findUnique({
       where: { id: payload.receivedById },
-      select: { id: true, fullName: true },
+      select: { id: true },
     }),
   ]);
 
   if (!project) {
     return NextResponse.json({ error: "Project not found." }, { status: 404 });
+  }
+
+  if (!incomeType) {
+    return NextResponse.json(
+      { error: "Income type not found." },
+      { status: 404 },
+    );
   }
 
   if (!incomeCompany) {
@@ -256,6 +282,7 @@ export async function POST(req) {
         transactionType: "INCOME",
         amount: new Prisma.Decimal(amount),
         projectId: project.id,
+        incomeTypeId: incomeType.id,
         expenseCompanyId: incomeCompany.id,
         expenseById: receivedBy.id,
         paymentMode: payload.paymentMode,
@@ -264,6 +291,7 @@ export async function POST(req) {
       },
       include: {
         project: { select: { id: true, name: true, city: true } },
+        incomeType: true,
         expenseCompany: true,
         expenseBy: { include: { role: true } },
       },

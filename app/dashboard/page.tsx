@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { getTodayInputDate } from "@/lib/dateUtils";
+import { formatToDDMMYYYY, getTodayInputDate } from "@/lib/dateUtils";
 import { toast } from "react-toastify";
 import DashboardShell, {
   clearCachedSession,
   useDashboardContext,
 } from "./_components/DashboardShell";
+import CompanyCodeBadge from "./_components/CompanyCodeBadge";
+import InfoBadge from "./_components/InfoBadge";
 import { FinanceCardList, type FinanceCardListRow } from "./_components/FinanceCardList";
 import { TaskTableCard } from "./_components/TaskTableCard";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -19,6 +21,8 @@ import {
   FaClock,
   FaHourglass,
   FaCheckCircle,
+  FaPlus,
+  FaMinus,
   FaSpinner,
   FaMoon,
   FaSun,
@@ -122,11 +126,15 @@ type AdminReportRow = {
 
 type IncomeEntryRow = {
   id: string;
+  transactionType: "INCOME";
+  createdAt: string;
   date: string;
   amount: number;
   projectName: string | null;
   projectCity: string | null;
+  incomeTypeName: string | null;
   incomeCompanyName: string | null;
+  incomeCompanyCode: string | null;
   receivedByName: string | null;
   paymentMode: string | null;
   remark: string | null;
@@ -134,6 +142,8 @@ type IncomeEntryRow = {
 
 type ExpenseEntryRow = {
   id: string;
+  transactionType: "EXPENSE";
+  createdAt: string;
   date: string;
   amount: number;
   projectName: string | null;
@@ -141,11 +151,27 @@ type ExpenseEntryRow = {
   expenseTypeName: string | null;
   expenseByName: string | null;
   expenseCompanyName: string | null;
+  expenseCompanyCode: string | null;
+  paymentMode: string | null;
   remark: string | null;
 };
 
-type FinanceIncomeRow = IncomeEntryRow & FinanceCardListRow;
-type FinanceExpenseRow = ExpenseEntryRow & FinanceCardListRow;
+type LedgerRow = FinanceCardListRow & {
+  transactionType: "INCOME" | "EXPENSE";
+  createdAt: string;
+  projectName: string | null;
+  projectCity: string | null;
+  incomeTypeName?: string | null;
+  expenseTypeName?: string | null;
+  incomeCompanyName?: string | null;
+  incomeCompanyCode?: string | null;
+  expenseCompanyName?: string | null;
+  expenseCompanyCode?: string | null;
+  receivedByName?: string | null;
+  expenseByName?: string | null;
+  paymentMode: string | null;
+  remark: string | null;
+};
 
 const shiftInputDate = (value: string, diffDays: number) => {
   let base: Date;
@@ -289,38 +315,40 @@ function OverviewContent() {
   const selectedReportVideo =
     reportVideoIndex !== null ? reportVideoUrls[reportVideoIndex] : null;
 
-  const financeIncomeCards = useMemo<FinanceIncomeRow[]>(
+  const ledgerEntries = useMemo<LedgerRow[]>(
     () =>
-      incomeEntries.map((row) => ({
-        ...row,
-        details: [
-          row.projectName
-            ? `Project: ${row.projectName}${row.projectCity ? ` (${row.projectCity})` : ""}`
-            : "Project: -",
-          `Income company: ${row.incomeCompanyName || "-"}`,
-          `Received by: ${row.receivedByName || "-"}`,
-          `Payment mode: ${row.paymentMode || "-"}`,
-          row.remark ? `Remark: ${row.remark}` : "",
-        ],
-      })),
-    [incomeEntries],
-  );
-
-  const financeExpenseCards = useMemo<FinanceExpenseRow[]>(
-    () =>
-      expenseEntries.map((row) => ({
-        ...row,
-        details: [
-          row.projectName
-            ? `Project: ${row.projectName}${row.projectCity ? ` (${row.projectCity})` : ""}`
-            : "Project: -",
-          `Expense type: ${row.expenseTypeName || "-"}`,
-          `Expense by: ${row.expenseByName || "-"}`,
-          `Company: ${row.expenseCompanyName || "-"}`,
-          row.remark ? `Remark: ${row.remark}` : "",
-        ],
-      })),
-    [expenseEntries],
+      [
+        ...incomeEntries.map((row) => ({
+          ...row,
+          details: [
+            row.projectName
+              ? `Project: ${row.projectName}${row.projectCity ? ` (${row.projectCity})` : ""}`
+              : "Project: -",
+            `Category: ${row.incomeTypeName || "-"}`,
+            `Income company: ${row.incomeCompanyName || "-"}`,
+            `Received by: ${row.receivedByName || "-"}`,
+            `Payment mode: ${row.paymentMode || "-"}`,
+            row.remark ? `Remark: ${row.remark}` : "",
+          ],
+        })),
+        ...expenseEntries.map((row) => ({
+          ...row,
+          details: [
+            row.projectName
+              ? `Project: ${row.projectName}${row.projectCity ? ` (${row.projectCity})` : ""}`
+              : "Project: -",
+            `Category: ${row.expenseTypeName || "-"}`,
+            `Expense by: ${row.expenseByName || "-"}`,
+            `Company: ${row.expenseCompanyName || "-"}`,
+            row.remark ? `Remark: ${row.remark}` : "",
+          ],
+        })),
+      ].sort((a, b) => {
+        const aTime = new Date(a.createdAt || a.date).getTime();
+        const bTime = new Date(b.createdAt || b.date).getTime();
+        return bTime - aTime;
+      }),
+    [incomeEntries, expenseEntries],
   );
 
   const financeIncomeTotal = useMemo(
@@ -474,15 +502,8 @@ function OverviewContent() {
     loadExpenseEntries();
   }, [loadExpenseEntries, loadIncomeEntries]);
 
-  const handleEditIncomeEntry = useCallback(
-    (row: FinanceIncomeRow) => {
-      router.push(`/dashboard/income/${row.id}`);
-    },
-    [router],
-  );
-
-  const handleDeleteIncomeEntry = useCallback((row: FinanceIncomeRow) => {
-    setConfirmIncomeTarget(row);
+  const handleDeleteIncomeEntry = useCallback((row: LedgerRow) => {
+    setConfirmIncomeTarget(row as IncomeEntryRow);
     setConfirmIncomeOpen(true);
   }, []);
 
@@ -510,17 +531,34 @@ function OverviewContent() {
     }
   }, [confirmIncomeTarget, loadIncomeEntries]);
 
-  const handleEditExpenseEntry = useCallback(
-    (row: FinanceExpenseRow) => {
+  const handleDeleteExpenseEntry = useCallback((row: LedgerRow) => {
+    setConfirmExpenseTarget(row as ExpenseEntryRow);
+    setConfirmExpenseOpen(true);
+  }, []);
+
+  const handleEditLedgerEntry = useCallback(
+    (row: LedgerRow) => {
+      if (row.transactionType === "INCOME") {
+        router.push(`/dashboard/income/${row.id}`);
+        return;
+      }
+
       router.push(`/dashboard/daily-expenses/${row.id}`);
     },
     [router],
   );
 
-  const handleDeleteExpenseEntry = useCallback((row: FinanceExpenseRow) => {
-    setConfirmExpenseTarget(row);
-    setConfirmExpenseOpen(true);
-  }, []);
+  const handleDeleteLedgerEntry = useCallback(
+    (row: LedgerRow) => {
+      if (row.transactionType === "INCOME") {
+        handleDeleteIncomeEntry(row);
+        return;
+      }
+
+      handleDeleteExpenseEntry(row);
+    },
+    [handleDeleteExpenseEntry, handleDeleteIncomeEntry],
+  );
 
   const confirmDeleteExpenseEntry = useCallback(async () => {
     if (!confirmExpenseTarget) return;
@@ -1506,34 +1544,63 @@ function OverviewContent() {
             </span>
           </div>
 
-          <FinanceCardList<FinanceIncomeRow>
-            title="Today's Income"
-            rows={financeIncomeCards}
-            loading={incomeLoading}
-            emptyLabel="No income found for selected date."
-            addHref="/dashboard/income/new"
-            addLabel="Add Income"
-            amountBadgeClassName="bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200"
-            onEdit={handleEditIncomeEntry}
-            onDelete={handleDeleteIncomeEntry}
+          <FinanceCardList<LedgerRow>
+            title="Ledger"
+            rows={ledgerEntries}
+            loading={incomeLoading || expenseLoading}
+            emptyLabel="No ledger entries found for selected date."
+            onEdit={handleEditLedgerEntry}
+            onDelete={handleDeleteLedgerEntry}
             showDatePicker={true}
             date={financeDate}
             onDateChange={setFinanceDate}
-          />
+            renderCard={(row, { actionNode }) => {
+              const isIncome = row.transactionType === "INCOME";
+              const code = isIncome
+                ? row.incomeCompanyCode || ""
+                : row.expenseCompanyCode || "";
+              const category = isIncome ? row.incomeTypeName || "" : row.expenseTypeName || "";
+              const projectLabel = row.projectName
+                ? `${row.projectName}${row.projectCity ? ` (${row.projectCity})` : ""}`
+                : "";
+              const personLabel = isIncome ? row.receivedByName || "" : row.expenseByName || "";
 
-          <FinanceCardList<FinanceExpenseRow>
-            title="Today's Expense"
-            rows={financeExpenseCards}
-            loading={expenseLoading}
-            emptyLabel="No expense found for selected date."
-            addHref="/dashboard/daily-expenses/new"
-            addLabel="Add Expense"
-            amountBadgeClassName="bg-rose-100 text-rose-800 ring-1 ring-rose-200"
-            onEdit={handleEditExpenseEntry}
-            onDelete={handleDeleteExpenseEntry}
-            showDatePicker={true}
-            date={financeDate}
-            onDateChange={setFinanceDate}
+              return (
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                      <CompanyCodeBadge code={code} />
+                      <span className="min-w-0 truncate text-sm font-semibold text-slate-900">
+                        {category}
+                      </span>
+                    </div>
+                    <span
+                      className={`inline-flex items-center gap-1 text-sm font-semibold ${
+                        isIncome ? "text-emerald-700" : "text-rose-700"
+                      }`}
+                    >
+                      {isIncome ? <FaPlus size={10} /> : <FaMinus size={10} />}
+                      {formatAmount(row.amount)}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <InfoBadge variant="payment">{row.paymentMode || ""}</InfoBadge>
+                    <InfoBadge variant="project">{projectLabel}</InfoBadge>
+                    <InfoBadge variant="person">{personLabel}</InfoBadge>
+                  </div>
+
+                  <div className="text-sm text-slate-500">{formatToDDMMYYYY(row.date)}</div>
+
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="min-w-0 flex-1 break-words text-sm text-slate-600">
+                      {row.remark || ""}
+                    </p>
+                    {actionNode ? <div className="flex-shrink-0">{actionNode}</div> : null}
+                  </div>
+                </div>
+              );
+            }}
           />
         </section>
       )}

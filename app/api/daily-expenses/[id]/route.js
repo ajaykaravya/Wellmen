@@ -3,6 +3,8 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
 
+const PAYMENT_MODES = ["CASH", "BANK", "CHEQUE", "UPI", "NEFT_RTGS"];
+
 const resolveId = async (params) => String((await params)?.id || "").trim();
 
 const parsePayload = (body) => {
@@ -11,6 +13,9 @@ const parsePayload = (body) => {
   const expenseTypeId = String(body.expenseTypeId || "").trim();
   const expenseById = String(body.expenseById || "").trim();
   const expenseCompanyId = String(body.expenseCompanyId || "").trim();
+  const paymentMode = String(body.paymentMode || "")
+    .trim()
+    .toUpperCase();
   const date = String(body.date || "").trim();
   const remark = String(body.remark || "").trim();
   return {
@@ -19,10 +24,13 @@ const parsePayload = (body) => {
     expenseTypeId,
     expenseById,
     expenseCompanyId,
+    paymentMode,
     date,
     remark,
   };
 };
+
+const isValidPaymentMode = (value) => PAYMENT_MODES.includes(value);
 
 const parseDate = (value) => {
   if (!value) return null;
@@ -58,6 +66,8 @@ const serializeDailyExpense = (row) => ({
   expenseByName: row.expenseBy?.fullName || null,
   expenseCompanyId: row.expenseCompanyId,
   expenseCompanyName: row.expenseCompany?.name || null,
+  expenseCompanyCode: row.expenseCompany?.code || null,
+  paymentMode: row.paymentMode || null,
   date: row.date,
   remark: row.remark,
   createdAt: row.createdAt,
@@ -77,17 +87,20 @@ export async function GET(req, { params }) {
   }
 
   const dailyExpense = await prisma.dailyExpense.findUnique({
-      where: { id },
-      include: {
-        project: true,
-        expenseType: true,
-        expenseBy: true,
-        expenseCompany: true,
+    where: { id },
+    include: {
+      project: true,
+      expenseType: true,
+      expenseBy: true,
+      expenseCompany: true,
     },
   });
 
   if (!dailyExpense) {
-    return NextResponse.json({ error: "Daily expense not found." }, { status: 404 });
+    return NextResponse.json(
+      { error: "Daily expense not found." },
+      { status: 404 },
+    );
   }
 
   return NextResponse.json(serializeDailyExpense(dailyExpense));
@@ -127,7 +140,17 @@ export async function PUT(req, { params }) {
   }
 
   if (!payload.projectId) {
-    return NextResponse.json({ error: "Project is required." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Project is required." },
+      { status: 400 },
+    );
+  }
+
+  if (!isValidPaymentMode(payload.paymentMode)) {
+    return NextResponse.json(
+      { error: "Payment mode is required." },
+      { status: 400 },
+    );
   }
 
   const project = await prisma.project.findUnique({
@@ -198,6 +221,7 @@ export async function PUT(req, { params }) {
         expenseTypeId: expenseType.id,
         expenseById: expenseBy.id,
         expenseCompanyId: expenseCompany.id,
+        paymentMode: payload.paymentMode,
         date: parsedDate,
         remark: payload.remark || null,
       },

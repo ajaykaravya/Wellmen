@@ -20,6 +20,9 @@ import { ChevronDownIcon } from "@heroicons/react/16/solid";
 
 type TransactionType = "EXPENSE";
 
+type PaymentMode = "CASH" | "BANK" | "CHEQUE" | "UPI" | "NEFT_RTGS";
+
+
 type UserOption = {
   id: string;
   firstName: string;
@@ -51,6 +54,7 @@ type DailyExpenseFormState = {
   expenseTypeId: string;
   expenseById: string;
   expenseCompanyId: string;
+  paymentMode: PaymentMode;
   date: string;
   remark: string;
 };
@@ -71,6 +75,13 @@ function getProjectLabel(option: ProjectOption) {
   return option.city ? `${option.name} (${option.city})` : option.name;
 }
 
+const paymentModeOptions: Array<{ key: PaymentMode; label: string }> = [
+  { key: "CASH", label: "Cash" },
+  { key: "CHEQUE", label: "Cheque" },
+  { key: "UPI", label: "UPI" },
+  { key: "NEFT_RTGS", label: "NEFT/RTGS" },
+];
+
 export default function DailyExpenseFormContent({
   dailyExpenseId,
 }: DailyExpenseFormContentProps) {
@@ -82,6 +93,7 @@ export default function DailyExpenseFormContent({
     expenseTypeId: "",
     expenseById: "",
     expenseCompanyId: "",
+    paymentMode: "CASH",
     date: getTodayInputDate(),
     remark: "",
   });
@@ -159,6 +171,7 @@ export default function DailyExpenseFormContent({
             projectId: data.projectId || "",
             expenseTypeId: data.expenseTypeId || "",
             expenseById: data.expenseById || "",
+            paymentMode: data.paymentMode || "",
             expenseCompanyId: data.expenseCompanyId || "",
             date:
               formatToDDMMYYYY(data.date) === "-"
@@ -218,6 +231,7 @@ export default function DailyExpenseFormContent({
     if (!form.projectId) newErrors.projectId = "Project is required.";
     if (!form.expenseTypeId) newErrors.expenseTypeId = "Expense type is required.";
     if (!form.expenseById) newErrors.expenseById = "Expense by is required.";
+    if (!form.paymentMode) newErrors.paymentMode = "Payment mode is required.";
     if (!form.expenseCompanyId)
       newErrors.expenseCompanyId = "Expense company is required.";
 
@@ -240,6 +254,7 @@ export default function DailyExpenseFormContent({
             expenseTypeId: form.expenseTypeId,
             expenseById: form.expenseById,
             expenseCompanyId: form.expenseCompanyId,
+            paymentMode: form.paymentMode,
             date: form.date,
             remark: form.remark,
           }),
@@ -322,7 +337,7 @@ export default function DailyExpenseFormContent({
 
             <div className="mb-2">
               <label className="rbac-label">
-                Expense Type <span className="text-red-600">*</span>
+                Category <span className="text-red-600">*</span>
               </label>
               <Combobox
                 value={selectedExpenseType}
@@ -438,6 +453,19 @@ export default function DailyExpenseFormContent({
               {errors.projectId && (
                 <p className="my-2 text-sm text-red-600">{errors.projectId}</p>
               )}
+            </div>
+
+            <div className="mb-2">
+              <ButtonGroup
+                title="Payment Mode"
+                selected={form.paymentMode}
+                options={paymentModeOptions}
+                onSelect={(value) =>
+                  setForm((prev) => ({ ...prev, paymentMode: value as PaymentMode }))
+                }
+                error={errors.paymentMode}
+                required
+              />
             </div>
 
             <label className="rbac-label">
