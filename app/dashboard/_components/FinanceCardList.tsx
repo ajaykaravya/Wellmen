@@ -2,9 +2,18 @@
 
 import Link from "next/link";
 import { ReactNode, useMemo, useState } from "react";
-import { FaEdit, FaSpinner, FaTrash, FaChevronRight, FaChevronLeft } from "react-icons/fa";
+import {
+  FaEdit,
+  FaSpinner,
+  FaTrash,
+  FaChevronRight,
+  FaChevronLeft,
+  FaPlus,
+  FaMinus,
+} from "react-icons/fa";
 import { formatToDDMMYYYY, getTodayInputDate } from "../../../lib/dateUtils";
 import CustomDatePicker from "../../components/CustomDatePicker";
+import CompanyCodeBadge from "./CompanyCodeBadge";
 
 export type FinanceCardListRow = {
   id: string;
@@ -12,6 +21,29 @@ export type FinanceCardListRow = {
   amount: number;
   details?: Array<ReactNode | null | undefined>;
   canManage?: boolean;
+};
+
+type FinanceCardAmountVariant = "income" | "expense" | "cash" | "neutral";
+
+type FinanceCardContentConfig<T extends FinanceCardListRow> = {
+  getVariant?: (row: T) => FinanceCardAmountVariant;
+  getCode?: (row: T) => string | null | undefined;
+  getTitle?: (row: T) => ReactNode;
+  getTagLabel?: (row: T) => ReactNode;
+  getTagClassName?: (row: T) => string;
+  getDetails?: (row: T) => Array<ReactNode | null | undefined>;
+  getPaymentLabel?: (row: T) => ReactNode;
+  getProjectLabel?: (row: T) => ReactNode;
+  getPersonLabel?: (row: T) => ReactNode;
+  getRemark?: (row: T) => ReactNode;
+  getDateLabel?: (row: T) => ReactNode;
+  getPaymentMode?: (row: T) => ReactNode;
+  getProjectName?: (row: T) => ReactNode;
+  getProjectCity?: (row: T) => ReactNode;
+  getReceivedByName?: (row: T) => ReactNode;
+  getExpenseByName?: (row: T) => ReactNode;
+  getCashGivenByName?: (row: T) => ReactNode;
+  getCashGivenToName?: (row: T) => ReactNode;
 };
 
 type FinanceCardListProps<T extends FinanceCardListRow> = {
@@ -33,6 +65,7 @@ type FinanceCardListProps<T extends FinanceCardListRow> = {
   renderActions?: (row: T) => ReactNode;
   renderAmountBadge?: (row: T) => ReactNode;
   renderDateLabel?: (row: T) => ReactNode;
+  cardContent?: FinanceCardContentConfig<T>;
   renderCard?: (
     row: T,
     helpers: {
@@ -42,12 +75,6 @@ type FinanceCardListProps<T extends FinanceCardListRow> = {
     },
   ) => ReactNode;
 };
-
-const formatAmount = (value: number) =>
-  Number(value || 0).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
 
 export function FinanceCardList<T extends FinanceCardListRow>({
   title,
@@ -68,6 +95,7 @@ export function FinanceCardList<T extends FinanceCardListRow>({
   renderActions,
   renderAmountBadge,
   renderDateLabel,
+  cardContent,
   renderCard,
 }: FinanceCardListProps<T>) {
   const normalizedRows = useMemo(
@@ -157,6 +185,24 @@ export function FinanceCardList<T extends FinanceCardListRow>({
     );
   };
 
+  const getVariantClassName = (variant: FinanceCardAmountVariant) => {
+    if (variant === "income" || variant === "cash") return "text-emerald-700";
+    if (variant === "expense") return "text-rose-700";
+    return "text-slate-700";
+  };
+
+  const getVariantIcon = (variant: FinanceCardAmountVariant) => {
+    if (variant === "income" || variant === "cash") return <FaPlus size={10} />;
+    if (variant === "expense") return <FaMinus size={7} />;
+    return null;
+  };
+
+  const formatAmount = (value: number) =>
+    `₹${Number(value || 0).toLocaleString("en-IN", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+
   return (
     <div className="rbac-card">
       {(title || addHref) && (
@@ -174,7 +220,7 @@ export function FinanceCardList<T extends FinanceCardListRow>({
             ) : null}
           </div>
 
-          <div className="flex items-center justify-end gap-2">
+          <div>
             {addHref ? (
               <Link href={addHref}>
                 <button className="rbac-button" type="button">
@@ -210,9 +256,9 @@ export function FinanceCardList<T extends FinanceCardListRow>({
 
         {showDatePicker && (!collapsible || !collapsed) && (
           <div className="my-2">
-            <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2">
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
               <button
-                className="change-button change-button-secondary p-2 rounded-md"
+                className="change-button change-button-secondary rounded-md p-2"
                 type="button"
                 onClick={() => shiftDate(-1)}
               >
@@ -227,7 +273,7 @@ export function FinanceCardList<T extends FinanceCardListRow>({
               />
 
               <button
-                className="change-button change-button-secondary p-2 rounded-md"
+                className="change-button change-button-secondary rounded-md p-2"
                 type="button"
                 onClick={() => shiftDate(1)}
               >
@@ -242,7 +288,7 @@ export function FinanceCardList<T extends FinanceCardListRow>({
             <FaSpinner className="mr-2 animate-spin" size={16} />
           </div>
         ) : normalizedRows.length === 0 ? (
-          <div className="rbac-card py-4 text-sm text-slate-500">{emptyLabel}</div>
+          <div className="mt-2 rbac-card py-4 text-sm text-slate-500">{emptyLabel}</div>
         ) : (
           <div className="mt-4 space-y-3">
             {normalizedRows.map((row) => (
@@ -263,6 +309,122 @@ export function FinanceCardList<T extends FinanceCardListRow>({
                       amountNode,
                       formatAmount,
                     });
+                  }
+
+                  if (cardContent) {
+                    const variant = cardContent.getVariant?.(row) ?? "neutral";
+                    const code = cardContent.getCode?.(row) ?? "";
+                    const title = cardContent.getTitle?.(row) ?? "";
+                    const tagLabel = cardContent.getTagLabel?.(row) ?? "";
+                    const tagClassName =
+                      cardContent.getTagClassName?.(row) ??
+                      "bg-slate-100 text-slate-700 ring-slate-200";
+                    const details = (
+                      cardContent.getDetails?.(row) ?? [
+                      ]
+                    ).filter(Boolean) as ReactNode[];
+                    const remark = cardContent.getRemark?.(row) ?? "";
+                    const dateLabel = cardContent.getDateLabel?.(row) ?? formatToDDMMYYYY(row.date);
+                    const paymentMode = cardContent.getPaymentMode?.(row);
+                    const projectName = cardContent.getProjectName?.(row);
+                    const projectCity = cardContent.getProjectCity?.(row);
+                    const receivedByName = cardContent.getReceivedByName?.(row);
+                    const expenseByName = cardContent.getExpenseByName?.(row);
+                    const cashGivenByName = cardContent.getCashGivenByName?.(row);
+                    const cashGivenToName = cardContent.getCashGivenToName?.(row);
+
+                    return (
+                      <div>
+                        <div className="mb-2 flex items-start justify-between gap-3">
+                          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                            {tagLabel ? (
+                              <span
+                                className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ring-1 ${tagClassName}`}
+                              >
+                                {tagLabel}
+                              </span>
+                            ) : null}
+                            <CompanyCodeBadge code={code} />
+                            <span className="min-w-0 truncate text-sm font-semibold">
+                              {title}
+                            </span>
+                          </div>
+                          <span
+                            className={`inline-flex items-center gap-1 text-sm font-semibold ${getVariantClassName(variant)}`}
+                          >
+                            {getVariantIcon(variant)}
+                            {formatAmount(row.amount)}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200">
+                            {paymentMode}
+                          </span>
+
+                          {
+                            projectName && (
+                              <span className="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-medium text-indigo-800 ring-1 ring-indigo-200">
+                                {projectName}
+                                {projectCity ? ` (${projectCity})` : ""}
+                              </span>
+                            )
+                          }
+
+                          {
+                            receivedByName && (
+                              <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200">
+                                {receivedByName}
+                              </span>
+                            )
+                          }
+
+                          {
+                            expenseByName && (
+                              <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200">
+                                {expenseByName}
+                              </span>
+                            )
+                          }
+                        </div>
+
+                        {cashGivenByName && (
+                          <div className="mt-2 md:mb-1 mb-0 flex flex-wrap items-center gap-2">
+                            {
+                              cashGivenByName && (
+                                <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200">
+                                  By: {cashGivenByName}
+                                </span>
+                              )
+                            }
+
+                            {
+                              cashGivenToName && (
+                                <span className="inline-flex items-center rounded-full bg-cyan-100 px-2.5 py-1 text-xs font-medium text-cyan-800 ring-1 ring-cyan-200">
+                                  To: {cashGivenToName}
+                                </span>
+                              )
+                            }
+                          </div>
+                        )
+                        }
+
+                        {details.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {details.map((line, index) => (
+                              <div key={`${row.id}-detail-${index}`}>{line}</div>
+                            ))}
+                          </div>
+                        )}
+
+                        <p className="mt-1 min-w-0 flex-1 break-words text-sm">{remark}</p>
+
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="text-sm">{dateLabel}</div>
+                          {actionNode ? <div className="flex-shrink-0">{actionNode}</div> : null}
+                        </div>
+                      </div>
+                    );
                   }
 
                   return (

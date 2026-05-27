@@ -9,9 +9,7 @@ import DashboardShell, {
   clearCachedSession,
   useDashboardContext,
 } from "./_components/DashboardShell";
-import CompanyCodeBadge from "./_components/CompanyCodeBadge";
-import InfoBadge from "./_components/InfoBadge";
-import { FinanceCardList, type FinanceCardListRow } from "./_components/FinanceCardList";
+import { FinanceCardList } from "./_components/FinanceCardList";
 import { TaskTableCard } from "./_components/TaskTableCard";
 import ConfirmDialog from "../components/ConfirmDialog";
 import CustomDatePicker from "../components/CustomDatePicker";
@@ -21,8 +19,6 @@ import {
   FaClock,
   FaHourglass,
   FaCheckCircle,
-  FaPlus,
-  FaMinus,
   FaSpinner,
   FaMoon,
   FaSun,
@@ -142,7 +138,7 @@ type IncomeEntryRow = {
 
 type ExpenseEntryRow = {
   id: string;
-  transactionType: "EXPENSE";
+  transactionType: "EXPENSE" | "CASH";
   createdAt: string;
   date: string;
   amount: number;
@@ -154,23 +150,13 @@ type ExpenseEntryRow = {
   expenseCompanyCode: string | null;
   paymentMode: string | null;
   remark: string | null;
+  cashGivenToName: string | null
+  cashGivenByName: string | null;
 };
 
-type LedgerRow = FinanceCardListRow & {
-  transactionType: "INCOME" | "EXPENSE";
-  createdAt: string;
-  projectName: string | null;
-  projectCity: string | null;
-  incomeTypeName?: string | null;
-  expenseTypeName?: string | null;
-  incomeCompanyName?: string | null;
-  incomeCompanyCode?: string | null;
-  expenseCompanyName?: string | null;
-  expenseCompanyCode?: string | null;
-  receivedByName?: string | null;
-  expenseByName?: string | null;
-  paymentMode: string | null;
-  remark: string | null;
+type BalanceTransaction = {
+  amount: number | string | null | undefined;
+  transactionType: "EXPENSE" | "CASH";
 };
 
 const shiftInputDate = (value: string, diffDays: number) => {
@@ -199,10 +185,10 @@ const shiftInputDate = (value: string, diffDays: number) => {
 };
 
 const formatAmount = (value: number) =>
-  Number(value || 0).toLocaleString(undefined, {
+  `₹${Number(value || 0).toLocaleString("en-IN", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  });
+  })}`;
 
 function OverviewContent() {
   const { user, isAdmin } = useDashboardContext();
@@ -226,7 +212,8 @@ function OverviewContent() {
   const [adminLoading, setAdminLoading] = useState(false);
   const [userReports, setUserReports] = useState<AdminReportRow[]>([]);
   const [userReportsLoading, setUserReportsLoading] = useState(false);
-  const [financeDate, setFinanceDate] = useState(getTodayInputDate());
+  const [incomeDate, setIncomeDate] = useState(getTodayInputDate());
+  const [expenseDate, setExpenseDate] = useState(getTodayInputDate());
   const [incomeEntries, setIncomeEntries] = useState<IncomeEntryRow[]>([]);
   const [incomeLoading, setIncomeLoading] = useState(false);
   const [expenseEntries, setExpenseEntries] = useState<ExpenseEntryRow[]>([]);
@@ -261,6 +248,8 @@ function OverviewContent() {
   const [collapsed, setCollapsed] = useState(true);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [totalIncome, setTotalIncome] = useState(0);
+  const [totalBalance, setTotalBalance] = useState(0);
   const [changePasswordSubmitting, setChangePasswordSubmitting] =
     useState(false);
   const [passwordForm, setPasswordForm] = useState({
@@ -314,52 +303,6 @@ function OverviewContent() {
     reportImageIndex !== null ? reportImageUrls[reportImageIndex] : null;
   const selectedReportVideo =
     reportVideoIndex !== null ? reportVideoUrls[reportVideoIndex] : null;
-
-  const ledgerEntries = useMemo<LedgerRow[]>(
-    () =>
-      [
-        ...incomeEntries.map((row) => ({
-          ...row,
-          details: [
-            row.projectName
-              ? `Project: ${row.projectName}${row.projectCity ? ` (${row.projectCity})` : ""}`
-              : "Project: -",
-            `Category: ${row.incomeTypeName || "-"}`,
-            `Income company: ${row.incomeCompanyName || "-"}`,
-            `Received by: ${row.receivedByName || "-"}`,
-            `Payment mode: ${row.paymentMode || "-"}`,
-            row.remark ? `Remark: ${row.remark}` : "",
-          ],
-        })),
-        ...expenseEntries.map((row) => ({
-          ...row,
-          details: [
-            row.projectName
-              ? `Project: ${row.projectName}${row.projectCity ? ` (${row.projectCity})` : ""}`
-              : "Project: -",
-            `Category: ${row.expenseTypeName || "-"}`,
-            `Expense by: ${row.expenseByName || "-"}`,
-            `Company: ${row.expenseCompanyName || "-"}`,
-            row.remark ? `Remark: ${row.remark}` : "",
-          ],
-        })),
-      ].sort((a, b) => {
-        const aTime = new Date(a.createdAt || a.date).getTime();
-        const bTime = new Date(b.createdAt || b.date).getTime();
-        return bTime - aTime;
-      }),
-    [incomeEntries, expenseEntries],
-  );
-
-  const financeIncomeTotal = useMemo(
-    () => incomeEntries.reduce((sum, row) => sum + Number(row.amount || 0), 0),
-    [incomeEntries],
-  );
-  const financeExpenseTotal = useMemo(
-    () => expenseEntries.reduce((sum, row) => sum + Number(row.amount || 0), 0),
-    [expenseEntries],
-  );
-  const financeNetTotal = financeIncomeTotal - financeExpenseTotal;
 
   const loadTodos = useCallback(async () => {
     setLoading(true);
@@ -459,8 +402,8 @@ function OverviewContent() {
     setIncomeLoading(true);
     try {
       const params = new URLSearchParams({
-        fromDate: financeDate,
-        toDate: financeDate,
+        fromDate: incomeDate,
+        toDate: incomeDate,
         page: "1",
         pageSize: "20",
       });
@@ -473,7 +416,63 @@ function OverviewContent() {
     } finally {
       setIncomeLoading(false);
     }
-  }, [financeDate, isAdmin]);
+  }, [incomeDate, isAdmin]);
+
+
+  const getTotalIncome = useCallback(async () => {
+    if (!isAdmin) return;
+
+    try {
+      const res = await fetch("/api/income");
+
+      if (!res.ok) return;
+
+      const response = await res.json();
+
+      const total = response.data.reduce(
+        (sum: number, item: { amount: number }) => sum + Number(item.amount),
+        0
+      );
+
+      setTotalIncome(total);
+    } catch (error) {
+      console.error("Failed to calculate total income", error);
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
+    getTotalIncome();
+  }, [getTotalIncome]);
+
+  const calculateBalance = (transactions: BalanceTransaction[]) =>
+    transactions.reduce((total, item) => {
+      const amount = Number(item.amount || 0);
+
+      if (item.transactionType === "CASH") return total + amount;
+      if (item.transactionType === "EXPENSE") return total - amount;
+
+      return total;
+    }, 0);
+
+  const getTotalBalance = useCallback(async () => {
+    if (!isAdmin) return;
+
+    try {
+      const res = await fetch("/api/daily-expenses");
+
+      if (!res.ok) return;
+
+      const response = await res.json();
+      setTotalBalance(calculateBalance(response.data));
+
+    } catch (error) {
+      console.error("Failed to calculate balance", error);
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
+    getTotalBalance();
+  }, [getTotalBalance]);
 
   const loadExpenseEntries = useCallback(async () => {
     if (!isAdmin) return;
@@ -481,8 +480,8 @@ function OverviewContent() {
     setExpenseLoading(true);
     try {
       const params = new URLSearchParams({
-        fromDate: financeDate,
-        toDate: financeDate,
+        fromDate: expenseDate,
+        toDate: expenseDate,
         page: "1",
         pageSize: "20",
       });
@@ -495,15 +494,19 @@ function OverviewContent() {
     } finally {
       setExpenseLoading(false);
     }
-  }, [financeDate, isAdmin]);
+  }, [expenseDate, isAdmin]);
 
   useEffect(() => {
     loadIncomeEntries();
     loadExpenseEntries();
   }, [loadExpenseEntries, loadIncomeEntries]);
 
-  const handleDeleteIncomeEntry = useCallback((row: LedgerRow) => {
-    setConfirmIncomeTarget(row as IncomeEntryRow);
+  const handleEditIncomeEntry = useCallback((row: IncomeEntryRow) => {
+    router.push(`/dashboard/income/${row.id}`);
+  }, [router]);
+
+  const handleDeleteIncomeEntry = useCallback((row: IncomeEntryRow) => {
+    setConfirmIncomeTarget(row);
     setConfirmIncomeOpen(true);
   }, []);
 
@@ -531,52 +534,53 @@ function OverviewContent() {
     }
   }, [confirmIncomeTarget, loadIncomeEntries]);
 
-  const handleDeleteExpenseEntry = useCallback((row: LedgerRow) => {
-    setConfirmExpenseTarget(row as ExpenseEntryRow);
+  const handleEditExpenseEntry = useCallback((row: ExpenseEntryRow) => {
+    router.push(
+      row.transactionType === "CASH"
+        ? `/dashboard/cash/${row.id}`
+        : `/dashboard/daily-expenses/${row.id}`,
+    );
+  }, [router]);
+
+  const handleDeleteExpenseEntry = useCallback((row: ExpenseEntryRow) => {
+    setConfirmExpenseTarget(row);
     setConfirmExpenseOpen(true);
   }, []);
-
-  const handleEditLedgerEntry = useCallback(
-    (row: LedgerRow) => {
-      if (row.transactionType === "INCOME") {
-        router.push(`/dashboard/income/${row.id}`);
-        return;
-      }
-
-      router.push(`/dashboard/daily-expenses/${row.id}`);
-    },
-    [router],
-  );
-
-  const handleDeleteLedgerEntry = useCallback(
-    (row: LedgerRow) => {
-      if (row.transactionType === "INCOME") {
-        handleDeleteIncomeEntry(row);
-        return;
-      }
-
-      handleDeleteExpenseEntry(row);
-    },
-    [handleDeleteExpenseEntry, handleDeleteIncomeEntry],
-  );
 
   const confirmDeleteExpenseEntry = useCallback(async () => {
     if (!confirmExpenseTarget) return;
     setDeletingExpense(true);
     try {
-      const res = await fetch(`/api/daily-expenses/${confirmExpenseTarget.id}`, {
+      const endpoint =
+        confirmExpenseTarget.transactionType === "CASH"
+          ? `/api/cash/${confirmExpenseTarget.id}`
+          : `/api/daily-expenses/${confirmExpenseTarget.id}`;
+      const res = await fetch(endpoint, {
         method: "DELETE",
       });
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to delete expense.");
+        toast.error(
+          payload.error ||
+          (confirmExpenseTarget.transactionType === "CASH"
+            ? "Failed to delete cash entry."
+            : "Failed to delete expense."),
+        );
         return;
       }
-      toast.success("Expense deleted successfully.");
+      toast.success(
+        confirmExpenseTarget.transactionType === "CASH"
+          ? "Cash entry deleted successfully."
+          : "Expense deleted successfully.",
+      );
       await loadExpenseEntries();
     } catch (error) {
       console.error(error);
-      toast.error("Failed to delete expense.");
+      toast.error(
+        confirmExpenseTarget.transactionType === "CASH"
+          ? "Failed to delete cash entry."
+          : "Failed to delete expense.",
+      );
     } finally {
       setDeletingExpense(false);
       setConfirmExpenseOpen(false);
@@ -1180,8 +1184,12 @@ function OverviewContent() {
 
       <ConfirmDialog
         open={confirmExpenseOpen}
-        title="Delete expense?"
-        description="Are you sure you want to delete this expense entry?"
+        title={
+          confirmExpenseTarget?.transactionType === "CASH"
+            ? "Delete cash entry?"
+            : "Delete expense?"
+        }
+        description="Are you sure you want to delete this entry?"
         confirmLabel="Delete"
         confirmLoading={deletingExpense}
         confirmLoadingLabel="Deleting..."
@@ -1409,9 +1417,9 @@ function OverviewContent() {
                 <div className="flex items-center justify-between gap-2 w-full">
                   <div className="flex items-center">
                     <h3 className="sm:text-base text-sm font-medium w-full">
-                      {isAdmin ? "Employees reporting" : "Today's reporting"}
+                      {isAdmin ? "Reportings" : "Today's reporting"}
                     </h3>
-                    <p className=" text-white text-sm font-normal bg-[#2596be] px-2 py-1 rounded-full">{isAdmin ? adminReports.length : userReports.length}</p>
+                    <p className="ml-2 text-white text-sm font-normal bg-[#2596be] px-2 py-1 rounded-full">{isAdmin ? adminReports.length : userReports.length}</p>
                   </div>
                   <div className="flex items-center gap-2 justify-end w-full">
                     {!isAdmin && (
@@ -1534,72 +1542,68 @@ function OverviewContent() {
 
           <div className="mt-4 flex flex-wrap gap-3">
             <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-800 ring-1 ring-emerald-200">
-              Income: {incomeLoading ? "Loading..." : formatAmount(financeIncomeTotal)}
+              Income: {formatAmount(totalIncome)}
             </span>
-            <span className="inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-sm font-medium text-rose-800 ring-1 ring-rose-200">
-              Expense: {expenseLoading ? "Loading..." : formatAmount(financeExpenseTotal)}
-            </span>
-            <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-800 ring-1 ring-slate-200">
-              Net: {incomeLoading || expenseLoading ? "Loading..." : formatAmount(financeNetTotal)}
+            <span
+              className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ring-1 ${totalBalance < 0
+                  ? "bg-red-100 text-red-800 ring-red-200"
+                  : "bg-green-100 text-green-800 ring-green-200"
+                }`}
+            >
+              Total Balance: {formatAmount(totalBalance)}
             </span>
           </div>
 
-          <FinanceCardList<LedgerRow>
-            title="Ledger"
-            rows={ledgerEntries}
-            loading={incomeLoading || expenseLoading}
-            emptyLabel="No ledger entries found for selected date."
-            onEdit={handleEditLedgerEntry}
-            onDelete={handleDeleteLedgerEntry}
-            showDatePicker={true}
-            date={financeDate}
-            onDateChange={setFinanceDate}
-            renderCard={(row, { actionNode }) => {
-              const isIncome = row.transactionType === "INCOME";
-              const code = isIncome
-                ? row.incomeCompanyCode || ""
-                : row.expenseCompanyCode || "";
-              const category = isIncome ? row.incomeTypeName || "" : row.expenseTypeName || "";
-              const projectLabel = row.projectName
-                ? `${row.projectName}${row.projectCity ? ` (${row.projectCity})` : ""}`
-                : "";
-              const personLabel = isIncome ? row.receivedByName || "" : row.expenseByName || "";
+          <FinanceCardList<IncomeEntryRow>
+            title="Income"
+            rows={incomeEntries}
+            loading={incomeLoading}
+            emptyLabel="No income entries found for selected date."
+            onEdit={handleEditIncomeEntry}
+            onDelete={handleDeleteIncomeEntry}
+            showDatePicker
+            date={incomeDate}
+            onDateChange={setIncomeDate}
+            cardContent={{
+              getVariant: () => "income",
+              getCode: (row) => row.incomeCompanyCode,
+              getTitle: (row) => row.incomeTypeName || "",
+              getPaymentMode: (row) => row.paymentMode,
+              getProjectName: (row) => row.projectName,
+              getProjectCity: (row) => row.projectCity,
+              getReceivedByName: (row) => row.receivedByName,
+              getRemark: (row) => row.remark || "",
+              getDateLabel: (row) => formatToDDMMYYYY(row.date),
+            }}
+          />
 
-              return (
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                      <CompanyCodeBadge code={code} />
-                      <span className="min-w-0 truncate text-sm font-semibold text-slate-900">
-                        {category}
-                      </span>
-                    </div>
-                    <span
-                      className={`inline-flex items-center gap-1 text-sm font-semibold ${
-                        isIncome ? "text-emerald-700" : "text-rose-700"
-                      }`}
-                    >
-                      {isIncome ? <FaPlus size={10} /> : <FaMinus size={10} />}
-                      {formatAmount(row.amount)}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <InfoBadge variant="payment">{row.paymentMode || ""}</InfoBadge>
-                    <InfoBadge variant="project">{projectLabel}</InfoBadge>
-                    <InfoBadge variant="person">{personLabel}</InfoBadge>
-                  </div>
-
-                  <div className="text-sm text-slate-500">{formatToDDMMYYYY(row.date)}</div>
-
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="min-w-0 flex-1 break-words text-sm text-slate-600">
-                      {row.remark || ""}
-                    </p>
-                    {actionNode ? <div className="flex-shrink-0">{actionNode}</div> : null}
-                  </div>
-                </div>
-              );
+          <FinanceCardList<ExpenseEntryRow>
+            title="Expense & Cash"
+            rows={expenseEntries}
+            loading={expenseLoading}
+            emptyLabel="No expense or cash entries found for selected date."
+            onEdit={handleEditExpenseEntry}
+            onDelete={handleDeleteExpenseEntry}
+            showDatePicker
+            date={expenseDate}
+            onDateChange={setExpenseDate}
+            cardContent={{
+              getVariant: (row) => (row.transactionType === "CASH" ? "cash" : "expense"),
+              getCode: (row) => row.expenseCompanyCode,
+              getPaymentMode: (row) => row.paymentMode,
+              getProjectName: (row) => row.projectName,
+              getProjectCity: (row) => row.projectCity,
+              getExpenseByName: (row) => row.expenseByName,
+              getCashGivenByName: (row) => row.cashGivenByName,
+              getCashGivenToName: (row) => row.cashGivenToName,
+              getTagClassName: (row) =>
+                row.transactionType === "CASH"
+                  ? "bg-sky-100 text-sky-800 ring-sky-200"
+                  : "bg-rose-100 text-rose-800 ring-rose-200",
+              getTitle: (row) =>
+                row.expenseTypeName || "",
+              getRemark: (row) => row.remark || "",
+              getDateLabel: (row) => formatToDDMMYYYY(row.date),
             }}
           />
         </section>

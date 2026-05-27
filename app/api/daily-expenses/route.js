@@ -65,6 +65,12 @@ const serializeDailyExpense = (row) => ({
   expenseCompanyId: row.expenseCompanyId,
   expenseCompanyName: row.expenseCompany?.name || null,
   expenseCompanyCode: row.expenseCompany?.code || null,
+  cashGivenToId: row.cashGivenToId,
+  cashGivenToName: row.cashGivenTo?.fullName || null,
+  cashGivenToRole: row.cashGivenTo?.role?.name || null,
+  cashGivenById: row.cashGivenById,
+  cashGivenByName: row.cashGivenBy?.fullName || null,
+  cashGivenByRole: row.cashGivenBy?.role?.name || null,
   paymentMode: row.paymentMode || null,
   date: row.date,
   remark: row.remark,
@@ -144,9 +150,51 @@ export async function GET(req) {
           },
         },
       },
+      {
+        cashGivenTo: {
+          is: {
+            fullName: { contains: query, mode: "insensitive" },
+          },
+        },
+      },
+      {
+        cashGivenTo: {
+          is: {
+            firstName: { contains: query, mode: "insensitive" },
+          },
+        },
+      },
+      {
+        cashGivenTo: {
+          is: {
+            lastName: { contains: query, mode: "insensitive" },
+          },
+        },
+      },
+      {
+        cashGivenBy: {
+          is: {
+            fullName: { contains: query, mode: "insensitive" },
+          },
+        },
+      },
+      {
+        cashGivenBy: {
+          is: {
+            firstName: { contains: query, mode: "insensitive" },
+          },
+        },
+      },
+      {
+        cashGivenBy: {
+          is: {
+            lastName: { contains: query, mode: "insensitive" },
+          },
+        },
+      },
     ];
   }
-  where.transactionType = "EXPENSE";
+  where.transactionType = { in: ["EXPENSE", "CASH"] };
   if (projectId) {
     where.projectId = projectId;
   }
@@ -191,32 +239,30 @@ export async function GET(req) {
   }
 
   const [total, dailyExpenses, incomeSum, expenseSum] = await Promise.all([
-    prisma.dailyExpense.count({ where }),
-    prisma.dailyExpense.findMany({
+    prisma.financeTransaction.count({ where }),
+    prisma.financeTransaction.findMany({
       where,
       include: {
         project: true,
         expenseType: true,
         expenseBy: true,
         expenseCompany: true,
+        cashGivenTo: { include: { role: true } },
+        cashGivenBy: { include: { role: true } },
       },
       orderBy: [{ createdAt: "desc" }, { date: "desc" }],
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
-    prisma.dailyExpense.aggregate({
+    prisma.incomeTransaction.aggregate({
       _sum: { amount: true },
       where: { transactionType: "INCOME" },
     }),
-    prisma.dailyExpense.aggregate({
+    prisma.financeTransaction.aggregate({
       _sum: { amount: true },
-      where: { transactionType: "EXPENSE" },
+      where: { transactionType: { in: ["EXPENSE", "CASH"] } },
     }),
   ]);
-
-  const income = Number(incomeSum._sum.amount || 0);
-  const expense = Number(expenseSum._sum.amount || 0);
-  const balance = income - expense;
 
   return NextResponse.json({
     data: dailyExpenses.map(serializeDailyExpense),
@@ -224,7 +270,6 @@ export async function GET(req) {
     pageSize,
     total,
     totalPages: Math.max(1, Math.ceil(total / pageSize)),
-    balance,
   });
 }
 
@@ -320,7 +365,7 @@ export async function POST(req) {
   }
 
   try {
-    const dailyExpense = await prisma.dailyExpense.create({
+    const dailyExpense = await prisma.financeTransaction.create({
       data: {
         transactionType: "EXPENSE",
         amount: new Prisma.Decimal(amount),

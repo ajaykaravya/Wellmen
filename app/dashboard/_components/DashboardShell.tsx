@@ -46,7 +46,6 @@ type MenuKey =
   | "expenseTypes"
   | "dailyExpenses"
   | "income"
-  | "cash"
   | "incomeTypes";
 
 type DashboardContextValue = {
@@ -97,7 +96,6 @@ const routeByMenu: Record<MenuKey, string> = {
   expenseTypes: "/dashboard/expense-types",
   dailyExpenses: "/dashboard/daily-expenses",
   income: "/dashboard/income",
-  cash: "/dashboard/cash",
   incomeTypes: "/dashboard/income-types",
 };
 
@@ -132,7 +130,7 @@ const getActiveMenu = (pathname: string | null): MenuKey => {
   if (safePathname.startsWith("/dashboard/daily-expenses")) return "dailyExpenses";
   if (safePathname.startsWith("/dashboard/income-types")) return "incomeTypes";
   if (safePathname.startsWith("/dashboard/income")) return "income";
-  if (safePathname.startsWith("/dashboard/cash")) return "cash";
+  if (safePathname.startsWith("/dashboard/cash")) return "dailyExpenses";
   if (safePathname.startsWith("/dashboard/team")) return "team";
   if (safePathname.startsWith("/dashboard/profile")) return "profile";
   return "dashboard";
@@ -264,7 +262,6 @@ export default function DashboardShell({
       });
       items.push({ key: "dailyExpenses", label: "Expense" });
       items.push({ key: "income", label: "Income" });
-      items.push({ key: "cash", label: "Cash" });
       items.push({ key: "transport-management", label: "Transport Management" });
     }
     items.push({ key: "task-management", label: "Task Management" });

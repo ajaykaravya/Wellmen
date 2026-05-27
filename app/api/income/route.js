@@ -61,11 +61,11 @@ const serializeIncome = (row) => ({
   projectCity: row.project?.city || null,
   incomeTypeId: row.incomeTypeId,
   incomeTypeName: row.incomeType?.name || null,
-  incomeCompanyId: row.expenseCompanyId,
-  incomeCompanyName: row.expenseCompany?.name || null,
-  incomeCompanyCode: row.expenseCompany?.code || null,
-  receivedById: row.expenseById,
-  receivedByName: row.expenseBy?.fullName || null,
+  incomeCompanyId: row.incomeCompanyId,
+  incomeCompanyName: row.incomeCompany?.name || null,
+  incomeCompanyCode: row.incomeCompany?.code || null,
+  receivedById: row.receivedById,
+  receivedByName: row.receivedBy?.fullName || null,
   paymentMode: row.paymentMode || null,
   date: row.date,
   remark: row.remark,
@@ -103,33 +103,17 @@ export async function GET(req) {
       { incomeType: { name: { contains: q, mode: "insensitive" } } },
       { project: { is: { name: { contains: q, mode: "insensitive" } } } },
       { project: { is: { city: { contains: q, mode: "insensitive" } } } },
-      {
-        expenseCompany: {
-          is: { name: { contains: q, mode: "insensitive" } },
-        },
-      },
-      {
-        expenseBy: {
-          is: { fullName: { contains: q, mode: "insensitive" } },
-        },
-      },
-      {
-        expenseBy: {
-          is: { firstName: { contains: q, mode: "insensitive" } },
-        },
-      },
-      {
-        expenseBy: {
-          is: { lastName: { contains: q, mode: "insensitive" } },
-        },
-      },
+      { incomeCompany: { is: { name: { contains: q, mode: "insensitive" } } } },
+      { receivedBy: { is: { fullName: { contains: q, mode: "insensitive" } } } },
+      { receivedBy: { is: { firstName: { contains: q, mode: "insensitive" } } } },
+      { receivedBy: { is: { lastName: { contains: q, mode: "insensitive" } } } },
     ];
   }
 
   if (projectId) where.projectId = projectId;
   if (incomeTypeId) where.incomeTypeId = incomeTypeId;
-  if (incomeCompanyId) where.expenseCompanyId = incomeCompanyId;
-  if (receivedById) where.expenseById = receivedById;
+  if (incomeCompanyId) where.incomeCompanyId = incomeCompanyId;
+  if (receivedById) where.receivedById = receivedById;
 
   if (paymentMode) {
     if (!isValidPaymentMode(paymentMode)) {
@@ -162,14 +146,14 @@ export async function GET(req) {
   }
 
   const [total, incomes] = await Promise.all([
-    prisma.dailyExpense.count({ where }),
-    prisma.dailyExpense.findMany({
+    prisma.incomeTransaction.count({ where }),
+    prisma.incomeTransaction.findMany({
       where,
       include: {
         project: { select: { id: true, name: true, city: true } },
         incomeType: true,
-        expenseCompany: true,
-        expenseBy: { include: { role: true } },
+        incomeCompany: true,
+        receivedBy: { include: { role: true } },
       },
       orderBy: [{ createdAt: "desc" }, { date: "desc" }],
       skip: (page - 1) * pageSize,
@@ -277,14 +261,14 @@ export async function POST(req) {
   }
 
   try {
-    const income = await prisma.dailyExpense.create({
+    const income = await prisma.incomeTransaction.create({
       data: {
         transactionType: "INCOME",
         amount: new Prisma.Decimal(amount),
         projectId: project.id,
         incomeTypeId: incomeType.id,
-        expenseCompanyId: incomeCompany.id,
-        expenseById: receivedBy.id,
+        incomeCompanyId: incomeCompany.id,
+        receivedById: receivedBy.id,
         paymentMode: payload.paymentMode,
         date: parsedDate,
         remark: payload.remark || null,
@@ -292,8 +276,8 @@ export async function POST(req) {
       include: {
         project: { select: { id: true, name: true, city: true } },
         incomeType: true,
-        expenseCompany: true,
-        expenseBy: { include: { role: true } },
+        incomeCompany: true,
+        receivedBy: { include: { role: true } },
       },
     });
 

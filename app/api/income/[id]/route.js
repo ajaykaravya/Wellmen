@@ -63,11 +63,11 @@ const serializeIncome = (row) => ({
   projectCity: row.project?.city || null,
   incomeTypeId: row.incomeTypeId,
   incomeTypeName: row.incomeType?.name || null,
-  incomeCompanyId: row.expenseCompanyId,
-  incomeCompanyName: row.expenseCompany?.name || null,
-  incomeCompanyCode: row.expenseCompany?.code || null,
-  receivedById: row.expenseById,
-  receivedByName: row.expenseBy?.fullName || null,
+  incomeCompanyId: row.incomeCompanyId,
+  incomeCompanyName: row.incomeCompany?.name || null,
+  incomeCompanyCode: row.incomeCompany?.code || null,
+  receivedById: row.receivedById,
+  receivedByName: row.receivedBy?.fullName || null,
   paymentMode: row.paymentMode || null,
   date: row.date,
   remark: row.remark,
@@ -84,13 +84,13 @@ export async function GET(req, { params }) {
     return NextResponse.json({ error: "Income id is required." }, { status: 400 });
   }
 
-  const income = await prisma.dailyExpense.findUnique({
+  const income = await prisma.incomeTransaction.findUnique({
     where: { id },
     include: {
       project: { select: { id: true, name: true, city: true } },
       incomeType: true,
-      expenseCompany: true,
-      expenseBy: { include: { role: true } },
+      incomeCompany: true,
+      receivedBy: { include: { role: true } },
     },
   });
 
@@ -123,7 +123,7 @@ export async function PUT(req, { params }) {
     return NextResponse.json({ error: "Date is required." }, { status: 400 });
   }
 
-  const existing = await prisma.dailyExpense.findUnique({ where: { id } });
+  const existing = await prisma.incomeTransaction.findUnique({ where: { id } });
   if (!existing || existing.transactionType !== "INCOME") {
     return NextResponse.json({ error: "Income not found." }, { status: 404 });
   }
@@ -202,15 +202,15 @@ export async function PUT(req, { params }) {
   }
 
   try {
-    const income = await prisma.dailyExpense.update({
+    const income = await prisma.incomeTransaction.update({
       where: { id },
       data: {
         transactionType: "INCOME",
         amount: new Prisma.Decimal(amount),
         projectId: project.id,
         incomeTypeId: incomeType.id,
-        expenseCompanyId: incomeCompany.id,
-        expenseById: receivedBy.id,
+        incomeCompanyId: incomeCompany.id,
+        receivedById: receivedBy.id,
         paymentMode: payload.paymentMode,
         date: parsedDate,
         remark: payload.remark || null,
@@ -218,8 +218,8 @@ export async function PUT(req, { params }) {
       include: {
         project: { select: { id: true, name: true, city: true } },
         incomeType: true,
-        expenseCompany: true,
-        expenseBy: { include: { role: true } },
+        incomeCompany: true,
+        receivedBy: { include: { role: true } },
       },
     });
 
@@ -242,11 +242,11 @@ export async function DELETE(req, { params }) {
     return NextResponse.json({ error: "Income id is required." }, { status: 400 });
   }
 
-  const existing = await prisma.dailyExpense.findUnique({ where: { id } });
+  const existing = await prisma.incomeTransaction.findUnique({ where: { id } });
   if (!existing || existing.transactionType !== "INCOME") {
     return NextResponse.json({ error: "Income not found." }, { status: 404 });
   }
 
-  await prisma.dailyExpense.delete({ where: { id } });
+  await prisma.incomeTransaction.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }
