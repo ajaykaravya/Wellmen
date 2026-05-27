@@ -250,6 +250,8 @@ function OverviewContent() {
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [totalIncome, setTotalIncome] = useState(0);
   const [totalBalance, setTotalBalance] = useState(0);
+  const [totalIncomeLoading, setTotalIncomeLoading] = useState(true);
+  const [balanceLoading, setBalanceLoading] = useState(true);
   const [changePasswordSubmitting, setChangePasswordSubmitting] =
     useState(false);
   const [passwordForm, setPasswordForm] = useState({
@@ -421,7 +423,7 @@ function OverviewContent() {
 
   const getTotalIncome = useCallback(async () => {
     if (!isAdmin) return;
-
+    setTotalIncomeLoading(true);
     try {
       const res = await fetch("/api/income");
 
@@ -437,6 +439,9 @@ function OverviewContent() {
       setTotalIncome(total);
     } catch (error) {
       console.error("Failed to calculate total income", error);
+    }
+    finally {
+      setTotalIncomeLoading(false);
     }
   }, [isAdmin]);
 
@@ -456,7 +461,7 @@ function OverviewContent() {
 
   const getTotalBalance = useCallback(async () => {
     if (!isAdmin) return;
-
+    setBalanceLoading(true);
     try {
       const res = await fetch("/api/daily-expenses");
 
@@ -467,6 +472,9 @@ function OverviewContent() {
 
     } catch (error) {
       console.error("Failed to calculate balance", error);
+    }
+    finally {
+      setBalanceLoading(false);
     }
   }, [isAdmin]);
 
@@ -1542,15 +1550,15 @@ function OverviewContent() {
 
           <div className="mt-4 flex flex-wrap gap-3">
             <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-800 ring-1 ring-emerald-200">
-              Income: {formatAmount(totalIncome)}
+              Income: {totalIncomeLoading ? "Loading..." : formatAmount(totalIncome)}
             </span>
             <span
               className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ring-1 ${totalBalance < 0
-                  ? "bg-red-100 text-red-800 ring-red-200"
-                  : "bg-green-100 text-green-800 ring-green-200"
+                ? "bg-red-100 text-red-800 ring-red-200"
+                : "bg-green-100 text-green-800 ring-green-200"
                 }`}
             >
-              Total Balance: {formatAmount(totalBalance)}
+              Total Balance: {balanceLoading ? "Loading..." : formatAmount(totalBalance)}
             </span>
           </div>
 
