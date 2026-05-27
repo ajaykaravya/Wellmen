@@ -86,7 +86,7 @@ export async function GET(req, { params }) {
     );
   }
 
-  const dailyExpense = await prisma.dailyExpense.findUnique({
+  const dailyExpense = await prisma.financeTransaction.findUnique({
     where: { id },
     include: {
       project: true,
@@ -97,6 +97,13 @@ export async function GET(req, { params }) {
   });
 
   if (!dailyExpense) {
+    return NextResponse.json(
+      { error: "Daily expense not found." },
+      { status: 404 },
+    );
+  }
+
+  if (dailyExpense.transactionType !== "EXPENSE") {
     return NextResponse.json(
       { error: "Daily expense not found." },
       { status: 404 },
@@ -131,8 +138,8 @@ export async function PUT(req, { params }) {
     return NextResponse.json({ error: "Date is required." }, { status: 400 });
   }
 
-  const existing = await prisma.dailyExpense.findUnique({ where: { id } });
-  if (!existing) {
+  const existing = await prisma.financeTransaction.findUnique({ where: { id } });
+  if (!existing || existing.transactionType !== "EXPENSE") {
     return NextResponse.json(
       { error: "Daily expense not found." },
       { status: 404 },
@@ -212,7 +219,7 @@ export async function PUT(req, { params }) {
   }
 
   try {
-    const dailyExpense = await prisma.dailyExpense.update({
+    const dailyExpense = await prisma.financeTransaction.update({
       where: { id },
       data: {
         transactionType: "EXPENSE",
@@ -255,14 +262,14 @@ export async function DELETE(req, { params }) {
     );
   }
 
-  const existing = await prisma.dailyExpense.findUnique({ where: { id } });
-  if (!existing) {
+  const existing = await prisma.financeTransaction.findUnique({ where: { id } });
+  if (!existing || existing.transactionType !== "EXPENSE") {
     return NextResponse.json(
       { error: "Daily expense not found." },
       { status: 404 },
     );
   }
 
-  await prisma.dailyExpense.delete({ where: { id } });
+  await prisma.financeTransaction.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }

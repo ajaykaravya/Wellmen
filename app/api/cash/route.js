@@ -9,7 +9,9 @@ const parsePayload = (body) => {
   const date = String(body.date || "").trim();
   const cashGivenToId = String(body.cashGivenToId || "").trim();
   const cashGivenById = String(body.cashGivenById || "").trim();
-  const cashGivenFromCompanyId = String(body.cashGivenFromCompanyId || "").trim();
+  const expenseCompanyId = String(
+    body.expenseCompanyId || body.cashGivenFromCompanyId || "",
+  ).trim();
   const amountRaw = String(body.amount || "").trim();
   const paymentMode = String(body.paymentMode || "")
     .trim()
@@ -19,7 +21,7 @@ const parsePayload = (body) => {
     date,
     cashGivenToId,
     cashGivenById,
-    cashGivenFromCompanyId,
+    expenseCompanyId,
     amountRaw,
     paymentMode,
   };
@@ -50,6 +52,7 @@ const parseDate = (value) => {
 
 const serializeCashIn = (row) => ({
   id: row.id,
+  transactionType: row.transactionType,
   date: row.date,
   cashGivenToId: row.cashGivenToId,
   cashGivenToName: row.cashGivenTo?.fullName || null,
@@ -57,10 +60,14 @@ const serializeCashIn = (row) => ({
   cashGivenById: row.cashGivenById,
   cashGivenByName: row.cashGivenBy?.fullName || null,
   cashGivenByRole: row.cashGivenBy?.role?.name || null,
-  cashGivenFromCompanyId: row.cashGivenFromCompanyId,
-  cashGivenFromCompanyName: row.cashGivenFromCompany?.name || null,
+  expenseCompanyId: row.expenseCompanyId,
+  expenseCompanyName: row.expenseCompany?.name || null,
+  expenseCompanyCode: row.expenseCompany?.code || null,
+  cashGivenFromCompanyId: row.expenseCompanyId,
+  cashGivenFromCompanyName: row.expenseCompany?.name || null,
   amount: Number(row.amount),
   paymentMode: row.paymentMode,
+  remark: row.remark || null,
   createdAt: row.createdAt,
   updatedAt: row.updatedAt,
 });
@@ -76,8 +83,10 @@ export async function GET(req) {
     .toUpperCase();
   const cashGivenToId = String(searchParams.get("cashGivenToId") || "").trim();
   const cashGivenById = String(searchParams.get("cashGivenById") || "").trim();
-  const cashGivenFromCompanyId = String(
-    searchParams.get("cashGivenFromCompanyId") || "",
+  const expenseCompanyId = String(
+    searchParams.get("expenseCompanyId") ||
+      searchParams.get("cashGivenFromCompanyId") ||
+      "",
   ).trim();
   const fromDate = String(searchParams.get("fromDate") || "").trim();
   const toDate = String(searchParams.get("toDate") || "").trim();
@@ -99,7 +108,7 @@ export async function GET(req) {
       { cashGivenBy: { is: { firstName: { contains: q, mode: "insensitive" } } } },
       { cashGivenBy: { is: { lastName: { contains: q, mode: "insensitive" } } } },
       {
-        cashGivenFromCompany: {
+        expenseCompany: {
           is: { name: { contains: q, mode: "insensitive" } },
         },
       },
@@ -118,8 +127,7 @@ export async function GET(req) {
 
   if (cashGivenToId) where.cashGivenToId = cashGivenToId;
   if (cashGivenById) where.cashGivenById = cashGivenById;
-  if (cashGivenFromCompanyId)
-    where.cashGivenFromCompanyId = cashGivenFromCompanyId;
+  if (expenseCompanyId) where.expenseCompanyId = expenseCompanyId;
 
   if (fromDate || toDate) {
     const from = parseDate(fromDate);
@@ -141,14 +149,16 @@ export async function GET(req) {
     }
   }
 
+  where.transactionType = "CASH";
+
   const [total, cashIns] = await Promise.all([
-    prisma.cashIn.count({ where }),
-    prisma.cashIn.findMany({
+    prisma.financeTransaction.count({ where }),
+    prisma.financeTransaction.findMany({
       where,
       include: {
         cashGivenTo: { include: { role: true } },
         cashGivenBy: { include: { role: true } },
-        cashGivenFromCompany: true,
+        expenseCompany: true,
       },
       orderBy: { date: "desc" },
       skip: (page - 1) * pageSize,
@@ -203,7 +213,7 @@ export async function POST(req) {
     );
   }
 
-  if (!payload.cashGivenFromCompanyId) {
+  if (!payload.expenseCompanyId) {
     return NextResponse.json(
       { error: "Cash given from company is required." },
       { status: 400 },
@@ -219,7 +229,7 @@ export async function POST(req) {
       where: { id: payload.cashGivenById },
       include: { role: true },
     }),
-    prisma.company.findUnique({ where: { id: payload.cashGivenFromCompanyId } }),
+    prisma.company.findUnique({ where: { id: payload.expenseCompanyId } }),
   ]);
 
   if (!cashGivenTo) {
@@ -251,19 +261,20 @@ export async function POST(req) {
   }
 
   try {
-    const cashIn = await prisma.cashIn.create({
+    const cashIn = await prisma.financeTransaction.create({
       data: {
+        transactionType: "CASH",
         date: parsedDate,
         cashGivenToId: cashGivenTo.id,
         cashGivenById: cashGivenBy.id,
-        cashGivenFromCompanyId: company.id,
+        expenseCompanyId: company.id,
         amount: new Prisma.Decimal(amount),
         paymentMode: payload.paymentMode,
       },
       include: {
         cashGivenTo: { include: { role: true } },
         cashGivenBy: { include: { role: true } },
-        cashGivenFromCompany: true,
+        expenseCompany: true,
       },
     });
 

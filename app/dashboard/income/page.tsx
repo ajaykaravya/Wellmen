@@ -14,7 +14,6 @@ import {
   FaChevronLeft,
   FaChevronRight,
   FaEdit,
-  FaPlus,
   FaTrash,
   FaSpinner,
   FaFilter,
@@ -30,8 +29,6 @@ import {
 } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
 import { FinanceCardList } from "../_components/FinanceCardList";
-import CompanyCodeBadge from "../_components/CompanyCodeBadge";
-import InfoBadge from "../_components/InfoBadge";
 
 type PaymentMode = "CASH" | "BANK";
 
@@ -530,9 +527,8 @@ function IncomeListContent() {
                       {headerGroup.headers.map((header) => (
                         <th
                           key={header.id}
-                          className={`border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase ${
-                            header.id === "action" ? "text-right" : ""
-                          }`}
+                          className={`border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase ${header.id === "action" ? "text-right" : ""
+                            }`}
                         >
                           {header.isPlaceholder
                             ? null
@@ -579,43 +575,18 @@ function IncomeListContent() {
                 collapsible={false}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
-                renderCard={(row, { actionNode }) => (
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                        <CompanyCodeBadge code={row.incomeCompanyCode} />
-                        <span className="min-w-0 truncate text-sm font-semibold text-slate-900">
-                          {row.incomeTypeName || ""}
-                        </span>
-                      </div>
-                      <span className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700">
-                        <FaPlus size={10} />
-                        {formatAmount(row.amount)}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <InfoBadge variant="payment">{row.paymentMode || ""}</InfoBadge>
-                      <InfoBadge variant="project">
-                        {row.projectName
-                          ? `${row.projectName}${row.projectCity ? ` (${row.projectCity})` : ""}`
-                          : ""}
-                      </InfoBadge>
-                      <InfoBadge variant="person">{row.receivedByName || ""}</InfoBadge>
-                    </div>
-
-                    <div className="text-sm text-slate-500">
-                      {formatToDDMMYYYY(row.date)}
-                    </div>
-
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="min-w-0 flex-1 break-words text-sm text-slate-600">
-                        {row.remark || ""}
-                      </p>
-                      {actionNode ? <div className="flex-shrink-0">{actionNode}</div> : null}
-                    </div>
-                  </div>
-                )}
+                cardContent={{
+                  getVariant: () => "income",
+                  getCode: (row) => row.incomeCompanyCode,
+                  getTitle: (row) => row.incomeTypeName || "",
+                  getPaymentMode: (row) => row.paymentMode,
+                  getProjectName: (row) => row.projectName,
+                  getProjectCity: (row) => row.projectCity,
+                  getPersonLabel: (row) => row.receivedByName || "",
+                  getReceivedByName: (row) => row.receivedByName,
+                  getRemark: (row) => row.remark || "",
+                  getDateLabel: (row) => formatToDDMMYYYY(row.date),
+                }}
               />
             </div>
           </div>

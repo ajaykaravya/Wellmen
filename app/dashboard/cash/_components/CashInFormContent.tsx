@@ -28,13 +28,14 @@ type CashInFormState = {
   date: string;
   cashGivenToId: string;
   cashGivenById: string;
-  cashGivenFromCompanyId: string;
+  expenseCompanyId: string;
   amount: string;
   paymentMode: PaymentMode;
 };
 
 type CashInPayload = CashInFormState & {
   id: string;
+  cashGivenFromCompanyId?: string | null;
 };
 
 type CashInFormContentProps = {
@@ -72,7 +73,7 @@ export default function CashInFormContent({ cashInId }: CashInFormContentProps) 
     date: getTodayInputDate(),
     cashGivenToId: "",
     cashGivenById: "",
-    cashGivenFromCompanyId: "",
+    expenseCompanyId: "",
     amount: "",
     paymentMode: "CASH",
   });
@@ -111,7 +112,7 @@ export default function CashInFormContent({ cashInId }: CashInFormContentProps) 
             date: formatToDDMMYYYY(data.date) === "-" ? getTodayInputDate() : formatToDDMMYYYY(data.date),
             cashGivenToId: data.cashGivenToId || "",
             cashGivenById: data.cashGivenById || "",
-            cashGivenFromCompanyId: data.cashGivenFromCompanyId || "",
+            expenseCompanyId: data.expenseCompanyId || data.cashGivenFromCompanyId || "",
             amount: String(data.amount ?? ""),
             paymentMode: data.paymentMode === "BANK" ? "BANK" : "CASH",
           });
@@ -141,8 +142,8 @@ export default function CashInFormContent({ cashInId }: CashInFormContentProps) 
     if (!form.date.trim()) newErrors.date = "Date is required.";
     if (!form.cashGivenToId) newErrors.cashGivenToId = "Cash given to is required.";
     if (!form.cashGivenById) newErrors.cashGivenById = "Cash given by is required.";
-    if (!form.cashGivenFromCompanyId)
-      newErrors.cashGivenFromCompanyId = "Cash given from company is required.";
+    if (!form.expenseCompanyId)
+      newErrors.expenseCompanyId = "Cash given from company is required.";
     if (!form.amount.trim() || Number(form.amount) <= 0) {
       newErrors.amount = "Amount is required.";
     }
@@ -162,7 +163,7 @@ export default function CashInFormContent({ cashInId }: CashInFormContentProps) 
             date: form.date,
             cashGivenToId: form.cashGivenToId,
             cashGivenById: form.cashGivenById,
-            cashGivenFromCompanyId: form.cashGivenFromCompanyId,
+            expenseCompanyId: form.expenseCompanyId,
             amount: form.amount,
             paymentMode: form.paymentMode,
           }),
@@ -178,7 +179,7 @@ export default function CashInFormContent({ cashInId }: CashInFormContentProps) 
       }
 
       toast.success(`Cash ${cashInId ? "updated" : "created"} successfully.`);
-      router.push("/dashboard/cash");
+      router.push("/dashboard/daily-expenses");
     } catch (error) {
       console.error("Failed to save cash", error);
       setNote("Failed to save cash.");
@@ -244,15 +245,15 @@ export default function CashInFormContent({ cashInId }: CashInFormContentProps) 
             <div className="mb-2">
               <ButtonGroup
                 title="Cash Given From Company"
-                selected={form.cashGivenFromCompanyId}
+                selected={form.expenseCompanyId}
                 options={companies.map((company) => ({
                   key: company.id,
                   label: getCompanyLabel(company),
                 }))}
                 onSelect={(value) =>
-                  setForm((prev) => ({ ...prev, cashGivenFromCompanyId: value }))
+                  setForm((prev) => ({ ...prev, expenseCompanyId: value }))
                 }
-                error={errors.cashGivenFromCompanyId}
+                error={errors.expenseCompanyId}
                 required
               />
             </div>
@@ -320,7 +321,7 @@ export default function CashInFormContent({ cashInId }: CashInFormContentProps) 
                 "Save"
               )}
             </button>
-            <Link href="/dashboard/cash">
+            <Link href="/dashboard/daily-expenses">
               <button className="text-red-500" type="button" disabled={saving}>
                 Cancel
               </button>

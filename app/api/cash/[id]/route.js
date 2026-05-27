@@ -11,7 +11,9 @@ const parsePayload = (body) => {
   const date = String(body.date || "").trim();
   const cashGivenToId = String(body.cashGivenToId || "").trim();
   const cashGivenById = String(body.cashGivenById || "").trim();
-  const cashGivenFromCompanyId = String(body.cashGivenFromCompanyId || "").trim();
+  const expenseCompanyId = String(
+    body.expenseCompanyId || body.cashGivenFromCompanyId || "",
+  ).trim();
   const amountRaw = String(body.amount || "").trim();
   const paymentMode = String(body.paymentMode || "")
     .trim()
@@ -21,7 +23,7 @@ const parsePayload = (body) => {
     date,
     cashGivenToId,
     cashGivenById,
-    cashGivenFromCompanyId,
+    expenseCompanyId,
     amountRaw,
     paymentMode,
   };
@@ -52,6 +54,7 @@ const parseDate = (value) => {
 
 const serializeCashIn = (row) => ({
   id: row.id,
+  transactionType: row.transactionType,
   date: row.date,
   cashGivenToId: row.cashGivenToId,
   cashGivenToName: row.cashGivenTo?.fullName || null,
@@ -59,10 +62,14 @@ const serializeCashIn = (row) => ({
   cashGivenById: row.cashGivenById,
   cashGivenByName: row.cashGivenBy?.fullName || null,
   cashGivenByRole: row.cashGivenBy?.role?.name || null,
-  cashGivenFromCompanyId: row.cashGivenFromCompanyId,
-  cashGivenFromCompanyName: row.cashGivenFromCompany?.name || null,
+  expenseCompanyId: row.expenseCompanyId,
+  expenseCompanyName: row.expenseCompany?.name || null,
+  expenseCompanyCode: row.expenseCompany?.code || null,
+  cashGivenFromCompanyId: row.expenseCompanyId,
+  cashGivenFromCompanyName: row.expenseCompany?.name || null,
   amount: Number(row.amount),
   paymentMode: row.paymentMode,
+  remark: row.remark || null,
   createdAt: row.createdAt,
   updatedAt: row.updatedAt,
 });
@@ -79,16 +86,20 @@ export async function GET(req, { params }) {
     );
   }
 
-  const cashIn = await prisma.cashIn.findUnique({
+  const cashIn = await prisma.financeTransaction.findUnique({
     where: { id },
     include: {
       cashGivenTo: { include: { role: true } },
       cashGivenBy: { include: { role: true } },
-      cashGivenFromCompany: true,
+      expenseCompany: true,
     },
   });
 
   if (!cashIn) {
+    return NextResponse.json({ error: "Cash not found." }, { status: 404 });
+  }
+
+  if (cashIn.transactionType !== "CASH") {
     return NextResponse.json({ error: "Cash not found." }, { status: 404 });
   }
 
@@ -127,8 +138,8 @@ export async function PUT(req, { params }) {
     return NextResponse.json({ error: "Date is required." }, { status: 400 });
   }
 
-  const existing = await prisma.cashIn.findUnique({ where: { id } });
-  if (!existing) {
+  const existing = await prisma.financeTransaction.findUnique({ where: { id } });
+  if (!existing || existing.transactionType !== "CASH") {
     return NextResponse.json({ error: "Cash not found." }, { status: 404 });
   }
 
@@ -146,7 +157,7 @@ export async function PUT(req, { params }) {
     );
   }
 
-  if (!payload.cashGivenFromCompanyId) {
+  if (!payload.expenseCompanyId) {
     return NextResponse.json(
       { error: "Cash given from company is required." },
       { status: 400 },
@@ -162,7 +173,7 @@ export async function PUT(req, { params }) {
       where: { id: payload.cashGivenById },
       include: { role: true },
     }),
-    prisma.company.findUnique({ where: { id: payload.cashGivenFromCompanyId } }),
+    prisma.company.findUnique({ where: { id: payload.expenseCompanyId } }),
   ]);
 
   if (!cashGivenTo) {
@@ -194,20 +205,21 @@ export async function PUT(req, { params }) {
   }
 
   try {
-    const cashIn = await prisma.cashIn.update({
+    const cashIn = await prisma.financeTransaction.update({
       where: { id },
       data: {
+        transactionType: "CASH",
         date: parsedDate,
         cashGivenToId: cashGivenTo.id,
         cashGivenById: cashGivenBy.id,
-        cashGivenFromCompanyId: company.id,
+        expenseCompanyId: company.id,
         amount: new Prisma.Decimal(amount),
         paymentMode: payload.paymentMode,
       },
       include: {
         cashGivenTo: { include: { role: true } },
         cashGivenBy: { include: { role: true } },
-        cashGivenFromCompany: true,
+        expenseCompany: true,
       },
     });
 
@@ -233,11 +245,11 @@ export async function DELETE(req, { params }) {
     );
   }
 
-  const existing = await prisma.cashIn.findUnique({ where: { id } });
-  if (!existing) {
+  const existing = await prisma.financeTransaction.findUnique({ where: { id } });
+  if (!existing || existing.transactionType !== "CASH") {
     return NextResponse.json({ error: "Cash not found." }, { status: 404 });
   }
 
-  await prisma.cashIn.delete({ where: { id } });
+  await prisma.financeTransaction.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }
