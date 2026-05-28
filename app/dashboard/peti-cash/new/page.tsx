@@ -6,7 +6,7 @@ import PetiCashFormContent from "../_components/PetiCashFormContent";
 
 export default function PetiCashNewPage() {
   const searchParams = useSearchParams();
-  const mode = searchParams.get("mode") === "DEBIT" ? "DEBIT" : "CREDIT";
+  const mode = searchParams?.get("mode") === "DEBIT" ? "DEBIT" : "CREDIT";
 
   return (
     <DashboardShell requireAdmin>

@@ -479,7 +479,6 @@ function PetiCashListContent() {
               setFromDate("");
               setToDate("");
               setDraftTransactionTypeFilter("");
-              setDraftTransactionTypeQuery("");
               setDraftFromDate("");
               setDraftToDate("");
               setFilterOpen(false);
@@ -651,16 +650,16 @@ function PetiCashListContent() {
 
         <Combobox
           value={draftTransactionTypeFilter}
-              onChange={(option: TransactionType | "") => {
-                setDraftTransactionTypeFilter(option);
-              }}
+          onChange={(option: TransactionType | "" | null) => {
+            setDraftTransactionTypeFilter(option ?? "");
+          }}
           nullable
         >
           <div className="relative min-w-64">
             <ComboboxInput
               className="theme-input rbac-input w-full pr-10"
               placeholder="Type"
-              displayValue={(option: TransactionType | "") =>
+              displayValue={(option: TransactionType | "" | null) =>
                 option ? (option === "CREDIT" ? "Credit" : "Debit") : ""
               }
               onChange={() => {
