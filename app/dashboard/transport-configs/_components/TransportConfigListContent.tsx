@@ -228,7 +228,7 @@ export default function TransportConfigListContent() {
         header: "Action",
         id: "action",
         cell: ({ row }) => (
-          <div className="flex justify-end gap-4">
+          <div className="rbac-inline-actions flex gap-4">
               <button
                 className="rbac-link"
                 type="button"

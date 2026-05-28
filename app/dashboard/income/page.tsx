@@ -74,6 +74,8 @@ type IncomeRow = {
   remark: string | null;
 };
 
+type CashPaymentMode = "CASH" | "BANK" | "CHEQUE" | "UPI" | "NEFT_RTGS";
+
 const formatAmount = (value: number) =>
   Number(value || 0).toLocaleString(undefined, {
     minimumFractionDigits: 2,
@@ -88,7 +90,7 @@ const getCompanyLabel = (option: CompanyOption) => option.name;
 const getIncomeTypeLabel = (option: IncomeTypeOption) => option.name;
 
 const getUserLabel = (option: UserOption) =>
-  `${option.firstName} ${option.lastName}`.trim();
+  `${option.firstName} ${option.lastName} - ${option.role || ""}`.trim();
 
 function IncomeListContent() {
   const router = useRouter();
@@ -208,6 +210,23 @@ function IncomeListContent() {
     toDate,
     paymentModeFilter ? `Payment: ${paymentModeFilter}` : "",
   ].filter(Boolean);
+
+  const CASH_PAYMENT_MODE_LABELS: Record<CashPaymentMode, string> = {
+    CASH: "Cash",
+    BANK: "Bank",
+    CHEQUE: "Cheque",
+    UPI: "UPI",
+    NEFT_RTGS: "NEFT/RTGS",
+  };
+
+  const getCashPaymentModeLabel = (mode: CashPaymentMode | string | null | undefined) => {
+    if (!mode) return "-";
+
+    return (
+      CASH_PAYMENT_MODE_LABELS[mode as CashPaymentMode] ??
+      mode.replaceAll("_", " ")
+    );
+  }
 
   useEffect(() => {
     const loadOptions = async () => {
@@ -400,7 +419,7 @@ function IncomeListContent() {
         header: "Payment Mode",
         accessorKey: "paymentMode",
         cell: ({ row }) => (
-          <span className="text-slate-600">{row.original.paymentMode || "-"}</span>
+          <span className="text-slate-600">{getCashPaymentModeLabel(row.original.paymentMode) || "-"}</span>
         ),
       },
       {
@@ -414,7 +433,7 @@ function IncomeListContent() {
         header: "Action",
         id: "action",
         cell: ({ row }) => (
-          <div className="flex justify-end gap-4">
+          <div className="rbac-inline-actions flex gap-4">
             <button
               onClick={() => handleEdit(row.original)}
               className="rbac-link"

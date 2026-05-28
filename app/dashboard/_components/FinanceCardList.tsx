@@ -76,6 +76,8 @@ type FinanceCardListProps<T extends FinanceCardListRow> = {
   ) => ReactNode;
 };
 
+type CashPaymentMode = "CASH" | "BANK" | "CHEQUE" | "UPI" | "NEFT_RTGS";
+
 export function FinanceCardList<T extends FinanceCardListRow>({
   title,
   rows,
@@ -119,6 +121,23 @@ export function FinanceCardList<T extends FinanceCardListRow>({
     }
     setLocalDate(value);
   };
+
+  const CASH_PAYMENT_MODE_LABELS: Record<CashPaymentMode, string> = {
+    CASH: "Cash",
+    BANK: "Bank",
+    CHEQUE: "Cheque",
+    UPI: "UPI",
+    NEFT_RTGS: "NEFT/RTGS",
+  };
+
+  const getCashPaymentModeLabel = (mode: CashPaymentMode | string | null | undefined | any) => {
+    if (!mode) return "-";
+
+    return (
+      CASH_PAYMENT_MODE_LABELS[mode as CashPaymentMode] ??
+      mode.replaceAll("_", " ")
+    );
+  }
 
   const shiftInputDate = (value: string, diffDays: number) => {
     let base: Date;
@@ -358,9 +377,11 @@ export function FinanceCardList<T extends FinanceCardListRow>({
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200">
-                            {paymentMode}
-                          </span>
+                          {paymentMode ? (
+                            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200">
+                              {getCashPaymentModeLabel(paymentMode)}
+                            </span>
+                          ) : null}
 
                           {
                             projectName && (

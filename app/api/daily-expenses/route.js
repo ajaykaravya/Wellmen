@@ -65,12 +65,6 @@ const serializeDailyExpense = (row) => ({
   expenseCompanyId: row.expenseCompanyId,
   expenseCompanyName: row.expenseCompany?.name || null,
   expenseCompanyCode: row.expenseCompany?.code || null,
-  cashGivenToId: row.cashGivenToId,
-  cashGivenToName: row.cashGivenTo?.fullName || null,
-  cashGivenToRole: row.cashGivenTo?.role?.name || null,
-  cashGivenById: row.cashGivenById,
-  cashGivenByName: row.cashGivenBy?.fullName || null,
-  cashGivenByRole: row.cashGivenBy?.role?.name || null,
   paymentMode: row.paymentMode || null,
   date: row.date,
   remark: row.remark,
@@ -150,51 +144,9 @@ export async function GET(req) {
           },
         },
       },
-      {
-        cashGivenTo: {
-          is: {
-            fullName: { contains: query, mode: "insensitive" },
-          },
-        },
-      },
-      {
-        cashGivenTo: {
-          is: {
-            firstName: { contains: query, mode: "insensitive" },
-          },
-        },
-      },
-      {
-        cashGivenTo: {
-          is: {
-            lastName: { contains: query, mode: "insensitive" },
-          },
-        },
-      },
-      {
-        cashGivenBy: {
-          is: {
-            fullName: { contains: query, mode: "insensitive" },
-          },
-        },
-      },
-      {
-        cashGivenBy: {
-          is: {
-            firstName: { contains: query, mode: "insensitive" },
-          },
-        },
-      },
-      {
-        cashGivenBy: {
-          is: {
-            lastName: { contains: query, mode: "insensitive" },
-          },
-        },
-      },
     ];
   }
-  where.transactionType = { in: ["EXPENSE", "CASH"] };
+  where.transactionType = "EXPENSE";
   if (projectId) {
     where.projectId = projectId;
   }
@@ -238,7 +190,7 @@ export async function GET(req) {
     }
   }
 
-  const [total, dailyExpenses, incomeSum, expenseSum] = await Promise.all([
+  const [total, dailyExpenses] = await Promise.all([
     prisma.financeTransaction.count({ where }),
     prisma.financeTransaction.findMany({
       where,
@@ -247,20 +199,10 @@ export async function GET(req) {
         expenseType: true,
         expenseBy: true,
         expenseCompany: true,
-        cashGivenTo: { include: { role: true } },
-        cashGivenBy: { include: { role: true } },
       },
       orderBy: [{ createdAt: "desc" }, { date: "desc" }],
       skip: (page - 1) * pageSize,
       take: pageSize,
-    }),
-    prisma.incomeTransaction.aggregate({
-      _sum: { amount: true },
-      where: { transactionType: "INCOME" },
-    }),
-    prisma.financeTransaction.aggregate({
-      _sum: { amount: true },
-      where: { transactionType: { in: ["EXPENSE", "CASH"] } },
     }),
   ]);
 

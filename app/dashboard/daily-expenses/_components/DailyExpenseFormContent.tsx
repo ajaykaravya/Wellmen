@@ -8,6 +8,7 @@ import Loading from "../../../components/Loading";
 import Link from "next/link";
 import CustomDatePicker from "../../../components/CustomDatePicker";
 import { ButtonGroup } from "../../_components/ButtonGroup";
+import { UserCardGroup } from "../../_components/UserCardGroup";
 import { formatToDDMMYYYY, getTodayInputDate } from "@/lib/dateUtils";
 import {
   Combobox,
@@ -65,10 +66,6 @@ type DailyExpenseFormContentProps = {
 
 function getDisplayLabel(option: ExpenseTypeOption) {
   return option.name;
-}
-
-function getUserLabel(option: UserOption) {
-  return `${option.firstName} ${option.lastName}`.trim();
 }
 
 function getProjectLabel(option: ProjectOption) {
@@ -320,18 +317,16 @@ export default function DailyExpenseFormContent({
               />
             </div>
             <div className="mb-2">
-              <ButtonGroup
+              <UserCardGroup
                 title="Expense By"
                 selected={form.expenseById}
-                options={users.map((user) => ({
-                  key: user.id,
-                  label: getUserLabel(user),
-                }))}
+                users={users}
                 onSelect={(value) =>
                   setForm((prev) => ({ ...prev, expenseById: value }))
                 }
                 error={errors.expenseById}
                 required
+                emptyMessage="No users available to select."
               />
             </div>
 

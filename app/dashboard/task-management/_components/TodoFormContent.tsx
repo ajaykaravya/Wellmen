@@ -9,6 +9,7 @@ import { getTodayInputDate, formatToDDMMYYYY } from "@/lib/dateUtils";
 import { useDashboardContext } from "../../_components/DashboardShell";
 import CustomDatePicker from "../../../components/CustomDatePicker";
 import { ButtonGroup } from "../../_components/ButtonGroup";
+import { UserCardGroup } from "../../_components/UserCardGroup";
 import {
   Combobox,
   ComboboxButton,
@@ -119,9 +120,6 @@ const formatDateForInput = (value?: string) => {
   const formatted = formatToDDMMYYYY(value);
   return formatted === "-" ? "" : formatted;
 };
-
-const getUserDisplayName = (user: UserOption) =>
-  [user.firstName, user.lastName].filter(Boolean).join(" ");
 
 const getProjectDisplayName = (project: ProjectOption | null) => {
   if (!project) return "";
@@ -555,51 +553,20 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
 
                 {isAdmin && (
                   <div className="mt-5 space-y-2">
-                    <p className="text-sm font-medium">
-                      Select User <span className="text-red-600">*</span>
-                    </p>
-                    {users.length > 0 ? (
-                      <div className="flex flex-wrap items-center gap-2">
-                        {users.map((user) => {
-                          const isSelected = form.assigneeId === user.id;
-
-                          return (
-                            <button
-                              key={user.id}
-                              type="button"
-                              aria-pressed={isSelected}
-                              onClick={() =>
-                                setForm((prev) => ({
-                                  ...prev,
-                                  assigneeId: user.id,
-                                }))
-                              }
-                              className={
-                                isSelected
-                                  ? "rbac-button flex flex-col items-start gap-1 text-left"
-                                  : "rbac-button rbac-button-secondary flex flex-col items-start gap-1 text-left"
-                              }
-                            >
-                              <span className="font-medium">
-                                {getUserDisplayName(user)}
-                              </span>
-                              <span className="text-xs opacity-75">
-                                {user.role || "User"}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-slate-500">
-                        No users available to assign.
-                      </p>
-                    )}
-                    {errors.assigneeId && (
-                      <p className="text-sm text-red-600 mb-2">
-                        {errors.assigneeId}
-                      </p>
-                    )}
+                    <UserCardGroup
+                      title="Select User"
+                      selected={form.assigneeId}
+                      users={users}
+                      onSelect={(value) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          assigneeId: value,
+                        }))
+                      }
+                      error={errors.assigneeId}
+                      required
+                      emptyMessage="No users available to assign."
+                    />
                   </div>
                 )}
 

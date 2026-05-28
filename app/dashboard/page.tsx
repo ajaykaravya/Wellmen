@@ -138,7 +138,6 @@ type IncomeEntryRow = {
 
 type ExpenseEntryRow = {
   id: string;
-  transactionType: "EXPENSE" | "CASH";
   createdAt: string;
   date: string;
   amount: number;
@@ -150,13 +149,26 @@ type ExpenseEntryRow = {
   expenseCompanyCode: string | null;
   paymentMode: string | null;
   remark: string | null;
-  cashGivenToName: string | null
-  cashGivenByName: string | null;
 };
 
-type BalanceTransaction = {
-  amount: number | string | null | undefined;
-  transactionType: "EXPENSE" | "CASH";
+type PetiCashEntryRow = {
+  id: string;
+  transactionType: "CREDIT" | "DEBIT";
+  createdAt: string;
+  date: string;
+  amount: number;
+  givenByName: string | null;
+  givenToName: string | null;
+  companyName: string | null;
+  companyCode: string | null;
+  projectName: string | null;
+  projectCity: string | null;
+  remarks: string | null;
+};
+
+type PetiCashBalanceRow = {
+  amount: number;
+  transactionType: "CREDIT" | "DEBIT";
 };
 
 const shiftInputDate = (value: string, diffDays: number) => {
@@ -214,10 +226,13 @@ function OverviewContent() {
   const [userReportsLoading, setUserReportsLoading] = useState(false);
   const [incomeDate, setIncomeDate] = useState(getTodayInputDate());
   const [expenseDate, setExpenseDate] = useState(getTodayInputDate());
+  const [petiCashDate, setPetiCashDate] = useState(getTodayInputDate());
   const [incomeEntries, setIncomeEntries] = useState<IncomeEntryRow[]>([]);
   const [incomeLoading, setIncomeLoading] = useState(false);
   const [expenseEntries, setExpenseEntries] = useState<ExpenseEntryRow[]>([]);
   const [expenseLoading, setExpenseLoading] = useState(false);
+  const [petiCashEntries, setPetiCashEntries] = useState<PetiCashEntryRow[]>([]);
+  const [petiCashLoading, setPetiCashLoading] = useState(false);
   const [reportViewOpen, setReportViewOpen] = useState(false);
   const [reportViewLoading, setReportViewLoading] = useState(false);
   const [reportViewData, setReportViewData] = useState<AdminReportRow | null>(
@@ -244,6 +259,9 @@ function OverviewContent() {
   const [confirmExpenseOpen, setConfirmExpenseOpen] = useState(false);
   const [confirmExpenseTarget, setConfirmExpenseTarget] = useState<ExpenseEntryRow | null>(null);
   const [deletingExpense, setDeletingExpense] = useState(false);
+  const [confirmPetiCashOpen, setConfirmPetiCashOpen] = useState(false);
+  const [confirmPetiCashTarget, setConfirmPetiCashTarget] = useState<PetiCashEntryRow | null>(null);
+  const [deletingPetiCash, setDeletingPetiCash] = useState(false);
 
   const [collapsed, setCollapsed] = useState(true);
   const [logoutLoading, setLogoutLoading] = useState(false);
@@ -449,26 +467,40 @@ function OverviewContent() {
     getTotalIncome();
   }, [getTotalIncome]);
 
-  const calculateBalance = (transactions: BalanceTransaction[]) =>
-    transactions.reduce((total, item) => {
-      const amount = Number(item.amount || 0);
-
-      if (item.transactionType === "CASH") return total + amount;
-      if (item.transactionType === "EXPENSE") return total - amount;
-
-      return total;
-    }, 0);
-
   const getTotalBalance = useCallback(async () => {
     if (!isAdmin) return;
     setBalanceLoading(true);
     try {
-      const res = await fetch("/api/daily-expenses");
+      let currentPage = 1;
+      let totalPages = 1;
+      const rows: PetiCashBalanceRow[] = [];
 
-      if (!res.ok) return;
+      while (currentPage <= totalPages) {
+        const params = new URLSearchParams({
+          page: String(currentPage),
+          pageSize: "100",
+        });
 
-      const response = await res.json();
-      setTotalBalance(calculateBalance(response.data));
+        const res = await fetch(`/api/peti-cash?${params.toString()}`);
+        if (!res.ok) return;
+
+        const response = await res.json();
+        const pageRows = Array.isArray(response?.data) ? response.data : [];
+        rows.push(...pageRows);
+
+        totalPages =
+          typeof response?.totalPages === "number" && response.totalPages > 0
+            ? response.totalPages
+            : 1;
+        currentPage += 1;
+      }
+
+      const total = rows.reduce((sum, row) => {
+        const amount = Number(row.amount || 0);
+        return row.transactionType === "CREDIT" ? sum + amount : sum - amount;
+      }, 0);
+
+      setTotalBalance(total);
 
     } catch (error) {
       console.error("Failed to calculate balance", error);
@@ -504,10 +536,33 @@ function OverviewContent() {
     }
   }, [expenseDate, isAdmin]);
 
+  const loadPetiCashEntries = useCallback(async () => {
+    if (!isAdmin) return;
+
+    setPetiCashLoading(true);
+    try {
+      const params = new URLSearchParams({
+        fromDate: petiCashDate,
+        toDate: petiCashDate,
+        page: "1",
+        pageSize: "20",
+      });
+      const res = await fetch(`/api/peti-cash?${params.toString()}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setPetiCashEntries(Array.isArray(data?.data) ? data.data : []);
+    } catch (error) {
+      console.error("Failed to load peti cash entries", error);
+    } finally {
+      setPetiCashLoading(false);
+    }
+  }, [isAdmin, petiCashDate]);
+
   useEffect(() => {
     loadIncomeEntries();
     loadExpenseEntries();
-  }, [loadExpenseEntries, loadIncomeEntries]);
+    loadPetiCashEntries();
+  }, [loadExpenseEntries, loadIncomeEntries, loadPetiCashEntries]);
 
   const handleEditIncomeEntry = useCallback((row: IncomeEntryRow) => {
     router.push(`/dashboard/income/${row.id}`);
@@ -543,11 +598,7 @@ function OverviewContent() {
   }, [confirmIncomeTarget, loadIncomeEntries]);
 
   const handleEditExpenseEntry = useCallback((row: ExpenseEntryRow) => {
-    router.push(
-      row.transactionType === "CASH"
-        ? `/dashboard/cash/${row.id}`
-        : `/dashboard/daily-expenses/${row.id}`,
-    );
+    router.push(`/dashboard/daily-expenses/${row.id}`);
   }, [router]);
 
   const handleDeleteExpenseEntry = useCallback((row: ExpenseEntryRow) => {
@@ -559,42 +610,58 @@ function OverviewContent() {
     if (!confirmExpenseTarget) return;
     setDeletingExpense(true);
     try {
-      const endpoint =
-        confirmExpenseTarget.transactionType === "CASH"
-          ? `/api/cash/${confirmExpenseTarget.id}`
-          : `/api/daily-expenses/${confirmExpenseTarget.id}`;
-      const res = await fetch(endpoint, {
+      const res = await fetch(`/api/daily-expenses/${confirmExpenseTarget.id}`, {
         method: "DELETE",
       });
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
-        toast.error(
-          payload.error ||
-          (confirmExpenseTarget.transactionType === "CASH"
-            ? "Failed to delete cash entry."
-            : "Failed to delete expense."),
-        );
+        toast.error(payload.error || "Failed to delete expense.");
         return;
       }
-      toast.success(
-        confirmExpenseTarget.transactionType === "CASH"
-          ? "Cash entry deleted successfully."
-          : "Expense deleted successfully.",
-      );
+      toast.success("Expense deleted successfully.");
       await loadExpenseEntries();
     } catch (error) {
       console.error(error);
-      toast.error(
-        confirmExpenseTarget.transactionType === "CASH"
-          ? "Failed to delete cash entry."
-          : "Failed to delete expense.",
-      );
+      toast.error("Failed to delete expense.");
     } finally {
       setDeletingExpense(false);
       setConfirmExpenseOpen(false);
       setConfirmExpenseTarget(null);
     }
   }, [confirmExpenseTarget, loadExpenseEntries]);
+
+  const handleEditPetiCashEntry = useCallback((row: PetiCashEntryRow) => {
+    router.push(`/dashboard/peti-cash/${row.id}`);
+  }, [router]);
+
+  const handleDeletePetiCashEntry = useCallback((row: PetiCashEntryRow) => {
+    setConfirmPetiCashTarget(row);
+    setConfirmPetiCashOpen(true);
+  }, []);
+
+  const confirmDeletePetiCashEntry = useCallback(async () => {
+    if (!confirmPetiCashTarget) return;
+    setDeletingPetiCash(true);
+    try {
+      const res = await fetch(`/api/peti-cash/${confirmPetiCashTarget.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        toast.error(payload.error || "Failed to delete peti cash.");
+        return;
+      }
+      toast.success("Peti cash deleted successfully.");
+      await loadPetiCashEntries();
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to delete peti cash.");
+    } finally {
+      setDeletingPetiCash(false);
+      setConfirmPetiCashOpen(false);
+      setConfirmPetiCashTarget(null);
+    }
+  }, [confirmPetiCashTarget, loadPetiCashEntries]);
 
   const openReportView = useCallback(async (row: AdminReportRow) => {
     setReportViewOpen(true);
@@ -1192,11 +1259,7 @@ function OverviewContent() {
 
       <ConfirmDialog
         open={confirmExpenseOpen}
-        title={
-          confirmExpenseTarget?.transactionType === "CASH"
-            ? "Delete cash entry?"
-            : "Delete expense?"
-        }
+        title="Delete expense?"
         description="Are you sure you want to delete this entry?"
         confirmLabel="Delete"
         confirmLoading={deletingExpense}
@@ -1204,6 +1267,18 @@ function OverviewContent() {
         cancelLabel="Cancel"
         onConfirm={confirmDeleteExpenseEntry}
         onClose={() => setConfirmExpenseOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={confirmPetiCashOpen}
+        title="Delete peti cash?"
+        description="Are you sure you want to delete this peti cash entry?"
+        confirmLabel="Delete"
+        confirmLoading={deletingPetiCash}
+        confirmLoadingLabel="Deleting..."
+        cancelLabel="Cancel"
+        onConfirm={confirmDeletePetiCashEntry}
+        onClose={() => setConfirmPetiCashOpen(false)}
       />
 
       <section className="rbac-section mt-4 rbac-container">
@@ -1554,8 +1629,8 @@ function OverviewContent() {
             </span>
             <span
               className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ring-1 ${totalBalance < 0
-                ? "bg-red-100 text-red-800 ring-red-200"
-                : "bg-green-100 text-green-800 ring-green-200"
+                  ? "bg-red-100 text-red-800 ring-red-200"
+                  : "bg-green-100 text-green-800 ring-green-200"
                 }`}
             >
               Total Balance: {balanceLoading ? "Loading..." : formatAmount(totalBalance)}
@@ -1586,31 +1661,51 @@ function OverviewContent() {
           />
 
           <FinanceCardList<ExpenseEntryRow>
-            title="Expense & Cash"
+            title="Expenses"
             rows={expenseEntries}
             loading={expenseLoading}
-            emptyLabel="No expense or cash entries found for selected date."
+            emptyLabel="No expense entries found for selected date."
             onEdit={handleEditExpenseEntry}
             onDelete={handleDeleteExpenseEntry}
             showDatePicker
             date={expenseDate}
             onDateChange={setExpenseDate}
             cardContent={{
-              getVariant: (row) => (row.transactionType === "CASH" ? "cash" : "expense"),
+              getVariant: () => "expense",
               getCode: (row) => row.expenseCompanyCode,
               getPaymentMode: (row) => row.paymentMode,
               getProjectName: (row) => row.projectName,
               getProjectCity: (row) => row.projectCity,
               getExpenseByName: (row) => row.expenseByName,
-              getCashGivenByName: (row) => row.cashGivenByName,
-              getCashGivenToName: (row) => row.cashGivenToName,
-              getTagClassName: (row) =>
-                row.transactionType === "CASH"
-                  ? "bg-sky-100 text-sky-800 ring-sky-200"
-                  : "bg-rose-100 text-rose-800 ring-rose-200",
-              getTitle: (row) =>
-                row.expenseTypeName || "",
+              getTitle: (row) => row.expenseTypeName || "",
               getRemark: (row) => row.remark || "",
+              getDateLabel: (row) => formatToDDMMYYYY(row.date),
+            }}
+          />
+
+          <FinanceCardList<PetiCashEntryRow>
+            title="Peti Cash"
+            rows={petiCashEntries}
+            loading={petiCashLoading}
+            emptyLabel="No peti cash entries found for selected date."
+            onEdit={handleEditPetiCashEntry}
+            onDelete={handleDeletePetiCashEntry}
+            showDatePicker
+            date={petiCashDate}
+            onDateChange={setPetiCashDate}
+            cardContent={{
+              getVariant: (row) => (row.transactionType === "CREDIT" ? "income" : "expense"),
+              getCode: (row) => row.companyCode,
+              getTagLabel: (row) => (row.transactionType === "CREDIT" ? "Credit" : "Debit"),
+              getTagClassName: (row) =>
+                row.transactionType === "CREDIT"
+                  ? "bg-emerald-100 text-emerald-800 ring-emerald-200"
+                  : "bg-rose-100 text-rose-800 ring-rose-200",
+              getProjectName: (row) => row.projectName,
+              getProjectCity: (row) => row.projectCity,
+              getCashGivenByName: (row) => row.givenByName,
+              getCashGivenToName: (row) => row.givenToName,
+              getRemark: (row) => row.remarks || "",
               getDateLabel: (row) => formatToDDMMYYYY(row.date),
             }}
           />

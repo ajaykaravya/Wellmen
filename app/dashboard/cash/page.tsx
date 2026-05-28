@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function CashPage() {
-  redirect("/dashboard/daily-expenses");
+  redirect("/dashboard/peti-cash");
 }
