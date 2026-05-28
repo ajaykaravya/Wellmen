@@ -8,6 +8,7 @@ import Loading from "../../../components/Loading";
 import Link from "next/link";
 import CustomDatePicker from "../../../components/CustomDatePicker";
 import { ButtonGroup } from "../../_components/ButtonGroup";
+import { UserCardGroup } from "../../_components/UserCardGroup";
 import { formatToDDMMYYYY, getTodayInputDate } from "@/lib/dateUtils";
 import {
   Combobox,
@@ -93,11 +94,6 @@ function getCompanyLabel(company: CompanyOption) {
 
 function getIncomeTypeLabel(incomeType: IncomeTypeOption) {
   return incomeType.name;
-}
-
-function getUserLabel(user: UserOption) {
-  const name = `${user.firstName} ${user.lastName}`.trim();
-  return user.role ? `${name} (${user.role})` : name;
 }
 
 function isPrivilegedUser(user: UserOption) {
@@ -341,18 +337,16 @@ export default function IncomeFormContent({ incomeId }: IncomeFormContentProps) 
             </div>
 
             <div className="mb-2">
-              <ButtonGroup
+              <UserCardGroup
                 title="Received By"
                 selected={form.receivedById}
-                options={users.map((user) => ({
-                  key: user.id,
-                  label: getUserLabel(user),
-                }))}
+                users={users}
                 onSelect={(value) =>
                   setForm((prev) => ({ ...prev, receivedById: value }))
                 }
                 error={errors.receivedById}
                 required
+                emptyMessage="No users available to select."
               />
             </div>
 

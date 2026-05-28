@@ -24,8 +24,8 @@ model User {
   assignedTodos    Todo[]            @relation("TodoAssignee")
   createdTodos     Todo[]            @relation("TodoCreator")
   financeTransactionsAsExpenseBy FinanceTransaction[] @relation("FinanceTransactionExpenseBy")
-  financeTransactionsAsCashGivenTo FinanceTransaction[] @relation("FinanceTransactionCashGivenTo")
-  financeTransactionsAsCashGivenBy FinanceTransaction[] @relation("FinanceTransactionCashGivenBy")
+  petiCashGivenBy  PetiCash[]        @relation("PetiCashGivenBy")
+  petiCashGivenTo  PetiCash[]        @relation("PetiCashGivenTo")
   incomeTransactionsAsReceivedBy IncomeTransaction[] @relation("IncomeTransactionReceivedBy")
   transportLogsCreated TransportLog[] @relation("TransportLogCreator")
   deviceTokens     DeviceToken[]
@@ -77,6 +77,7 @@ model Project {
   updatedAt        DateTime          @updatedAt
   dailyReports     DailyReport[]
   financeTransactions FinanceTransaction[] @relation("FinanceTransactionProject")
+  petiCashTransactions PetiCash[]        @relation("PetiCashProject")
   incomeTransactions IncomeTransaction[] @relation("IncomeTransactionProject")
   createdBy        User?             @relation("ProjectCreator", fields: [createdById], references: [id])
   queryManagements QueryManagement[]
@@ -117,6 +118,7 @@ model Company {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   financeTransactionsAsExpenseCompany FinanceTransaction[] @relation("FinanceTransactionExpenseCompany")
+  petiCashTransactions PetiCash[] @relation("PetiCashCompany")
   incomeTransactionsAsIncomeCompany IncomeTransaction[] @relation("IncomeTransactionIncomeCompany")
 }
 
@@ -177,8 +179,6 @@ model FinanceTransaction {
   expenseById               String?
   expenseCompanyId          String?
   projectId                 String?
-  cashGivenToId             String?
-  cashGivenById             String?
   paymentMode               CashPaymentMode?
   date                      DateTime
   remark                    String?
@@ -188,8 +188,6 @@ model FinanceTransaction {
   expenseBy                 User?          @relation("FinanceTransactionExpenseBy", fields: [expenseById], references: [id], onDelete: SetNull)
   expenseCompany            Company?       @relation("FinanceTransactionExpenseCompany", fields: [expenseCompanyId], references: [id], onDelete: SetNull)
   project                   Project?       @relation("FinanceTransactionProject", fields: [projectId], references: [id], onDelete: SetNull)
-  cashGivenTo               User?          @relation("FinanceTransactionCashGivenTo", fields: [cashGivenToId], references: [id], onDelete: SetNull)
-  cashGivenBy               User?          @relation("FinanceTransactionCashGivenBy", fields: [cashGivenById], references: [id], onDelete: SetNull)
 
   @@index([transactionType])
   @@index([date])
@@ -197,9 +195,32 @@ model FinanceTransaction {
   @@index([expenseById])
   @@index([expenseCompanyId])
   @@index([projectId])
-  @@index([cashGivenToId])
-  @@index([cashGivenById])
   @@index([paymentMode])
+}
+
+model PetiCash {
+  id            String                   @id @default(uuid())
+  amount        Decimal                  @db.Decimal(14, 2)
+  transactionType PetiCashTransactionType
+  givenById     String?
+  givenToId     String?
+  companyId     String?
+  projectId     String?
+  date          DateTime
+  remarks       String?
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  givenBy       User?                    @relation("PetiCashGivenBy", fields: [givenById], references: [id], onDelete: SetNull)
+  givenTo       User?                    @relation("PetiCashGivenTo", fields: [givenToId], references: [id], onDelete: SetNull)
+  company       Company?                 @relation("PetiCashCompany", fields: [companyId], references: [id], onDelete: SetNull)
+  project       Project?                 @relation("PetiCashProject", fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([transactionType])
+  @@index([date])
+  @@index([givenById])
+  @@index([givenToId])
+  @@index([companyId])
+  @@index([projectId])
 }
 
 model IncomeTransaction {
@@ -383,7 +404,6 @@ enum ExpenseTypeStatus {
 enum TransactionType {
   INCOME
   EXPENSE
-  CASH
 }
 
 enum CashPaymentMode {
@@ -392,6 +412,11 @@ enum CashPaymentMode {
   CHEQUE
   UPI
   NEFT_RTGS
+}
+
+enum PetiCashTransactionType {
+  CREDIT
+  DEBIT
 }
 
 enum TransportType {

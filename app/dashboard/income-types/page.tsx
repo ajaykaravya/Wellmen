@@ -147,7 +147,7 @@ function IncomeTypeListContent() {
         header: "Action",
         id: "action",
         cell: ({ row }) => (
-          <div className="flex justify-end gap-4">
+          <div className="rbac-inline-actions flex gap-4">
             <button
               onClick={() => handleEditIncomeType(row.original)}
               className="rbac-link"

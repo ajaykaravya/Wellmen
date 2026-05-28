@@ -45,6 +45,7 @@ type MenuKey =
   | "reportingCategories"
   | "expenseTypes"
   | "dailyExpenses"
+  | "petiCash"
   | "income"
   | "incomeTypes";
 
@@ -95,6 +96,7 @@ const routeByMenu: Record<MenuKey, string> = {
   reportingCategories: "/dashboard/reporting-categories",
   expenseTypes: "/dashboard/expense-types",
   dailyExpenses: "/dashboard/daily-expenses",
+  petiCash: "/dashboard/peti-cash",
   income: "/dashboard/income",
   incomeTypes: "/dashboard/income-types",
 };
@@ -128,9 +130,9 @@ const getActiveMenu = (pathname: string | null): MenuKey => {
   if (safePathname.startsWith("/dashboard/reports")) return "reports";
   if (safePathname.startsWith("/dashboard/expense-types")) return "expenseTypes";
   if (safePathname.startsWith("/dashboard/daily-expenses")) return "dailyExpenses";
+  if (safePathname.startsWith("/dashboard/peti-cash")) return "petiCash";
   if (safePathname.startsWith("/dashboard/income-types")) return "incomeTypes";
   if (safePathname.startsWith("/dashboard/income")) return "income";
-  if (safePathname.startsWith("/dashboard/cash")) return "dailyExpenses";
   if (safePathname.startsWith("/dashboard/team")) return "team";
   if (safePathname.startsWith("/dashboard/profile")) return "profile";
   return "dashboard";
@@ -261,6 +263,7 @@ export default function DashboardShell({
         ],
       });
       items.push({ key: "dailyExpenses", label: "Expense" });
+      items.push({ key: "petiCash", label: "Peti Cash" });
       items.push({ key: "income", label: "Income" });
       items.push({ key: "transport-management", label: "Transport Management" });
     }

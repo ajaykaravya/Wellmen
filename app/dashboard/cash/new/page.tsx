@@ -1,12 +1,5 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import DashboardShell from "../../_components/DashboardShell";
-import CashInFormContent from "../_components/CashInFormContent";
-
-export default function CashInNewPage() {
-  return (
-    <DashboardShell requireAdmin>
-      <CashInFormContent />
-    </DashboardShell>
-  );
+export default function CashNewPage() {
+  redirect("/dashboard/peti-cash/new?mode=CREDIT");
 }

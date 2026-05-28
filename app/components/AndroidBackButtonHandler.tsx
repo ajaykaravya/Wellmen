@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { App as CapacitorApp } from "@capacitor/app";
+import type { PluginListenerHandle } from "@capacitor/core";
 
 const EXIT_DELAY_MS = 2000;
 const ROOT_PATHS = ["/", "/dashboard"];
@@ -11,14 +12,15 @@ export default function AndroidBackButtonHandler() {
   const router = useRouter();
   const pathname = usePathname();
   const lastBackPress = useRef(0);
+  const safePathname = pathname || "/";
 
   useEffect(() => {
-    let backHandler: any;
+    let backHandler: PluginListenerHandle | null = null;
 
     const setupListener = async () => {
       backHandler = await CapacitorApp.addListener("backButton", () => {
         const now = Date.now();
-        const isRootRoute = ROOT_PATHS.includes(pathname);
+        const isRootRoute = ROOT_PATHS.includes(safePathname);
 
         if (!isRootRoute) {
           router.back();
@@ -41,7 +43,7 @@ export default function AndroidBackButtonHandler() {
         backHandler.remove();
       }
     };
-  }, [pathname, router]);
+  }, [router, safePathname]);
 
   return null;
 }

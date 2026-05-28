@@ -997,7 +997,7 @@ function TodoListContent() {
             <option value="">All assignees</option>
             {assignees.map((user) => (
               <option key={user.id} value={user.id}>
-                {user.firstName} {user.lastName}
+                {user.firstName} {user.lastName} - {user.role || "No role"}
               </option>
             ))}
           </select>

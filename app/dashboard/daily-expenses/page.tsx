@@ -32,7 +32,7 @@ import { ChevronDownIcon } from "@heroicons/react/16/solid";
 import { useRouter } from "next/navigation";
 import { FinanceCardList } from "../_components/FinanceCardList";
 
-type TransactionType = "EXPENSE" | "CASH";
+type TransactionType = "EXPENSE";
 
 type DailyExpenseRow = {
   id: string;
@@ -48,12 +48,6 @@ type DailyExpenseRow = {
   expenseCompanyId: string | null;
   expenseCompanyName: string | null;
   expenseCompanyCode: string | null;
-  cashGivenToId: string | null;
-  cashGivenToName: string | null;
-  cashGivenToRole: string | null;
-  cashGivenById: string | null;
-  cashGivenByName: string | null;
-  cashGivenByRole: string | null;
   paymentMode: string | null;
   date: string;
   remark: string | null;
@@ -95,17 +89,14 @@ const getProjectLabel = (option: ProjectOption) =>
   option.city ? `${option.name} (${option.city})` : option.name;
 
 const getUserLabel = (option: UserOption) =>
-  `${option.firstName} ${option.lastName}`.trim();
+  `${option.firstName} ${option.lastName} - ${option.role || ""}`.trim();
 
 const getCompanyLabel = (option: CompanyOption) => option.name;
 
-const getTransactionLabel = (row: DailyExpenseRow) =>
-  row.transactionType === "CASH" ? "Cash" : "Expense";
+const getTransactionLabel = () => "Expense";
 
-const getTransactionClassName = (row: DailyExpenseRow) =>
-  row.transactionType === "CASH"
-    ? "bg-sky-100 text-sky-800 ring-1 ring-sky-200"
-    : "bg-rose-100 text-rose-800 ring-1 ring-rose-200";
+const getTransactionClassName = () =>
+  "bg-rose-100 text-rose-800 ring-1 ring-rose-200";
 
 const getRowCompanyLabel = (row: DailyExpenseRow) =>
   row.expenseCompanyName || row.expenseCompanyCode || null;
@@ -152,7 +143,6 @@ function DailyExpenseListContent() {
   );
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [totalBalance, setTotalBalance] = useState(0);
 
   const activeFilterCount = [
     query.trim(),
@@ -223,11 +213,15 @@ function DailyExpenseListContent() {
     toDate,
   ].filter(Boolean);
 
-  const calculateBalance = (transactions: any[]) =>
+  const calculateBalance = (
+    transactions: Array<{
+      amount: number | string | null | undefined;
+      transactionType: TransactionType;
+    }>,
+  ) =>
     transactions.reduce((total, item) => {
       const amount = Number(item.amount || 0);
 
-      if (item.transactionType === "CASH") return total + amount;
       if (item.transactionType === "EXPENSE") return total - amount;
 
       return total;
@@ -323,7 +317,6 @@ function DailyExpenseListContent() {
       const data = await res.json();
       setDailyExpenses(Array.isArray(data?.data) ? data.data : []);
       setTotal(typeof data?.total === "number" ? data.total : 0);
-      setTotalBalance(calculateBalance(Array.isArray(data?.data) ? data.data : []));
     } catch (error) {
       console.error("Failed to load daily expenses", error);
       toast.error("Failed to load daily expenses.");
@@ -361,10 +354,6 @@ function DailyExpenseListContent() {
 
   const handleEditTransaction = useCallback(
     (row: DailyExpenseRow) => {
-      if (row.transactionType === "CASH") {
-        router.push(`/dashboard/cash/${row.id}`);
-        return;
-      }
       router.push(`/dashboard/daily-expenses/${row.id}`);
     },
     [router],
@@ -374,34 +363,19 @@ function DailyExpenseListContent() {
     if (!confirmTarget) return;
     setDeleting(true);
     try {
-      const deleteUrl =
-        confirmTarget.transactionType === "CASH"
-          ? `/api/cash/${confirmTarget.id}`
-          : `/api/daily-expenses/${confirmTarget.id}`;
-      const res = await fetch(deleteUrl, { method: "DELETE" });
+      const res = await fetch(`/api/daily-expenses/${confirmTarget.id}`, {
+        method: "DELETE",
+      });
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
-        toast.error(
-          payload.error ||
-          (confirmTarget.transactionType === "CASH"
-            ? "Failed to delete cash entry."
-            : "Failed to delete daily expense."),
-        );
+        toast.error(payload.error || "Failed to delete daily expense.");
         return;
       }
       await loadDailyExpenses();
-      toast.success(
-        confirmTarget.transactionType === "CASH"
-          ? "Cash entry deleted successfully."
-          : "Daily expense deleted successfully.",
-      );
+      toast.success("Daily expense deleted successfully.");
     } catch (error) {
       console.error("Failed to delete transaction", error);
-      toast.error(
-        confirmTarget.transactionType === "CASH"
-          ? "Failed to delete cash entry."
-          : "Failed to delete daily expense.",
-      );
+      toast.error("Failed to delete daily expense.");
     } finally {
       setDeleting(false);
       setConfirmOpen(false);
@@ -463,27 +437,23 @@ function DailyExpenseListContent() {
       const worksheetData = [
         [
           "#",
-          "Type",
           "Date",
           "Amount",
-          "Category / To",
-          "Project / By",
+          "Category",
+          "Project",
+          "Expense By",
           "Company",
           "Remark",
         ],
         ...rows.map((row, index) => [
           index + 1,
-          getTransactionLabel(row),
           formatToDDMMYYYY(row.date),
           Number(row.amount || 0),
-          row.transactionType === "CASH"
-            ? row.cashGivenToName || "-"
-            : row.expenseTypeName || "-",
-          row.transactionType === "CASH"
-            ? row.cashGivenByName || "-"
-            : row.projectName
-              ? `${row.projectName}${row.projectCity ? ` (${row.projectCity})` : ""}`
-              : "-",
+          row.expenseTypeName || "-",
+          row.projectName
+            ? `${row.projectName}${row.projectCity ? ` (${row.projectCity})` : ""}`
+            : "-",
+          row.expenseByName || "-",
           getRowCompanyLabel(row) || "-",
           row.remark || "-",
         ]),
@@ -525,19 +495,6 @@ function DailyExpenseListContent() {
   const columns = useMemo<ColumnDef<DailyExpenseRow>[]>(
     () => [
       {
-        header: "Type",
-        accessorKey: "transactionType",
-        cell: ({ row }) => (
-          <span
-            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${getTransactionClassName(
-              row.original,
-            )}`}
-          >
-            {getTransactionLabel(row.original)}
-          </span>
-        ),
-      },
-      {
         header: "Date",
         accessorKey: "date",
         cell: ({ row }) => (
@@ -547,37 +504,31 @@ function DailyExpenseListContent() {
         ),
       },
       {
-        header: "Category / To",
+        header: "Category",
         accessorKey: "expenseTypeName",
         cell: ({ row }) => (
           <span className="rbac-muted">
-            {row.original.transactionType === "CASH"
-              ? "Cash"
-              : row.original.expenseTypeName || "-"}
+            {row.original.expenseTypeName || "-"}
           </span>
         ),
       },
       {
-        header: "Project / By",
+        header: "Project",
         accessorKey: "projectName",
         cell: ({ row }) => (
           <span className="rbac-muted">
-            {row.original.transactionType === "CASH"
-              ? row.original.cashGivenByName || "-"
-              : row.original.projectName
-                ? `${row.original.projectName}${row.original.projectCity ? ` (${row.original.projectCity})` : ""}`
-                : "-"}
+            {row.original.projectName
+              ? `${row.original.projectName}${row.original.projectCity ? ` (${row.original.projectCity})` : ""}`
+              : "-"}
           </span>
         ),
       },
       {
-        header: "Person / To",
+        header: "Expense By",
         accessorKey: "expenseByName",
         cell: ({ row }) => (
           <span className="rbac-muted">
-            {row.original.transactionType === "CASH"
-              ? row.original.cashGivenToName || "-"
-              : row.original.expenseByName || "-"}
+            {row.original.expenseByName || "-"}
           </span>
         ),
       },
@@ -642,23 +593,13 @@ function DailyExpenseListContent() {
     pageCount,
   });
 
-  const balanceClass =
-    totalBalance >= 0
-      ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
-      : "bg-rose-50 text-rose-700 ring-1 ring-rose-200";
-
   return (
     <>
       <section className="rbac-section rbac-container">
         <div className="rbac-card">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-3">
-              <h3 className="rbac-title-lg">Expenses &amp; Cash</h3>
-              <span
-                className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${balanceClass}`}
-              >
-                Current Balance: {formatAmount(totalBalance)}
-              </span>
+              <h3 className="rbac-title-lg">Expenses</h3>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
@@ -679,11 +620,6 @@ function DailyExpenseListContent() {
               <Link href="/dashboard/daily-expenses/new">
                 <button className="rbac-button" type="button">
                   Add Expense
-                </button>
-              </Link>
-              <Link href="/dashboard/cash/new">
-                <button className="rbac-button" type="button">
-                  Add Cash
                 </button>
               </Link>
             </div>
@@ -756,7 +692,7 @@ function DailyExpenseListContent() {
                         colSpan={columns.length}
                         className="px-4 py-3 text-sm text-slate-500"
                       >
-                        No expense or cash entries found.
+                        No expense entries found.
                       </td>
                     </tr>
                   )}
@@ -788,29 +724,19 @@ function DailyExpenseListContent() {
               <FinanceCardList
                 rows={dailyExpenses}
                 loading={loading}
-                emptyLabel="No expense or cash entries found."
+                emptyLabel="No expense entries found."
                 showCount={false}
                 collapsible={false}
                 onEdit={handleEditTransaction}
                 onDelete={handleDeleteTransaction}
                 cardContent={{
-                  getVariant: (row) =>
-                    row.transactionType === "CASH" ? "cash" : "expense",
+                  getVariant: () => "expense",
                   getCode: (row) => row.expenseCompanyCode,
                   getProjectName: (row) => row.projectName,
                   getProjectCity: (row) => row.projectCity,
                   getPaymentMode: (row) => row.paymentMode,
                   getExpenseByName: (row) => row.expenseByName,
-                  getCashGivenByName: (row) => row.cashGivenByName,
-                  getCashGivenToName: (row) => row.cashGivenToName,
-                  getTagClassName: (row) =>
-                    row.transactionType === "CASH"
-                      ? "bg-sky-100 text-sky-800 ring-sky-200"
-                      : "bg-rose-100 text-rose-800 ring-rose-200",
-                  getTitle: (row) =>
-                    row.transactionType === "CASH"
-                      ? row.cashGivenToName || "Cash"
-                      : row.expenseTypeName || "Expense",
+                  getTitle: (row) => row.expenseTypeName || "Expense",
                   getRemark: (row) => row.remark || "",
                   getDateLabel: (row) => formatToDDMMYYYY(row.date),
                 }}
@@ -866,11 +792,7 @@ function DailyExpenseListContent() {
 
       <ConfirmDialog
         open={confirmOpen}
-        title={
-          confirmTarget?.transactionType === "CASH"
-            ? "Delete cash entry?"
-            : "Delete expense?"
-        }
+        title="Delete expense?"
         description="Are you sure you want to delete?"
         confirmLabel="Delete"
         confirmLoading={deleting}
