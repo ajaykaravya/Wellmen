@@ -14,6 +14,7 @@ export async function GET(req) {
     companies.map((company) => ({
       id: company.id,
       name: company.name,
+      code: company.code,
     })),
   );
 }

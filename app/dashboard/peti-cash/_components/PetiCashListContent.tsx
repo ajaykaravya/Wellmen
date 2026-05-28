@@ -98,6 +98,8 @@ function PetiCashListContent() {
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
+  const [balance, setBalance] = useState(0);
+  const [balanceLoading, setBalanceLoading] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [transactionTypeFilter, setTransactionTypeFilter] = useState<TransactionType | "">("");
   const [givenByFilter, setGivenByFilter] = useState<UserOption | null>(null);
@@ -164,9 +166,68 @@ function PetiCashListContent() {
     toDate,
   ]);
 
+  const loadBalance = useCallback(async () => {
+    setBalanceLoading(true);
+    try {
+      const filters = new URLSearchParams();
+      if (transactionTypeFilter) filters.set("transactionType", transactionTypeFilter);
+      if (givenByFilter?.id) filters.set("givenById", givenByFilter.id);
+      if (givenToFilter?.id) filters.set("givenToId", givenToFilter.id);
+      if (projectFilter?.id) filters.set("projectId", projectFilter.id);
+      if (companyFilter?.id) filters.set("companyId", companyFilter.id);
+      if (fromDate) filters.set("fromDate", fromDate);
+      if (toDate) filters.set("toDate", toDate);
+
+      const accumulated: PetiCashRow[] = [];
+      let currentPage = 1;
+      let totalPages = 1;
+
+      while (currentPage <= totalPages) {
+        const params = new URLSearchParams(filters);
+        params.set("page", String(currentPage));
+        params.set("pageSize", "100");
+
+        const res = await fetch(`/api/peti-cash?${params.toString()}`);
+        if (!res.ok) return;
+
+        const data = await res.json();
+        const pageRows = Array.isArray(data?.data) ? data.data : [];
+        accumulated.push(...pageRows);
+        totalPages =
+          typeof data?.totalPages === "number" && data.totalPages > 0
+            ? data.totalPages
+            : 1;
+        currentPage += 1;
+      }
+
+      const totalBalance = accumulated.reduce((sum, row) => {
+        const amount = Number(row.amount || 0);
+        return row.transactionType === "CREDIT" ? sum + amount : sum - amount;
+      }, 0);
+
+      setBalance(totalBalance);
+    } catch (error) {
+      console.error("Failed to load peti cash balance", error);
+    } finally {
+      setBalanceLoading(false);
+    }
+  }, [
+    companyFilter,
+    fromDate,
+    givenByFilter,
+    givenToFilter,
+    projectFilter,
+    toDate,
+    transactionTypeFilter,
+  ]);
+
   useEffect(() => {
     loadRows();
   }, [loadRows]);
+
+  useEffect(() => {
+    loadBalance();
+  }, [loadBalance]);
 
   useEffect(() => {
     const loadOptions = async () => {
@@ -443,7 +504,18 @@ function PetiCashListContent() {
         <div className="rbac-card">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 className="rbac-title-lg">Peti Cash</h3>
+              <h3 className="rbac-title-lg flex flex-wrap items-center gap-2">
+                <span>Peti Cash</span>
+                <span
+                  className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ring-1 ${
+                    balance < 0
+                      ? "bg-rose-100 text-rose-800 ring-rose-200"
+                      : "bg-emerald-100 text-emerald-800 ring-emerald-200"
+                  }`}
+                >
+                  {balanceLoading ? "Loading..." : `Balance: ${formatAmount(balance)}`}
+                </span>
+              </h3>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
