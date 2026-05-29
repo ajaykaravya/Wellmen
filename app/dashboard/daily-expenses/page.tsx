@@ -813,195 +813,197 @@ function DailyExpenseListContent() {
         activeCount={activeFilterCount}
         maxWidthClassName="max-w-2xl"
       >
-        <CustomDatePicker
-          value={draftFromDate}
-          onChange={setDraftFromDate}
-          placeholder="From date"
-          className="rbac-input-filter"
-        />
+        <div className="grid gap-4 md:grid-cols-2">
+          <CustomDatePicker
+            value={draftFromDate}
+            onChange={setDraftFromDate}
+            placeholder="From date"
+            className="rbac-input-filter"
+          />
 
-        <CustomDatePicker
-          value={draftToDate}
-          onChange={setDraftToDate}
-          placeholder="To date"
-          className="rbac-input-filter"
-        />
+          <CustomDatePicker
+            value={draftToDate}
+            onChange={setDraftToDate}
+            placeholder="To date"
+            className="rbac-input-filter"
+          />
 
-        <Combobox
-          value={draftProjectFilter}
-          onChange={(option: ProjectOption | null) => {
-            setDraftProjectFilter(option);
-            setDraftProjectQuery("");
-          }}
-          nullable
-        >
-          <div className="relative min-w-64">
-            <ComboboxInput
-              className="theme-input rbac-input w-full pr-10"
-              placeholder="Project"
-              displayValue={(option: ProjectOption | null) =>
-                option ? getProjectLabel(option) : draftProjectQuery
-              }
-              onChange={(event) => {
-                setDraftProjectQuery(event.target.value);
-                setDraftProjectFilter(null);
-              }}
-            />
-            <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
-              <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
-            </ComboboxButton>
-            <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
-              {filteredProjects.length === 0 ? (
-                <div className="px-3 py-2 text-sm text-[color:var(--theme-text-muted)]">
-                  No projects found
-                </div>
-              ) : (
-                filteredProjects.map((project) => (
+          <Combobox
+            value={draftProjectFilter}
+            onChange={(option: ProjectOption | null) => {
+              setDraftProjectFilter(option);
+              setDraftProjectQuery("");
+            }}
+            nullable
+          >
+            <div className="relative min-w-64">
+              <ComboboxInput
+                className="theme-input rbac-input w-full pr-10"
+                placeholder="Project"
+                displayValue={(option: ProjectOption | null) =>
+                  option ? getProjectLabel(option) : draftProjectQuery
+                }
+                onChange={(event) => {
+                  setDraftProjectQuery(event.target.value);
+                  setDraftProjectFilter(null);
+                }}
+              />
+              <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+                <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+              </ComboboxButton>
+              <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
+                {filteredProjects.length === 0 ? (
+                  <div className="px-3 py-2 text-sm text-[color:var(--theme-text-muted)]">
+                    No projects found
+                  </div>
+                ) : (
+                  filteredProjects.map((project) => (
+                    <ComboboxOption
+                      key={project.id}
+                      value={project}
+                      className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span>{getProjectLabel(project)}</span>
+                      </div>
+                    </ComboboxOption>
+                  ))
+                )}
+              </ComboboxOptions>
+            </div>
+          </Combobox>
+
+          <Combobox
+            value={draftExpenseTypeFilter}
+            onChange={(option: ExpenseTypeOption | null) => {
+              setDraftExpenseTypeFilter(option);
+              setDraftExpenseTypeQuery("");
+            }}
+            nullable
+          >
+            <div className="relative min-w-64">
+              <ComboboxInput
+                className="theme-input rbac-input w-full pr-10"
+                placeholder="Category"
+                displayValue={(option: ExpenseTypeOption | null) =>
+                  option ? getExpenseTypeLabel(option) : draftExpenseTypeQuery
+                }
+                onChange={(event) => {
+                  setDraftExpenseTypeQuery(event.target.value);
+                  setDraftExpenseTypeFilter(null);
+                }}
+              />
+              <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+                <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+              </ComboboxButton>
+              <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
+                {expenseTypes
+                  .filter((option) =>
+                    getExpenseTypeLabel(option)
+                      .toLowerCase()
+                      .includes(draftExpenseTypeQuery.trim().toLowerCase()),
+                  )
+                  .map((option) => (
+                    <ComboboxOption
+                      key={option.id}
+                      value={option}
+                      className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span>{option.name}</span>
+                      </div>
+                    </ComboboxOption>
+                  ))}
+              </ComboboxOptions>
+            </div>
+          </Combobox>
+
+          <Combobox
+            value={draftExpenseByFilter}
+            onChange={(option: UserOption | null) => {
+              setDraftExpenseByFilter(option);
+              setDraftExpenseByQuery("");
+            }}
+            nullable
+          >
+            <div className="relative min-w-64">
+              <ComboboxInput
+                className="theme-input rbac-input w-full pr-10"
+                placeholder="Expense By"
+                displayValue={(option: UserOption | null) =>
+                  option ? getUserLabel(option) : draftExpenseByQuery
+                }
+                onChange={(event) => {
+                  setDraftExpenseByQuery(event.target.value);
+                  setDraftExpenseByFilter(null);
+                }}
+              />
+              <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+                <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+              </ComboboxButton>
+              <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
+                {filteredExpenseByUsers.map((user) => (
                   <ComboboxOption
-                    key={project.id}
-                    value={project}
+                    key={user.id}
+                    value={user}
                     className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <span>{getProjectLabel(project)}</span>
-                    </div>
-                  </ComboboxOption>
-                ))
-              )}
-            </ComboboxOptions>
-          </div>
-        </Combobox>
-
-        <Combobox
-          value={draftExpenseTypeFilter}
-          onChange={(option: ExpenseTypeOption | null) => {
-            setDraftExpenseTypeFilter(option);
-            setDraftExpenseTypeQuery("");
-          }}
-          nullable
-        >
-          <div className="relative min-w-64">
-            <ComboboxInput
-              className="theme-input rbac-input w-full pr-10"
-              placeholder="Category"
-              displayValue={(option: ExpenseTypeOption | null) =>
-                option ? getExpenseTypeLabel(option) : draftExpenseTypeQuery
-              }
-              onChange={(event) => {
-                setDraftExpenseTypeQuery(event.target.value);
-                setDraftExpenseTypeFilter(null);
-              }}
-            />
-            <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
-              <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
-            </ComboboxButton>
-            <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
-              {expenseTypes
-                .filter((option) =>
-                  getExpenseTypeLabel(option)
-                    .toLowerCase()
-                    .includes(draftExpenseTypeQuery.trim().toLowerCase()),
-                )
-                .map((option) => (
-                  <ComboboxOption
-                    key={option.id}
-                    value={option}
-                    className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <span>{option.name}</span>
+                      <span>{getUserLabel(user)}</span>
                     </div>
                   </ComboboxOption>
                 ))}
-            </ComboboxOptions>
-          </div>
-        </Combobox>
+              </ComboboxOptions>
+            </div>
+          </Combobox>
 
-        <Combobox
-          value={draftExpenseByFilter}
-          onChange={(option: UserOption | null) => {
-            setDraftExpenseByFilter(option);
-            setDraftExpenseByQuery("");
-          }}
-          nullable
-        >
-          <div className="relative min-w-64">
-            <ComboboxInput
-              className="theme-input rbac-input w-full pr-10"
-              placeholder="Expense By"
-              displayValue={(option: UserOption | null) =>
-                option ? getUserLabel(option) : draftExpenseByQuery
-              }
-              onChange={(event) => {
-                setDraftExpenseByQuery(event.target.value);
-                setDraftExpenseByFilter(null);
-              }}
-            />
-            <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
-              <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
-            </ComboboxButton>
-            <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
-              {filteredExpenseByUsers.map((user) => (
-                <ComboboxOption
-                  key={user.id}
-                  value={user}
-                  className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span>{getUserLabel(user)}</span>
-                  </div>
-                </ComboboxOption>
-              ))}
-            </ComboboxOptions>
-          </div>
-        </Combobox>
+          <Combobox
+            value={draftExpenseCompanyFilter}
+            onChange={(option: CompanyOption | null) => {
+              setDraftExpenseCompanyFilter(option);
+              setDraftExpenseCompanyQuery("");
+            }}
+            nullable
+          >
+            <div className="relative min-w-64">
+              <ComboboxInput
+                className="theme-input rbac-input w-full pr-10"
+                placeholder="Company"
+                displayValue={(option: CompanyOption | null) =>
+                  option ? getCompanyLabel(option) : draftExpenseCompanyQuery
+                }
+                onChange={(event) => {
+                  setDraftExpenseCompanyQuery(event.target.value);
+                  setDraftExpenseCompanyFilter(null);
+                }}
+              />
+              <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+                <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+              </ComboboxButton>
+              <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
+                {filteredExpenseCompanies.map((company) => (
+                  <ComboboxOption
+                    key={company.id}
+                    value={company}
+                    className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span>{getCompanyLabel(company)}</span>
+                    </div>
+                  </ComboboxOption>
+                ))}
+              </ComboboxOptions>
+            </div>
+          </Combobox>
 
-        <Combobox
-          value={draftExpenseCompanyFilter}
-          onChange={(option: CompanyOption | null) => {
-            setDraftExpenseCompanyFilter(option);
-            setDraftExpenseCompanyQuery("");
-          }}
-          nullable
-        >
-          <div className="relative min-w-64">
-            <ComboboxInput
-              className="theme-input rbac-input w-full pr-10"
-              placeholder="Company"
-              displayValue={(option: CompanyOption | null) =>
-                option ? getCompanyLabel(option) : draftExpenseCompanyQuery
-              }
-              onChange={(event) => {
-                setDraftExpenseCompanyQuery(event.target.value);
-                setDraftExpenseCompanyFilter(null);
-              }}
-            />
-            <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
-              <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
-            </ComboboxButton>
-            <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
-              {filteredExpenseCompanies.map((company) => (
-                <ComboboxOption
-                  key={company.id}
-                  value={company}
-                  className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span>{getCompanyLabel(company)}</span>
-                  </div>
-                </ComboboxOption>
-              ))}
-            </ComboboxOptions>
-          </div>
-        </Combobox>
-
-        <input
-          className="rbac-input-filter"
-          type="text"
-          placeholder="Search remark or other text"
-          value={draftQuery}
-          onChange={(event) => setDraftQuery(event.target.value)}
-        />
+          <input
+            className="rbac-input-filter"
+            type="text"
+            placeholder="Search remark or other text"
+            value={draftQuery}
+            onChange={(event) => setDraftQuery(event.target.value)}
+          />
+        </div>
       </ListingFilterDialog>
     </>
   );

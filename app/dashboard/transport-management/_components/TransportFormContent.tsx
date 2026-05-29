@@ -786,6 +786,7 @@ export default function TransportFormContent({
                         step="1"
                         min="0"
                         value={form.kmStart}
+                        onWheel={(event) => event.currentTarget.blur()}
                         onChange={(event) =>
                           setField("kmStart", event.target.value)
                         }
@@ -802,6 +803,7 @@ export default function TransportFormContent({
                         step="1"
                         min="0"
                         value={form.kmEnd}
+                        onWheel={(event) => event.currentTarget.blur()}
                         onChange={(event) =>
                           setField("kmEnd", event.target.value)
                         }
@@ -958,6 +960,7 @@ export default function TransportFormContent({
                       step="0.01"
                       min="0"
                       value={form.totalWeight}
+                      onWheel={(event) => event.currentTarget.blur()}
                       onChange={(event) =>
                         setField("totalWeight", event.target.value)
                       }
@@ -989,6 +992,7 @@ export default function TransportFormContent({
                       step="0.01"
                       min="0"
                       value={form.baseAmount}
+                      onWheel={(event) => event.currentTarget.blur()}
                       onChange={(event) =>
                         setField("baseAmount", event.target.value)
                       }
@@ -1035,6 +1039,7 @@ export default function TransportFormContent({
                         step="1"
                         min="0"
                         value={form.totalKm}
+                        onWheel={(event) => event.currentTarget.blur()}
                         onChange={(event) =>
                           setField("totalKm", event.target.value)
                         }
@@ -1085,6 +1090,7 @@ export default function TransportFormContent({
                       step="0.01"
                       min="0"
                       value={form.loadingCharges}
+                      onWheel={(event) => event.currentTarget.blur()}
                       onChange={(event) =>
                         setField("loadingCharges", event.target.value)
                       }
@@ -1098,6 +1104,7 @@ export default function TransportFormContent({
                       step="0.01"
                       min="0"
                       value={form.returnMaterialCharges}
+                      onWheel={(event) => event.currentTarget.blur()}
                       onChange={(event) =>
                         setField("returnMaterialCharges", event.target.value)
                       }
@@ -1111,6 +1118,7 @@ export default function TransportFormContent({
                       step="0.01"
                       min="0"
                       value={form.transportCharges}
+                      onWheel={(event) => event.currentTarget.blur()}
                       onChange={(event) =>
                         setField("transportCharges", event.target.value)
                       }
@@ -1129,6 +1137,7 @@ export default function TransportFormContent({
                   step="0.01"
                   min="0"
                   value={form.otherExpenses}
+                  onWheel={(event) => event.currentTarget.blur()}
                   onChange={(event) =>
                     setField("otherExpenses", event.target.value)
                   }

@@ -60,6 +60,10 @@ export async function GET(req) {
     const paymentMode = String(searchParams.get("paymentMode") || "").trim();
     const fromDate = String(searchParams.get("fromDate") || "").trim();
     const toDate = String(searchParams.get("toDate") || "").trim();
+    const locationType = String(searchParams.get("locationType") || "").trim();
+    const loadType = String(searchParams.get("loadType") || "").trim();
+    const tripType = String(searchParams.get("tripType") || "").trim();
+    const vehicleType = String(searchParams.get("vehicleType") || "").trim();
     const pageParam = Number(searchParams.get("page") || "1");
     const pageSizeParam = Number(searchParams.get("pageSize") || "10");
     const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
@@ -86,6 +90,18 @@ export async function GET(req) {
     }
     if (paymentMode) {
       where.paymentMode = paymentMode;
+    }
+    if (locationType) {
+      where.locationType = locationType;
+    }
+    if (loadType) {
+      where.loadType = loadType;
+    }
+    if (tripType) {
+      where.tripType = tripType;
+    }
+    if (vehicleType) {
+      where.vehicleType = vehicleType;
     }
 
     const dateWhere = buildDateWhere(fromDate, toDate);

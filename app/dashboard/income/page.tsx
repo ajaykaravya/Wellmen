@@ -29,6 +29,7 @@ import {
 } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
 import { FinanceCardList } from "../_components/FinanceCardList";
+import { Listbox } from "@headlessui/react";
 
 type PaymentMode = "CASH" | "BANK";
 
@@ -671,201 +672,237 @@ function IncomeListContent() {
         activeCount={activeFilterCount}
         maxWidthClassName="max-w-2xl"
       >
-        <input
-          className="rbac-input-filter"
-          type="text"
-          placeholder="Search project, company, user"
-          value={draftQuery}
-          onChange={(event) => setDraftQuery(event.target.value)}
-        />
+        <div className="grid gap-4 md:grid-cols-2">
+          <input
+            className="rbac-input-filter"
+            type="text"
+            placeholder="Search project, company, user"
+            value={draftQuery}
+            onChange={(event) => setDraftQuery(event.target.value)}
+          />
 
-        <Combobox
-          value={draftProjectFilter}
-          onChange={(option: ProjectOption | null) => {
-            setDraftProjectFilter(option);
-            setDraftProjectQuery("");
-          }}
-          nullable
-        >
-          <div className="relative min-w-64">
-            <ComboboxInput
-              className="theme-input rbac-input w-full pr-10"
-              placeholder="Project"
-              displayValue={(option: ProjectOption | null) =>
-                option ? getProjectLabel(option) : draftProjectQuery
-              }
-              onChange={(event) => {
-                setDraftProjectQuery(event.target.value);
-                setDraftProjectFilter(null);
-              }}
-            />
-            <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
-              <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
-            </ComboboxButton>
-            <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
-              {filteredProjects.map((project) => (
-                <ComboboxOption
-                  key={project.id}
-                  value={project}
-                  className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span>{getProjectLabel(project)}</span>
-                  </div>
-                </ComboboxOption>
-              ))}
-            </ComboboxOptions>
-          </div>
-        </Combobox>
-
-        <Combobox
-          value={draftIncomeTypeFilter}
-          onChange={(option: IncomeTypeOption | null) => {
-            setDraftIncomeTypeFilter(option);
-            setDraftIncomeTypeQuery("");
-          }}
-          nullable
-        >
-          <div className="relative min-w-64">
-            <ComboboxInput
-              className="theme-input rbac-input w-full pr-10"
-              placeholder="Category"
-              displayValue={(option: IncomeTypeOption | null) =>
-                option ? getIncomeTypeLabel(option) : draftIncomeTypeQuery
-              }
-              onChange={(event) => {
-                setDraftIncomeTypeQuery(event.target.value);
-                setDraftIncomeTypeFilter(null);
-              }}
-            />
-            <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
-              <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
-            </ComboboxButton>
-            <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
-              {filteredIncomeTypes.length === 0 ? (
-                <div className="px-3 py-2 text-sm text-[color:var(--theme-text-muted)]">
-                  No income types found
-                </div>
-              ) : (
-                filteredIncomeTypes.map((incomeType) => (
+          <Combobox
+            value={draftProjectFilter}
+            onChange={(option: ProjectOption | null) => {
+              setDraftProjectFilter(option);
+              setDraftProjectQuery("");
+            }}
+            nullable
+          >
+            <div className="relative min-w-64">
+              <ComboboxInput
+                className="theme-input rbac-input w-full pr-10"
+                placeholder="Project"
+                displayValue={(option: ProjectOption | null) =>
+                  option ? getProjectLabel(option) : draftProjectQuery
+                }
+                onChange={(event) => {
+                  setDraftProjectQuery(event.target.value);
+                  setDraftProjectFilter(null);
+                }}
+              />
+              <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+                <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+              </ComboboxButton>
+              <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
+                {filteredProjects.map((project) => (
                   <ComboboxOption
-                    key={incomeType.id}
-                    value={incomeType}
+                    key={project.id}
+                    value={project}
                     className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <span>{getIncomeTypeLabel(incomeType)}</span>
+                      <span>{getProjectLabel(project)}</span>
                     </div>
                   </ComboboxOption>
-                ))
-              )}
-            </ComboboxOptions>
-          </div>
-        </Combobox>
+                ))}
+              </ComboboxOptions>
+            </div>
+          </Combobox>
 
-        <Combobox
-          value={draftIncomeCompanyFilter}
-          onChange={(option: CompanyOption | null) => {
-            setDraftIncomeCompanyFilter(option);
-            setDraftIncomeCompanyQuery("");
-          }}
-          nullable
-        >
-          <div className="relative min-w-64">
-            <ComboboxInput
-              className="theme-input rbac-input w-full pr-10"
-              placeholder="Income Company"
-              displayValue={(option: CompanyOption | null) =>
-                option ? getCompanyLabel(option) : draftIncomeCompanyQuery
-              }
-              onChange={(event) => {
-                setDraftIncomeCompanyQuery(event.target.value);
-                setDraftIncomeCompanyFilter(null);
-              }}
-            />
-            <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
-              <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
-            </ComboboxButton>
-            <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
-              {filteredCompanies.map((company) => (
-                <ComboboxOption
-                  key={company.id}
-                  value={company}
-                  className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span>{getCompanyLabel(company)}</span>
+          <Combobox
+            value={draftIncomeTypeFilter}
+            onChange={(option: IncomeTypeOption | null) => {
+              setDraftIncomeTypeFilter(option);
+              setDraftIncomeTypeQuery("");
+            }}
+            nullable
+          >
+            <div className="relative min-w-64">
+              <ComboboxInput
+                className="theme-input rbac-input w-full pr-10"
+                placeholder="Category"
+                displayValue={(option: IncomeTypeOption | null) =>
+                  option ? getIncomeTypeLabel(option) : draftIncomeTypeQuery
+                }
+                onChange={(event) => {
+                  setDraftIncomeTypeQuery(event.target.value);
+                  setDraftIncomeTypeFilter(null);
+                }}
+              />
+              <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+                <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+              </ComboboxButton>
+              <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
+                {filteredIncomeTypes.length === 0 ? (
+                  <div className="px-3 py-2 text-sm text-[color:var(--theme-text-muted)]">
+                    No income types found
                   </div>
-                </ComboboxOption>
-              ))}
-            </ComboboxOptions>
-          </div>
-        </Combobox>
+                ) : (
+                  filteredIncomeTypes.map((incomeType) => (
+                    <ComboboxOption
+                      key={incomeType.id}
+                      value={incomeType}
+                      className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span>{getIncomeTypeLabel(incomeType)}</span>
+                      </div>
+                    </ComboboxOption>
+                  ))
+                )}
+              </ComboboxOptions>
+            </div>
+          </Combobox>
 
-        <Combobox
-          value={draftReceivedByFilter}
-          onChange={(option: UserOption | null) => {
-            setDraftReceivedByFilter(option);
-            setDraftReceivedByQuery("");
-          }}
-          nullable
-        >
-          <div className="relative min-w-64">
-            <ComboboxInput
-              className="theme-input rbac-input w-full pr-10"
-              placeholder="Received By"
-              displayValue={(option: UserOption | null) =>
-                option ? getUserLabel(option) : draftReceivedByQuery
-              }
-              onChange={(event) => {
-                setDraftReceivedByQuery(event.target.value);
-                setDraftReceivedByFilter(null);
-              }}
-            />
-            <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
-              <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
-            </ComboboxButton>
-            <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
-              {filteredUsers.map((user) => (
-                <ComboboxOption
-                  key={user.id}
-                  value={user}
-                  className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span>{getUserLabel(user)}</span>
-                  </div>
-                </ComboboxOption>
-              ))}
-            </ComboboxOptions>
-          </div>
-        </Combobox>
+          <Combobox
+            value={draftIncomeCompanyFilter}
+            onChange={(option: CompanyOption | null) => {
+              setDraftIncomeCompanyFilter(option);
+              setDraftIncomeCompanyQuery("");
+            }}
+            nullable
+          >
+            <div className="relative min-w-64">
+              <ComboboxInput
+                className="theme-input rbac-input w-full pr-10"
+                placeholder="Income Company"
+                displayValue={(option: CompanyOption | null) =>
+                  option ? getCompanyLabel(option) : draftIncomeCompanyQuery
+                }
+                onChange={(event) => {
+                  setDraftIncomeCompanyQuery(event.target.value);
+                  setDraftIncomeCompanyFilter(null);
+                }}
+              />
+              <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+                <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+              </ComboboxButton>
+              <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
+                {filteredCompanies.map((company) => (
+                  <ComboboxOption
+                    key={company.id}
+                    value={company}
+                    className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span>{getCompanyLabel(company)}</span>
+                    </div>
+                  </ComboboxOption>
+                ))}
+              </ComboboxOptions>
+            </div>
+          </Combobox>
 
-        <CustomDatePicker
-          value={draftFromDate}
-          onChange={setDraftFromDate}
-          placeholder="From date"
-          className="rbac-input-filter"
-        />
+          <Combobox
+            value={draftReceivedByFilter}
+            onChange={(option: UserOption | null) => {
+              setDraftReceivedByFilter(option);
+              setDraftReceivedByQuery("");
+            }}
+            nullable
+          >
+            <div className="relative min-w-64">
+              <ComboboxInput
+                className="theme-input rbac-input w-full pr-10"
+                placeholder="Received By"
+                displayValue={(option: UserOption | null) =>
+                  option ? getUserLabel(option) : draftReceivedByQuery
+                }
+                onChange={(event) => {
+                  setDraftReceivedByQuery(event.target.value);
+                  setDraftReceivedByFilter(null);
+                }}
+              />
+              <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+                <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+              </ComboboxButton>
+              <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
+                {filteredUsers.map((user) => (
+                  <ComboboxOption
+                    key={user.id}
+                    value={user}
+                    className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span>{getUserLabel(user)}</span>
+                    </div>
+                  </ComboboxOption>
+                ))}
+              </ComboboxOptions>
+            </div>
+          </Combobox>
 
-        <CustomDatePicker
-          value={draftToDate}
-          onChange={setDraftToDate}
-          placeholder="To date"
-          className="rbac-input-filter"
-        />
+          <CustomDatePicker
+            value={draftFromDate}
+            onChange={setDraftFromDate}
+            placeholder="From date"
+            className="rbac-input-filter"
+          />
 
-        <select
-          className="rbac-input rbac-select"
-          value={draftPaymentModeFilter}
-          onChange={(event) =>
-            setDraftPaymentModeFilter(event.target.value as PaymentMode | "")
-          }
-        >
-          <option value="">All payment modes</option>
-          <option value="CASH">Cash</option>
-          <option value="BANK">Bank</option>
-        </select>
+          <CustomDatePicker
+            value={draftToDate}
+            onChange={setDraftToDate}
+            placeholder="To date"
+            className="rbac-input-filter"
+          />
+
+          <Listbox
+            value={draftPaymentModeFilter}
+            onChange={(value: PaymentMode | "") =>
+              setDraftPaymentModeFilter(value)
+            }
+          >
+            <div className="relative">
+              <Listbox.Button className="rbac-input rbac-select flex w-full items-center justify-between text-left">
+                <span>
+                  {draftPaymentModeFilter === "CASH"
+                    ? "Cash"
+                    : draftPaymentModeFilter === "BANK"
+                      ? "Bank"
+                      : "All payment modes"}
+                </span>
+
+              </Listbox.Button>
+
+              <Listbox.Options className="theme-surface absolute bottom-full z-50 mt-2 max-h-60 w-full overflow-auto rounded-md py-1 shadow-lg focus:outline-none">
+                {[
+                  { label: "All payment modes", value: "" },
+                  { label: "Cash", value: "CASH" },
+                  { label: "Cheque", value: "CHEQUE" },
+                  { label: "UPI", value: "UPI" },
+                  { label: "NEFT/RTGS", value: "NEFT_RTGS" },
+                ].map((mode) => (
+                  <Listbox.Option
+                    key={mode.value}
+                    value={mode.value}
+                    className={({ active }) =>
+                      `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                      }`
+                    }
+                  >
+                    {({ selected }) => (
+                      <div className="flex items-center justify-between">
+                        <span>{mode.label}</span>
+
+                      </div>
+                    )}
+                  </Listbox.Option>
+                ))}
+              </Listbox.Options>
+            </div>
+          </Listbox>
+        </div>
       </ListingFilterDialog>
     </>
   );

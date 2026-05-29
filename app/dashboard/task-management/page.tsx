@@ -14,6 +14,7 @@ import AppliedFilterSummary from "../../components/AppliedFilterSummary";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import CustomDatePicker from "../../components/CustomDatePicker";
 import ListingFilterDialog from "../../components/ListingFilterDialog";
+import { Listbox } from "@headlessui/react";
 import { toast } from "react-toastify";
 import {
   FaChevronLeft,
@@ -329,10 +330,10 @@ function TodoListContent() {
           prev.map((item) =>
             item.id === row.id
               ? {
-                  ...item,
-                  comments: updated.comments ?? null,
-                  status: updated.status,
-                }
+                ...item,
+                comments: updated.comments ?? null,
+                status: updated.status,
+              }
               : item,
           ),
         );
@@ -678,41 +679,41 @@ function TodoListContent() {
             }}
           />
 
-            <div className="flex items-center gap-2 mt-2">
-              <button
-                type="button"
-                className={getTaskTypeButtonClass("PROJECT")}
-                onClick={() => {
-                  setPageIndex(0);
-                  setTaskTypeFilter("PROJECT");
-                  router.replace(buildTaskListUrl("PROJECT"), { scroll: false });
-                }}
-              >
-                Project
-              </button>
-              <button
-                type="button"
-                className={getTaskTypeButtonClass("OFFICE")}
-                onClick={() => {
-                  setPageIndex(0);
-                  setTaskTypeFilter("OFFICE");
-                  router.replace(buildTaskListUrl("OFFICE"), { scroll: false });
-                }}
-              >
-                Office
-              </button>
-              <button
-                type="button"
-                className={getTaskTypeButtonClass("SERVICE")}
-                onClick={() => {
-                  setPageIndex(0);
-                  setTaskTypeFilter("SERVICE");
-                  router.replace(buildTaskListUrl("SERVICE"), { scroll: false });
-                }}
-              >
-                Service
-              </button>
-            </div>
+          <div className="flex items-center gap-2 mt-2">
+            <button
+              type="button"
+              className={getTaskTypeButtonClass("PROJECT")}
+              onClick={() => {
+                setPageIndex(0);
+                setTaskTypeFilter("PROJECT");
+                router.replace(buildTaskListUrl("PROJECT"), { scroll: false });
+              }}
+            >
+              Project
+            </button>
+            <button
+              type="button"
+              className={getTaskTypeButtonClass("OFFICE")}
+              onClick={() => {
+                setPageIndex(0);
+                setTaskTypeFilter("OFFICE");
+                router.replace(buildTaskListUrl("OFFICE"), { scroll: false });
+              }}
+            >
+              Office
+            </button>
+            <button
+              type="button"
+              className={getTaskTypeButtonClass("SERVICE")}
+              onClick={() => {
+                setPageIndex(0);
+                setTaskTypeFilter("SERVICE");
+                router.replace(buildTaskListUrl("SERVICE"), { scroll: false });
+              }}
+            >
+              Service
+            </button>
+          </div>
 
           <div className="mt-4">
             <div className="hidden md:block overflow-x-auto">
@@ -729,9 +730,9 @@ function TodoListContent() {
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext(),
-                              )}
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
                         </th>
                       ))}
                     </tr>
@@ -970,17 +971,50 @@ function TodoListContent() {
           value={draftQuery}
           onChange={(event) => setDraftQuery(event.target.value)}
         />
-        <select
-          className="rbac-input-filter rbac-select"
-          value={draftStatusFilter}
-          onChange={(event) => setDraftStatusFilter(event.target.value)}
-        >
-          <option value="">All status</option>
-          <option value="TODO">To do</option>
-          <option value="IN_PROGRESS">In progress</option>
-          <option value="ON_HOLD">On hold</option>
-          <option value="COMPLETED">Completed</option>
-        </select>
+        <Listbox value={draftStatusFilter} onChange={setDraftStatusFilter}>
+          <div className="relative">
+            <Listbox.Button className="rbac-input-filter rbac-select flex w-full items-center justify-between text-left">
+              <span>
+                {draftStatusFilter === "TODO"
+                  ? "To do"
+                  : draftStatusFilter === "IN_PROGRESS"
+                    ? "In progress"
+                    : draftStatusFilter === "ON_HOLD"
+                      ? "On hold"
+                      : draftStatusFilter === "COMPLETED"
+                        ? "Completed"
+                        : "All status"}
+              </span>
+
+            </Listbox.Button>
+
+            <Listbox.Options className="theme-surface absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-md py-1 shadow-lg focus:outline-none">
+              {[
+                { label: "All status", value: "" },
+                { label: "To do", value: "TODO" },
+                { label: "In progress", value: "IN_PROGRESS" },
+                { label: "On hold", value: "ON_HOLD" },
+                { label: "Completed", value: "COMPLETED" },
+              ].map((status) => (
+                <Listbox.Option
+                  key={status.value}
+                  value={status.value}
+                  className={({ active }) =>
+                    `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                    }`
+                  }
+                >
+                  {({ selected }) => (
+                    <div className="flex items-center justify-between">
+                      <span>{status.label}</span>
+
+                    </div>
+                  )}
+                </Listbox.Option>
+              ))}
+            </Listbox.Options>
+          </div>
+        </Listbox>
         <input
           className="rbac-input-filter"
           type="text"
@@ -989,18 +1023,64 @@ function TodoListContent() {
           onChange={(event) => setDraftCategoryFilter(event.target.value)}
         />
         {isAdmin && (
-          <select
-            className="rbac-input-filter rbac-select"
-            value={draftAssigneeFilter}
-            onChange={(event) => setDraftAssigneeFilter(event.target.value)}
-          >
-            <option value="">All assignees</option>
-            {assignees.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.firstName} {user.lastName} - {user.role || "No role"}
-              </option>
-            ))}
-          </select>
+          <Listbox value={draftAssigneeFilter} onChange={setDraftAssigneeFilter}>
+            <div className="relative">
+              <Listbox.Button className="rbac-input-filter rbac-select flex w-full items-center justify-between text-left">
+                <span className="truncate">
+                  {draftAssigneeFilter
+                    ? (() => {
+                      const selectedUser = assignees.find(
+                        (user) => user.id === draftAssigneeFilter,
+                      );
+
+                      return selectedUser
+                        ? `${selectedUser.firstName} ${selectedUser.lastName} - ${selectedUser.role || "No role"
+                        }`
+                        : "All assignees";
+                    })()
+                    : "All assignees"}
+                </span>
+              </Listbox.Button>
+
+              <Listbox.Options className="theme-surface absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-md py-1 shadow-lg focus:outline-none">
+                <Listbox.Option
+                  value=""
+                  className={({ active }) =>
+                    `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                    }`
+                  }
+                >
+                  {({ selected }) => (
+                    <div className="flex items-center justify-between">
+                      <span>All assignees</span>
+
+                    </div>
+                  )}
+                </Listbox.Option>
+
+                {assignees.map((user) => (
+                  <Listbox.Option
+                    key={user.id}
+                    value={user.id}
+                    className={({ active }) =>
+                      `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                      }`
+                    }
+                  >
+                    {({ selected }) => (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate">
+                          {user.firstName} {user.lastName} -{" "}
+                          {user.role || "No role"}
+                        </span>
+
+                      </div>
+                    )}
+                  </Listbox.Option>
+                ))}
+              </Listbox.Options>
+            </div>
+          </Listbox>
         )}
         <CustomDatePicker
           value={draftFromDate}

@@ -864,6 +864,10 @@ button,
   color: #ffffff;
 }
 
+.rbac-option-active {
+  background: var(--theme-surface-2);
+}
+
 .rbac-hamburger span {
   display: block;
   width: 20px;

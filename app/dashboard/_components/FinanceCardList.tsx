@@ -44,6 +44,8 @@ type FinanceCardContentConfig<T extends FinanceCardListRow> = {
   getExpenseByName?: (row: T) => ReactNode;
   getCashGivenByName?: (row: T) => ReactNode;
   getCashGivenToName?: (row: T) => ReactNode;
+  getCredit?: (row: T) => number;
+  getDebit?: (row: T) => number;
 };
 
 type FinanceCardListProps<T extends FinanceCardListRow> = {
@@ -216,11 +218,14 @@ export function FinanceCardList<T extends FinanceCardListRow>({
     return null;
   };
 
-  const formatAmount = (value: number) =>
-    `₹${Number(value || 0).toLocaleString("en-IN", {
+  const formatAmount = (value?: number | null) => {
+    if (value === null || value === undefined) return "";
+
+    return `₹${Number(value).toLocaleString("en-IN", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
+  };
 
   return (
     <div className="rbac-card">
@@ -351,6 +356,8 @@ export function FinanceCardList<T extends FinanceCardListRow>({
                     const expenseByName = cardContent.getExpenseByName?.(row);
                     const cashGivenByName = cardContent.getCashGivenByName?.(row);
                     const cashGivenToName = cardContent.getCashGivenToName?.(row);
+                    const credit = cardContent.getCredit?.(row) ?? "";
+                    const debit = cardContent.getDebit?.(row) ?? "";
 
                     return (
                       <div>
@@ -368,12 +375,30 @@ export function FinanceCardList<T extends FinanceCardListRow>({
                               {title}
                             </span>
                           </div>
-                          <span
-                            className={`inline-flex items-center gap-1 text-sm font-semibold ${getVariantClassName(variant)}`}
-                          >
-                            {getVariantIcon(variant)}
-                            {formatAmount(row.amount)}
-                          </span>
+                          {row.amount && (
+                            <span
+                              className={`inline-flex items-center gap-1 text-sm font-semibold ${getVariantClassName(variant)}`}
+                            >
+                              {getVariantIcon(variant)}
+                              {formatAmount(row.amount)}
+                            </span>
+                          )}
+                          {typeof credit === "number" && credit > 0 && (
+                            <span
+                              className={`inline-flex items-center gap-1 text-sm font-semibold ${getVariantClassName(variant)}`}
+                            >
+                              {getVariantIcon(variant)}
+                              {formatAmount(credit)}
+                            </span>
+                          )}
+                          {typeof debit === "number" && debit > 0 && (
+                            <span
+                              className={`inline-flex items-center gap-1 text-sm font-semibold ${getVariantClassName(variant)}`}
+                            >
+                              {getVariantIcon(variant)}
+                              {formatAmount(debit)}
+                            </span>
+                          )}
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">

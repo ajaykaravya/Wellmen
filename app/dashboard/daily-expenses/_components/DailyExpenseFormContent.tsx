@@ -472,6 +472,7 @@ export default function DailyExpenseFormContent({
                 min="0"
                 placeholder="Amount"
                 value={form.amount}
+                onWheel={(event) => event.currentTarget.blur()}
                 onChange={(event) =>
                   setForm((prev) => ({ ...prev, amount: event.target.value }))
                 }
