@@ -5,10 +5,14 @@ import { flexRender, useReactTable } from "@tanstack/react-table";
 import { ColumnDef, getCoreRowModel } from "@tanstack/table-core";
 import { FaFilter, FaSpinner } from "react-icons/fa";
 import { toast } from "react-toastify";
+import * as XLSX from "xlsx";
 import ListingFilterDialog from "../../../components/ListingFilterDialog";
 import AppliedFilterSummary from "../../../components/AppliedFilterSummary";
 import CustomDatePicker from "../../../components/CustomDatePicker";
+import { FinanceCardList } from "../../_components/FinanceCardList";
 import { formatToDDMMYYYY } from "@/lib/dateUtils";
+import { Combobox, ComboboxButton, ComboboxInput, ComboboxOption, ComboboxOptions } from "@headlessui/react";
+import { ChevronDownIcon } from "@heroicons/react/16/solid";
 
 type ReportUserOption = {
   id: string;
@@ -41,6 +45,7 @@ type ReportRow = {
   runningBalance: number;
   date: string;
   createdAt: string;
+  amount: number;
 };
 
 type ReportSummary = {
@@ -143,6 +148,9 @@ export default function EmployeeFinancialReportContent() {
   const [draftCompanyId, setDraftCompanyId] = useState("");
   const [draftFromDate, setDraftFromDate] = useState("");
   const [draftToDate, setDraftToDate] = useState("");
+  const [draftUserQuery, setDraftUserQuery] = useState("");
+  const [draftCompanyQuery, setDraftCompanyQuery] = useState("");
+  const [exporting, setExporting] = useState(false);
 
   const loadReport = useCallback(async () => {
     if (!isCompleteDateInput(appliedFromDate) || !isCompleteDateInput(appliedToDate)) {
@@ -207,8 +215,12 @@ export default function EmployeeFinancialReportContent() {
     setDraftCompanyId(appliedCompanyId);
     setDraftFromDate(appliedFromDate);
     setDraftToDate(appliedToDate);
+    const selectedUser = users.find((user) => user.id === appliedUserId);
+    const selectedCompany = companies.find((company) => company.id === appliedCompanyId);
+    setDraftUserQuery(selectedUser ? getUserLabel(selectedUser) : "");
+    setDraftCompanyQuery(selectedCompany ? getCompanyLabel(selectedCompany) : "");
     setFilterOpen(true);
-  }, [appliedCompanyId, appliedFromDate, appliedToDate, appliedUserId]);
+  }, [appliedCompanyId, appliedFromDate, appliedToDate, appliedUserId, users, companies]);
 
   const closeFilters = useCallback(() => {
     setFilterOpen(false);
@@ -232,6 +244,24 @@ export default function EmployeeFinancialReportContent() {
     setFilterOpen(false);
   }, [draftCompanyId, draftFromDate, draftToDate, draftUserId]);
 
+  const filteredUsers = useCallback(
+    (q: string) => {
+      const term = q.trim().toLowerCase();
+      if (!term) return users;
+      return users.filter((user) => getUserLabel(user).toLowerCase().includes(term));
+    },
+    [users],
+  );
+
+  const filteredCompanies = useCallback(
+    (q: string) => {
+      const term = q.trim().toLowerCase();
+      if (!term) return companies;
+      return companies.filter((company) => getCompanyLabel(company).toLowerCase().includes(term));
+    },
+    [companies],
+  );
+
   const clearFilters = useCallback(() => {
     setAppliedUserId("");
     setAppliedCompanyId("");
@@ -243,6 +273,72 @@ export default function EmployeeFinancialReportContent() {
     setDraftToDate("");
     setFilterOpen(false);
   }, []);
+
+  const handleExportExcel = useCallback(async () => {
+    if (rows.length === 0) {
+      toast.warning("No data to export.");
+      return;
+    }
+    setExporting(true);
+    try {
+      const worksheetData = [
+        [
+          "#",
+          "Date",
+          "Type",
+          "Category",
+          "Given By",
+          "Project",
+          "Company",
+          "Credit",
+          "Debit",
+          "Remarks",
+          "Running Balance",
+        ],
+        ...rows.map((row, index) => [
+          index + 1,
+          formatToDDMMYYYY(row.date),
+          row.typeLabel,
+          row.referenceLabel || "-",
+          row.sourceType === "PETI_CASH" ? row.cashGivenByLabel || "-" : "-",
+          getProjectLabel(row),
+          getRowCompanyLabel(row),
+          Number(row.credit || 0),
+          Number(row.debit || 0),
+          row.remarks || "-",
+          Number(row.runningBalance || 0),
+        ]),
+      ];
+
+      const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Financial Report");
+
+      const arrayBuffer = XLSX.write(workbook, {
+        bookType: "xlsx",
+        type: "array",
+      });
+      const blob = new Blob([arrayBuffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `employee-financial-report-${new Date()
+        .toISOString()
+        .slice(0, 10)}.xlsx`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+      toast.success("Excel export generated successfully.");
+    } catch (error) {
+      console.error("Failed to export Excel", error);
+      toast.error("Failed to export Excel report.");
+    } finally {
+      setExporting(false);
+    }
+  }, [rows]);
 
   const appliedFilters = useMemo(
     () =>
@@ -285,7 +381,7 @@ export default function EmployeeFinancialReportContent() {
         ),
       },
       {
-        header: "Reference / Category",
+        header: "Category",
         accessorKey: "referenceLabel",
         size: 220,
         cell: ({ row, getValue }) => (
@@ -297,7 +393,7 @@ export default function EmployeeFinancialReportContent() {
         ),
       },
       {
-        header: "Cash Given By",
+        header: "Given By",
         accessorKey: "cashGivenByLabel",
         size: 220,
         cell: ({ row, getValue }) => (
@@ -363,18 +459,24 @@ export default function EmployeeFinancialReportContent() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h3 className="rbac-title-lg">Employee Financial Report</h3>
-            <p className="mt-1 text-sm theme-text-muted">
-              Review Peti Cash received by an employee and expenses booked by
-              the same user.
-            </p>
           </div>
-          <button
-            type="button"
-            className="rbac-button rbac-button-secondary theme-button-secondary inline-flex items-center gap-2"
-            onClick={openFilters}
-          >
-            <FaFilter /> <span>Filters</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              className="rbac-button rbac-button-secondary theme-button-secondary inline-flex items-center gap-2"
+              onClick={openFilters}
+            >
+              <FaFilter /> <span>Filters</span>
+            </button>
+            <button
+              className="rbac-button rbac-button-secondary"
+              type="button"
+              onClick={handleExportExcel}
+              disabled={exporting || loading || rows.length === 0}
+            >
+              {exporting ? "Exporting..." : "Export Excel Sheet"}
+            </button>
+          </div>
         </div>
 
         <AppliedFilterSummary
@@ -382,36 +484,36 @@ export default function EmployeeFinancialReportContent() {
           onClear={clearFilters}
         />
 
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-5 grid gap-3 grid-cols-3">
           <div className="rounded-xl border border-white/10 bg-[color:var(--theme-surface-2)] p-4">
             <div className="text-xs uppercase tracking-wide theme-text-muted">
-              Total Given To
+              Given
             </div>
-            <div className="mt-2 font-semibold text-emerald-700">
+            <div className="mt-2 text-xs font-semibold text-emerald-700">
               ₹{formatAmount(summary.totalGivenTo)}
             </div>
           </div>
           <div className="rounded-xl border border-white/10 bg-[color:var(--theme-surface-2)] p-4">
             <div className="text-xs uppercase tracking-wide theme-text-muted">
-              Total Expense By
+              Expense
             </div>
-            <div className="mt-2 font-semibold text-rose-700">
+            <div className="mt-2 text-xs font-semibold text-rose-700">
               ₹{formatAmount(summary.totalExpenseBy)}
             </div>
           </div>
-          <div className="rounded-xl border border-white/10 bg-[color:var(--theme-surface-2)] p-4 md:col-span-2">
+          <div className="rounded-xl border border-white/10 bg-[color:var(--theme-surface-2)] p-4">
             <div className="text-xs uppercase tracking-wide theme-text-muted">
-              Current Balance
+              Balance
             </div>
             <div
-              className="mt-2 inline-flex rounded-full px-3 py-1 text-sm font-semibold"
+              className="mt-2 text-xs font-semibold"
             >
               ₹{formatAmount(summary.balance)}
             </div>
           </div>
         </div>
 
-        <div className="mt-6 overflow-x-auto">
+        <div className="mt-4 hidden overflow-x-auto md:block">
           <table className="theme-table min-w-full border border-slate-200 border-separate border-spacing-0">
             <thead className="bg-slate-50">
               {table.getHeaderGroups().map((headerGroup) => (
@@ -478,10 +580,26 @@ export default function EmployeeFinancialReportContent() {
           </table>
         </div>
 
-        <div className="mt-5 border-t border-slate-200 pt-4">
-          <div className="text-sm text-slate-600">
-            Total rows: <span className="font-semibold text-slate-900">{total}</span>
-          </div>
+        <div className="mt-4 md:hidden">
+          <FinanceCardList
+            rows={rows}
+            loading={loading}
+            emptyLabel="No peti cash entries found."
+            showCount={false}
+            collapsible={false}
+            cardContent={{
+              getVariant: (row) =>
+                row.typeLabel === "Expense" ? "expense" : "income",
+              getCode: (row) => row.companyCode,
+              getProjectName: (row) => row.projectName,
+              getProjectCity: (row) => row.projectCity,
+              getCashGivenByName: (row) => row.cashGivenByLabel,
+              getRemark: (row) => row.remarks || "",
+              getDateLabel: (row) => formatToDDMMYYYY(row.date),
+              getCredit: (row) => row.credit,
+              getDebit: (row) => row.debit,
+            }}
+          />
         </div>
       </div>
 
@@ -494,57 +612,105 @@ export default function EmployeeFinancialReportContent() {
         applyLabel="Apply Filters"
         closeLabel="Cancel"
       >
-        <div>
-          <label className="mb-1 block text-sm font-medium theme-text">User</label>
-          <select
-            className="theme-input w-full rounded-md px-3 py-2"
-            value={draftUserId}
-            onChange={(event) => setDraftUserId(event.target.value)}
-          >
-            <option value="">Select employee</option>
-            {users.map((user) => (
-              <option key={user.id} value={user.id}>
-                {getUserLabel(user)}
-              </option>
-            ))}
-          </select>
-        </div>
+        <Combobox
+          value={draftUserId}
+          onChange={(option: string | null) => {
+            setDraftUserId(option ?? "");
+            setDraftUserQuery("");
+          }}
+          nullable
+        >
+          <div className="relative min-w-64">
+            <ComboboxInput
+              className="theme-input rbac-input w-full pr-10"
+              placeholder="Select employee"
+              displayValue={(option: string | null) => {
+                if (option) {
+                  const user = users.find((u) => u.id === option);
+                  return user ? getUserLabel(user) : draftUserQuery;
+                }
+                return draftUserQuery;
+              }}
+              onChange={(event) => {
+                setDraftUserQuery(event.target.value);
+                setDraftUserId("");
+              }}
+            />
+            <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+              <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+            </ComboboxButton>
+            <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
+              {filteredUsers(draftUserQuery).map((user) => (
+                <ComboboxOption
+                  key={user.id}
+                  value={user.id}
+                  className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span>{getUserLabel(user)}</span>
+                  </div>
+                </ComboboxOption>
+              ))}
+            </ComboboxOptions>
+          </div>
+        </Combobox>
+
+        <Combobox
+          value={draftCompanyId}
+          onChange={(option: string | null) => {
+            setDraftCompanyId(option ?? "");
+            setDraftCompanyQuery("");
+          }}
+          nullable
+        >
+          <div className="relative min-w-64">
+            <ComboboxInput
+              className="theme-input rbac-input w-full pr-10"
+              placeholder="Select company"
+              displayValue={(option: string | null) => {
+                if (option) {
+                  const company = companies.find((c) => c.id === option);
+                  return company ? getCompanyLabel(company) : draftCompanyQuery;
+                }
+                return draftCompanyQuery;
+              }}
+              onChange={(event) => {
+                setDraftCompanyQuery(event.target.value);
+                setDraftCompanyId("");
+              }}
+            />
+            <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+              <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+            </ComboboxButton>
+            <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
+              {filteredCompanies(draftCompanyQuery).map((company) => (
+                <ComboboxOption
+                  key={company.id}
+                  value={company.id}
+                  className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span>{getCompanyLabel(company)}</span>
+                  </div>
+                </ComboboxOption>
+              ))}
+            </ComboboxOptions>
+          </div>
+        </Combobox>
 
         <div>
-          <label className="mb-1 block text-sm font-medium theme-text">Company</label>
-          <select
-            className="theme-input w-full rounded-md px-3 py-2"
-            value={draftCompanyId}
-            onChange={(event) => setDraftCompanyId(event.target.value)}
-          >
-            <option value="">Select company</option>
-            {companies.map((company) => (
-              <option key={company.id} value={company.id}>
-                {getCompanyLabel(company)}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium theme-text">
-            From Date
-          </label>
           <CustomDatePicker
             value={draftFromDate}
+            placeholder="From date"
             onChange={setDraftFromDate}
-            placeholder="DD/MM/YYYY"
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium theme-text">
-            To Date
-          </label>
           <CustomDatePicker
             value={draftToDate}
             onChange={setDraftToDate}
-            placeholder="DD/MM/YYYY"
+            placeholder="To date"
           />
         </div>
       </ListingFilterDialog>

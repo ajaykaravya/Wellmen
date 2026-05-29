@@ -23,6 +23,8 @@ import {
 import { IoIosClose } from "react-icons/io";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Listbox } from "@headlessui/react";
+import { FaCheck, FaChevronDown } from "react-icons/fa";
 
 type ProjectStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "ON_HOLD";
 
@@ -159,7 +161,7 @@ function ProjectListContent() {
     setConfirmOpen(true);
   }, []);
 
-  const handleEditProject = useCallback((row:ProjectRow) => {
+  const handleEditProject = useCallback((row: ProjectRow) => {
     router.push(`/dashboard/projects/${row.id}`)
   }, [router])
 
@@ -286,9 +288,9 @@ function ProjectListContent() {
             >
               <FaEye />
             </button>
-              <button onClick={()=> handleEditProject(row.original)} className="rbac-link" type="button">
-                <FaEdit />
-              </button>
+            <button onClick={() => handleEditProject(row.original)} className="rbac-link" type="button">
+              <FaEdit />
+            </button>
             <button
               className="rbac-link danger"
               type="button"
@@ -342,7 +344,7 @@ function ProjectListContent() {
     cityFilter,
     fromDate,
     toDate,
-    ].filter(Boolean).length;
+  ].filter(Boolean).length;
 
   const appliedFilters = [
     query.trim(),
@@ -386,7 +388,7 @@ function ProjectListContent() {
       {" "}
       <section className="rbac-section rbac-container">
         <div className="rbac-card">
-<div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3">
             <h3 className="rbac-title-lg">Projects List</h3>
             <div className="flex
              gap-2">
@@ -434,9 +436,9 @@ function ProjectListContent() {
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext(),
-                              )}
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
                         </th>
                       ))}
                     </tr>
@@ -514,18 +516,18 @@ function ProjectListContent() {
                       </div>
                       <div className="flex">
                         <button
-                          style={{padding:"2px"}}
+                          style={{ padding: "2px" }}
                           className="rbac-link"
                           type="button"
                           onClick={() => handleView(project)}
                         >
                           <FaEye size={18} />
                         </button>
-                          <button className="rbac-link" type="button" onClick={() => handleEditProject(project)}>
-                            <FaEdit size={18} />
-                          </button>
+                        <button className="rbac-link" type="button" onClick={() => handleEditProject(project)}>
+                          <FaEdit size={18} />
+                        </button>
                         <button
-                        style={{padding:"2px"}}
+                          style={{ padding: "2px" }}
                           className="rbac-link danger"
                           type="button"
                           onClick={() => handleDeleteProject(project)}
@@ -642,28 +644,89 @@ function ProjectListContent() {
           value={draftQuery}
           onChange={(event) => setDraftQuery(event.target.value)}
         />
-        <select
-          className="rbac-input-filter rbac-select"
-          value={draftStatusFilter}
-          onChange={(event) => setDraftStatusFilter(event.target.value)}
-        >
-          <option value="">All status</option>
-          <option value="PENDING">Pending</option>
-          <option value="IN_PROGRESS">In progress</option>
-          <option value="ON_HOLD">On hold</option>
-        </select>
-        <select
-          className="rbac-input-filter rbac-select"
-          value={draftCityFilter}
-          onChange={(event) => setDraftCityFilter(event.target.value)}
-        >
-          <option value="">All cities</option>
-          {cityOptions.map((city) => (
-            <option key={city} value={city}>
-              {city}
-            </option>
-          ))}
-        </select>
+        <Listbox value={draftStatusFilter} onChange={setDraftStatusFilter}>
+          <div className="relative">
+            <Listbox.Button className="rbac-input-filter flex w-full items-center justify-between text-left">
+              <span>
+                {draftStatusFilter
+                  ? draftStatusFilter
+                    .replaceAll("_", " ")
+                    .toLowerCase()
+                    .replace(/\b\w/g, (char) => char.toUpperCase())
+                  : "All status"}
+              </span>
+
+              <FaChevronDown className="text-xs text-slate-500" />
+            </Listbox.Button>
+
+            <Listbox.Options className="theme-surface absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-md py-1 shadow-lg focus:outline-none">
+              {[
+                { label: "All status", value: "" },
+                { label: "Pending", value: "PENDING" },
+                { label: "In progress", value: "IN_PROGRESS" },
+                { label: "On hold", value: "ON_HOLD" },
+              ].map((status) => (
+                <Listbox.Option
+                  key={status.value}
+                  value={status.value}
+                  className={({ active }) =>
+                    `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                    }`
+                  }
+                >
+                  {({ selected }) => (
+                    <div className="flex items-center justify-between">
+                      <span>{status.label}</span>
+                    </div>
+                  )}
+                </Listbox.Option>
+              ))}
+            </Listbox.Options>
+          </div>
+        </Listbox>
+        <Listbox value={draftCityFilter} onChange={setDraftCityFilter}>
+          <div className="relative">
+            <Listbox.Button className="rbac-input-filter rbac-select flex w-full items-center justify-between text-left">
+              <span className="truncate">
+                {draftCityFilter || "All cities"}
+              </span>
+            </Listbox.Button>
+
+            <Listbox.Options className="theme-surface absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-md py-1 shadow-lg focus:outline-none">
+              <Listbox.Option
+                value=""
+                className={({ active }) =>
+                  `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                  }`
+                }
+              >
+                {({ selected }) => (
+                  <div className="flex items-center justify-between">
+                    <span>All cities</span>
+
+                  </div>
+                )}
+              </Listbox.Option>
+
+              {cityOptions.map((city) => (
+                <Listbox.Option
+                  key={city}
+                  value={city}
+                  className={({ active }) =>
+                    `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                    }`
+                  }
+                >
+                  {({ selected }) => (
+                    <div className="flex items-center justify-between">
+                      <span>{city}</span>
+                    </div>
+                  )}
+                </Listbox.Option>
+              ))}
+            </Listbox.Options>
+          </div>
+        </Listbox>
         <CustomDatePicker
           value={draftFromDate}
           onChange={setDraftFromDate}

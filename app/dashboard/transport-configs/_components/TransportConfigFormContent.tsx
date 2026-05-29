@@ -450,6 +450,7 @@ export default function TransportConfigFormContent({
                       step="1"
                       min="0"
                       value={form.minKm}
+                      onWheel={(event) => event.currentTarget.blur()}
                       onChange={(event) =>
                         setForm((prev) => ({ ...prev, minKm: event.target.value }))
                       }
@@ -467,6 +468,7 @@ export default function TransportConfigFormContent({
                       step="1"
                       min="0"
                       value={form.maxKm}
+                      onWheel={(event) => event.currentTarget.blur()}
                       onChange={(event) =>
                         setForm((prev) => ({ ...prev, maxKm: event.target.value }))
                       }
@@ -490,6 +492,7 @@ export default function TransportConfigFormContent({
                       step="1"
                       min="0"
                       value={form.minKm}
+                      onWheel={(event) => event.currentTarget.blur()}
                       onChange={(event) =>
                         setForm((prev) => ({ ...prev, minKm: event.target.value }))
                       }
@@ -507,6 +510,7 @@ export default function TransportConfigFormContent({
                       step="1"
                       min="0"
                       value={form.maxKm}
+                      onWheel={(event) => event.currentTarget.blur()}
                       onChange={(event) =>
                         setForm((prev) => ({ ...prev, maxKm: event.target.value }))
                       }
@@ -558,6 +562,7 @@ export default function TransportConfigFormContent({
                   min="0"
                   placeholder="Rate"
                   value={form.rate}
+                  onWheel={(event) => event.currentTarget.blur()}
                   onChange={(event) =>
                     setForm((prev) => ({ ...prev, rate: event.target.value }))
                   }

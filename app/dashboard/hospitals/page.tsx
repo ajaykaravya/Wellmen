@@ -21,6 +21,7 @@ import {
   FaEye,
 } from "react-icons/fa";
 import { IoIosClose } from "react-icons/io";
+import { Listbox } from "@headlessui/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -82,8 +83,8 @@ function ProjectListContent() {
       setProjects(Array.isArray(data?.data) ? data.data : []);
       const completed = Array.isArray(data?.data)
         ? data.data.filter(
-            (project: ProjectRow) => project.status === "COMPLETED",
-          )
+          (project: ProjectRow) => project.status === "COMPLETED",
+        )
         : [];
 
       setProjects(completed);
@@ -347,9 +348,9 @@ function ProjectListContent() {
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext(),
-                              )}
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
                         </th>
                       ))}
                     </tr>
@@ -427,7 +428,7 @@ function ProjectListContent() {
                       </div>
                       <div className="flex">
                         <button
-                          style={{padding:'2px'}}
+                          style={{ padding: '2px' }}
                           className="rbac-link"
                           type="button"
                           onClick={() => handleView(project)}
@@ -442,7 +443,7 @@ function ProjectListContent() {
                           <FaEdit size={18} />
                         </button>
                         <button
-                        style={{padding:"2px"}}
+                          style={{ padding: "2px" }}
                           className="rbac-link danger"
                           type="button"
                           onClick={() => handleDeleteProject(project)}
@@ -455,8 +456,8 @@ function ProjectListContent() {
                       {
                         project.contactNumber && (
                           <p>
-                        <strong>Contact:</strong> {project.contactNumber}
-                      </p>
+                            <strong>Contact:</strong> {project.contactNumber}
+                          </p>
                         )
                       }
                       {
@@ -469,23 +470,23 @@ function ProjectListContent() {
                       {
                         project.startDate && (
                           <p>
-                        <strong>Start:</strong>{" "}
-                        {project.startDate
-                          ? formatToDDMMYYYY(project.startDate)
-                          : ""}
-                      </p>
+                            <strong>Start:</strong>{" "}
+                            {project.startDate
+                              ? formatToDDMMYYYY(project.startDate)
+                              : ""}
+                          </p>
                         )
-                        }
+                      }
                       {
                         project.endDate && (
                           <p>
-                        <strong>End:</strong>{" "}
-                        {project.endDate
-                          ? formatToDDMMYYYY(project.endDate)
-                          : ""}
-                      </p>
+                            <strong>End:</strong>{" "}
+                            {project.endDate
+                              ? formatToDDMMYYYY(project.endDate)
+                              : ""}
+                          </p>
                         )
-                        }
+                      }
                     </div>
                   </div>
                 ))}
@@ -566,18 +567,51 @@ function ProjectListContent() {
           value={draftQuery}
           onChange={(event) => setDraftQuery(event.target.value)}
         />
-        <select
-          className="rbac-input-filter rbac-select"
-          value={draftCityFilter}
-          onChange={(event) => setDraftCityFilter(event.target.value)}
-        >
-          <option value="">All cities</option>
-          {cityOptions.map((city) => (
-            <option key={city} value={city}>
-              {city}
-            </option>
-          ))}
-        </select>
+        <Listbox value={draftCityFilter} onChange={setDraftCityFilter}>
+          <div className="relative">
+            <Listbox.Button className="rbac-input-filter rbac-select flex w-full items-center justify-between text-left">
+              <span className="truncate">
+                {draftCityFilter || "All cities"}
+              </span>
+
+            </Listbox.Button>
+
+            <Listbox.Options className="theme-surface absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-md py-1 shadow-lg focus:outline-none">
+              <Listbox.Option
+                value=""
+                className={({ active }) =>
+                  `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                  }`
+                }
+              >
+                {({ selected }) => (
+                  <div className="flex items-center justify-between">
+                    <span>All cities</span>
+
+                  </div>
+                )}
+              </Listbox.Option>
+
+              {cityOptions.map((city) => (
+                <Listbox.Option
+                  key={city}
+                  value={city}
+                  className={({ active }) =>
+                    `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                    }`
+                  }
+                >
+                  {({ selected }) => (
+                    <div className="flex items-center justify-between">
+                      <span>{city}</span>
+
+                    </div>
+                  )}
+                </Listbox.Option>
+              ))}
+            </Listbox.Options>
+          </div>
+        </Listbox>
         <CustomDatePicker
           value={draftFromDate}
           onChange={setDraftFromDate}

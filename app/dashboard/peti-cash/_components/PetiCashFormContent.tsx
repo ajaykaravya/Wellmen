@@ -412,6 +412,7 @@ export default function PetiCashFormContent({
                 step="0.01"
                 placeholder="Amount"
                 value={form.amount}
+                onWheel={(event) => event.currentTarget.blur()}
                 onChange={(event) =>
                   setForm((prev) => ({ ...prev, amount: event.target.value }))
                 }

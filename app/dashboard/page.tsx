@@ -1638,7 +1638,7 @@ function OverviewContent() {
           </div>
 
           <FinanceCardList<IncomeEntryRow>
-            title="Income"
+            title="Incomes"
             rows={incomeEntries}
             loading={incomeLoading}
             emptyLabel="No income entries found for selected date."
@@ -1696,7 +1696,6 @@ function OverviewContent() {
             cardContent={{
               getVariant: (row) => (row.transactionType === "CREDIT" ? "income" : "expense"),
               getCode: (row) => row.companyCode,
-              getTagLabel: (row) => (row.transactionType === "CREDIT" ? "Credit" : "Debit"),
               getTagClassName: (row) =>
                 row.transactionType === "CREDIT"
                   ? "bg-emerald-100 text-emerald-800 ring-emerald-200"

@@ -552,8 +552,12 @@ function PetiCashListContent() {
               setToDate("");
               setDraftTransactionTypeFilter("");
               setDraftFromDate("");
+              setGivenByFilter(null);
+              setDraftGivenByFilter(null);
               setDraftToDate("");
               setFilterOpen(false);
+              setProjectFilter(null);
+              setCompanyFilter(null);
             }}
           />
 

@@ -7,6 +7,7 @@ import { ColumnDef, getCoreRowModel } from "@tanstack/table-core";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-toastify";
 import {
+  FaChevronDown,
   FaChevronLeft,
   FaChevronRight,
   FaEdit,
@@ -32,6 +33,7 @@ import {
   getTransportTypeShortLabel,
 } from "@/lib/transport-management";
 import { formatToDDMMYYYY } from "@/lib/dateUtils";
+import { Listbox } from "@headlessui/react";
 
 type TransportType = (typeof TRANSPORT_TYPES)[number]["key"];
 
@@ -87,14 +89,14 @@ type DetailSection = {
   fields: DetailField[];
 };
 
-const allStatusOptions = Array.from(
-  new Set([
-    ...COURIER_STATUS_OPTIONS,
-    ...PORTER_STATUS_OPTIONS,
-    ...CNG_STATUS_OPTIONS,
-    ...LOADING_STATUS_OPTIONS,
-  ]),
-);
+const STATUS_OPTIONS_BY_TRANSPORT_TYPE: Partial<
+  Record<TransportType, readonly string[]>
+> = {
+  COURIER_DAILY: COURIER_STATUS_OPTIONS,
+  PORTER_DAILY: PORTER_STATUS_OPTIONS,
+  CNG_RICKSHAW: CNG_STATUS_OPTIONS,
+  LOADING_VEHICLE: LOADING_STATUS_OPTIONS,
+};
 
 const defaultTransportType = TRANSPORT_TYPES[0]?.key ?? "BOLERO_DELIVERY";
 const isValidTransportType = (value: string | null): value is TransportType =>
@@ -119,9 +121,9 @@ const formatDate = (value: string) => (value ? formatToDDMMYYYY(value) : "-");
 const formatStatus = (value: string | null | undefined) =>
   value && String(value).trim()
     ? String(value)
-        .replaceAll("_", " ")
-        .toLowerCase()
-        .replace(/^./, (char) => char.toUpperCase())
+      .replaceAll("_", " ")
+      .toLowerCase()
+      .replace(/^./, (char) => char.toUpperCase())
     : "-";
 
 const buildRowSummary = (row: TransportRow) => {
@@ -370,6 +372,14 @@ function TransportListView() {
     useState<TransportType>(defaultTransportType);
   const [statusFilter, setStatusFilter] = useState("");
   const [paymentModeFilter, setPaymentModeFilter] = useState("");
+  const [locationTypeFilter, setLocationTypeFilter] = useState("");
+  const [loadTypeFilter, setLoadTypeFilter] = useState("");
+  const [draftLocationTypeFilter, setDraftLocationTypeFilter] = useState("");
+  const [draftLoadTypeFilter, setDraftLoadTypeFilter] = useState("");
+  const [tripTypeFilter, setTripTypeFilter] = useState("");
+  const [draftTripTypeFilter, setDraftTripTypeFilter] = useState("");
+  const [vehicleTypeFilter, setVehicleTypeFilter] = useState("");
+  const [draftVehicleTypeFilter, setDraftVehicleTypeFilter] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -384,6 +394,8 @@ function TransportListView() {
   const [viewOpen, setViewOpen] = useState(false);
   const [viewLoading, setViewLoading] = useState(false);
   const [viewData, setViewData] = useState<TransportRow | null>(null);
+  const currentStatusOptions =
+  STATUS_OPTIONS_BY_TRANSPORT_TYPE[transportTypeFilter] || [];
 
   useEffect(() => {
     const urlTransportType = searchParams?.get("type") ?? null;
@@ -404,6 +416,10 @@ function TransportListView() {
     paymentModeFilter,
     fromDate,
     toDate,
+    locationTypeFilter,
+    loadTypeFilter,
+    tripTypeFilter,
+    vehicleTypeFilter,
   ].filter(Boolean).length;
 
   const appliedFilters = [
@@ -412,6 +428,10 @@ function TransportListView() {
     paymentModeFilter,
     fromDate,
     toDate,
+    locationTypeFilter,
+    loadTypeFilter,
+    tripTypeFilter,
+    vehicleTypeFilter,
   ].filter(Boolean);
 
   const openFilters = useCallback(() => {
@@ -420,8 +440,13 @@ function TransportListView() {
     setDraftPaymentModeFilter(paymentModeFilter);
     setDraftFromDate(fromDate);
     setDraftToDate(toDate);
+    setDraftLocationTypeFilter(locationTypeFilter);
+    setDraftLoadTypeFilter(loadTypeFilter);
+    setDraftTripTypeFilter(tripTypeFilter);
+    setDraftVehicleTypeFilter(vehicleTypeFilter);
     setFilterOpen(true);
-  }, [fromDate, paymentModeFilter, query, statusFilter, toDate]);
+  }, [fromDate, paymentModeFilter, query, statusFilter, toDate, locationTypeFilter,
+    loadTypeFilter, tripTypeFilter, vehicleTypeFilter]);
 
   const applyFilters = useCallback(() => {
     setPageIndex(0);
@@ -430,13 +455,20 @@ function TransportListView() {
     setPaymentModeFilter(draftPaymentModeFilter);
     setFromDate(draftFromDate);
     setToDate(draftToDate);
+    setLocationTypeFilter(draftLocationTypeFilter);
+    setLoadTypeFilter(draftLoadTypeFilter);
+    setTripTypeFilter(draftTripTypeFilter);
+    setVehicleTypeFilter(draftVehicleTypeFilter);
     setFilterOpen(false);
   }, [
     draftFromDate,
-    draftPaymentModeFilter,
     draftQuery,
     draftStatusFilter,
     draftToDate,
+    draftLocationTypeFilter,
+    draftLoadTypeFilter,
+    draftTripTypeFilter,
+    draftVehicleTypeFilter
   ]);
 
   const clearFilters = () => {
@@ -446,6 +478,14 @@ function TransportListView() {
     setPaymentModeFilter("");
     setFromDate("");
     setToDate("");
+    setLocationTypeFilter("");
+    setDraftLocationTypeFilter("");
+    setLoadTypeFilter("");
+    setDraftLoadTypeFilter("");
+    setTripTypeFilter("");
+    setDraftTripTypeFilter("")
+    setVehicleTypeFilter("");
+    setDraftVehicleTypeFilter("");
   };
 
   const loadRows = useCallback(async () => {
@@ -461,6 +501,18 @@ function TransportListView() {
       if (paymentModeFilter) params.set("paymentMode", paymentModeFilter);
       if (fromDate) params.set("fromDate", fromDate);
       if (toDate) params.set("toDate", toDate);
+      if (locationTypeFilter) {
+        params.set("locationType", locationTypeFilter);
+      }
+      if (loadTypeFilter) {
+        params.set("loadType", loadTypeFilter);
+      }
+      if (tripTypeFilter) {
+        params.set("tripType", tripTypeFilter);
+      }
+      if (vehicleTypeFilter) {
+        params.set("vehicleType", vehicleTypeFilter);
+      }
 
       const res = await fetch(`/api/transport-management?${params.toString()}`);
       if (!res.ok) {
@@ -484,6 +536,10 @@ function TransportListView() {
     pageIndex,
     pageSize,
     paymentModeFilter,
+    locationTypeFilter,
+    loadTypeFilter,
+    tripTypeFilter,
+    vehicleTypeFilter,
     statusFilter,
     toDate,
     transportTypeFilter,
@@ -612,7 +668,7 @@ function TransportListView() {
             size: 140,
             cell: ({ row }) =>
               row.original.status ? (
-                <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                <span className="inline-flex rounded-full px-3 py-1 text-xs font-medium text-slate-700">
                   {formatStatus(row.original.status)}
                 </span>
               ) : (
@@ -625,7 +681,7 @@ function TransportListView() {
             size: 140,
             cell: ({ row }) =>
               row.original.paymentMode ? (
-                <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                <span className="inline-flex rounded-full px-3 py-1 text-xs font-medium text-slate-700">
                   {row.original.paymentMode}
                 </span>
               ) : (
@@ -771,9 +827,9 @@ function TransportListView() {
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext(),
-                              )}
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
                         </th>
                       ))}
                     </tr>
@@ -860,15 +916,15 @@ function TransportListView() {
                             {showStatusAndPaymentForTypes.has(
                               row.transportType,
                             ) && (
-                              <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                                <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
-                                  Status: {formatStatus(row.status)}
-                                </span>
-                                <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
-                                  Payment: {formatText(row.paymentMode)}
-                                </span>
-                              </div>
-                            )}
+                                <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                                  <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
+                                    Status: {formatStatus(row.status)}
+                                  </span>
+                                  <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
+                                    Payment: {formatText(row.paymentMode)}
+                                  </span>
+                                </div>
+                              )}
                             {row.createdByName && (
                               <p className="mt-2 text-xs text-slate-500">
                                 By {row.createdByName}
@@ -878,7 +934,7 @@ function TransportListView() {
                         </div>
                         <div className="flex justify-end">
                           <button
-                            style={{padding:"2px"}}
+                            style={{ padding: "2px" }}
                             className="rbac-link"
                             type="button"
                             onClick={() => handleView(row)}
@@ -892,11 +948,11 @@ function TransportListView() {
                             type="button"
                             title="Edit"
                             onClick={() => handleEdit(row)}
-                            >
+                          >
                             <FaEdit size={18} />
                           </button>
                           <button
-                            style={{padding:"2px"}}
+                            style={{ padding: "2px" }}
                             className="rbac-link danger"
                             type="button"
                             title="Delete"
@@ -977,36 +1033,302 @@ function TransportListView() {
             onChange={(event) => setDraftQuery(event.target.value)}
           />
         </label>
-        <label className="rbac-label">
-          Status
-          <select
-            className="rbac-input rbac-select"
-            value={draftStatusFilter}
-            onChange={(event) => setDraftStatusFilter(event.target.value)}
-          >
-            <option value="">All statuses</option>
-            {allStatusOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="rbac-label">
-          Payment Mode
-          <select
-            className="rbac-input rbac-select"
-            value={draftPaymentModeFilter}
-            onChange={(event) => setDraftPaymentModeFilter(event.target.value)}
-          >
-            <option value="">All payment modes</option>
-            {PAYMENT_MODE_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </label>
+        {(transportTypeFilter !== "BOLERO_DELIVERY" && transportTypeFilter !== "BOLERO_RETURN_DC") && (
+          <div>
+            <label className="rbac-label">
+              Status
+
+              <Listbox value={draftStatusFilter} onChange={setDraftStatusFilter}>
+                <div className="relative mt-1">
+                  <Listbox.Button className="rbac-input rbac-select flex w-full items-center justify-between text-left">
+                    <span>
+                      {draftStatusFilter || "All status"}
+                    </span>
+
+                  </Listbox.Button>
+
+                  <Listbox.Options className="theme-surface absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-md py-1 shadow-lg focus:outline-none">
+                    <Listbox.Option
+                      value=""
+                      className={({ active }) =>
+                        `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                        }`
+                      }
+                    >
+                      {({ selected }) => (
+                        <div className="flex items-center justify-between">
+                          <span>All status</span>
+
+                        </div>
+                      )}
+                    </Listbox.Option>
+
+                    {currentStatusOptions.map((option) => (
+                      <Listbox.Option
+                        key={option}
+                        value={option}
+                        className={({ active }) =>
+                          `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                          }`
+                        }
+                      >
+                        {({ selected }) => (
+                          <div className="flex items-center justify-between">
+                            <span>{option}</span>
+
+                          </div>
+                        )}
+                      </Listbox.Option>
+                    ))}
+                  </Listbox.Options>
+                </div>
+              </Listbox>
+            </label>
+            <label className="rbac-label">
+              Payment Mode
+
+              <Listbox
+                value={draftPaymentModeFilter}
+                onChange={setDraftPaymentModeFilter}
+              >
+                <div className="relative mt-1">
+                  <Listbox.Button className="rbac-input rbac-select flex w-full items-center justify-between text-left">
+                    <span>
+                      {draftPaymentModeFilter || "All payment modes"}
+                    </span>
+
+                  </Listbox.Button>
+
+                  <Listbox.Options className="theme-surface absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-md py-1 shadow-lg focus:outline-none">
+                    <Listbox.Option
+                      value=""
+                      className={({ active }) =>
+                        `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                        }`
+                      }
+                    >
+                      {({ selected }) => (
+                        <div className="flex items-center justify-between">
+                          <span>All payment modes</span>
+
+                        </div>
+                      )}
+                    </Listbox.Option>
+
+                    {PAYMENT_MODE_OPTIONS.map((option) => (
+                      <Listbox.Option
+                        key={option}
+                        value={option}
+                        className={({ active }) =>
+                          `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                          }`
+                        }
+                      >
+                        {({ selected }) => (
+                          <div className="flex items-center justify-between">
+                            <span>{option}</span>
+
+                          </div>
+                        )}
+                      </Listbox.Option>
+                    ))}
+                  </Listbox.Options>
+                </div>
+              </Listbox>
+            </label>
+          </div>
+        )}
+
+        {transportTypeFilter === "LOADING_VEHICLE" && (
+          <label className="rbac-label">
+            Vehicle Type
+
+            <Listbox
+              value={draftVehicleTypeFilter}
+              onChange={setDraftVehicleTypeFilter}
+            >
+              <div className="relative">
+                <Listbox.Button className="rbac-input-filter flex w-full items-center justify-between text-left">
+                  <span>
+                    {draftVehicleTypeFilter
+                      ? draftVehicleTypeFilter
+                        .replaceAll("_", " ")
+                        .toLowerCase()
+                        .replace(/\b\w/g, (char) => char.toUpperCase())
+                      : "All vehicle types"}
+                  </span>
+
+                  <FaChevronDown className="text-xs text-slate-500" />
+                </Listbox.Button>
+
+                <Listbox.Options className="theme-surface absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-md py-1 shadow-lg focus:outline-none">
+                  {[
+                    { label: "All vehicle types", value: "" },
+                    {
+                      label: "Three Tyre Tempo",
+                      value: "Three Tyre Tempo",
+                    },
+                    {
+                      label: "Super Carry",
+                      value: "Super Carry",
+                    },
+                    {
+                      label: "Other Vehicle",
+                      value: "Other Vehicle",
+                    },
+                  ].map((option) => (
+                    <Listbox.Option
+                      key={option.value}
+                      value={option.value}
+                      className={({ active }) =>
+                        `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                        }`
+                      }
+                    >
+                      <div className="flex items-center justify-between">
+                        <span>{option.label}</span>
+                      </div>
+                    </Listbox.Option>
+                  ))}
+                </Listbox.Options>
+              </div>
+            </Listbox>
+          </label>
+        )}
+
+        {transportTypeFilter === "CNG_RICKSHAW" && (
+          <label className="rbac-label">
+            Trip Type
+
+            <Listbox
+              value={draftTripTypeFilter}
+              onChange={setDraftTripTypeFilter}
+            >
+              <div className="relative">
+                <Listbox.Button className="rbac-input-filter flex w-full items-center justify-between text-left">
+                  <span>
+                    {draftTripTypeFilter
+                      ? draftTripTypeFilter
+                        .replaceAll("_", " ")
+                        .toLowerCase()
+                        .replace(/\b\w/g, (char) => char.toUpperCase())
+                      : "All trip types"}
+                  </span>
+
+                  <FaChevronDown className="text-xs text-slate-500" />
+                </Listbox.Button>
+
+                <Listbox.Options className="theme-surface absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-md py-1 shadow-lg focus:outline-none">
+                  {[
+                    { label: "All trip types", value: "" },
+                    { label: "Delivery", value: "Delivery" },
+                    { label: "Return", value: "Return" },
+                  ].map((option) => (
+                    <Listbox.Option
+                      key={option.value}
+                      value={option.value}
+                      className={({ active }) =>
+                        `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                        }`
+                      }
+                    >
+                      <div className="flex items-center justify-between">
+                        <span>{option.label}</span>
+                      </div>
+                    </Listbox.Option>
+                  ))}
+                </Listbox.Options>
+              </div>
+            </Listbox>
+          </label>
+        )}
+
+        {(transportTypeFilter === "BOLERO_DELIVERY" || transportTypeFilter === "BOLERO_RETURN_DC") && (
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="rbac-label">
+              Location Type
+              <Listbox
+                value={draftLocationTypeFilter}
+                onChange={setDraftLocationTypeFilter}
+              >
+                <div className="relative">
+                  <Listbox.Button className="rbac-input-filter flex w-full items-center justify-between text-left">
+                    <span>
+                      {draftLocationTypeFilter || "All location types"}
+                    </span>
+                    <FaChevronDown className="text-xs text-slate-500" />
+                  </Listbox.Button>
+
+                  <Listbox.Options className="theme-surface absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-md py-1 shadow-lg focus:outline-none">
+                    {[
+                      { label: "All location types", value: "" },
+                      { label: "Hospital", value: "Hospital" },
+                      { label: "Industry", value: "Industry" },
+                      { label: "Vendor", value: "Vendor" },
+                    ].map((option) => (
+                      <Listbox.Option
+                        key={option.value}
+                        value={option.value}
+                        className={({ active }) =>
+                          `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                          }`
+                        }
+                      >
+                        <div className="flex items-center justify-between">
+                          <span>{option.label}</span>
+                        </div>
+                      </Listbox.Option>
+                    ))}
+                  </Listbox.Options>
+                </div>
+              </Listbox>
+            </label>
+            <label className="rbac-label">
+              Load Type
+              <Listbox
+                value={draftLoadTypeFilter}
+                onChange={setDraftLoadTypeFilter}
+              >
+                <div className="relative">
+                  <Listbox.Button className="rbac-input-filter flex w-full items-center justify-between text-left">
+                    <span>
+                      {draftLoadTypeFilter
+                        ? draftLoadTypeFilter
+                          .replaceAll("_", " ")
+                          .toLowerCase()
+                          .replace(/\b\w/g, (char) => char.toUpperCase())
+                        : "All load types"}
+                    </span>
+                    <FaChevronDown className="text-xs text-slate-500" />
+
+                  </Listbox.Button>
+
+                  <Listbox.Options className="theme-surface absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-md py-1 shadow-lg focus:outline-none">
+                    {[
+                      { label: "All load types", value: "" },
+                      { label: "Part Load", value: "Part Load" },
+                      { label: "Half Load", value: "Half Load" },
+                      { label: "Full Load", value: "Full Load" },
+                    ].map((option) => (
+                      <Listbox.Option
+                        key={option.value}
+                        value={option.value}
+                        className={({ active }) =>
+                          `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                          }`
+                        }
+                      >
+                        <div className="flex items-center justify-between">
+                          <span>{option.label}</span>
+                        </div>
+                      </Listbox.Option>
+                    ))}
+                  </Listbox.Options>
+                </div>
+              </Listbox>
+            </label>
+          </div>
+        )}
         <div className="grid gap-4 md:grid-cols-2">
           <label className="rbac-label">
             From Date
@@ -1032,13 +1354,11 @@ function TransportListView() {
       <ConfirmDialog
         open={confirmOpen}
         title="Delete transport log?"
-        description={`This will permanently delete ${
-          confirmTarget
-            ? `${getTransportTypeShortLabel(confirmTarget.transportType)} #${
-                confirmTarget.serialNo
-              }`
-            : "the selected log"
-        }.`}
+        description={`This will permanently delete ${confirmTarget
+          ? `${getTransportTypeShortLabel(confirmTarget.transportType)} #${confirmTarget.serialNo
+          }`
+          : "the selected log"
+          }.`}
         confirmLabel="Delete"
         confirmLoading={deleting}
         confirmLoadingLabel="Deleting..."
@@ -1049,7 +1369,7 @@ function TransportListView() {
       <Dialog open={viewOpen} onClose={closeView} className="relative z-50">
         <div className="fixed inset-0 bg-black/40" aria-hidden="true" />
         <div className="fixed inset-0 overflow-y-auto px-4 py-6 flex justify-center">
-          <div style={{width:"80%"}} className="flex min-h-full items-center justify-center">
+          <div style={{ width: "80%" }} className="flex min-h-full items-center justify-center">
             <DialogPanel className="theme-modal-surface w-full max-w-4xl rounded-2xl p-4 shadow-2xl sm:p-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -1077,7 +1397,7 @@ function TransportListView() {
               )}
 
               {!viewLoading && viewData && (
-                <div style={{overflowY:"auto" , height:"50vh"}} className="mt-5 space-y-4">
+                <div style={{ overflowY: "auto", height: "50vh" }} className="mt-5 space-y-4">
                   {[getCommonDetails(viewData), getTypeDetails(viewData)].map(
                     (section) => (
                       <div

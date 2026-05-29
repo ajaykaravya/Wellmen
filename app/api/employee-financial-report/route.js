@@ -167,7 +167,7 @@ export async function GET(req) {
       sourceType: "PETI_CASH",
       date: row.date,
       createdAt: row.createdAt,
-      referenceLabel: "Peti Cash",
+      referenceLabel: "",
       cashGivenByLabel: row.givenBy?.fullName || "-",
       sourceSubTypeLabel:
         row.transactionType === "CREDIT"
