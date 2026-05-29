@@ -34,7 +34,7 @@ export default function AppliedFilterSummary({
         {activeItems.map((item, index) => (
           <span
             key={`${item}-${index}`}
-            className="mx-1 inline-flex items-center rounded-full bg-[color:var(--theme-surface)] px-3 py-1 text-xs font-medium theme-text"
+            className="m-1 inline-flex items-center rounded-full bg-[color:var(--theme-surface)] px-3 py-1 text-xs font-medium theme-text"
           >
             {item}
           </span>
