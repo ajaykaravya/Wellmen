@@ -144,7 +144,7 @@ function ExpenseTypeListContent() {
         header: "Action",
         id: "action",
         cell: ({ row }) => (
-          <div className="justify-end flex gap-4">
+          <div className="justify-end flex gap-2">
               <button onClick={() => handleEditExpenseType(row.original)} className="rbac-link" type="button">
                 <FaEdit />
               </button>
@@ -181,8 +181,6 @@ function ExpenseTypeListContent() {
     }
   };
 
-  const activeFilterCount = [query.trim(), statusFilter].filter(Boolean).length;
-
   const openFilters = useCallback(() => {
     setDraftQuery(query);
     setDraftStatusFilter(statusFilter);
@@ -218,11 +216,6 @@ function ExpenseTypeListContent() {
                 onClick={openFilters}
               >
                 <FaFilter /> <span> Filters</span>
-                {activeFilterCount > 0 && (
-                  <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[color:var(--brand)] px-1 text-[10px] font-semibold text-white">
-                    {activeFilterCount}
-                  </span>
-                )}
               </button>
               <Link href="/dashboard/expense-types/new">
                   <button className="rbac-button" type="button">
@@ -422,7 +415,6 @@ function ExpenseTypeListContent() {
         description="Update the filters and apply them when you're ready."
         onClose={closeFilters}
         onApply={applyFilters}
-        activeCount={activeFilterCount}
       >
         <input
           className="rbac-input-filter"

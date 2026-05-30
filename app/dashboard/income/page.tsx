@@ -135,17 +135,6 @@ function IncomeListContent() {
   const [confirmTarget, setConfirmTarget] = useState<IncomeRow | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const activeFilterCount = [
-    query.trim(),
-    projectFilter?.id,
-    incomeTypeFilter?.id,
-    incomeCompanyFilter?.id,
-    receivedByFilter?.id,
-    fromDate,
-    toDate,
-    paymentModeFilter,
-  ].filter(Boolean).length;
-
   const openFilters = useCallback(() => {
     setDraftQuery(query);
     setDraftProjectFilter(projectFilter);
@@ -669,7 +658,6 @@ function IncomeListContent() {
         description="Update the filters and apply them when you're ready."
         onClose={closeFilters}
         onApply={applyFilters}
-        activeCount={activeFilterCount}
         maxWidthClassName="max-w-2xl"
       >
         <div className="grid gap-4 md:grid-cols-2">

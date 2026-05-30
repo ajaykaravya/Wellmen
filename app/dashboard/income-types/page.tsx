@@ -147,7 +147,7 @@ function IncomeTypeListContent() {
         header: "Action",
         id: "action",
         cell: ({ row }) => (
-          <div className="rbac-inline-actions flex gap-4">
+          <div className="justify-end flex gap-2">
             <button
               onClick={() => handleEditIncomeType(row.original)}
               className="rbac-link"
@@ -188,8 +188,6 @@ function IncomeTypeListContent() {
     }
   };
 
-  const activeFilterCount = [query.trim(), statusFilter].filter(Boolean).length;
-
   const openFilters = useCallback(() => {
     setDraftQuery(query);
     setDraftStatusFilter(statusFilter);
@@ -225,11 +223,6 @@ function IncomeTypeListContent() {
                 onClick={openFilters}
               >
                 <FaFilter /> <span> Filters</span>
-                {activeFilterCount > 0 && (
-                  <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[color:var(--brand)] px-1 text-[10px] font-semibold text-white">
-                    {activeFilterCount}
-                  </span>
-                )}
               </button>
               <Link href="/dashboard/income-types/new">
                 <button className="rbac-button" type="button">
@@ -433,7 +426,6 @@ function IncomeTypeListContent() {
         description="Update the filters and apply them when you're ready."
         onClose={closeFilters}
         onApply={applyFilters}
-        activeCount={activeFilterCount}
       >
         <input
           className="rbac-input-filter"

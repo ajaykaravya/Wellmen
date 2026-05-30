@@ -410,18 +410,6 @@ function TransportListView() {
 
   const debouncedQuery = useDebounce(query, 400);
 
-  const activeFilterCount = [
-    query.trim(),
-    statusFilter,
-    paymentModeFilter,
-    fromDate,
-    toDate,
-    locationTypeFilter,
-    loadTypeFilter,
-    tripTypeFilter,
-    vehicleTypeFilter,
-  ].filter(Boolean).length;
-
   const appliedFilters = [
     query.trim(),
     statusFilter,
@@ -721,7 +709,7 @@ function TransportListView() {
           id: "action",
           size: 160,
           cell: ({ row }) => (
-            <div className="flex items-center gap-2">
+            <div className="flex justify-end gap-2">
               <button
                 className="rbac-link"
                 type="button"
@@ -1020,7 +1008,6 @@ function TransportListView() {
         open={filterOpen}
         title="Filter transport logs"
         description="Narrow logs by status, payment mode, or date range."
-        activeCount={activeFilterCount}
         onClose={() => setFilterOpen(false)}
         onApply={applyFilters}
       >

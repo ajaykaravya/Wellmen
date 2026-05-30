@@ -90,8 +90,6 @@ function ServiceCategoryListContent() {
     router.push(`/dashboard/service-categories/${row.id}`);
   }, [router]);
 
-  const activeFilterCount = [query.trim()].filter(Boolean).length;
-
   const openFilters = useCallback(() => {
     setDraftQuery(query);
     setFilterOpen(true);
@@ -146,7 +144,7 @@ function ServiceCategoryListContent() {
         header: "Action",
         id: "action",
         cell: ({ row }) => (
-          <div className="justify-end flex gap-4">
+          <div className="justify-end flex gap-2">
             <button onClick={() => handleEditCategory(row.original)} className="rbac-link" type="button">
               <FaEdit />
             </button>
@@ -185,11 +183,6 @@ function ServiceCategoryListContent() {
                 onClick={openFilters}
               >
                <FaFilter /> <span> Filters</span>
-                {activeFilterCount > 0 && (
-                  <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[color:var(--brand)] px-1 text-[10px] font-semibold text-white">
-                    {activeFilterCount}
-                  </span>
-                )}
               </button>
               <Link href="/dashboard/service-categories/new">
                 <button className="rbac-button" type="button">
@@ -385,7 +378,6 @@ function ServiceCategoryListContent() {
         description="Update the filters and apply them when you're ready."
         onClose={closeFilters}
         onApply={applyFilters}
-        activeCount={activeFilterCount}
       >
         <input
           className="rbac-input-filter"

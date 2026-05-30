@@ -172,14 +172,6 @@ function ReportingListContent() {
     loadReports();
   }, [loadReports]);
 
-  const activeFilterCount = [
-    query.trim(),
-    projectFilter,
-    isAdmin ? employeeFilter : "",
-    fromDate,
-    toDate,
-  ].filter(Boolean).length;
-
   const openFilters = useCallback(() => {
     setDraftQuery(query);
     setDraftProjectFilter(projectFilter);
@@ -661,7 +653,6 @@ function ReportingListContent() {
         description="Update the filters and apply them when you're ready."
         onClose={closeFilters}
         onApply={applyFilters}
-        activeCount={activeFilterCount}
         maxWidthClassName="max-w-2xl"
       >
         <input

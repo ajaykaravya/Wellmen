@@ -125,8 +125,6 @@ function ProjectListContent() {
     router.push(`/dashboard/hospitals/${row.id}`);
   }, [router]);
 
-  const activeFilterCount = [query.trim(), cityFilter, fromDate, toDate].filter(Boolean).length;
-
   const openFilters = useCallback(() => {
     setDraftQuery(query);
     setDraftCityFilter(cityFilter);
@@ -558,7 +556,6 @@ function ProjectListContent() {
         description="Update the filters and apply them when you're ready."
         onClose={closeFilters}
         onApply={applyFilters}
-        activeCount={activeFilterCount}
       >
         <input
           className="rbac-input-filter"

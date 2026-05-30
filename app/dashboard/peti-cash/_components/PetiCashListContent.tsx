@@ -268,16 +268,6 @@ function PetiCashListContent() {
     }
   }, [pageCount, pageIndex]);
 
-  const activeFilterCount = [
-    transactionTypeFilter,
-    fromDate,
-    toDate,
-    givenByFilter?.id,
-    givenToFilter?.id,
-    projectFilter?.id,
-    companyFilter?.id,
-  ].filter(Boolean).length;
-
   const openFilters = useCallback(() => {
     setDraftTransactionTypeFilter(transactionTypeFilter);
     setDraftGivenByFilter(givenByFilter);
@@ -707,7 +697,6 @@ function PetiCashListContent() {
         description="Update the filters and apply them when you're ready."
         onClose={() => setFilterOpen(false)}
         onApply={applyFilters}
-        activeCount={activeFilterCount}
         maxWidthClassName="max-w-2xl"
       >
         <CustomDatePicker
