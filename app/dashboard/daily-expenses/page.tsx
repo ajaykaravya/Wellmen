@@ -144,16 +144,6 @@ function DailyExpenseListContent() {
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
 
-  const activeFilterCount = [
-    query.trim(),
-    fromDate,
-    toDate,
-    projectFilter?.id,
-    expenseTypeFilter?.id,
-    expenseByFilter?.id,
-    expenseCompanyFilter?.id,
-  ].filter(Boolean).length;
-
   const openFilters = useCallback(() => {
     setDraftQuery(query);
     setDraftFromDate(fromDate);
@@ -563,7 +553,7 @@ function DailyExpenseListContent() {
         header: "Action",
         id: "action",
         cell: ({ row }) => (
-          <div className="justify-end flex gap-4">
+          <div className="justify-end flex gap-2">
             <button
               onClick={() => handleEditTransaction(row.original)}
               className="rbac-link"
@@ -810,7 +800,6 @@ function DailyExpenseListContent() {
         description="Update the filters and apply them when you're ready."
         onClose={closeFilters}
         onApply={applyFilters}
-        activeCount={activeFilterCount}
         maxWidthClassName="max-w-2xl"
       >
         <div className="grid gap-4 md:grid-cols-2">

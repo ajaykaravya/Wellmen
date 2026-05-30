@@ -16,7 +16,6 @@ type ListingFilterDialogProps = {
   onApply: () => void;
   children: ReactNode;
   description?: string;
-  activeCount?: number;
   applyLabel?: string;
   closeLabel?: string;
   maxWidthClassName?: string;
@@ -29,7 +28,6 @@ export default function ListingFilterDialog({
   onApply,
   children,
   description,
-  activeCount = 0,
   applyLabel = "Apply Filters",
   closeLabel = "Close",
   maxWidthClassName = "max-w-3xl",
@@ -69,12 +67,6 @@ export default function ListingFilterDialog({
                 <p className="mt-1 text-sm theme-text-muted">{description}</p>
               )}
             </div>
-
-            {activeCount > 0 && (
-              <span className="inline-flex items-center rounded-full bg-[color:var(--theme-surface-2)] px-3 py-1 text-xs font-semibold theme-text">
-                {activeCount} active
-              </span>
-            )}
           </div>
 
           <div className="mt-4 grid gap-4">{children}</div>

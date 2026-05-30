@@ -62,7 +62,6 @@ function UsersContent() {
   const [total, setTotal] = useState(0);
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 400);
-  const activeFilterCount = [query.trim(), roleFilter].filter(Boolean).length;
 
   const openFilters = () => {
     setDraftQuery(query);
@@ -467,7 +466,6 @@ function UsersContent() {
         description="Update the filters and apply them when you're ready."
         onClose={closeFilters}
         onApply={applyFilters}
-        activeCount={activeFilterCount}
       >
         <input
           className="rbac-input-filter"

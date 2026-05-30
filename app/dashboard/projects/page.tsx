@@ -338,14 +338,6 @@ function ProjectListContent() {
     }
   };
 
-  const activeFilterCount = [
-    query.trim(),
-    statusFilter,
-    cityFilter,
-    fromDate,
-    toDate,
-  ].filter(Boolean).length;
-
   const appliedFilters = [
     query.trim(),
     statusFilter ? statusLabel(statusFilter) : "",
@@ -635,7 +627,6 @@ function ProjectListContent() {
         description="Update the filters and apply them when you're ready."
         onClose={closeFilters}
         onApply={applyFilters}
-        activeCount={activeFilterCount}
       >
         <input
           className="rbac-input-filter"

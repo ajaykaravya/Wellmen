@@ -173,13 +173,6 @@ export default function QueryListContent({
     }
   }, [searchParams]);
 
-  const activeFilterCount = [
-    query.trim(),
-    statusFilter,
-    priorityFilter,
-    categoryFilter,
-  ].filter(Boolean).length;
-
   const appliedFilters = [
     query.trim(),
     statusFilter ? statusLabel(statusFilter) : "",
@@ -311,7 +304,7 @@ export default function QueryListContent({
         header: "Action",
         id: "action",
         cell: ({ row }) => (
-          <div className="rbac-inline-actions flex gap-4">
+          <div className="rbac-inline-actions flex gap-2">
             <button
               className="rbac-link"
               type="button"
@@ -569,7 +562,6 @@ export default function QueryListContent({
         description="Update the filters and apply them when you're ready."
         onClose={closeFilters}
         onApply={applyFilters}
-        activeCount={activeFilterCount}
       >
         <input
           className="rbac-input-filter"

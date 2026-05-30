@@ -88,8 +88,6 @@ function CategoryListContent() {
     router.push(`/dashboard/project-categories/${row.id}`);
   }, [router]);
 
-  const activeFilterCount = [query.trim()].filter(Boolean).length;
-
   const openFilters = useCallback(() => {
     setDraftQuery(query);
     setFilterOpen(true);
@@ -144,7 +142,7 @@ function CategoryListContent() {
         header: "Action",
         id: "action",
         cell: ({ row }) => (
-          <div className="rbac-inline-actions flex gap-4">
+          <div className="justify-end flex gap-2">
             <button onClick={() => handleEditCategory(row.original)} className="rbac-link" type="button">
               <FaEdit />
             </button>
@@ -380,7 +378,6 @@ function CategoryListContent() {
         description="Update the filters and apply them when you're ready."
         onClose={closeFilters}
         onApply={applyFilters}
-        activeCount={activeFilterCount}
       >
         <input
           className="rbac-input-filter"

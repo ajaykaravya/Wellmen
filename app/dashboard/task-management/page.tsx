@@ -126,15 +126,6 @@ function TodoListContent() {
     setPageIndex(0);
   }, [taskTypeFromQuery]);
 
-  const activeFilterCount = [
-    query.trim(),
-    statusFilter,
-    categoryFilter.trim(),
-    fromDate,
-    toDate,
-    assigneeFilter,
-  ].filter(Boolean).length;
-
   const openFilters = useCallback(() => {
     setDraftQuery(query);
     setDraftStatusFilter(statusFilter);
@@ -962,7 +953,6 @@ function TodoListContent() {
         description="Update the filters and apply them when you're ready."
         onClose={closeFilters}
         onApply={applyFilters}
-        activeCount={activeFilterCount}
       >
         <input
           className="rbac-input-filter"
