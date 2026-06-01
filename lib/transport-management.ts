@@ -242,12 +242,7 @@ export const getDriverWages = (
     return Number(config?.rate || 0);
   }
 
-  if (totalKm <= 100) return 850;
-  if (totalKm <= 200) return 1000;
-  if (totalKm <= 300) return 1280;
-  if (totalKm <= 400) return 1200;
-  if (totalKm <= 600) return 1500;
-  return 1500;
+  return 0;
 };
 
 export const getFloorRent = (
