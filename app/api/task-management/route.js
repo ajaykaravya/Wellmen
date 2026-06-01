@@ -168,7 +168,7 @@ export async function GET(req) {
     prisma.todo.count({ where }),
     prisma.todo.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: { startDate: "desc" },
       include: buildTodoInclude,
       skip: (page - 1) * pageSize,
       take: pageSize,

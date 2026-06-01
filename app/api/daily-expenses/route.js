@@ -200,7 +200,7 @@ export async function GET(req) {
         expenseBy: true,
         expenseCompany: true,
       },
-      orderBy: [{ createdAt: "desc" }, { date: "desc" }],
+      orderBy: [{ date: "desc" }, { createdAt: "desc" }],
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
