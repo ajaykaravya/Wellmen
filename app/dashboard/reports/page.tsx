@@ -23,9 +23,10 @@ import {
   FaChevronRight,
   FaEdit,
   FaEye,
+  FaFilter,
+  FaLink,
   FaSpinner,
   FaTrash,
-  FaFilter,
 } from "react-icons/fa";
 import Link from "next/link";
 import { ReportingCardList } from "../_components/ReportingCardList";
@@ -416,9 +417,13 @@ function ReportingListContent() {
         header: "Action",
         id: "action",
         cell: ({ row }) => {
+          const hasMedia =
+            (row.original.imageUrls?.length ?? 0) > 0 ||
+            (row.original.videoUrls?.length ?? 0) > 0 ||
+            Boolean(row.original.videoUrl);
           const canManage = !!row.original.canManage;
           return (
-            <div className="rbac-inline-actions flex gap-4">
+            <div className="rbac-inline-actions flex gap-4 items-center">
               <button
                 className="rbac-link"
                 type="button"
@@ -443,6 +448,11 @@ function ReportingListContent() {
                     <FaTrash />
                   </button>
                 </>
+              )}
+              {hasMedia && (
+                <span className="rbac-link" aria-label="Has media">
+                  <FaLink />
+                </span>
               )}
             </div>
           );

@@ -10,6 +10,7 @@ import {
   FaChevronLeft,
   FaPlus,
   FaMinus,
+  FaEye,
 } from "react-icons/fa";
 import { formatToDDMMYYYY, getTodayInputDate } from "../../../lib/dateUtils";
 import CustomDatePicker from "../../components/CustomDatePicker";
@@ -64,6 +65,7 @@ type FinanceCardListProps<T extends FinanceCardListRow> = {
   onDateChange?: (date: string) => void;
   onEdit?: (row: T) => void;
   onDelete?: (row: T) => void;
+  onView?: (row: T) => void;
   renderActions?: (row: T) => ReactNode;
   renderAmountBadge?: (row: T) => ReactNode;
   renderDateLabel?: (row: T) => ReactNode;
@@ -96,6 +98,7 @@ export function FinanceCardList<T extends FinanceCardListRow>({
   onDateChange,
   onEdit,
   onDelete,
+  onView,
   renderActions,
   renderAmountBadge,
   renderDateLabel,
@@ -181,6 +184,17 @@ export function FinanceCardList<T extends FinanceCardListRow>({
 
     return (
       <div className="flex items-center gap-2">
+        {onView && (
+          <button
+            style={{ padding: "2px" }}
+            className="rbac-link"
+            type="button"
+            onClick={() => onView(row)}
+            aria-label="View entry"
+          >
+            <FaEye size={18} />
+          </button>
+        )}
         {onEdit && (
           <button
             className="rbac-link"
