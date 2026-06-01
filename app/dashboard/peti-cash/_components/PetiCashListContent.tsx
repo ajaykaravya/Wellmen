@@ -5,13 +5,20 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { flexRender, useReactTable } from "@tanstack/react-table";
 import { ColumnDef, getCoreRowModel } from "@tanstack/table-core";
-import { FaChevronLeft, FaChevronRight, FaEdit, FaFilter, FaSpinner, FaTrash } from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight, FaEdit, FaFilter, FaSpinner, FaTrash, FaEye } from "react-icons/fa";
+import { IoIosClose } from "react-icons/io";
 import {
   Combobox,
   ComboboxButton,
   ComboboxInput,
   ComboboxOption,
   ComboboxOptions,
+} from "@headlessui/react";
+import {
+  Dialog,
+  DialogBackdrop,
+  DialogPanel,
+  DialogTitle,
 } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
 import DashboardShell from "../../_components/DashboardShell";
@@ -122,6 +129,9 @@ function PetiCashListContent() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<PetiCashRow | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewLoading, setViewLoading] = useState(false);
+  const [viewData, setViewData] = useState<PetiCashRow | null>(null);
 
   const loadRows = useCallback(async () => {
     setLoading(true);
@@ -376,6 +386,31 @@ function PetiCashListContent() {
     }
   }, [confirmTarget, loadRows]);
 
+  const handleView = useCallback(async (row: PetiCashRow) => {
+    setViewOpen(true);
+    setViewLoading(true);
+    setViewData(null);
+
+    try {
+      const res = await fetch(`/api/peti-cash/${row.id}`);
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        toast.error(payload.error || "Failed to load peti cash details.");
+        setViewOpen(false);
+        return;
+      }
+
+      const data = await res.json();
+      setViewData(data);
+    } catch (error) {
+      console.error("Failed to load peti cash details", error);
+      toast.error("Failed to load peti cash details.");
+      setViewOpen(false);
+    } finally {
+      setViewLoading(false);
+    }
+  }, []);
+
   const columns = useMemo<ColumnDef<PetiCashRow>[]>(
     () => [
       {
@@ -460,6 +495,13 @@ function PetiCashListContent() {
             <button
               className="rbac-link"
               type="button"
+              onClick={() => handleView(row.original)}
+            >
+              <FaEye />
+            </button>
+            <button
+              className="rbac-link"
+              type="button"
               aria-label="Edit"
               onClick={() => handleEdit(row.original)}
             >
@@ -477,8 +519,7 @@ function PetiCashListContent() {
         ),
       },
     ],
-    [handleDelete, handleEdit],
-  );
+    [handleDelete, handleEdit]);
 
   const table = useReactTable({
     data: rows,
@@ -497,11 +538,10 @@ function PetiCashListContent() {
               <h3 className="rbac-title-lg flex flex-wrap items-center gap-2">
                 <span>Peti Cash</span>
                 <span
-                  className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ring-1 ${
-                    balance < 0
-                      ? "bg-rose-100 text-rose-800 ring-rose-200"
-                      : "bg-emerald-100 text-emerald-800 ring-emerald-200"
-                  }`}
+                  className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ring-1 ${balance < 0
+                    ? "bg-rose-100 text-rose-800 ring-rose-200"
+                    : "bg-emerald-100 text-emerald-800 ring-emerald-200"
+                    }`}
                 >
                   {balanceLoading ? "Loading..." : `Balance: ${formatAmount(balance)}`}
                 </span>
@@ -617,6 +657,7 @@ function PetiCashListContent() {
               collapsible={false}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onView={handleView}
               cardContent={{
                 getVariant: (row) =>
                   row.transactionType === "CREDIT" ? "income" : "expense",
@@ -906,6 +947,72 @@ function PetiCashListContent() {
           </div>
         </Combobox>
       </ListingFilterDialog>
+
+      {viewOpen && (
+        <Dialog open={viewOpen} onClose={() => { setViewOpen(false); setViewData(null); }} className="relative z-100">
+          <DialogBackdrop
+            className="theme-modal-overlay fixed inset-0 z-100 bg-black/60 backdrop-blur-sm transition-opacity"
+            aria-hidden="true"
+          />
+
+          <div className="fixed inset-0 z-101 flex items-center justify-center p-4">
+            <DialogPanel className="theme-modal-surface relative z-102 w-full max-w-2xl rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-auto">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <DialogTitle className="text-lg font-semibold">Peti Cash details</DialogTitle>
+                  <p className="mt-1 text-sm">View full entry information.</p>
+                </div>
+                <button type="button" onClick={() => { setViewOpen(false); setViewData(null); }}>
+                  <IoIosClose size={30} />
+                </button>
+              </div>
+
+              {viewLoading && (
+                <div className="flex items-center justify-center py-4">
+                  <FaSpinner className="animate-spin mr-2" size={16} />
+                </div>
+              )}
+
+              {!viewLoading && viewData && (
+                <div className="mt-4 grid gap-4">
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <p className="text-sm">
+                      <strong>Type:</strong> {getTransactionLabel(viewData)}
+                    </p>
+                    <p className="text-sm">
+                      <strong>Amount:</strong> {getSignedAmountLabel(viewData)}
+                    </p>
+                    <p className="text-sm">
+                      <strong>Date:</strong> {formatToDDMMYYYY(viewData.date)}
+                    </p>
+                    <p className="text-sm">
+                      <strong>Given By:</strong> {viewData.givenByName || "-"}
+                    </p>
+                    <p className="text-sm">
+                      <strong>Given To:</strong> {viewData.givenToName || "-"}
+                    </p>
+                    <p className="text-sm">
+                      <strong>Company:</strong> {viewData.companyName || "-"}
+                    </p>
+                    {viewData.projectName && (
+                      <p className="text-sm">
+                        <strong>Project:</strong> {viewData.projectName ? `${viewData.projectName}${viewData.projectCity ? ` (${viewData.projectCity})` : ""}` : "-"}
+                      </p>
+                    )}
+                  </div>
+
+                  {viewData.remarks && (
+                    <p className="text-sm whitespace-pre-wrap">
+                      <strong>Remarks:</strong> {viewData.remarks}
+                    </p>
+                  )}
+                </div>
+              )}
+            </DialogPanel>
+          </div>
+        </Dialog>
+      )}
+
     </DashboardShell>
   );
 }

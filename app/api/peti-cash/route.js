@@ -230,6 +230,14 @@ export async function POST(req) {
     return NextResponse.json({ error: "Company is required." }, { status: 400 });
   }
 
+  if (payload.date === "") {
+    return NextResponse.json({ error: "Date cannot be empty string." }, { status: 400 });
+  }
+
+  if (payload.amountRaw === "") {
+    return NextResponse.json({ error: "Amount cannot be empty string." }, { status: 400 });
+  }
+
   const [givenBy, givenTo, company, project] = await Promise.all([
     prisma.user.findUnique({
       where: { id: payload.givenById },

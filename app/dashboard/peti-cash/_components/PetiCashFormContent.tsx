@@ -154,10 +154,10 @@ export default function PetiCashFormContent({
           setProjectQuery(
             data.projectName
               ? getProjectLabel({
-                  id: data.projectId || "",
-                  name: data.projectName,
-                  city: data.projectCity,
-                })
+                id: data.projectId || "",
+                name: data.projectName,
+                city: data.projectCity,
+              })
               : "",
           );
         }
@@ -333,57 +333,62 @@ export default function PetiCashFormContent({
               />
             </div>
 
-            <div className="mb-2">
-              <label className="rbac-label">Project</label>
-              <Combobox
-                value={selectedProject}
-                onChange={(project: ProjectOption | null) => {
-                  setForm((prev) => ({
-                    ...prev,
-                    projectId: project?.id || "",
-                  }));
-                  setProjectQuery("");
-                }}
-                nullable
-              >
-                <div className="relative">
-                  <ComboboxInput
-                    className="theme-input rbac-input w-full pr-10"
-                    placeholder="Search project"
-                    displayValue={(project: ProjectOption | null) =>
-                      project ? getProjectLabel(project) : projectQuery
-                    }
-                    onChange={(event) => {
-                      setProjectQuery(event.target.value);
-                      setForm((prev) => ({ ...prev, projectId: "" }));
+            {
+              transactionType === "DEBIT" && (
+                <div className="mb-2">
+                  <label className="rbac-label">Project</label>
+                  <Combobox
+                    value={selectedProject}
+                    onChange={(project: ProjectOption | null) => {
+                      setForm((prev) => ({
+                        ...prev,
+                        projectId: project?.id || "",
+                      }));
+                      setProjectQuery("");
                     }}
-                  />
-                  <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
-                    <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
-                  </ComboboxButton>
-                  <ComboboxOptions
-                    modal={false}
-                    className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]"
+                    nullable
                   >
-                    {filteredProjects.length === 0 ? (
-                      <div className="px-3 py-2 text-sm text-[color:var(--theme-text-muted)]">
-                        No projects found
-                      </div>
-                    ) : (
-                      filteredProjects.map((project) => (
-                        <ComboboxOption
-                          key={project.id}
-                          value={project}
-                          className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
-                        >
-                          <span>{getProjectLabel(project)}</span>
-                        </ComboboxOption>
-                      ))
-                    )}
-                  </ComboboxOptions>
+
+                    <div className="relative">
+                      <ComboboxInput
+                        className="theme-input rbac-input w-full pr-10"
+                        placeholder="Search project"
+                        displayValue={(project: ProjectOption | null) =>
+                          project ? getProjectLabel(project) : projectQuery
+                        }
+                        onChange={(event) => {
+                          setProjectQuery(event.target.value);
+                          setForm((prev) => ({ ...prev, projectId: "" }));
+                        }}
+                      />
+                      <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+                        <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+                      </ComboboxButton>
+                      <ComboboxOptions
+                        modal={false}
+                        className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]"
+                      >
+                        {filteredProjects.length === 0 ? (
+                          <div className="px-3 py-2 text-sm text-[color:var(--theme-text-muted)]">
+                            No projects found
+                          </div>
+                        ) : (
+                          filteredProjects.map((project) => (
+                            <ComboboxOption
+                              key={project.id}
+                              value={project}
+                              className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                            >
+                              <span>{getProjectLabel(project)}</span>
+                            </ComboboxOption>
+                          ))
+                        )}
+                      </ComboboxOptions>
+                    </div>
+                  </Combobox>
                 </div>
-              </Combobox>
-            </div>
+              )
+            }
 
             <label className="rbac-label">
               Date <span className="text-red-600">*</span>
