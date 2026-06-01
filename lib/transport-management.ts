@@ -261,8 +261,8 @@ export const getFloorRent = (
 };
 
 export const getCourierCharges = (totalWeight: number, noOfCovers: number) => {
-  const weightCharge = Number(totalWeight || 0) * 30;
-  const coverCharge = Number(noOfCovers || 0) * 15;
+  const weightCharge = 0;
+  const coverCharge = 0;
   return {
     weightCharge,
     coverCharge,
@@ -361,25 +361,7 @@ export const getCngTripCharge = (
     return Number(config?.rate || 0);
   }
 
-  const isReturn = tripType === "Return";
-
-  if (km <= 50) {
-    return 0;
-  }
-
-  if (km <= 100) {
-    return isReturn ? 500 : 1000;
-  }
-
-  if (km <= 150) {
-    return isReturn ? 1000 : 2000;
-  }
-
-  if (km <= 200) {
-    return isReturn ? 1500 : 3000;
-  }
-
-  return isReturn ? 2000 : 4000;
+  return 0;
 };
 
 export const getLoadingVehicleTotal = (
