@@ -27,6 +27,8 @@ import { FaMobileRetro } from "react-icons/fa6";
 import { MdEmail } from "react-icons/md";
 import Link from "next/link";
 import useDebounce from "@/app/hooks/useDebounce";
+import { Listbox } from "@headlessui/react";
+import { FaCheck, FaChevronDown } from "react-icons/fa";
 
 type UserRow = {
   id: string;
@@ -60,7 +62,6 @@ function UsersContent() {
   const [total, setTotal] = useState(0);
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 400);
-  const activeFilterCount = [query.trim(), roleFilter].filter(Boolean).length;
 
   const openFilters = () => {
     setDraftQuery(query);
@@ -283,9 +284,9 @@ function UsersContent() {
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext(),
-                              )}
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
                         </th>
                       ))}
                     </tr>
@@ -356,7 +357,7 @@ function UsersContent() {
                         <h4 className="text-sm font-semibold">
                           {user.firstName} {user.lastName}
                         </h4>
-                        
+
                       </div>
                       <div className="flex">
                         <button
@@ -367,7 +368,7 @@ function UsersContent() {
                           <FaEdit size={18} />
                         </button>
                         <button
-                          style={{padding:"2px"}}
+                          style={{ padding: "2px" }}
                           className="rbac-link danger"
                           type="button"
                           onClick={() => handleDeleteUser(user)}
@@ -380,15 +381,15 @@ function UsersContent() {
                       {
                         user.mobileNumber && (
                           <p className="flex items-center gap-1">
-                        <FaMobileRetro /> {user.mobileNumber}
-                      </p>
+                            <FaMobileRetro /> {user.mobileNumber}
+                          </p>
                         )
                       }
                       {user.email && (
-                          <p className="flex items-center gap-1">
+                        <p className="flex items-center gap-1">
                           <MdEmail /> {user.email}
                         </p>
-                        )}
+                      )}
                       {user.role && (
                         <p>
                           <strong>Role:</strong> {user.role || "-"}
@@ -465,7 +466,6 @@ function UsersContent() {
         description="Update the filters and apply them when you're ready."
         onClose={closeFilters}
         onApply={applyFilters}
-        activeCount={activeFilterCount}
       >
         <input
           className="rbac-input-filter"
@@ -474,18 +474,50 @@ function UsersContent() {
           value={draftQuery}
           onChange={(event) => setDraftQuery(event.target.value)}
         />
-        <select
-          className="rbac-input-filter rbac-select"
-          value={draftRoleFilter}
-          onChange={(event) => setDraftRoleFilter(event.target.value)}
-        >
-          <option value="">Select Role</option>
-          {roles.map((role) => (
-            <option key={role.id} value={role.name}>
-              {role.name}
-            </option>
-          ))}
-        </select>
+        <Listbox value={draftRoleFilter} onChange={setDraftRoleFilter}>
+          <div className="relative">
+            <Listbox.Button className="rbac-input-filter flex w-full items-center justify-between text-left">
+              <span>
+                {draftRoleFilter || "Select Role"}
+              </span>
+
+              <FaChevronDown className="text-xs text-slate-500" />
+            </Listbox.Button>
+
+            <Listbox.Options className="theme-surface absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-md py-1 shadow-lg focus:outline-none">
+              <Listbox.Option
+                value=""
+                className={({ active }) =>
+                  `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                  }`
+                }
+              >
+                {({ selected }) => (
+                  <div className="flex items-center justify-between">
+                    <span>Select Role</span>
+                  </div>
+                )}
+              </Listbox.Option>
+
+              {roles.map((role) => (
+                <Listbox.Option
+                  key={role.id}
+                  value={role.name}
+                  className={({ active }) =>
+                    `cursor-pointer px-4 py-2 text-sm ${active ? "" : ""
+                    }`
+                  }
+                >
+                  {({ selected }) => (
+                    <div className="flex items-center justify-between">
+                      <span>{role.name}</span>
+                    </div>
+                  )}
+                </Listbox.Option>
+              ))}
+            </Listbox.Options>
+          </div>
+        </Listbox>
       </ListingFilterDialog>
     </>
   );

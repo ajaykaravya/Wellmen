@@ -14,6 +14,7 @@ import AppliedFilterSummary from "../../components/AppliedFilterSummary";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import CustomDatePicker from "../../components/CustomDatePicker";
 import ListingFilterDialog from "../../components/ListingFilterDialog";
+import { Listbox } from "@headlessui/react";
 import { toast } from "react-toastify";
 import {
   FaChevronLeft,
@@ -23,7 +24,6 @@ import {
   FaSpinner,
   FaFilter,
 } from "react-icons/fa";
-import Link from "next/link";
 
 type TodoStatus = "TODO" | "IN_PROGRESS" | "ON_HOLD" | "COMPLETED";
 
@@ -88,7 +88,7 @@ function TodoListContent() {
   const { isAdmin } = useDashboardContext();
   const searchParams = useSearchParams();
   const taskTypeFromQuery = (() => {
-    const value = searchParams.get("type");
+    const value = searchParams?.get("type");
     if (value === "PROJECT" || value === "OFFICE" || value === "SERVICE") {
       return value;
     }
@@ -125,15 +125,6 @@ function TodoListContent() {
     setTaskTypeFilter(taskTypeFromQuery);
     setPageIndex(0);
   }, [taskTypeFromQuery]);
-
-  const activeFilterCount = [
-    query.trim(),
-    statusFilter,
-    categoryFilter.trim(),
-    fromDate,
-    toDate,
-    assigneeFilter,
-  ].filter(Boolean).length;
 
   const openFilters = useCallback(() => {
     setDraftQuery(query);
@@ -213,6 +204,10 @@ function TodoListContent() {
     status: "TODO",
   });
   const [savingId, setSavingId] = useState<string | null>(null);
+  const buildTaskListUrl = useCallback(
+    (type: TodoRow["type"]) => `/dashboard/task-management?type=${type}`,
+    [],
+  );
 
   const loadAssignees = useCallback(async () => {
     if (!isAdmin) return;
@@ -246,7 +241,7 @@ function TodoListContent() {
       if (toDate) params.set("toDate", toDate);
       if (isAdmin && assigneeFilter) params.set("assigneeId", assigneeFilter);
 
-      const endpoint = isAdmin ? "/api/todos" : "/api/my-todos";
+      const endpoint = "/api/task-management";
       const res = await fetch(`${endpoint}?${params.toString()}`);
       if (!res.ok) return;
 
@@ -282,7 +277,7 @@ function TodoListContent() {
       setPageIndex(Math.max(pageCount - 1, 0));
     }
   }, [pageCount, pageIndex]);
-1
+
   const handleEdit = useCallback(
     (row: TodoRow) => {
       router.push(`/dashboard/task-management/${row.id}`);
@@ -306,7 +301,7 @@ function TodoListContent() {
     async (row: TodoRow, draft: TodoUpdateDraft) => {
       setSavingId(row.id);
       try {
-        const res = await fetch(`/api/my-todos/${row.id}`, {
+        const res = await fetch(`/api/task-management/${row.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -326,10 +321,10 @@ function TodoListContent() {
           prev.map((item) =>
             item.id === row.id
               ? {
-                  ...item,
-                  comments: updated.comments ?? null,
-                  status: updated.status,
-                }
+                ...item,
+                comments: updated.comments ?? null,
+                status: updated.status,
+              }
               : item,
           ),
         );
@@ -369,7 +364,7 @@ function TodoListContent() {
     if (!confirmTarget) return;
     setDeleting(true);
     try {
-      const endpoint = isAdmin ? "/api/todos" : "/api/my-todos";
+      const endpoint = "/api/task-management";
       const res = await fetch(`${endpoint}/${confirmTarget.id}`, {
         method: "DELETE",
       });
@@ -390,7 +385,7 @@ function TodoListContent() {
       setConfirmOpen(false);
       setConfirmTarget(null);
     }
-  }, [confirmTarget, isAdmin, loadTodos]);
+  }, [confirmTarget, loadTodos]);
 
   const adminColumns = useMemo<ColumnDef<TodoRow>[]>(
     () => [
@@ -498,7 +493,7 @@ function TodoListContent() {
         ),
       },
     ],
-    [handleDeleteTodo],
+    [handleDeleteTodo, handleEdit],
   );
 
   const employeeColumns = useMemo<ColumnDef<TodoRow>[]>(
@@ -612,7 +607,7 @@ function TodoListContent() {
         },
       },
     ],
-    [handleDeleteTodo, openModal],
+    [handleDeleteTodo, handleEdit, openModal],
   );
 
   const columns = isAdmin ? adminColumns : employeeColumns;
@@ -646,11 +641,17 @@ function TodoListContent() {
               >
                 <FaFilter /> <span>Filters</span>
               </button>
-              <Link href="/dashboard/task-management/new">
-                <button className="rbac-button" type="button">
-                  Add Task
-                </button>
-              </Link>
+              <button
+                className="rbac-button"
+                type="button"
+                onClick={() =>
+                  router.push(
+                    `/dashboard/task-management/new?type=${taskTypeFilter}`,
+                  )
+                }
+              >
+                Add Task
+              </button>
             </div>
           </div>
 
@@ -669,38 +670,41 @@ function TodoListContent() {
             }}
           />
 
-            <div className="flex items-center gap-2 mt-2">
-              <button
-                type="button"
-                className={getTaskTypeButtonClass("PROJECT")}
-                onClick={() => {
-                  setPageIndex(0);
-                  setTaskTypeFilter("PROJECT");
-                }}
-              >
-                Project
-              </button>
-              <button
-                type="button"
-                className={getTaskTypeButtonClass("OFFICE")}
-                onClick={() => {
-                  setPageIndex(0);
-                  setTaskTypeFilter("OFFICE");
-                }}
-              >
-                Office
-              </button>
-              <button
-                type="button"
-                className={getTaskTypeButtonClass("SERVICE")}
-                onClick={() => {
-                  setPageIndex(0);
-                  setTaskTypeFilter("SERVICE");
-                }}
-              >
-                Service
-              </button>
-            </div>
+          <div className="flex items-center gap-2 mt-2">
+            <button
+              type="button"
+              className={getTaskTypeButtonClass("PROJECT")}
+              onClick={() => {
+                setPageIndex(0);
+                setTaskTypeFilter("PROJECT");
+                router.replace(buildTaskListUrl("PROJECT"), { scroll: false });
+              }}
+            >
+              Project
+            </button>
+            <button
+              type="button"
+              className={getTaskTypeButtonClass("OFFICE")}
+              onClick={() => {
+                setPageIndex(0);
+                setTaskTypeFilter("OFFICE");
+                router.replace(buildTaskListUrl("OFFICE"), { scroll: false });
+              }}
+            >
+              Office
+            </button>
+            <button
+              type="button"
+              className={getTaskTypeButtonClass("SERVICE")}
+              onClick={() => {
+                setPageIndex(0);
+                setTaskTypeFilter("SERVICE");
+                router.replace(buildTaskListUrl("SERVICE"), { scroll: false });
+              }}
+            >
+              Service
+            </button>
+          </div>
 
           <div className="mt-4">
             <div className="hidden md:block overflow-x-auto">
@@ -717,9 +721,9 @@ function TodoListContent() {
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext(),
-                              )}
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
                         </th>
                       ))}
                     </tr>
@@ -949,7 +953,6 @@ function TodoListContent() {
         description="Update the filters and apply them when you're ready."
         onClose={closeFilters}
         onApply={applyFilters}
-        activeCount={activeFilterCount}
       >
         <input
           className="rbac-input-filter"
@@ -958,17 +961,50 @@ function TodoListContent() {
           value={draftQuery}
           onChange={(event) => setDraftQuery(event.target.value)}
         />
-        <select
-          className="rbac-input-filter rbac-select"
-          value={draftStatusFilter}
-          onChange={(event) => setDraftStatusFilter(event.target.value)}
-        >
-          <option value="">All status</option>
-          <option value="TODO">To do</option>
-          <option value="IN_PROGRESS">In progress</option>
-          <option value="ON_HOLD">On hold</option>
-          <option value="COMPLETED">Completed</option>
-        </select>
+        <Listbox value={draftStatusFilter} onChange={setDraftStatusFilter}>
+          <div className="relative">
+            <Listbox.Button className="rbac-input-filter rbac-select flex w-full items-center justify-between text-left">
+              <span>
+                {draftStatusFilter === "TODO"
+                  ? "To do"
+                  : draftStatusFilter === "IN_PROGRESS"
+                    ? "In progress"
+                    : draftStatusFilter === "ON_HOLD"
+                      ? "On hold"
+                      : draftStatusFilter === "COMPLETED"
+                        ? "Completed"
+                        : "All status"}
+              </span>
+
+            </Listbox.Button>
+
+            <Listbox.Options className="theme-surface absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-md py-1 shadow-lg focus:outline-none">
+              {[
+                { label: "All status", value: "" },
+                { label: "To do", value: "TODO" },
+                { label: "In progress", value: "IN_PROGRESS" },
+                { label: "On hold", value: "ON_HOLD" },
+                { label: "Completed", value: "COMPLETED" },
+              ].map((status) => (
+                <Listbox.Option
+                  key={status.value}
+                  value={status.value}
+                  className={({ active }) =>
+                    `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                    }`
+                  }
+                >
+                  {({ selected }) => (
+                    <div className="flex items-center justify-between">
+                      <span>{status.label}</span>
+
+                    </div>
+                  )}
+                </Listbox.Option>
+              ))}
+            </Listbox.Options>
+          </div>
+        </Listbox>
         <input
           className="rbac-input-filter"
           type="text"
@@ -977,18 +1013,64 @@ function TodoListContent() {
           onChange={(event) => setDraftCategoryFilter(event.target.value)}
         />
         {isAdmin && (
-          <select
-            className="rbac-input-filter rbac-select"
-            value={draftAssigneeFilter}
-            onChange={(event) => setDraftAssigneeFilter(event.target.value)}
-          >
-            <option value="">All assignees</option>
-            {assignees.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.firstName} {user.lastName}
-              </option>
-            ))}
-          </select>
+          <Listbox value={draftAssigneeFilter} onChange={setDraftAssigneeFilter}>
+            <div className="relative">
+              <Listbox.Button className="rbac-input-filter rbac-select flex w-full items-center justify-between text-left">
+                <span className="truncate">
+                  {draftAssigneeFilter
+                    ? (() => {
+                      const selectedUser = assignees.find(
+                        (user) => user.id === draftAssigneeFilter,
+                      );
+
+                      return selectedUser
+                        ? `${selectedUser.firstName} ${selectedUser.lastName} - ${selectedUser.role || "No role"
+                        }`
+                        : "All assignees";
+                    })()
+                    : "All assignees"}
+                </span>
+              </Listbox.Button>
+
+              <Listbox.Options className="theme-surface absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-md py-1 shadow-lg focus:outline-none">
+                <Listbox.Option
+                  value=""
+                  className={({ active }) =>
+                    `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                    }`
+                  }
+                >
+                  {({ selected }) => (
+                    <div className="flex items-center justify-between">
+                      <span>All assignees</span>
+
+                    </div>
+                  )}
+                </Listbox.Option>
+
+                {assignees.map((user) => (
+                  <Listbox.Option
+                    key={user.id}
+                    value={user.id}
+                    className={({ active }) =>
+                      `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                      }`
+                    }
+                  >
+                    {({ selected }) => (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate">
+                          {user.firstName} {user.lastName} -{" "}
+                          {user.role || "No role"}
+                        </span>
+
+                      </div>
+                    )}
+                  </Listbox.Option>
+                ))}
+              </Listbox.Options>
+            </div>
+          </Listbox>
         )}
         <CustomDatePicker
           value={draftFromDate}

@@ -17,17 +17,18 @@ import ListingFilterDialog from "../../components/ListingFilterDialog";
 import { Dialog, DialogPanel } from "@headlessui/react";
 import { toast } from "react-toastify";
 import { IoIosClose } from "react-icons/io";
+import { Listbox } from "@headlessui/react";
 import {
   FaChevronLeft,
   FaChevronRight,
   FaEdit,
   FaEye,
+  FaFilter,
+  FaLink,
   FaSpinner,
   FaTrash,
-  FaFilter,
 } from "react-icons/fa";
 import Link from "next/link";
-import { MdOutlineFileDownload } from "react-icons/md";
 import { ReportingCardList } from "../_components/ReportingCardList";
 import { ReportDetailsDialog } from "../_components/ReportDetailsDialog";
 
@@ -171,14 +172,6 @@ function ReportingListContent() {
   useEffect(() => {
     loadReports();
   }, [loadReports]);
-
-  const activeFilterCount = [
-    query.trim(),
-    projectFilter,
-    isAdmin ? employeeFilter : "",
-    fromDate,
-    toDate,
-  ].filter(Boolean).length;
 
   const openFilters = useCallback(() => {
     setDraftQuery(query);
@@ -424,9 +417,13 @@ function ReportingListContent() {
         header: "Action",
         id: "action",
         cell: ({ row }) => {
+          const hasMedia =
+            (row.original.imageUrls?.length ?? 0) > 0 ||
+            (row.original.videoUrls?.length ?? 0) > 0 ||
+            Boolean(row.original.videoUrl);
           const canManage = !!row.original.canManage;
           return (
-            <div className="rbac-inline-actions flex gap-4">
+            <div className="rbac-inline-actions flex gap-4 items-center">
               <button
                 className="rbac-link"
                 type="button"
@@ -452,6 +449,11 @@ function ReportingListContent() {
                   </button>
                 </>
               )}
+              {hasMedia && (
+                <span className="rbac-link" aria-label="Has media">
+                  <FaLink />
+                </span>
+              )}
             </div>
           );
         },
@@ -475,13 +477,6 @@ function ReportingListContent() {
           <div className="flex items-center justify-between gap-3">
             <h3 className="rbac-title-lg">Reporting List</h3>
             <div className="flex gap-2">
-              {!isAdmin && (
-                <Link href="/dashboard/reports/new">
-                  <button className="rbac-button" type="button">
-                    Add Reporting
-                  </button>
-                </Link>
-              )}
               <button
                 className="rbac-button rbac-button-secondary theme-button-secondary inline-flex items-center gap-2"
                 type="button"
@@ -489,6 +484,13 @@ function ReportingListContent() {
               >
                 <FaFilter /> <span>Filters</span>
               </button>
+              {!isAdmin && (
+                <Link href="/dashboard/reports/new">
+                  <button className="rbac-button" type="button">
+                    Add Reporting
+                  </button>
+                </Link>
+              )}
             </div>
           </div>
 
@@ -661,7 +663,6 @@ function ReportingListContent() {
         description="Update the filters and apply them when you're ready."
         onClose={closeFilters}
         onApply={applyFilters}
-        activeCount={activeFilterCount}
         maxWidthClassName="max-w-2xl"
       >
         <input
@@ -671,31 +672,111 @@ function ReportingListContent() {
           value={draftQuery}
           onChange={(event) => setDraftQuery(event.target.value)}
         />
-        <select
-          className="rbac-input-filter rbac-select"
-          value={draftProjectFilter}
-          onChange={(event) => setDraftProjectFilter(event.target.value)}
-        >
-          <option value="">All projects</option>
-          {projects.map((project) => (
-            <option key={project.id} value={project.id}>
-              {project.name}
-            </option>
-          ))}
-        </select>
+        <Listbox value={draftProjectFilter} onChange={setDraftProjectFilter}>
+          <div className="relative">
+            <Listbox.Button className="rbac-input-filter rbac-select flex w-full items-center justify-between text-left">
+              <span className="truncate">
+                {draftProjectFilter
+                  ? projects.find((project) => project.id === draftProjectFilter)
+                    ?.name || "All projects"
+                  : "All projects"}
+              </span>
+
+            </Listbox.Button>
+
+            <Listbox.Options className="theme-surface absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-md py-1 shadow-lg focus:outline-none">
+              <Listbox.Option
+                value=""
+                className={({ active }) =>
+                  `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                  }`
+                }
+              >
+                {({ selected }) => (
+                  <div className="flex items-center justify-between">
+                    <span>All projects</span>
+                  </div>
+                )}
+              </Listbox.Option>
+
+              {projects.map((project) => (
+                <Listbox.Option
+                  key={project.id}
+                  value={project.id}
+                  className={({ active }) =>
+                    `cursor-pointer px-4 py-2 text-sm ${active ? "bg-slate-100" : ""
+                    }`
+                  }
+                >
+                  {({ selected }) => (
+                    <div className="flex items-center justify-between">
+                      <span>{project.name}</span>
+
+                    </div>
+                  )}
+                </Listbox.Option>
+              ))}
+            </Listbox.Options>
+          </div>
+        </Listbox>
         {isAdmin && (
-          <select
-            className="rbac-input-filter rbac-select"
-            value={draftEmployeeFilter}
-            onChange={(event) => setDraftEmployeeFilter(event.target.value)}
-          >
-            <option value="">All employees</option>
-            {employees.map((employee) => (
-              <option key={employee.id} value={employee.id}>
-                {employee.firstName} {employee.lastName}
-              </option>
-            ))}
-          </select>
+          <Listbox value={draftEmployeeFilter} onChange={setDraftEmployeeFilter}>
+            <div className="relative">
+              <Listbox.Button className="rbac-input-filter rbac-select flex w-full items-center justify-between text-left">
+                <span className="truncate">
+                  {draftEmployeeFilter
+                    ? (() => {
+                      const selectedEmployee = employees.find(
+                        (employee) => employee.id === draftEmployeeFilter,
+                      );
+
+                      return selectedEmployee
+                        ? `${selectedEmployee.firstName} ${selectedEmployee.lastName
+                        } - ${selectedEmployee.role || ""}`
+                        : "All employees";
+                    })()
+                    : "All employees"}
+                </span>
+
+              </Listbox.Button>
+
+              <Listbox.Options className="theme-surface absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-md py-1 shadow-lg focus:outline-none">
+                <Listbox.Option
+                  value=""
+                  className={({ active }) =>
+                    `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                    }`
+                  }
+                >
+                  {({ selected }) => (
+                    <div className="flex items-center justify-between">
+                      <span>All employees</span>
+                    </div>
+                  )}
+                </Listbox.Option>
+
+                {employees.map((employee) => (
+                  <Listbox.Option
+                    key={employee.id}
+                    value={employee.id}
+                    className={({ active }) =>
+                      `cursor-pointer px-4 py-2 text-sm ${active ? "bg-slate-100" : ""
+                      }`
+                    }
+                  >
+                    {({ selected }) => (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate">
+                          {employee.firstName} {employee.lastName} -{" "}
+                          {employee.role || ""}
+                        </span>
+                      </div>
+                    )}
+                  </Listbox.Option>
+                ))}
+              </Listbox.Options>
+            </div>
+          </Listbox>
         )}
         <CustomDatePicker
           value={draftFromDate}
@@ -732,7 +813,7 @@ function ReportingListContent() {
       <Dialog
         open={viewImageIndex !== null && !!selectedViewImage}
         onClose={() => setViewImageIndex(null)}
-        className="relative z-[60]"
+        className="relative z-60"
       >
         <div className="theme-modal-overlay fixed inset-0" aria-hidden="true" />
 
@@ -794,7 +875,7 @@ function ReportingListContent() {
       <Dialog
         open={viewVideoIndex !== null && !!selectedViewVideo}
         onClose={() => setViewVideoIndex(null)}
-        className="relative z-[60]"
+        className="relative z-60"
       >
         <div className="theme-modal-overlay fixed inset-0" aria-hidden="true" />
 

@@ -7,6 +7,8 @@ import { toast } from "react-toastify";
 import Loading from "../../../components/Loading";
 import Link from "next/link";
 import CustomDatePicker from "../../../components/CustomDatePicker";
+import { ButtonGroup } from "../../_components/ButtonGroup";
+import { UserCardGroup } from "../../_components/UserCardGroup";
 import { formatToDDMMYYYY, getTodayInputDate } from "@/lib/dateUtils";
 import {
   Combobox,
@@ -17,7 +19,28 @@ import {
 } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
 
-type TransactionType = "INCOME" | "EXPENSE";
+type TransactionType = "EXPENSE";
+
+type PaymentMode = "CASH" | "BANK" | "CHEQUE" | "UPI" | "NEFT_RTGS";
+
+
+type UserOption = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  role?: string | null;
+};
+
+type ProjectOption = {
+  id: string;
+  name: string;
+  city?: string | null;
+};
+
+type CompanyOption = {
+  id: string;
+  name: string;
+};
 
 type ExpenseTypeOption = {
   id: string;
@@ -28,39 +51,55 @@ type ExpenseTypeOption = {
 type DailyExpenseFormState = {
   transactionType: TransactionType;
   amount: string;
+  projectId: string;
   expenseTypeId: string;
+  expenseById: string;
+  expenseCompanyId: string;
+  paymentMode: PaymentMode;
   date: string;
   remark: string;
 };
 
 type DailyExpenseFormContentProps = {
   dailyExpenseId?: string;
-  initialTransactionType?: TransactionType;
 };
-
-const TRANSACTION_OPTIONS: { value: TransactionType; label: string }[] = [
-  { value: "INCOME", label: "Income" },
-  { value: "EXPENSE", label: "Expense" },
-];
 
 function getDisplayLabel(option: ExpenseTypeOption) {
   return option.name;
 }
 
+function getProjectLabel(option: ProjectOption) {
+  return option.city ? `${option.name} (${option.city})` : option.name;
+}
+
+const paymentModeOptions: Array<{ key: PaymentMode; label: string }> = [
+  { key: "CASH", label: "Cash" },
+  { key: "CHEQUE", label: "Cheque" },
+  { key: "UPI", label: "UPI" },
+  { key: "NEFT_RTGS", label: "NEFT/RTGS" },
+];
+
 export default function DailyExpenseFormContent({
   dailyExpenseId,
-  initialTransactionType = "INCOME",
 }: DailyExpenseFormContentProps) {
   const router = useRouter();
   const [form, setForm] = useState<DailyExpenseFormState>({
-    transactionType: initialTransactionType,
+    transactionType: "EXPENSE",
     amount: "",
+    projectId: "",
     expenseTypeId: "",
+    expenseById: "",
+    expenseCompanyId: "",
+    paymentMode: "CASH",
     date: getTodayInputDate(),
     remark: "",
   });
+  const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [expenseTypes, setExpenseTypes] = useState<ExpenseTypeOption[]>([]);
+  const [users, setUsers] = useState<UserOption[]>([]);
+  const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [expenseTypeQuery, setExpenseTypeQuery] = useState("");
+  const [projectQuery, setProjectQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<
@@ -69,53 +108,80 @@ export default function DailyExpenseFormContent({
   const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadExpenseTypes = async () => {
+    const loadData = async () => {
       try {
-        const res = await fetch("/api/expense-types/options");
-        if (!res.ok) {
+        const [projectsRes, expenseTypesRes, usersRes, companiesRes, dailyExpenseRes] =
+          await Promise.all([
+            fetch("/api/projects/options"),
+            fetch("/api/expense-types/options"),
+            fetch("/api/users/options"),
+            fetch("/api/companies/options"),
+            dailyExpenseId
+              ? fetch(`/api/daily-expenses/${dailyExpenseId}`)
+              : Promise.resolve(null),
+          ]);
+
+        if (projectsRes.ok) {
+          const data = await projectsRes.json();
+          setProjects(Array.isArray(data) ? data : []);
+        } else {
+          throw new Error("Failed to load projects");
+        }
+
+        if (expenseTypesRes.ok) {
+          const data = await expenseTypesRes.json();
+          setExpenseTypes(
+            Array.isArray(data)
+              ? data.filter(
+                (item: ExpenseTypeOption) => item.status === "ACTIVE",
+              )
+              : [],
+          );
+        } else {
           throw new Error("Failed to load expense types");
         }
-        const data = await res.json();
-        setExpenseTypes(
-          Array.isArray(data)
-            ? data.filter((item: ExpenseTypeOption) => item.status === "ACTIVE")
-            : [],
-        );
-      } catch (error) {
-        console.error("Failed to load expense types", error);
-        toast.error("Failed to load expense types.");
-      }
-    };
 
-    loadExpenseTypes();
-  }, []);
-
-  useEffect(() => {
-    const loadData = async () => {
-      if (!dailyExpenseId) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const res = await fetch(`/api/daily-expenses/${dailyExpenseId}`);
-        if (!res.ok) {
-          setNote("Failed to load daily expense.");
-          return;
+        if (usersRes.ok) {
+          const data = await usersRes.json();
+          setUsers(Array.isArray(data) ? data : []);
+        } else {
+          throw new Error("Failed to load users");
         }
 
-        const data = await res.json();
-        setForm({
-          transactionType: data.transactionType === "EXPENSE" ? "EXPENSE" : "INCOME",
-          amount: String(data.amount ?? ""),
-          expenseTypeId: data.expenseTypeId || "",
-          date: formatToDDMMYYYY(data.date) === "-" ? getTodayInputDate() : formatToDDMMYYYY(data.date),
-          remark: data.remark || "",
-        });
-        setExpenseTypeQuery(data.expenseTypeName || "");
+        if (companiesRes.ok) {
+          const data = await companiesRes.json();
+          setCompanies(Array.isArray(data) ? data : []);
+        } else {
+          throw new Error("Failed to load companies");
+        }
+
+        if (dailyExpenseRes) {
+          if (!dailyExpenseRes.ok) {
+            setNote("Failed to load daily expense.");
+            return;
+          }
+
+          const data = await dailyExpenseRes.json();
+          setForm({
+            transactionType: "EXPENSE",
+            amount: String(data.amount ?? ""),
+            projectId: data.projectId || "",
+            expenseTypeId: data.expenseTypeId || "",
+            expenseById: data.expenseById || "",
+            paymentMode: data.paymentMode || "",
+            expenseCompanyId: data.expenseCompanyId || "",
+            date:
+              formatToDDMMYYYY(data.date) === "-"
+                ? getTodayInputDate()
+                : formatToDDMMYYYY(data.date),
+            remark: data.remark || "",
+          });
+          setProjectQuery(data.projectName ? getProjectLabel({ id: data.projectId || "", name: data.projectName, city: data.projectCity }) : "");
+          setExpenseTypeQuery(data.expenseTypeName || "");
+        }
       } catch (error) {
-        console.error("Failed to load daily expense", error);
-        setNote("Failed to load daily expense.");
+        console.error("Failed to load daily expense data", error);
+        setNote("Failed to load daily expense data.");
       } finally {
         setLoading(false);
       }
@@ -137,25 +203,34 @@ export default function DailyExpenseFormContent({
     [expenseTypes, form.expenseTypeId],
   );
 
-  useEffect(() => {
-    if (form.transactionType === "INCOME") {
-      setExpenseTypeQuery("");
-    }
-  }, [form.transactionType]);
+  const filteredProjects = useMemo(() => {
+    const query = projectQuery.trim().toLowerCase();
+    if (!query) return projects;
+    return projects.filter((project) =>
+      getProjectLabel(project).toLowerCase().includes(query),
+    );
+  }, [projectQuery, projects]);
+
+  const selectedProject = useMemo(
+    () => projects.find((option) => option.id === form.projectId) || null,
+    [form.projectId, projects],
+  );
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setNote(null);
 
     const newErrors: Partial<Record<keyof DailyExpenseFormState, string>> = {};
-    if (!form.transactionType) newErrors.transactionType = "Transaction type is required.";
     if (!form.amount.trim() || Number(form.amount) <= 0) {
       newErrors.amount = "Amount is required.";
     }
     if (!form.date.trim()) newErrors.date = "Date is required.";
-    if (form.transactionType === "EXPENSE" && !form.expenseTypeId) {
-      newErrors.expenseTypeId = "Expense type is required.";
-    }
+    if (!form.projectId) newErrors.projectId = "Project is required.";
+    if (!form.expenseTypeId) newErrors.expenseTypeId = "Expense type is required.";
+    if (!form.expenseById) newErrors.expenseById = "Expense by is required.";
+    if (!form.paymentMode) newErrors.paymentMode = "Payment mode is required.";
+    if (!form.expenseCompanyId)
+      newErrors.expenseCompanyId = "Expense company is required.";
 
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) {
@@ -170,10 +245,13 @@ export default function DailyExpenseFormContent({
           method: dailyExpenseId ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            transactionType: form.transactionType,
+            transactionType: "EXPENSE",
             amount: form.amount,
-            expenseTypeId:
-              form.transactionType === "EXPENSE" ? form.expenseTypeId : "",
+            projectId: form.projectId,
+            expenseTypeId: form.expenseTypeId,
+            expenseById: form.expenseById,
+            expenseCompanyId: form.expenseCompanyId,
+            paymentMode: form.paymentMode,
             date: form.date,
             remark: form.remark,
           }),
@@ -221,33 +299,169 @@ export default function DailyExpenseFormContent({
             disabled={saving}
             className={saving ? "opacity-70 pointer-events-none" : ""}
           >
-            <label className="rbac-label">
-              Transaction Type <span className="text-red-600">*</span>
-            </label>
-            <div className="mb-4 flex flex-wrap gap-4">
-              {TRANSACTION_OPTIONS.map((option) => (
-                <label key={option.value} className="inline-flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="transactionType"
-                    value={option.value}
-                    checked={form.transactionType === option.value}
-                    onChange={() =>
-                      setForm((prev) => ({
-                        ...prev,
-                        transactionType: option.value,
-                        expenseTypeId:
-                          option.value === "EXPENSE" ? prev.expenseTypeId : "",
-                      }))
-                    }
-                  />
-                  <span>{option.label}</span>
-                </label>
-              ))}
+
+
+            <div className="mb-2">
+              <ButtonGroup
+                title="Expense Company"
+                selected={form.expenseCompanyId}
+                options={companies.map((company) => ({
+                  key: company.id,
+                  label: company.name,
+                }))}
+                onSelect={(value) =>
+                  setForm((prev) => ({ ...prev, expenseCompanyId: value }))
+                }
+                error={errors.expenseCompanyId}
+                required
+              />
             </div>
-            {errors.transactionType && (
-              <p className="text-sm text-red-600 mb-2">{errors.transactionType}</p>
-            )}
+            <div className="mb-2">
+              <UserCardGroup
+                title="Expense By"
+                selected={form.expenseById}
+                users={users}
+                onSelect={(value) =>
+                  setForm((prev) => ({ ...prev, expenseById: value }))
+                }
+                error={errors.expenseById}
+                required
+                emptyMessage="No users available to select."
+              />
+            </div>
+
+            <div className="mb-2">
+              <label className="rbac-label">
+                Category <span className="text-red-600">*</span>
+              </label>
+              <Combobox
+                value={selectedExpenseType}
+                onChange={(expenseType: ExpenseTypeOption | null) => {
+                  setForm((prev) => ({
+                    ...prev,
+                    expenseTypeId: expenseType?.id || "",
+                  }));
+                  setExpenseTypeQuery("");
+                }}
+                nullable
+              >
+                <div className="relative">
+                  <ComboboxInput
+                    className="theme-input rbac-input w-full pr-10"
+                    placeholder="Search expense type"
+                    displayValue={(expenseType: ExpenseTypeOption | null) =>
+                      expenseType ? getDisplayLabel(expenseType) : expenseTypeQuery
+                    }
+                    onChange={(event) => {
+                      setExpenseTypeQuery(event.target.value);
+                      setForm((prev) => ({ ...prev, expenseTypeId: "" }));
+                    }}
+                  />
+                  <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+                    <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+                  </ComboboxButton>
+                  <ComboboxOptions
+                    modal={false}
+                    className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]"
+                  >
+                    {filteredExpenseTypes.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-[color:var(--theme-text-muted)]">
+                        No expense types found
+                      </div>
+                    ) : (
+                      filteredExpenseTypes.map((option) => (
+                        <ComboboxOption
+                          key={option.id}
+                          value={option}
+                          className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <span>{option.name}</span>
+                          </div>
+                        </ComboboxOption>
+                      ))
+                    )}
+                  </ComboboxOptions>
+                </div>
+              </Combobox>
+              {errors.expenseTypeId && (
+                <p className="text-sm text-red-600 my-2">
+                  {errors.expenseTypeId}
+                </p>
+              )}
+            </div>
+
+            <div className="mb-2">
+              <label className="rbac-label">
+                Project <span className="text-red-600">*</span>
+              </label>
+              <Combobox
+                value={selectedProject}
+                onChange={(project: ProjectOption | null) => {
+                  setForm((prev) => ({
+                    ...prev,
+                    projectId: project?.id || "",
+                  }));
+                  setProjectQuery("");
+                }}
+                nullable
+              >
+                <div className="relative">
+                  <ComboboxInput
+                    className="theme-input rbac-input w-full pr-10"
+                    placeholder="Search project"
+                    displayValue={(project: ProjectOption | null) =>
+                      project ? getProjectLabel(project) : projectQuery
+                    }
+                    onChange={(event) => {
+                      setProjectQuery(event.target.value);
+                      setForm((prev) => ({ ...prev, projectId: "" }));
+                    }}
+                  />
+                  <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+                    <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+                  </ComboboxButton>
+                  <ComboboxOptions
+                    modal={false}
+                    className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]"
+                  >
+                    {filteredProjects.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-[color:var(--theme-text-muted)]">
+                        No projects found
+                      </div>
+                    ) : (
+                      filteredProjects.map((project) => (
+                        <ComboboxOption
+                          key={project.id}
+                          value={project}
+                          className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <span>{getProjectLabel(project)}</span>
+                          </div>
+                        </ComboboxOption>
+                      ))
+                    )}
+                  </ComboboxOptions>
+                </div>
+              </Combobox>
+              {errors.projectId && (
+                <p className="my-2 text-sm text-red-600">{errors.projectId}</p>
+              )}
+            </div>
+
+            <div className="mb-2">
+              <ButtonGroup
+                title="Payment Mode"
+                selected={form.paymentMode}
+                options={paymentModeOptions}
+                onSelect={(value) =>
+                  setForm((prev) => ({ ...prev, paymentMode: value as PaymentMode }))
+                }
+                error={errors.paymentMode}
+                required
+              />
+            </div>
 
             <label className="rbac-label">
               Amount <span className="text-red-600">*</span>
@@ -258,6 +472,7 @@ export default function DailyExpenseFormContent({
                 min="0"
                 placeholder="Amount"
                 value={form.amount}
+                onWheel={(event) => event.currentTarget.blur()}
                 onChange={(event) =>
                   setForm((prev) => ({ ...prev, amount: event.target.value }))
                 }
@@ -265,77 +480,6 @@ export default function DailyExpenseFormContent({
             </label>
             {errors.amount && (
               <p className="text-sm text-red-600 mb-2">{errors.amount}</p>
-            )}
-
-            {form.transactionType === "EXPENSE" && (
-              <div className="mb-2">
-                <label className="rbac-label">
-                  Expense Type <span className="text-red-600">*</span>
-                </label>
-                <Combobox
-                  value={selectedExpenseType}
-                  onChange={(expenseType: ExpenseTypeOption | null) => {
-                    setForm((prev) => ({
-                      ...prev,
-                      expenseTypeId: expenseType?.id || "",
-                    }));
-                    setExpenseTypeQuery("");
-                  }}
-                  nullable
-                >
-                  <div className="relative">
-                    <ComboboxInput
-                      className="theme-input rbac-input mb-2 w-full pr-10"
-                      placeholder="Search expense type"
-                      displayValue={(expenseType: ExpenseTypeOption | null) =>
-                        expenseType ? getDisplayLabel(expenseType) : expenseTypeQuery
-                      }
-                      onChange={(event) => {
-                        setExpenseTypeQuery(event.target.value);
-                        setForm((prev) => ({ ...prev, expenseTypeId: "" }));
-                      }}
-                    />
-                    <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
-                      <ChevronDownIcon
-                        className="h-4 w-4"
-                        aria-hidden="true"
-                      />
-                    </ComboboxButton>
-                    <ComboboxOptions
-                      modal={false}
-                      className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]"
-                    >
-                      {filteredExpenseTypes.length === 0 ? (
-                        <div className="px-3 py-2 text-sm text-[color:var(--theme-text-muted)]">
-                          No expense types found
-                        </div>
-                      ) : (
-                        filteredExpenseTypes.map((option) => (
-                          <ComboboxOption
-                            key={option.id}
-                            value={option}
-                            className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <span>{option.name}</span>
-                            </div>
-                          </ComboboxOption>
-                        ))
-                      )}
-                    </ComboboxOptions>
-                  </div>
-                </Combobox>
-                {selectedExpenseType && !expenseTypeQuery && (
-                  <p className="text-xs text-[color:var(--theme-text-muted)]">
-                    Selected: {getDisplayLabel(selectedExpenseType)}
-                  </p>
-                )}
-                {errors.expenseTypeId && (
-                  <p className="text-sm text-red-600 mb-2">
-                    {errors.expenseTypeId}
-                  </p>
-                )}
-              </div>
             )}
 
             <label className="rbac-label">

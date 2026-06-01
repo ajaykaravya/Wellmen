@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ReactNode, useState } from "react";
 import { FaChevronRight, FaSpinner, FaEdit } from "react-icons/fa";
+import { useDashboardContext } from "./DashboardShell";
 
 type QueryRow = {
   id: string;
@@ -61,7 +62,7 @@ export function QueryTableCard<T>({
   actionButtonClassName = "rbac-button rbac-button-secondary",
 }: QueryCardContainerProps<T>) {
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
-
+  const { isAdmin } = useDashboardContext();
   const formatText = (text: string) => {
     const formation = text.replaceAll("_", " ").toLowerCase();
     const formatted = formation.charAt(0).toUpperCase() + formation.slice(1);
@@ -180,9 +181,11 @@ export function QueryTableCard<T>({
                     <p className="text-sm">
                       {query.description || "No description"}
                     </p>
-                    <p className="text-sm">
+                    {isAdmin && (
+                      <p className="text-sm">
                       <span>By:</span> {query.createdByName || ""}
                     </p>
+                    )}
                   </div>
                   <div style={{alignItems:"end"}} className="flex flex-col gap-2">
                     <div className="flex gap-2 justify-end">

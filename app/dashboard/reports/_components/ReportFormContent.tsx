@@ -1,11 +1,14 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FaSpinner } from "react-icons/fa";
+import { FaTimes } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useDashboardContext } from "../../_components/DashboardShell";
 import CustomDatePicker from "../../../components/CustomDatePicker";
+import ConfirmDialog from "../../../components/ConfirmDialog";
 import Loading from "../../../components/Loading";
 import Link from "next/link";
 import { getTodayInputDate, formatToDDMMYYYY } from "@/lib/dateUtils";
@@ -87,7 +90,13 @@ export default function ReportFormContent({
   const [existingVideoUrls, setExistingVideoUrls] = useState<string[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [videoFiles, setVideoFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [videoPreviews, setVideoPreviews] = useState<string[]>([]);
   const [projectQuery, setProjectQuery] = useState("");
+  const [confirmRemoveImageOpen, setConfirmRemoveImageOpen] = useState(false);
+  const [imageToRemove, setImageToRemove] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const videoInputRef = useRef<HTMLInputElement | null>(null);
 
   const [form, setForm] = useState<ReportFormState>({
     reportDate: getTodayInputDate(),
@@ -155,6 +164,24 @@ export default function ReportFormContent({
     loadData();
   }, [reportId]);
 
+  useEffect(() => {
+    const urls = imageFiles.map((file) => URL.createObjectURL(file));
+    setImagePreviews(urls);
+
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [imageFiles]);
+
+  useEffect(() => {
+    const urls = videoFiles.map((file) => URL.createObjectURL(file));
+    setVideoPreviews(urls);
+
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [videoFiles]);
+
   const selectedProject = useMemo(
     () => projects.find((project) => project.id === form.projectId) || null,
     [form.projectId, projects],
@@ -188,6 +215,37 @@ export default function ReportFormContent({
   };
 
   const isCreateBlocked = isAdmin && !reportId;
+
+  const promptRemoveExistingImage = (url: string) => {
+    setImageToRemove(url);
+    setConfirmRemoveImageOpen(true);
+  };
+
+  const confirmRemoveExistingImage = () => {
+    if (!imageToRemove) return;
+
+    setExistingImages((prev) => prev.filter((item) => item !== imageToRemove));
+    setImageToRemove(null);
+    setConfirmRemoveImageOpen(false);
+  };
+
+  const removeImagePreview = (index: number) => {
+    setImageFiles((prev) =>
+      prev.filter((_, currentIndex) => currentIndex !== index),
+    );
+    if (imageInputRef.current) {
+      imageInputRef.current.value = "";
+    }
+  };
+
+  const removeVideoPreview = (index: number) => {
+    setVideoFiles((prev) =>
+      prev.filter((_, currentIndex) => currentIndex !== index),
+    );
+    if (videoInputRef.current) {
+      videoInputRef.current.value = "";
+    }
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -478,6 +536,7 @@ export default function ReportFormContent({
                 <label className="rbac-label">
                   Upload images
                   <input
+                    ref={imageInputRef}
                     className="rbac-input"
                     type="file"
                     accept="image/*"
@@ -494,6 +553,7 @@ export default function ReportFormContent({
                 <label className="rbac-label">
                   Upload videos
                   <input
+                    ref={videoInputRef}
                     className="rbac-input"
                     type="file"
                     accept="video/*"
@@ -508,36 +568,107 @@ export default function ReportFormContent({
                 </label>
               </div>
 
+              {imagePreviews.length > 0 && (
+                <div className="mt-4 rounded-xl border border-slate-200 p-3">
+                  <p className="text-sm font-medium text-slate-700">
+                    Selected images
+                  </p>
+                  <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                    {imagePreviews.map((url, index) => (
+                      <div
+                        key={`${url}-${index}`}
+                        className="group relative overflow-hidden rounded-xl border border-slate-200 bg-slate-50 aspect-square"
+                      >
+                        <img
+                          src={url}
+                          alt={`Selected image ${index + 1}`}
+                          className="h-full w-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          aria-label={`Remove selected image ${index + 1}`}
+                          onClick={() => removeImagePreview(index)}
+                          className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/65 text-white shadow-md transition hover:bg-black"
+                        >
+                          <FaTimes size={12} />
+                        </button>
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-2">
+                          <p className="truncate text-xs text-white">
+                            {imageFiles[index]?.name || `Image ${index + 1}`}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {videoPreviews.length > 0 && (
+                <div className="mt-4 rounded-xl border border-slate-200 p-3">
+                  <p className="text-sm font-medium text-slate-700">
+                    Selected videos
+                  </p>
+                  <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                    {videoPreviews.map((url, index) => (
+                      <div
+                        key={`${url}-${index}`}
+                        className="group relative overflow-hidden rounded-xl border border-slate-200 bg-slate-50 aspect-square"
+                      >
+                        <video
+                          src={url}
+                          className="h-full w-full object-cover"
+                          muted
+                          playsInline
+                          controls={false}
+                        />
+                        <button
+                          type="button"
+                          aria-label={`Remove selected video ${index + 1}`}
+                          onClick={() => removeVideoPreview(index)}
+                          className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/65 text-white shadow-md transition hover:bg-black"
+                        >
+                          <FaTimes size={12} />
+                        </button>
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-2">
+                          <p className="truncate text-xs text-white">
+                            {videoFiles[index]?.name || `Video ${index + 1}`}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {existingImages.length > 0 && (
                 <div className="mt-4 rounded-xl border border-slate-200 p-3">
                   <p className="text-sm font-medium text-slate-700">
                     Existing images
                   </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
+                  <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                     {existingImages.map((url) => (
                       <div
                         key={url}
-                        className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-2 py-1"
+                        className="group relative overflow-hidden rounded-xl border border-slate-200 bg-slate-50 aspect-square"
                       >
-                        <a
-                          className="rbac-link"
-                          href={url}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {url.split("/").pop()}
-                        </a>
+                        <img
+                          src={url}
+                          alt="Existing report image"
+                          className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
+                        />
                         <button
-                          className="rbac-link danger"
                           type="button"
-                          onClick={() =>
-                            setExistingImages((prev) =>
-                              prev.filter((item) => item !== url),
-                            )
-                          }
+                          aria-label="Remove image"
+                          onClick={() => promptRemoveExistingImage(url)}
+                          className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/65 text-white shadow-md transition hover:bg-black"
                         >
-                          Remove
+                          <FaTimes size={12} />
                         </button>
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-2">
+                          <p className="truncate text-xs text-white">
+                            {url.split("/").pop()}
+                          </p>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -546,52 +677,60 @@ export default function ReportFormContent({
 
               {existingVideoUrls.length > 0 && (
                 <div className="mt-3 rounded-xl border border-slate-200 p-3">
-                  <p className="text-sm text-slate-700">Existing videos</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
+                  <p className="text-sm font-medium text-slate-700">
+                    Existing videos
+                  </p>
+                  <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                     {existingVideoUrls.map((url) => (
                       <div
                         key={url}
-                        className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-2 py-1"
+                        className="group relative overflow-hidden rounded-xl border border-slate-200 bg-slate-50 aspect-square"
                       >
-                        <a
-                          className="rbac-link"
-                          href={url}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {url.split("/").pop()}
-                        </a>
+                        <video
+                          src={url}
+                          className="h-full w-full object-cover"
+                          muted
+                          playsInline
+                          controls={false}
+                        />
                         <button
-                          className="rbac-link danger"
                           type="button"
+                          aria-label="Remove video"
                           onClick={() =>
                             setExistingVideoUrls((prev) =>
                               prev.filter((item) => item !== url),
                             )
                           }
+                          className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/65 text-white shadow-md transition hover:bg-black"
                         >
-                          Remove
+                          <FaTimes size={12} />
                         </button>
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-2">
+                          <p className="truncate text-xs text-white">
+                            {url.split("/").pop()}
+                          </p>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {imageFiles.length > 0 && (
-                <p className="mt-3 text-sm text-slate-600">
-                  {imageFiles.length} image file(s) selected.
-                </p>
-              )}
-
-              {videoFiles.length > 0 && (
-                <p className="mt-2 text-sm text-slate-600">
-                  {videoFiles.length} video file(s) selected.
-                </p>
-              )}
-
               {note && <p className="mt-2 text-sm text-red-600">{note}</p>}
             </fieldset>
+
+            <ConfirmDialog
+              open={confirmRemoveImageOpen}
+              title="Remove image?"
+              description="This will remove the image from the form. You can cancel to keep it."
+              confirmLabel="Delete"
+              cancelLabel="Cancel"
+              onConfirm={confirmRemoveExistingImage}
+              onClose={() => {
+                setConfirmRemoveImageOpen(false);
+                setImageToRemove(null);
+              }}
+            />
 
             <div className="rbac-actions">
               <button

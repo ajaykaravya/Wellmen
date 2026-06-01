@@ -18,6 +18,7 @@ import {
   FaFilter,
 } from "react-icons/fa";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type CategoryRow = {
   id: string;
@@ -25,6 +26,7 @@ type CategoryRow = {
 };
 
 function CategoryListContent() {
+  const router = useRouter();
   const [categories, setCategories] = useState<CategoryRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
@@ -82,7 +84,9 @@ function CategoryListContent() {
     setConfirmOpen(true);
   }, []);
 
-  const activeFilterCount = [query.trim()].filter(Boolean).length;
+  const handleEditCategory = useCallback((row: CategoryRow) => {
+    router.push(`/dashboard/project-categories/${row.id}`);
+  }, [router]);
 
   const openFilters = useCallback(() => {
     setDraftQuery(query);
@@ -138,12 +142,10 @@ function CategoryListContent() {
         header: "Action",
         id: "action",
         cell: ({ row }) => (
-          <div className="flex justify-end gap-4">
-            <Link href={`/dashboard/project-categories/${row.original.id}`}>
-              <button className="rbac-link" type="button">
-                <FaEdit />
-              </button>
-            </Link>
+          <div className="justify-end flex gap-2">
+            <button onClick={() => handleEditCategory(row.original)} className="rbac-link" type="button">
+              <FaEdit />
+            </button>
             <button
               className="rbac-link danger"
               type="button"
@@ -155,7 +157,7 @@ function CategoryListContent() {
         ),
       },
     ],
-    [handleDeleteCategory],
+    [handleDeleteCategory, handleEditCategory],
   );
 
   const table = useReactTable({
@@ -292,13 +294,9 @@ function CategoryListContent() {
                         </h4>
                       </div>
                       <div className="flex">
-                        <Link
-                          href={`/dashboard/project-categories/${category.id}`}
-                        >
-                          <button  className="rbac-link" type="button">
+                          <button onClick={()=> handleEditCategory(category)}  className="rbac-link" type="button">
                             <FaEdit size={18}/>
                           </button>
-                        </Link>
                         <button
                           style={{padding:"2px"}}
                           className="rbac-link danger"
@@ -380,7 +378,6 @@ function CategoryListContent() {
         description="Update the filters and apply them when you're ready."
         onClose={closeFilters}
         onApply={applyFilters}
-        activeCount={activeFilterCount}
       >
         <input
           className="rbac-input-filter"

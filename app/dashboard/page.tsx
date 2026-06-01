@@ -9,17 +9,16 @@ import DashboardShell, {
   clearCachedSession,
   useDashboardContext,
 } from "./_components/DashboardShell";
+import { FinanceCardList } from "./_components/FinanceCardList";
 import { TaskTableCard } from "./_components/TaskTableCard";
 import ConfirmDialog from "../components/ConfirmDialog";
 import CustomDatePicker from "../components/CustomDatePicker";
 import {
   FaChevronLeft,
   FaChevronRight,
-  FaEye,
   FaClock,
   FaHourglass,
   FaCheckCircle,
-  FaPlay,
   FaSpinner,
   FaMoon,
   FaSun,
@@ -51,7 +50,6 @@ import {
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
 import { useThemeMode } from "../components/ThemeProvider";
 import { IoIosClose } from "react-icons/io";
-import { MdOutlineFileDownload } from "react-icons/md";
 import { QueryTableCard } from "./_components/QueryTableCard";
 import { ReportingCardList } from "./_components/ReportingCardList";
 import { ReportDetailsDialog } from "./_components/ReportDetailsDialog";
@@ -122,6 +120,57 @@ type AdminReportRow = {
   canManage?: boolean;
 };
 
+type IncomeEntryRow = {
+  id: string;
+  transactionType: "INCOME";
+  createdAt: string;
+  date: string;
+  amount: number;
+  projectName: string | null;
+  projectCity: string | null;
+  incomeTypeName: string | null;
+  incomeCompanyName: string | null;
+  incomeCompanyCode: string | null;
+  receivedByName: string | null;
+  paymentMode: string | null;
+  remark: string | null;
+};
+
+type ExpenseEntryRow = {
+  id: string;
+  createdAt: string;
+  date: string;
+  amount: number;
+  projectName: string | null;
+  projectCity: string | null;
+  expenseTypeName: string | null;
+  expenseByName: string | null;
+  expenseCompanyName: string | null;
+  expenseCompanyCode: string | null;
+  paymentMode: string | null;
+  remark: string | null;
+};
+
+type PetiCashEntryRow = {
+  id: string;
+  transactionType: "CREDIT" | "DEBIT";
+  createdAt: string;
+  date: string;
+  amount: number;
+  givenByName: string | null;
+  givenToName: string | null;
+  companyName: string | null;
+  companyCode: string | null;
+  projectName: string | null;
+  projectCity: string | null;
+  remarks: string | null;
+};
+
+type PetiCashBalanceRow = {
+  amount: number;
+  transactionType: "CREDIT" | "DEBIT";
+};
+
 const shiftInputDate = (value: string, diffDays: number) => {
   let base: Date;
   if (value) {
@@ -147,13 +196,11 @@ const shiftInputDate = (value: string, diffDays: number) => {
   return `${day}/${month}/${year}`;
 };
 
-type DailyExpenseTransactionType = "INCOME" | "EXPENSE";
-
 const formatAmount = (value: number) =>
-  Number(value || 0).toLocaleString(undefined, {
+  `₹${Number(value || 0).toLocaleString("en-IN", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  });
+  })}`;
 
 function OverviewContent() {
   const { user, isAdmin } = useDashboardContext();
@@ -175,10 +222,17 @@ function OverviewContent() {
   const [adminDate, setAdminDate] = useState(getTodayInputDate());
   const [adminReports, setAdminReports] = useState<AdminReportRow[]>([]);
   const [adminLoading, setAdminLoading] = useState(false);
-  const [currentBalance, setCurrentBalance] = useState<number | null>(null);
-  const [balanceLoading, setBalanceLoading] = useState(false);
   const [userReports, setUserReports] = useState<AdminReportRow[]>([]);
   const [userReportsLoading, setUserReportsLoading] = useState(false);
+  const [incomeDate, setIncomeDate] = useState(getTodayInputDate());
+  const [expenseDate, setExpenseDate] = useState(getTodayInputDate());
+  const [petiCashDate, setPetiCashDate] = useState(getTodayInputDate());
+  const [incomeEntries, setIncomeEntries] = useState<IncomeEntryRow[]>([]);
+  const [incomeLoading, setIncomeLoading] = useState(false);
+  const [expenseEntries, setExpenseEntries] = useState<ExpenseEntryRow[]>([]);
+  const [expenseLoading, setExpenseLoading] = useState(false);
+  const [petiCashEntries, setPetiCashEntries] = useState<PetiCashEntryRow[]>([]);
+  const [petiCashLoading, setPetiCashLoading] = useState(false);
   const [reportViewOpen, setReportViewOpen] = useState(false);
   const [reportViewLoading, setReportViewLoading] = useState(false);
   const [reportViewData, setReportViewData] = useState<AdminReportRow | null>(
@@ -199,9 +253,23 @@ function OverviewContent() {
   const [confirmReportTarget, setConfirmReportTarget] = useState<AdminReportRow | null>(null);
   const [deletingReport, setDeletingReport] = useState(false);
 
+  const [confirmIncomeOpen, setConfirmIncomeOpen] = useState(false);
+  const [confirmIncomeTarget, setConfirmIncomeTarget] = useState<IncomeEntryRow | null>(null);
+  const [deletingIncome, setDeletingIncome] = useState(false);
+  const [confirmExpenseOpen, setConfirmExpenseOpen] = useState(false);
+  const [confirmExpenseTarget, setConfirmExpenseTarget] = useState<ExpenseEntryRow | null>(null);
+  const [deletingExpense, setDeletingExpense] = useState(false);
+  const [confirmPetiCashOpen, setConfirmPetiCashOpen] = useState(false);
+  const [confirmPetiCashTarget, setConfirmPetiCashTarget] = useState<PetiCashEntryRow | null>(null);
+  const [deletingPetiCash, setDeletingPetiCash] = useState(false);
+
   const [collapsed, setCollapsed] = useState(true);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [totalIncome, setTotalIncome] = useState(0);
+  const [totalBalance, setTotalBalance] = useState(0);
+  const [totalIncomeLoading, setTotalIncomeLoading] = useState(true);
+  const [balanceLoading, setBalanceLoading] = useState(true);
   const [changePasswordSubmitting, setChangePasswordSubmitting] =
     useState(false);
   const [passwordForm, setPasswordForm] = useState({
@@ -260,7 +328,7 @@ function OverviewContent() {
     setLoading(true);
     try {
       const today = getTodayInputDate();
-      const endpoint = isAdmin ? "/api/todos" : "/api/my-todos";
+      const endpoint = "/api/task-management";
       const res = await fetch(
         `${endpoint}?fromDate=${today}&includePendingOld=true&page=1&pageSize=10`,
       );
@@ -274,7 +342,7 @@ function OverviewContent() {
     } finally {
       setLoading(false);
     }
-  }, [isAdmin]);
+  }, []);
 
   useEffect(() => {
     loadTodos();
@@ -282,9 +350,7 @@ function OverviewContent() {
 
   const loadQuery = useCallback(async () => {
     try {
-      const endpoint = isAdmin
-        ? "/api/query-management"
-        : "/api/my-query-management";
+      const endpoint = "/api/query-management";
       const res = await fetch(endpoint);
       if (!res.ok) return;
 
@@ -294,7 +360,7 @@ function OverviewContent() {
     } catch (error) {
       console.error("Failed to load query", error);
     }
-  }, [isAdmin]);
+  }, []);
 
   useEffect(() => {
     loadQuery();
@@ -350,29 +416,252 @@ function OverviewContent() {
     loadUserReports();
   }, [loadUserReports]);
 
-  const loadCurrentBalance = useCallback(async () => {
-    if (!isAdmin) {
-      setCurrentBalance(null);
-      return;
-    }
+  const loadIncomeEntries = useCallback(async () => {
+    if (!isAdmin) return;
 
-    setBalanceLoading(true);
+    setIncomeLoading(true);
     try {
-      const res = await fetch("/api/daily-expenses?page=1&pageSize=1");
+      const params = new URLSearchParams({
+        fromDate: incomeDate,
+        toDate: incomeDate,
+        page: "1",
+        pageSize: "20",
+      });
+      const res = await fetch(`/api/income?${params.toString()}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setIncomeEntries(Array.isArray(data?.data) ? data.data : []);
+    } catch (error) {
+      console.error("Failed to load income entries", error);
+    } finally {
+      setIncomeLoading(false);
+    }
+  }, [incomeDate, isAdmin]);
+
+
+  const getTotalIncome = useCallback(async () => {
+    if (!isAdmin) return;
+    setTotalIncomeLoading(true);
+    try {
+      const res = await fetch("/api/income");
+
       if (!res.ok) return;
 
-      const data = await res.json();
-      setCurrentBalance(typeof data?.balance === "number" ? data.balance : 0);
+      const response = await res.json();
+
+      const total = response.data.reduce(
+        (sum: number, item: { amount: number }) => sum + Number(item.amount),
+        0
+      );
+
+      setTotalIncome(total);
     } catch (error) {
-      console.error("Failed to load current balance", error);
-    } finally {
+      console.error("Failed to calculate total income", error);
+    }
+    finally {
+      setTotalIncomeLoading(false);
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
+    getTotalIncome();
+  }, [getTotalIncome]);
+
+  const getTotalBalance = useCallback(async () => {
+    if (!isAdmin) return;
+    setBalanceLoading(true);
+    try {
+      let currentPage = 1;
+      let totalPages = 1;
+      const rows: PetiCashBalanceRow[] = [];
+
+      while (currentPage <= totalPages) {
+        const params = new URLSearchParams({
+          page: String(currentPage),
+          pageSize: "100",
+        });
+
+        const res = await fetch(`/api/peti-cash?${params.toString()}`);
+        if (!res.ok) return;
+
+        const response = await res.json();
+        const pageRows = Array.isArray(response?.data) ? response.data : [];
+        rows.push(...pageRows);
+
+        totalPages =
+          typeof response?.totalPages === "number" && response.totalPages > 0
+            ? response.totalPages
+            : 1;
+        currentPage += 1;
+      }
+
+      const total = rows.reduce((sum, row) => {
+        const amount = Number(row.amount || 0);
+        return row.transactionType === "CREDIT" ? sum + amount : sum - amount;
+      }, 0);
+
+      setTotalBalance(total);
+
+    } catch (error) {
+      console.error("Failed to calculate balance", error);
+    }
+    finally {
       setBalanceLoading(false);
     }
   }, [isAdmin]);
 
   useEffect(() => {
-    loadCurrentBalance();
-  }, [loadCurrentBalance]);
+    getTotalBalance();
+  }, [getTotalBalance]);
+
+  const loadExpenseEntries = useCallback(async () => {
+    if (!isAdmin) return;
+
+    setExpenseLoading(true);
+    try {
+      const params = new URLSearchParams({
+        fromDate: expenseDate,
+        toDate: expenseDate,
+        page: "1",
+        pageSize: "20",
+      });
+      const res = await fetch(`/api/daily-expenses?${params.toString()}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setExpenseEntries(Array.isArray(data?.data) ? data.data : []);
+    } catch (error) {
+      console.error("Failed to load expense entries", error);
+    } finally {
+      setExpenseLoading(false);
+    }
+  }, [expenseDate, isAdmin]);
+
+  const loadPetiCashEntries = useCallback(async () => {
+    if (!isAdmin) return;
+
+    setPetiCashLoading(true);
+    try {
+      const params = new URLSearchParams({
+        fromDate: petiCashDate,
+        toDate: petiCashDate,
+        page: "1",
+        pageSize: "20",
+      });
+      const res = await fetch(`/api/peti-cash?${params.toString()}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setPetiCashEntries(Array.isArray(data?.data) ? data.data : []);
+    } catch (error) {
+      console.error("Failed to load peti cash entries", error);
+    } finally {
+      setPetiCashLoading(false);
+    }
+  }, [isAdmin, petiCashDate]);
+
+  useEffect(() => {
+    loadIncomeEntries();
+    loadExpenseEntries();
+    loadPetiCashEntries();
+  }, [loadExpenseEntries, loadIncomeEntries, loadPetiCashEntries]);
+
+  const handleEditIncomeEntry = useCallback((row: IncomeEntryRow) => {
+    router.push(`/dashboard/income/${row.id}`);
+  }, [router]);
+
+  const handleDeleteIncomeEntry = useCallback((row: IncomeEntryRow) => {
+    setConfirmIncomeTarget(row);
+    setConfirmIncomeOpen(true);
+  }, []);
+
+  const confirmDeleteIncomeEntry = useCallback(async () => {
+    if (!confirmIncomeTarget) return;
+    setDeletingIncome(true);
+    try {
+      const res = await fetch(`/api/income/${confirmIncomeTarget.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        toast.error(payload.error || "Failed to delete income.");
+        return;
+      }
+      toast.success("Income deleted successfully.");
+      await loadIncomeEntries();
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to delete income.");
+    } finally {
+      setDeletingIncome(false);
+      setConfirmIncomeOpen(false);
+      setConfirmIncomeTarget(null);
+    }
+  }, [confirmIncomeTarget, loadIncomeEntries]);
+
+  const handleEditExpenseEntry = useCallback((row: ExpenseEntryRow) => {
+    router.push(`/dashboard/daily-expenses/${row.id}`);
+  }, [router]);
+
+  const handleDeleteExpenseEntry = useCallback((row: ExpenseEntryRow) => {
+    setConfirmExpenseTarget(row);
+    setConfirmExpenseOpen(true);
+  }, []);
+
+  const confirmDeleteExpenseEntry = useCallback(async () => {
+    if (!confirmExpenseTarget) return;
+    setDeletingExpense(true);
+    try {
+      const res = await fetch(`/api/daily-expenses/${confirmExpenseTarget.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        toast.error(payload.error || "Failed to delete expense.");
+        return;
+      }
+      toast.success("Expense deleted successfully.");
+      await loadExpenseEntries();
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to delete expense.");
+    } finally {
+      setDeletingExpense(false);
+      setConfirmExpenseOpen(false);
+      setConfirmExpenseTarget(null);
+    }
+  }, [confirmExpenseTarget, loadExpenseEntries]);
+
+  const handleEditPetiCashEntry = useCallback((row: PetiCashEntryRow) => {
+    router.push(`/dashboard/peti-cash/${row.id}`);
+  }, [router]);
+
+  const handleDeletePetiCashEntry = useCallback((row: PetiCashEntryRow) => {
+    setConfirmPetiCashTarget(row);
+    setConfirmPetiCashOpen(true);
+  }, []);
+
+  const confirmDeletePetiCashEntry = useCallback(async () => {
+    if (!confirmPetiCashTarget) return;
+    setDeletingPetiCash(true);
+    try {
+      const res = await fetch(`/api/peti-cash/${confirmPetiCashTarget.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        toast.error(payload.error || "Failed to delete peti cash.");
+        return;
+      }
+      toast.success("Peti cash deleted successfully.");
+      await loadPetiCashEntries();
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to delete peti cash.");
+    } finally {
+      setDeletingPetiCash(false);
+      setConfirmPetiCashOpen(false);
+      setConfirmPetiCashTarget(null);
+    }
+  }, [confirmPetiCashTarget, loadPetiCashEntries]);
 
   const openReportView = useCallback(async (row: AdminReportRow) => {
     setReportViewOpen(true);
@@ -406,7 +695,7 @@ function OverviewContent() {
 
     setSavingId(row.id);
     try {
-      const res = await fetch(`/api/my-todos/${row.id}`, {
+      const res = await fetch(`/api/task-management/${row.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -499,13 +788,6 @@ function OverviewContent() {
     setModalOpen(true);
   }, []);
 
-  const openDailyExpenseEntry = useCallback(
-    (transactionType: DailyExpenseTransactionType) => {
-      router.push(`/dashboard/daily-expenses/new?type=${transactionType}`);
-    },
-    [router],
-  );
-
   const closeUpdateModal = useCallback(() => {
     setModalOpen(false);
     setModalTarget(null);
@@ -550,7 +832,7 @@ function OverviewContent() {
     if (!confirmTodoTarget) return;
     setDeletingTodo(true);
     try {
-      const endpoint = isAdmin ? "/api/todos" : "/api/my-todos";
+      const endpoint = "/api/task-management";
       const res = await fetch(`${endpoint}/${confirmTodoTarget.id}`, { method: "DELETE" });
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
@@ -567,7 +849,7 @@ function OverviewContent() {
       setConfirmTodoOpen(false);
       setConfirmTodoTarget(null);
     }
-  }, [confirmTodoTarget, isAdmin, loadTodos]);
+  }, [confirmTodoTarget, loadTodos]);
 
   const handleDeleteQuery = useCallback((row: QueryRow) => {
     setConfirmQueryTarget(row);
@@ -578,7 +860,7 @@ function OverviewContent() {
     if (!confirmQueryTarget) return;
     setDeletingQuery(true);
     try {
-      const endpoint = isAdmin ? "/api/query-management" : "/api/my-query-management";
+      const endpoint = "/api/query-management";
       const res = await fetch(`${endpoint}/${confirmQueryTarget.id}`, { method: "DELETE" });
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
@@ -595,7 +877,7 @@ function OverviewContent() {
       setConfirmQueryOpen(false);
       setConfirmQueryTarget(null);
     }
-  }, [confirmQueryTarget, isAdmin, loadQuery]);
+  }, [confirmQueryTarget, loadQuery]);
 
   const handleEditReport = useCallback((row: AdminReportRow) => {
     router.push(`/dashboard/reports/${row.id}`);
@@ -963,6 +1245,42 @@ function OverviewContent() {
         onClose={() => setConfirmReportOpen(false)}
       />
 
+      <ConfirmDialog
+        open={confirmIncomeOpen}
+        title="Delete income?"
+        description="Are you sure you want to delete this income entry?"
+        confirmLabel="Delete"
+        confirmLoading={deletingIncome}
+        confirmLoadingLabel="Deleting..."
+        cancelLabel="Cancel"
+        onConfirm={confirmDeleteIncomeEntry}
+        onClose={() => setConfirmIncomeOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={confirmExpenseOpen}
+        title="Delete expense?"
+        description="Are you sure you want to delete this entry?"
+        confirmLabel="Delete"
+        confirmLoading={deletingExpense}
+        confirmLoadingLabel="Deleting..."
+        cancelLabel="Cancel"
+        onConfirm={confirmDeleteExpenseEntry}
+        onClose={() => setConfirmExpenseOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={confirmPetiCashOpen}
+        title="Delete peti cash?"
+        description="Are you sure you want to delete this peti cash entry?"
+        confirmLabel="Delete"
+        confirmLoading={deletingPetiCash}
+        confirmLoadingLabel="Deleting..."
+        cancelLabel="Cancel"
+        onConfirm={confirmDeletePetiCashEntry}
+        onClose={() => setConfirmPetiCashOpen(false)}
+      />
+
       <section className="rbac-section mt-4 rbac-container">
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
           <div className="rbac-card p-4 sm:p-6 flex items-center gap-4">
@@ -1182,9 +1500,9 @@ function OverviewContent() {
                 <div className="flex items-center justify-between gap-2 w-full">
                   <div className="flex items-center">
                     <h3 className="sm:text-base text-sm font-medium w-full">
-                      {isAdmin ? "Employees reporting" : "Today's reporting"}
+                      {isAdmin ? "Reportings" : "Today's reporting"}
                     </h3>
-                    <p className=" text-white text-sm font-normal bg-[#2596be] px-2 py-1 rounded-full">{isAdmin ? adminReports.length : userReports.length}</p>
+                    <p className="ml-2 text-white text-sm font-normal bg-[#2596be] px-2 py-1 rounded-full">{isAdmin ? adminReports.length : userReports.length}</p>
                   </div>
                   <div className="flex items-center gap-2 justify-end w-full">
                     {!isAdmin && (
@@ -1303,43 +1621,95 @@ function OverviewContent() {
       </section>
 
       {isAdmin && (
-        <section className="rbac-section mt-4 rbac-container">
-          <div className="rbac-card p-5 sm:p-6">
-            <div className="flex flex-wrap justify-between">
-              <div className="flex items-center gap-2">
-                <h3 className="sm:text-base text-sm font-medium">
-                  Current balance:
-                </h3>
-                <p className="text-slate-500 sm:text-base text-sm">
-                  {balanceLoading
-                    ? "Loading..."
-                    : currentBalance === null
-                      ? "0"
-                      : formatAmount(currentBalance)}
-                </p>
-              </div>
-              <div className="mt-4 flex gap-3">
-                <button
-                  type="button"
-                  className="rbac-button h-fit"
-                  onClick={() => openDailyExpenseEntry("INCOME")}
-                >
-                  Add Income
-                </button>
-                <button
-                  type="button"
-                  className="rbac-button rbac-button-secondary h-fit"
-                  onClick={() => openDailyExpenseEntry("EXPENSE")}
-                >
-                  Add Expense
-                </button>
-              </div>
-            </div>
+        <section className="rbac-section rbac-container" style={{ marginTop: "-10px" }}>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-800 ring-1 ring-emerald-200">
+              Income: {totalIncomeLoading ? "Loading..." : formatAmount(totalIncome)}
+            </span>
+            <span
+              className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ring-1 ${totalBalance < 0
+                  ? "bg-red-100 text-red-800 ring-red-200"
+                  : "bg-green-100 text-green-800 ring-green-200"
+                }`}
+            >
+              Total Balance: {balanceLoading ? "Loading..." : formatAmount(totalBalance)}
+            </span>
           </div>
+
+          <FinanceCardList<IncomeEntryRow>
+            title="Incomes"
+            rows={incomeEntries}
+            loading={incomeLoading}
+            emptyLabel="No income entries found for selected date."
+            onEdit={handleEditIncomeEntry}
+            onDelete={handleDeleteIncomeEntry}
+            showDatePicker
+            date={incomeDate}
+            onDateChange={setIncomeDate}
+            cardContent={{
+              getVariant: () => "income",
+              getCode: (row) => row.incomeCompanyCode,
+              getTitle: (row) => row.incomeTypeName || "",
+              getPaymentMode: (row) => row.paymentMode,
+              getProjectName: (row) => row.projectName,
+              getProjectCity: (row) => row.projectCity,
+              getReceivedByName: (row) => row.receivedByName,
+              getRemark: (row) => row.remark || "",
+              getDateLabel: (row) => formatToDDMMYYYY(row.date),
+            }}
+          />
+
+          <FinanceCardList<ExpenseEntryRow>
+            title="Expenses"
+            rows={expenseEntries}
+            loading={expenseLoading}
+            emptyLabel="No expense entries found for selected date."
+            onEdit={handleEditExpenseEntry}
+            onDelete={handleDeleteExpenseEntry}
+            showDatePicker
+            date={expenseDate}
+            onDateChange={setExpenseDate}
+            cardContent={{
+              getVariant: () => "expense",
+              getCode: (row) => row.expenseCompanyCode,
+              getPaymentMode: (row) => row.paymentMode,
+              getProjectName: (row) => row.projectName,
+              getProjectCity: (row) => row.projectCity,
+              getExpenseByName: (row) => row.expenseByName,
+              getTitle: (row) => row.expenseTypeName || "",
+              getRemark: (row) => row.remark || "",
+              getDateLabel: (row) => formatToDDMMYYYY(row.date),
+            }}
+          />
+
+          <FinanceCardList<PetiCashEntryRow>
+            title="Peti Cash"
+            rows={petiCashEntries}
+            loading={petiCashLoading}
+            emptyLabel="No peti cash entries found for selected date."
+            onEdit={handleEditPetiCashEntry}
+            onDelete={handleDeletePetiCashEntry}
+            showDatePicker
+            date={petiCashDate}
+            onDateChange={setPetiCashDate}
+            cardContent={{
+              getVariant: (row) => (row.transactionType === "CREDIT" ? "income" : "expense"),
+              getCode: (row) => row.companyCode,
+              getTagClassName: (row) =>
+                row.transactionType === "CREDIT"
+                  ? "bg-emerald-100 text-emerald-800 ring-emerald-200"
+                  : "bg-rose-100 text-rose-800 ring-rose-200",
+              getProjectName: (row) => row.projectName,
+              getProjectCity: (row) => row.projectCity,
+              getCashGivenByName: (row) => row.givenByName,
+              getCashGivenToName: (row) => row.givenToName,
+              getRemark: (row) => row.remarks || "",
+              getDateLabel: (row) => formatToDDMMYYYY(row.date),
+            }}
+          />
         </section>
       )}
-
-      <section className=""></section>
 
       {modalOpen && !isAdmin && (
         <div className="theme-modal-overlay fixed inset-0 z-50 flex items-center justify-center px-4">

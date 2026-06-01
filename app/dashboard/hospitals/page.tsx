@@ -21,7 +21,15 @@ import {
   FaEye,
 } from "react-icons/fa";
 import { IoIosClose } from "react-icons/io";
+import {
+  Dialog,
+  DialogBackdrop,
+  DialogPanel,
+  DialogTitle,
+  Listbox,
+} from "@headlessui/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type ProjectRow = {
   id: string;
@@ -37,6 +45,7 @@ type ProjectRow = {
 };
 
 function ProjectListContent() {
+  const router = useRouter();
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
@@ -80,8 +89,8 @@ function ProjectListContent() {
       setProjects(Array.isArray(data?.data) ? data.data : []);
       const completed = Array.isArray(data?.data)
         ? data.data.filter(
-            (project: ProjectRow) => project.status === "COMPLETED",
-          )
+          (project: ProjectRow) => project.status === "COMPLETED",
+        )
         : [];
 
       setProjects(completed);
@@ -118,7 +127,9 @@ function ProjectListContent() {
     setConfirmOpen(true);
   }, []);
 
-  const activeFilterCount = [query.trim(), cityFilter, fromDate, toDate].filter(Boolean).length;
+  const handleEditProject = useCallback((row: ProjectRow) => {
+    router.push(`/dashboard/hospitals/${row.id}`);
+  }, [router]);
 
   const openFilters = useCallback(() => {
     setDraftQuery(query);
@@ -257,11 +268,13 @@ function ProjectListContent() {
             >
               <FaEye />
             </button>
-            <Link href={`/dashboard/hospitals/${row.original.id}`}>
-              <button className="rbac-link" type="button">
-                <FaEdit />
-              </button>
-            </Link>
+            <button
+              onClick={() => handleEditProject(row.original)}
+              className="rbac-link"
+              type="button"
+            >
+              <FaEdit />
+            </button>
             <button
               className="rbac-link danger"
               type="button"
@@ -273,7 +286,7 @@ function ProjectListContent() {
         ),
       },
     ],
-    [handleDeleteProject, handleView],
+    [handleDeleteProject, handleView, handleEditProject],
   );
 
   const completedProjects = projects.filter((project) => {
@@ -339,9 +352,9 @@ function ProjectListContent() {
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext(),
-                              )}
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
                         </th>
                       ))}
                     </tr>
@@ -419,19 +432,22 @@ function ProjectListContent() {
                       </div>
                       <div className="flex">
                         <button
+                          style={{ padding: '2px' }}
                           className="rbac-link"
                           type="button"
                           onClick={() => handleView(project)}
                         >
                           <FaEye size={18} />
                         </button>
-                        <Link href={`/dashboard/projects/${project.id}`}>
-                          <button className="rbac-link" type="button">
-                            <FaEdit size={18} />
-                          </button>
-                        </Link>
                         <button
-                        style={{padding:"2px"}}
+                          onClick={() => handleEditProject(project)}
+                          className="rbac-link"
+                          type="button"
+                        >
+                          <FaEdit size={18} />
+                        </button>
+                        <button
+                          style={{ padding: "2px" }}
                           className="rbac-link danger"
                           type="button"
                           onClick={() => handleDeleteProject(project)}
@@ -444,8 +460,8 @@ function ProjectListContent() {
                       {
                         project.contactNumber && (
                           <p>
-                        <strong>Contact:</strong> {project.contactNumber}
-                      </p>
+                            <strong>Contact:</strong> {project.contactNumber}
+                          </p>
                         )
                       }
                       {
@@ -458,23 +474,23 @@ function ProjectListContent() {
                       {
                         project.startDate && (
                           <p>
-                        <strong>Start:</strong>{" "}
-                        {project.startDate
-                          ? formatToDDMMYYYY(project.startDate)
-                          : ""}
-                      </p>
+                            <strong>Start:</strong>{" "}
+                            {project.startDate
+                              ? formatToDDMMYYYY(project.startDate)
+                              : ""}
+                          </p>
                         )
-                        }
+                      }
                       {
                         project.endDate && (
                           <p>
-                        <strong>End:</strong>{" "}
-                        {project.endDate
-                          ? formatToDDMMYYYY(project.endDate)
-                          : ""}
-                      </p>
+                            <strong>End:</strong>{" "}
+                            {project.endDate
+                              ? formatToDDMMYYYY(project.endDate)
+                              : ""}
+                          </p>
                         )
-                        }
+                      }
                     </div>
                   </div>
                 ))}
@@ -546,7 +562,6 @@ function ProjectListContent() {
         description="Update the filters and apply them when you're ready."
         onClose={closeFilters}
         onApply={applyFilters}
-        activeCount={activeFilterCount}
       >
         <input
           className="rbac-input-filter"
@@ -555,18 +570,51 @@ function ProjectListContent() {
           value={draftQuery}
           onChange={(event) => setDraftQuery(event.target.value)}
         />
-        <select
-          className="rbac-input-filter rbac-select"
-          value={draftCityFilter}
-          onChange={(event) => setDraftCityFilter(event.target.value)}
-        >
-          <option value="">All cities</option>
-          {cityOptions.map((city) => (
-            <option key={city} value={city}>
-              {city}
-            </option>
-          ))}
-        </select>
+        <Listbox value={draftCityFilter} onChange={setDraftCityFilter}>
+          <div className="relative">
+            <Listbox.Button className="rbac-input-filter rbac-select flex w-full items-center justify-between text-left">
+              <span className="truncate">
+                {draftCityFilter || "All cities"}
+              </span>
+
+            </Listbox.Button>
+
+            <Listbox.Options className="theme-surface absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-md py-1 shadow-lg focus:outline-none">
+              <Listbox.Option
+                value=""
+                className={({ active }) =>
+                  `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                  }`
+                }
+              >
+                {({ selected }) => (
+                  <div className="flex items-center justify-between">
+                    <span>All cities</span>
+
+                  </div>
+                )}
+              </Listbox.Option>
+
+              {cityOptions.map((city) => (
+                <Listbox.Option
+                  key={city}
+                  value={city}
+                  className={({ active }) =>
+                    `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                    }`
+                  }
+                >
+                  {({ selected }) => (
+                    <div className="flex items-center justify-between">
+                      <span>{city}</span>
+
+                    </div>
+                  )}
+                </Listbox.Option>
+              ))}
+            </Listbox.Options>
+          </div>
+        </Listbox>
         <CustomDatePicker
           value={draftFromDate}
           onChange={setDraftFromDate}
@@ -582,65 +630,78 @@ function ProjectListContent() {
       </ListingFilterDialog>
 
       {viewOpen && (
-        <div className="theme-modal-overlay fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="theme-modal-surface w-full max-w-4xl rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-auto">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-semibold">Hospital details</h2>
-                <p className="mt-1 text-sm">View full hospital information.</p>
-              </div>
-              <button type="button" onClick={closeView}>
-                <IoIosClose size={30} />
-              </button>
-            </div>
+        <Dialog
+          open={viewOpen}
+          onClose={closeView}
+          className="relative z-100"
+        >
+          <DialogBackdrop
+            className="theme-modal-overlay fixed inset-0 z-100 bg-black/60 backdrop-blur-sm transition-opacity"
+            aria-hidden="true"
+          />
 
-            {viewLoading && (
-              <div className="flex items-center justify-center py-4">
-                <FaSpinner className="animate-spin mr-2" size={16} />
-              </div>
-            )}
-
-            {!viewLoading && viewData && (
-              <div className="mt-4 grid gap-4">
-                <div className="grid gap-3 md:grid-cols-2">
-                  <p className="text-sm">
-                    <strong>Name:</strong> {viewData.name}
-                  </p>
-                  <p className="text-sm">
-                    <strong>City:</strong> {viewData.city || "-"}
-                  </p>
-                  <p className="text-sm">
-                    <strong>Contact:</strong> {viewData.contactNumber || "-"}
-                  </p>
-                  <p className="text-sm">
-                    <strong>Email:</strong> {viewData.email || "-"}
-                  </p>
-                  <p className="text-sm">
-                    <strong>Start Date:</strong> {formatToDDMMYYYY(viewData.startDate)}
-                  </p>
-                  <p className="text-sm">
-                    <strong>End Date:</strong> {formatToDDMMYYYY(viewData.endDate)}
-                  </p>
-                  <p className="text-sm">
-                    <strong>Status:</strong> {viewData.status}
-                  </p>
+          <div className="fixed inset-0 z-101 flex items-center justify-center p-4">
+            <DialogPanel className="theme-modal-surface relative z-102 w-full max-w-4xl rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-auto">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <DialogTitle className="text-lg font-semibold">
+                    Hospital details
+                  </DialogTitle>
+                  <p className="mt-1 text-sm">View full hospital information.</p>
                 </div>
-
-                {viewData.address && (
-                  <p className="text-sm whitespace-pre-wrap">
-                    <strong>Address:</strong> {viewData.address}
-                  </p>
-                )}
-
-                {viewData.description && (
-                  <p className="text-sm whitespace-pre-wrap">
-                    <strong>Description:</strong> {viewData.description}
-                  </p>
-                )}
+                <button type="button" onClick={closeView}>
+                  <IoIosClose size={30} />
+                </button>
               </div>
-            )}
+
+              {viewLoading && (
+                <div className="flex items-center justify-center py-4">
+                  <FaSpinner className="animate-spin mr-2" size={16} />
+                </div>
+              )}
+
+              {!viewLoading && viewData && (
+                <div className="mt-4 grid gap-4">
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <p className="text-sm">
+                      <strong>Name:</strong> {viewData.name}
+                    </p>
+                    <p className="text-sm">
+                      <strong>City:</strong> {viewData.city || "-"}
+                    </p>
+                    <p className="text-sm">
+                      <strong>Contact:</strong> {viewData.contactNumber || "-"}
+                    </p>
+                    <p className="text-sm">
+                      <strong>Email:</strong> {viewData.email || "-"}
+                    </p>
+                    <p className="text-sm">
+                      <strong>Start Date:</strong> {formatToDDMMYYYY(viewData.startDate)}
+                    </p>
+                    <p className="text-sm">
+                      <strong>End Date:</strong> {formatToDDMMYYYY(viewData.endDate)}
+                    </p>
+                    <p className="text-sm">
+                      <strong>Status:</strong> {viewData.status}
+                    </p>
+                  </div>
+
+                  {viewData.address && (
+                    <p className="text-sm whitespace-pre-wrap">
+                      <strong>Address:</strong> {viewData.address}
+                    </p>
+                  )}
+
+                  {viewData.description && (
+                    <p className="text-sm whitespace-pre-wrap">
+                      <strong>Description:</strong> {viewData.description}
+                    </p>
+                  )}
+                </div>
+              )}
+            </DialogPanel>
           </div>
-        </div>
+        </Dialog>
       )}
     </>
   );

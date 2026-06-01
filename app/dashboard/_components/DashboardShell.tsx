@@ -32,17 +32,23 @@ type MenuKey =
   | "team"
   | "profile"
   | "task-management"
+  | "transport-management"
   | "query-management"
   | "my-query-management"
   | "projects"
   | "hospitals"
   | "masterData"
+  | "transportConfigs"
   | "projectcategories"
   | "officeCategories"
   | "serviceCategories"
   | "reportingCategories"
   | "expenseTypes"
-  | "dailyExpenses";
+  | "dailyExpenses"
+  | "petiCash"
+  | "employeeFinancialReport"
+  | "income"
+  | "incomeTypes";
 
 type DashboardContextValue = {
   user: SessionUser | null;
@@ -78,44 +84,61 @@ const routeByMenu: Record<MenuKey, string> = {
   team: "/dashboard/team",
   profile: "/dashboard/profile",
   "task-management": "/dashboard/task-management",
+  "transport-management": "/dashboard/transport-management",
   "query-management": "/dashboard/query-management",
   "my-query-management": "/dashboard/my-query-management",
   projects: "/dashboard/projects",
   hospitals: "/dashboard/hospitals",
   masterData: "/dashboard/master-data",
+  transportConfigs: "/dashboard/transport-configs",
   projectcategories: "/dashboard/project-categories",
   officeCategories: "/dashboard/office-categories",
   serviceCategories: "/dashboard/service-categories",
   reportingCategories: "/dashboard/reporting-categories",
   expenseTypes: "/dashboard/expense-types",
   dailyExpenses: "/dashboard/daily-expenses",
+  petiCash: "/dashboard/peti-cash",
+  employeeFinancialReport: "/dashboard/employee-financial-report",
+  income: "/dashboard/income",
+  incomeTypes: "/dashboard/income-types",
 };
 
-const getActiveMenu = (pathname: string): MenuKey => {
-  if (pathname.startsWith("/dashboard/users")) return "users";
-  if (pathname.startsWith("/dashboard/office-categories"))
+const getActiveMenu = (pathname: string | null): MenuKey => {
+  const safePathname = pathname || "";
+  if (safePathname.startsWith("/dashboard/users")) return "users";
+  if (safePathname.startsWith("/dashboard/office-categories"))
     return "officeCategories";
-  if (pathname.startsWith("/dashboard/project-categories"))
+  if (safePathname.startsWith("/dashboard/project-categories"))
     return "projectcategories";
-  if (pathname.startsWith("/dashboard/service-categories"))
+  if (safePathname.startsWith("/dashboard/service-categories"))
     return "serviceCategories";
-  if (pathname.startsWith("/dashboard/reporting-categories"))
+  if (safePathname.startsWith("/dashboard/reporting-categories"))
     return "reportingCategories";
-  if (pathname.startsWith("/dashboard/projects")) return "projects";
-  if (pathname.startsWith("/dashboard/hospitals")) return "hospitals";
-  if (pathname.startsWith("/dashboard/task-management"))
+  if (safePathname.startsWith("/dashboard/projects")) return "projects";
+  if (safePathname.startsWith("/dashboard/hospitals")) return "hospitals";
+  if (safePathname.startsWith("/dashboard/transport-configs"))
+    return "transportConfigs";
+  if (safePathname.startsWith("/dashboard/master-data")) return "masterData";
+  if (safePathname.startsWith("/dashboard/task-management"))
     return "task-management";
-  if (pathname.startsWith("/dashboard/query-management"))
+  if (safePathname.startsWith("/dashboard/transport-management"))
+    return "transport-management";
+  if (safePathname.startsWith("/dashboard/query-management"))
     return "query-management";
-  if (pathname.startsWith("/dashboard/my-query-management"))
+  if (safePathname.startsWith("/dashboard/my-query-management"))
     return "my-query-management";
-  if (pathname.startsWith("/dashboard/roles")) return "roles";
-  if (pathname.startsWith("/dashboard/permissions")) return "permissions";
-  if (pathname.startsWith("/dashboard/reports")) return "reports";
-  if (pathname.startsWith("/dashboard/expense-types")) return "expenseTypes";
-  if (pathname.startsWith("/dashboard/daily-expenses")) return "dailyExpenses";
-  if (pathname.startsWith("/dashboard/team")) return "team";
-  if (pathname.startsWith("/dashboard/profile")) return "profile";
+  if (safePathname.startsWith("/dashboard/roles")) return "roles";
+  if (safePathname.startsWith("/dashboard/permissions")) return "permissions";
+  if (safePathname.startsWith("/dashboard/reports")) return "reports";
+  if (safePathname.startsWith("/dashboard/expense-types")) return "expenseTypes";
+  if (safePathname.startsWith("/dashboard/daily-expenses")) return "dailyExpenses";
+  if (safePathname.startsWith("/dashboard/peti-cash")) return "petiCash";
+  if (safePathname.startsWith("/dashboard/employee-financial-report"))
+    return "employeeFinancialReport";
+  if (safePathname.startsWith("/dashboard/income-types")) return "incomeTypes";
+  if (safePathname.startsWith("/dashboard/income")) return "income";
+  if (safePathname.startsWith("/dashboard/team")) return "team";
+  if (safePathname.startsWith("/dashboard/profile")) return "profile";
   return "dashboard";
 };
 
@@ -159,6 +182,9 @@ export default function DashboardShell({
       "serviceCategories",
       "reportingCategories",
       "expenseTypes",
+      "masterData",
+      "transportConfigs",
+      "incomeTypes",
     ].includes(activeMenu);
   }, [activeMenu]);
 
@@ -208,7 +234,7 @@ export default function DashboardShell({
 
   useEffect(() => {
     if (isNestedShell) return;
-    // Auto-expand Master Data section when on category pages
+    // Auto-expand Master Data section when on any master data page
     if (isMasterDataActive && !masterDataExpanded) {
       setMasterDataExpanded(true);
     }
@@ -231,14 +257,23 @@ export default function DashboardShell({
         label: "Master Data",
         hasDropdown: true,
         dropdownItems: [
-          { key: "projectcategories", label: "Project work Categories" },
-          { key: "officeCategories", label: "Office work Categories" },
-          { key: "serviceCategories", label: "Service work Categories" },
-          { key: "reportingCategories", label: "Reporting work Categories" },
+          { key: "projectcategories", label: "Project Categories" },
+          { key: "officeCategories", label: "Office Categories" },
+          { key: "serviceCategories", label: "Service Categories" },
+          { key: "reportingCategories", label: "Reporting Categories" },
           { key: "expenseTypes", label: "Expense Types" },
+          { key: "incomeTypes", label: "Income Types" },
+          { key: "transportConfigs", label: "Transport" },
         ],
       });
-      items.push({ key: "dailyExpenses", label: "Daily Expense" });
+      items.push({ key: "dailyExpenses", label: "Expense" });
+      items.push({ key: "petiCash", label: "Peti Cash" });
+      items.push({
+        key: "employeeFinancialReport",
+        label: "Employee Financial Report",
+      });
+      items.push({ key: "income", label: "Income" });
+      items.push({ key: "transport-management", label: "Transport Management" });
     }
     items.push({ key: "task-management", label: "Task Management" });
     items.push(
@@ -294,11 +329,10 @@ export default function DashboardShell({
                 <Link href="/dashboard">
                   <div className="rbac-logo">
                     <img
-                      src={`${
-                        theme === "dark"
+                      src={`${theme === "dark"
                           ? "/images/logo_white.png"
                           : "/images/logo.svg"
-                      }`}
+                        }`}
                       className="w-full"
                       alt="WellMen"
                     />
@@ -315,18 +349,16 @@ export default function DashboardShell({
                   return (
                     <div key={item.key}>
                       <button
-                        className={`rbac-nav-item w-full text-left flex items-center justify-between ${
-                          isMasterDataActive ? "active" : ""
-                        }`}
+                        className={`rbac-nav-item w-full text-left flex items-center justify-between ${isMasterDataActive ? "active" : ""
+                          }`}
                         onClick={() =>
                           setMasterDataExpanded(!masterDataExpanded)
                         }
                       >
                         {item.label}
                         <span
-                          className={`ml-2 transition-transform ${
-                            masterDataExpanded ? "rotate-90" : ""
-                          }`}
+                          className={`ml-2 transition-transform ${masterDataExpanded ? "rotate-90" : ""
+                            }`}
                         >
                           <FaChevronRight size={20} />
                         </span>
@@ -337,9 +369,8 @@ export default function DashboardShell({
                             <Link
                               key={dropdownItem.key}
                               href={routeByMenu[dropdownItem.key]}
-                              className={`rbac-nav-item block text-sm ${
-                                activeMenu === dropdownItem.key ? "active" : ""
-                              }`}
+                              className={`rbac-nav-item block text-sm ${activeMenu === dropdownItem.key ? "active" : ""
+                                }`}
                               onClick={() => setNavOpen(false)}
                               prefetch={true}
                             >
@@ -356,9 +387,8 @@ export default function DashboardShell({
                   <Link
                     key={item.key}
                     href={routeByMenu[item.key]}
-                    className={`rbac-nav-item ${
-                      activeMenu === item.key ? "active" : ""
-                    }`}
+                    className={`rbac-nav-item ${activeMenu === item.key ? "active" : ""
+                      }`}
                     onClick={() => setNavOpen(false)}
                     prefetch={true}
                   >
@@ -396,11 +426,10 @@ export default function DashboardShell({
             <Link href="/dashboard">
               <div className="rbac-logo">
                 <img
-                  src={`${
-                    theme === "dark"
+                  src={`${theme === "dark"
                       ? "/images/logo_white.png"
                       : "/images/logo.svg"
-                  }`}
+                    }`}
                   alt="WellMen"
                 />
               </div>
@@ -410,9 +439,8 @@ export default function DashboardShell({
                 className="rbac-theme-toggle-mobile"
                 type="button"
                 onClick={toggleTheme}
-                aria-label={`Switch to ${
-                  theme === "light" ? "dark" : "light"
-                } mode`}
+                aria-label={`Switch to ${theme === "light" ? "dark" : "light"
+                  } mode`}
                 title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
               >
                 {theme === "light" ? <FaMoon size={14} /> : <FaSun size={14} />}

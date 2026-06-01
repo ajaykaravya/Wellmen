@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/rbac";
 import {
   parsePayload,
   parseMultipartPayload,
@@ -8,48 +7,22 @@ import {
   getUploadedFiles,
   serializeQuery,
 } from "@/lib/queryManagement";
+import {
+  buildQueryInclude,
+  loadAllowedQuery,
+} from "../_shared";
 import { saveQueryImages, saveQueryVideos } from "../_utils/upload";
 
-const resolveId = async (params) => String((await params)?.id || "").trim();
-
 export async function GET(req, { params }) {
-  const gate = await requireRole(req, ["Admin", "Manager"]);
-  if (!gate.ok) return gate.res;
+  const loaded = await loadAllowedQuery(req, params);
+  if (!loaded.ok) return loaded.res;
 
-  const id = await resolveId(params);
-  if (!id) {
-    return NextResponse.json(
-      { error: "Query id is required." },
-      { status: 400 },
-    );
-  }
-
-  const query = await prisma.queryManagement.findUnique({
-    where: { id },
-    include: {
-      project: { select: { name: true, city: true } },
-      createdBy: { select: { firstName: true, lastName: true } },
-    },
-  });
-
-  if (!query) {
-    return NextResponse.json({ error: "Query not found." }, { status: 404 });
-  }
-
-  return NextResponse.json(serializeQuery(query, gate.auth?.user?.id || ""));
+  return NextResponse.json(serializeQuery(loaded.query, loaded.userId));
 }
 
 export async function PUT(req, { params }) {
-  const gate = await requireRole(req, ["Admin", "Manager"]);
-  if (!gate.ok) return gate.res;
-
-  const id = await resolveId(params);
-  if (!id) {
-    return NextResponse.json(
-      { error: "Query id is required." },
-      { status: 400 },
-    );
-  }
+  const loaded = await loadAllowedQuery(req, params);
+  if (!loaded.ok) return loaded.res;
 
   const contentType = req.headers.get("content-type") || "";
   const isMultipart = contentType.includes("multipart/form-data");
@@ -101,7 +74,7 @@ export async function PUT(req, { params }) {
     const videoUrls = [...existingVideoUrls, ...newVideoUrls];
 
     const query = await prisma.queryManagement.update({
-      where: { id },
+      where: { id: loaded.query.id },
       data: {
         project: { connect: { id: payload.projectId } },
         category: payload.category,
@@ -112,12 +85,11 @@ export async function PUT(req, { params }) {
         videoUrls,
       },
       include: {
-        project: { select: { name: true, city: true } },
-        createdBy: { select: { firstName: true, lastName: true } },
+        ...buildQueryInclude,
       },
     });
 
-    return NextResponse.json(serializeQuery(query, gate.auth?.user?.id || ""));
+    return NextResponse.json(serializeQuery(query, loaded.userId));
   } catch (error) {
     console.error("Failed to update query", error);
     return NextResponse.json(
@@ -128,22 +100,9 @@ export async function PUT(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
-  const gate = await requireRole(req, ["Admin", "Manager"]);
-  if (!gate.ok) return gate.res;
+  const loaded = await loadAllowedQuery(req, params);
+  if (!loaded.ok) return loaded.res;
 
-  const id = await resolveId(params);
-  if (!id) {
-    return NextResponse.json(
-      { error: "Query id is required." },
-      { status: 400 },
-    );
-  }
-
-  const existing = await prisma.queryManagement.findUnique({ where: { id } });
-  if (!existing) {
-    return NextResponse.json({ error: "Query not found." }, { status: 404 });
-  }
-
-  await prisma.queryManagement.delete({ where: { id } });
+  await prisma.queryManagement.delete({ where: { id: loaded.query.id } });
   return NextResponse.json({ ok: true });
 }

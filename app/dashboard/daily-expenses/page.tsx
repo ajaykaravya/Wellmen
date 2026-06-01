@@ -13,9 +13,9 @@ import {
   FaChevronLeft,
   FaChevronRight,
   FaEdit,
-  FaTrash,
   FaSpinner,
   FaFilter,
+  FaTrash,
 } from "react-icons/fa";
 import Link from "next/link";
 import { formatToDDMMYYYY } from "@/lib/dateUtils";
@@ -27,21 +27,28 @@ import {
   ComboboxInput,
   ComboboxOption,
   ComboboxOptions,
-  Listbox,
-  ListboxButton,
-  ListboxOption,
-  ListboxOptions,
 } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
+import { useRouter } from "next/navigation";
+import { FinanceCardList } from "../_components/FinanceCardList";
 
-type TransactionType = "INCOME" | "EXPENSE";
+type TransactionType = "EXPENSE";
 
 type DailyExpenseRow = {
   id: string;
   transactionType: TransactionType;
   amount: number;
+  projectId: string | null;
+  projectName: string | null;
+  projectCity: string | null;
   expenseTypeId: string | null;
   expenseTypeName: string | null;
+  expenseById: string | null;
+  expenseByName: string | null;
+  expenseCompanyId: string | null;
+  expenseCompanyName: string | null;
+  expenseCompanyCode: string | null;
+  paymentMode: string | null;
   date: string;
   remark: string | null;
 };
@@ -52,48 +59,66 @@ type ExpenseTypeOption = {
   status: "ACTIVE" | "INACTIVE";
 };
 
+type ProjectOption = {
+  id: string;
+  name: string;
+  city?: string | null;
+};
+
+type UserOption = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  role?: string | null;
+};
+
+type CompanyOption = {
+  id: string;
+  name: string;
+};
+
 const formatAmount = (value: number) =>
   Number(value || 0).toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 
-const getTransactionBadgeClass = (value: TransactionType) => {
-  switch (value) {
-    case "INCOME":
-      return "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200";
-    case "EXPENSE":
-      return "bg-rose-100 text-rose-800 ring-1 ring-rose-200";
-    default:
-      return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
-  }
-};
-
-const transactionTypeOptions: Array<{
-  key: TransactionType | "";
-  label: string;
-}> = [
-  { key: "", label: "All types" },
-  { key: "INCOME", label: "Income" },
-  { key: "EXPENSE", label: "Expense" },
-];
-
 const getExpenseTypeLabel = (option: ExpenseTypeOption) => option.name;
 
+const getProjectLabel = (option: ProjectOption) =>
+  option.city ? `${option.name} (${option.city})` : option.name;
+
+const getUserLabel = (option: UserOption) =>
+  `${option.firstName} ${option.lastName} - ${option.role || ""}`.trim();
+
+const getCompanyLabel = (option: CompanyOption) => option.name;
+
+const getTransactionLabel = () => "Expense";
+
+const getTransactionClassName = () =>
+  "bg-rose-100 text-rose-800 ring-1 ring-rose-200";
+
+const getRowCompanyLabel = (row: DailyExpenseRow) =>
+  row.expenseCompanyName || row.expenseCompanyCode || null;
+
 function DailyExpenseListContent() {
+  const router = useRouter();
   const [dailyExpenses, setDailyExpenses] = useState<DailyExpenseRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
-  const [balance, setBalance] = useState(0);
   const [query, setQuery] = useState("");
   const [expenseTypes, setExpenseTypes] = useState<ExpenseTypeOption[]>([]);
+  const [projects, setProjects] = useState<ProjectOption[]>([]);
+  const [users, setUsers] = useState<UserOption[]>([]);
+  const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [expenseTypeFilter, setExpenseTypeFilter] =
     useState<ExpenseTypeOption | null>(null);
-  const [transactionTypeFilter, setTransactionTypeFilter] = useState<
-    TransactionType | ""
-  >("");
+  const [projectFilter, setProjectFilter] = useState<ProjectOption | null>(null);
+  const [expenseByFilter, setExpenseByFilter] = useState<UserOption | null>(null);
+  const [expenseCompanyFilter, setExpenseCompanyFilter] =
+    useState<CompanyOption | null>(null);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -101,9 +126,14 @@ function DailyExpenseListContent() {
   const [draftExpenseTypeFilter, setDraftExpenseTypeFilter] =
     useState<ExpenseTypeOption | null>(null);
   const [draftExpenseTypeQuery, setDraftExpenseTypeQuery] = useState("");
-  const [draftTransactionTypeFilter, setDraftTransactionTypeFilter] = useState<
-    TransactionType | ""
-  >("");
+  const [draftProjectFilter, setDraftProjectFilter] = useState<ProjectOption | null>(null);
+  const [draftProjectQuery, setDraftProjectQuery] = useState("");
+  const [draftExpenseByFilter, setDraftExpenseByFilter] =
+    useState<UserOption | null>(null);
+  const [draftExpenseByQuery, setDraftExpenseByQuery] = useState("");
+  const [draftExpenseCompanyFilter, setDraftExpenseCompanyFilter] =
+    useState<CompanyOption | null>(null);
+  const [draftExpenseCompanyQuery, setDraftExpenseCompanyQuery] = useState("");
   const [draftFromDate, setDraftFromDate] = useState("");
   const [draftToDate, setDraftToDate] = useState("");
   const debouncedQuery = useDebounce(query, 400);
@@ -114,23 +144,30 @@ function DailyExpenseListContent() {
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
 
-  const activeFilterCount = [
-    query.trim(),
-    transactionTypeFilter,
-    fromDate,
-    toDate,
-    expenseTypeFilter?.id,
-  ].filter(Boolean).length;
-
   const openFilters = useCallback(() => {
     setDraftQuery(query);
-    setDraftTransactionTypeFilter(transactionTypeFilter);
     setDraftFromDate(fromDate);
     setDraftToDate(toDate);
+    setDraftProjectFilter(projectFilter);
+    setDraftProjectQuery(projectFilter ? getProjectLabel(projectFilter) : "");
     setDraftExpenseTypeFilter(expenseTypeFilter);
     setDraftExpenseTypeQuery(expenseTypeFilter ? getExpenseTypeLabel(expenseTypeFilter) : "");
+    setDraftExpenseByFilter(expenseByFilter);
+    setDraftExpenseByQuery(expenseByFilter ? getUserLabel(expenseByFilter) : "");
+    setDraftExpenseCompanyFilter(expenseCompanyFilter);
+    setDraftExpenseCompanyQuery(
+      expenseCompanyFilter ? getCompanyLabel(expenseCompanyFilter) : "",
+    );
     setFilterOpen(true);
-  }, [expenseTypeFilter, fromDate, query, transactionTypeFilter, toDate]);
+  }, [
+    expenseByFilter,
+    expenseCompanyFilter,
+    expenseTypeFilter,
+    fromDate,
+    projectFilter,
+    query,
+    toDate,
+  ]);
 
   const closeFilters = useCallback(() => {
     setFilterOpen(false);
@@ -139,48 +176,109 @@ function DailyExpenseListContent() {
   const applyFilters = useCallback(() => {
     setPageIndex(0);
     setQuery(draftQuery);
-    setTransactionTypeFilter(draftTransactionTypeFilter);
     setFromDate(draftFromDate);
     setToDate(draftToDate);
+    setProjectFilter(draftProjectFilter);
     setExpenseTypeFilter(draftExpenseTypeFilter);
+    setExpenseByFilter(draftExpenseByFilter);
+    setExpenseCompanyFilter(draftExpenseCompanyFilter);
     setFilterOpen(false);
   }, [
+    draftExpenseByFilter,
+    draftExpenseCompanyFilter,
     draftExpenseTypeFilter,
     draftFromDate,
     draftQuery,
+    draftProjectFilter,
     draftToDate,
-    draftTransactionTypeFilter,
   ]);
 
   const appliedFilters = [
     query.trim(),
-    transactionTypeFilter
-      ? transactionTypeOptions.find((item) => item.key === transactionTypeFilter)
-          ?.label || ""
-      : "",
+    projectFilter ? getProjectLabel(projectFilter) : "",
     expenseTypeFilter ? getExpenseTypeLabel(expenseTypeFilter) : "",
+    expenseByFilter ? getUserLabel(expenseByFilter) : "",
+    expenseCompanyFilter ? getCompanyLabel(expenseCompanyFilter) : "",
     fromDate,
     toDate,
   ].filter(Boolean);
 
+  const calculateBalance = (
+    transactions: Array<{
+      amount: number | string | null | undefined;
+      transactionType: TransactionType;
+    }>,
+  ) =>
+    transactions.reduce((total, item) => {
+      const amount = Number(item.amount || 0);
+
+      if (item.transactionType === "EXPENSE") return total - amount;
+
+      return total;
+    }, 0);
+
   useEffect(() => {
     const loadExpenseTypes = async () => {
       try {
-        const res = await fetch("/api/expense-types/options");
-        if (!res.ok) return;
-        const data = await res.json();
-        setExpenseTypes(
-          Array.isArray(data)
-            ? data.filter((item: ExpenseTypeOption) => item.status === "ACTIVE")
-            : [],
-        );
+        const [projectsRes, expenseTypesRes, usersRes, companiesRes] = await Promise.all([
+          fetch("/api/projects/options"),
+          fetch("/api/expense-types/options"),
+          fetch("/api/users/options"),
+          fetch("/api/companies/options"),
+        ]);
+
+        if (projectsRes.ok) {
+          const data = await projectsRes.json();
+          setProjects(Array.isArray(data) ? data : []);
+        }
+
+        if (expenseTypesRes.ok) {
+          const data = await expenseTypesRes.json();
+          setExpenseTypes(
+            Array.isArray(data)
+              ? data.filter((item: ExpenseTypeOption) => item.status === "ACTIVE")
+              : [],
+          );
+        }
+
+        if (usersRes.ok) {
+          const data = await usersRes.json();
+          setUsers(Array.isArray(data) ? data : []);
+        }
+
+        if (companiesRes.ok) {
+          const data = await companiesRes.json();
+          setCompanies(Array.isArray(data) ? data : []);
+        }
       } catch (error) {
-        console.error("Failed to load expense types", error);
+        console.error("Failed to load expense filter options", error);
       }
     };
 
     loadExpenseTypes();
   }, []);
+
+  const filteredProjects = useMemo(() => {
+    const query = draftProjectQuery.trim().toLowerCase();
+    if (!query) return projects;
+    return projects.filter((project) =>
+      getProjectLabel(project).toLowerCase().includes(query),
+    );
+  }, [draftProjectQuery, projects]);
+
+  const filteredExpenseByUsers = useMemo(() => {
+    const query = draftExpenseByQuery.trim().toLowerCase();
+    if (!query) return users;
+    return users.filter((user) => getUserLabel(user).toLowerCase().includes(query));
+  }, [draftExpenseByQuery, users]);
+
+  const filteredExpenseCompanies = useMemo(() => {
+    const query = draftExpenseCompanyQuery.trim().toLowerCase();
+    if (!query) return companies;
+    return companies.filter((company) =>
+      getCompanyLabel(company).toLowerCase().includes(query),
+    );
+  }, [companies, draftExpenseCompanyQuery]);
 
   const loadDailyExpenses = useCallback(async () => {
     setLoading(true);
@@ -190,10 +288,12 @@ function DailyExpenseListContent() {
         pageSize: String(pageSize),
       });
       if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
-      if (transactionTypeFilter)
-        params.set("transactionType", transactionTypeFilter);
+      if (projectFilter?.id) params.set("projectId", projectFilter.id);
       if (expenseTypeFilter?.id)
         params.set("expenseTypeId", expenseTypeFilter.id);
+      if (expenseByFilter?.id) params.set("expenseById", expenseByFilter.id);
+      if (expenseCompanyFilter?.id)
+        params.set("expenseCompanyId", expenseCompanyFilter.id);
       if (fromDate) params.set("fromDate", fromDate);
       if (toDate) params.set("toDate", toDate);
 
@@ -207,7 +307,6 @@ function DailyExpenseListContent() {
       const data = await res.json();
       setDailyExpenses(Array.isArray(data?.data) ? data.data : []);
       setTotal(typeof data?.total === "number" ? data.total : 0);
-      setBalance(typeof data?.balance === "number" ? data.balance : 0);
     } catch (error) {
       console.error("Failed to load daily expenses", error);
       toast.error("Failed to load daily expenses.");
@@ -218,8 +317,10 @@ function DailyExpenseListContent() {
     pageIndex,
     pageSize,
     debouncedQuery,
-    transactionTypeFilter,
+    projectFilter,
     expenseTypeFilter,
+    expenseByFilter,
+    expenseCompanyFilter,
     fromDate,
     toDate,
   ]);
@@ -236,12 +337,19 @@ function DailyExpenseListContent() {
     }
   }, [pageCount, pageIndex]);
 
-  const handleDeleteDailyExpense = useCallback((row: DailyExpenseRow) => {
+  const handleDeleteTransaction = useCallback((row: DailyExpenseRow) => {
     setConfirmTarget(row);
     setConfirmOpen(true);
   }, []);
 
-  const confirmDeleteDailyExpense = useCallback(async () => {
+  const handleEditTransaction = useCallback(
+    (row: DailyExpenseRow) => {
+      router.push(`/dashboard/daily-expenses/${row.id}`);
+    },
+    [router],
+  );
+
+  const confirmDeleteTransaction = useCallback(async () => {
     if (!confirmTarget) return;
     setDeleting(true);
     try {
@@ -256,7 +364,7 @@ function DailyExpenseListContent() {
       await loadDailyExpenses();
       toast.success("Daily expense deleted successfully.");
     } catch (error) {
-      console.error("Failed to delete daily expense", error);
+      console.error("Failed to delete transaction", error);
       toast.error("Failed to delete daily expense.");
     } finally {
       setDeleting(false);
@@ -276,10 +384,12 @@ function DailyExpenseListContent() {
         pageSize: "100",
       });
       if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
-      if (transactionTypeFilter)
-        params.set("transactionType", transactionTypeFilter);
+      if (projectFilter?.id) params.set("projectId", projectFilter.id);
       if (expenseTypeFilter?.id)
         params.set("expenseTypeId", expenseTypeFilter.id);
+      if (expenseByFilter?.id) params.set("expenseById", expenseByFilter.id);
+      if (expenseCompanyFilter?.id)
+        params.set("expenseCompanyId", expenseCompanyFilter.id);
       if (fromDate) params.set("fromDate", fromDate);
       if (toDate) params.set("toDate", toDate);
 
@@ -302,8 +412,10 @@ function DailyExpenseListContent() {
     return accumulated;
   }, [
     debouncedQuery,
-    transactionTypeFilter,
+    projectFilter,
     expenseTypeFilter,
+    expenseByFilter,
+    expenseCompanyFilter,
     fromDate,
     toDate,
   ]);
@@ -316,24 +428,30 @@ function DailyExpenseListContent() {
         [
           "#",
           "Date",
-          "Transaction Type",
           "Amount",
-          "Expense Type",
+          "Category",
+          "Project",
+          "Expense By",
+          "Company",
           "Remark",
         ],
         ...rows.map((row, index) => [
           index + 1,
           formatToDDMMYYYY(row.date),
-          row.transactionType.toLowerCase(),
           Number(row.amount || 0),
           row.expenseTypeName || "-",
+          row.projectName
+            ? `${row.projectName}${row.projectCity ? ` (${row.projectCity})` : ""}`
+            : "-",
+          row.expenseByName || "-",
+          getRowCompanyLabel(row) || "-",
           row.remark || "-",
         ]),
       ];
 
       const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Daily Expenses");
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Finance Transactions");
       const arrayBuffer = XLSX.write(workbook, {
         bookType: "xlsx",
         type: "array",
@@ -344,20 +462,20 @@ function DailyExpenseListContent() {
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `daily-expenses-${new Date()
+      anchor.download = `finance-transactions-${new Date()
         .toISOString()
         .slice(0, 10)}.xlsx`;
       document.body.appendChild(anchor);
       anchor.click();
       document.body.removeChild(anchor);
       URL.revokeObjectURL(url);
-      toast.success("Daily expense export generated successfully.");
+      toast.success("Finance transaction export generated successfully.");
     } catch (error) {
-      console.error("Failed to export daily expenses", error);
+      console.error("Failed to export finance transactions", error);
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to export daily expenses.",
+          : "Failed to export finance transactions.",
       );
     } finally {
       setExporting(false);
@@ -370,23 +488,57 @@ function DailyExpenseListContent() {
         header: "Date",
         accessorKey: "date",
         cell: ({ row }) => (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rbac-muted">{formatToDDMMYYYY(row.original.date)}</span>
+          </div>
+        ),
+      },
+      {
+        header: "Category",
+        accessorKey: "expenseTypeName",
+        cell: ({ row }) => (
           <span className="rbac-muted">
-            {formatToDDMMYYYY(row.original.date)}
+            {row.original.expenseTypeName || "-"}
           </span>
         ),
       },
       {
-        header: "Type",
-        accessorKey: "transactionType",
-        cell: (info) => {
-          const value = String(info.getValue() || "")
-            .replaceAll("_", " ")
-            .toLowerCase();
-
-          const formatted = value.charAt(0).toUpperCase() + value.slice(1);
-
-          return <span className="rbac-muted">{formatted}</span>;
-        },
+        header: "Project",
+        accessorKey: "projectName",
+        cell: ({ row }) => (
+          <span className="rbac-muted">
+            {row.original.projectName
+              ? `${row.original.projectName}${row.original.projectCity ? ` (${row.original.projectCity})` : ""}`
+              : "-"}
+          </span>
+        ),
+      },
+      {
+        header: "Expense By",
+        accessorKey: "expenseByName",
+        cell: ({ row }) => (
+          <span className="rbac-muted">
+            {row.original.expenseByName || "-"}
+          </span>
+        ),
+      },
+      {
+        header: "Company",
+        accessorKey: "expenseCompanyName",
+        cell: ({ row }) => (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rbac-muted">
+              {row.original.expenseCompanyName || "-"}
+            </span>
+          </div>
+        ),
+      },
+      {
+        header: "Remark",
+        accessorKey: "remark",
+        cell: ({ row }) => (
+          <span className="rbac-muted">{row.original.remark || "-"}</span>
+        ),
       },
       {
         header: "Amount",
@@ -398,35 +550,21 @@ function DailyExpenseListContent() {
         ),
       },
       {
-        header: "Expense Type",
-        accessorKey: "expenseTypeName",
-        cell: ({ row }) => (
-          <span className="rbac-muted">
-            {row.original.expenseTypeName || "-"}
-          </span>
-        ),
-      },
-      {
-        header: "Remark",
-        accessorKey: "remark",
-        cell: ({ row }) => (
-          <span className="rbac-muted">{row.original.remark || "-"}</span>
-        ),
-      },
-      {
         header: "Action",
         id: "action",
         cell: ({ row }) => (
-          <div className="justify-end flex gap-4">
-            <Link href={`/dashboard/daily-expenses/${row.original.id}`}>
-              <button className="rbac-link" type="button">
-                <FaEdit />
-              </button>
-            </Link>
+          <div className="justify-end flex gap-2">
+            <button
+              onClick={() => handleEditTransaction(row.original)}
+              className="rbac-link"
+              type="button"
+            >
+              <FaEdit />
+            </button>
             <button
               className="rbac-link danger"
               type="button"
-              onClick={() => handleDeleteDailyExpense(row.original)}
+              onClick={() => handleDeleteTransaction(row.original)}
             >
               <FaTrash />
             </button>
@@ -434,7 +572,7 @@ function DailyExpenseListContent() {
         ),
       },
     ],
-    [handleDeleteDailyExpense],
+    [handleDeleteTransaction, handleEditTransaction],
   );
 
   const table = useReactTable({
@@ -445,23 +583,13 @@ function DailyExpenseListContent() {
     pageCount,
   });
 
-  const balanceClass =
-    balance >= 0
-      ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
-      : "bg-rose-50 text-rose-700 ring-1 ring-rose-200";
-
   return (
     <>
       <section className="rbac-section rbac-container">
         <div className="rbac-card">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-3">
-              <h3 className="rbac-title-lg">Daily Expenses</h3>
-              <span
-                className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${balanceClass}`}
-              >
-                Current Balance: {formatAmount(balance)}
-              </span>
+              <h3 className="rbac-title-lg">Expenses</h3>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
@@ -481,7 +609,7 @@ function DailyExpenseListContent() {
               </button>
               <Link href="/dashboard/daily-expenses/new">
                 <button className="rbac-button" type="button">
-                  Add Daily Expense
+                  Add Expense
                 </button>
               </Link>
             </div>
@@ -492,12 +620,21 @@ function DailyExpenseListContent() {
             onClear={() => {
               setPageIndex(0);
               setQuery("");
-              setTransactionTypeFilter("");
               setFromDate("");
               setToDate("");
+              setProjectFilter(null);
               setExpenseTypeFilter(null);
+              setExpenseByFilter(null);
+              setExpenseCompanyFilter(null);
+              setDraftQuery("");
+              setDraftProjectFilter(null);
+              setDraftProjectQuery("");
               setDraftExpenseTypeFilter(null);
               setDraftExpenseTypeQuery("");
+              setDraftExpenseByFilter(null);
+              setDraftExpenseByQuery("");
+              setDraftExpenseCompanyFilter(null);
+              setDraftExpenseCompanyQuery("");
               setFilterOpen(false);
             }}
           />
@@ -512,16 +649,15 @@ function DailyExpenseListContent() {
                         <th
                           key={header.id}
                           style={{ width: header.getSize() }}
-                          className={`text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200 ${
-                            header.id === "action" ? "text-right" : "text-left"
-                          }`}
+                          className={`text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200 ${header.id === "action" ? "text-right" : "text-left"
+                            }`}
                         >
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext(),
-                              )}
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
                         </th>
                       ))}
                     </tr>
@@ -546,7 +682,7 @@ function DailyExpenseListContent() {
                         colSpan={columns.length}
                         className="px-4 py-3 text-sm text-slate-500"
                       >
-                        No daily expenses found.
+                        No expense entries found.
                       </td>
                     </tr>
                   )}
@@ -574,66 +710,27 @@ function DailyExpenseListContent() {
               </table>
             </div>
 
-            <div className="md:hidden space-y-3">
-              {loading && (
-                <div className="flex items-center justify-center py-4">
-                  <FaSpinner className="animate-spin mr-2" size={16} />
-                </div>
-              )}
-              {!loading && dailyExpenses.length === 0 && (
-                <div className="rbac-card py-4 text-sm text-slate-500">
-                  No daily expenses found.
-                </div>
-              )}
-              {!loading &&
-                dailyExpenses.map((expense) => (
-                  <div key={expense.id} className="rbac-card p-4">
-                    <div className="mb-2 flex items-start justify-between gap-3">
-                      
-                      <div className="space-y-2">
-                        <div className="flex gap-2">
-                        <h4 className="text-sm font-semibold">
-                          {formatToDDMMYYYY(expense.date)}
-                        </h4>
-                        <div className="flex flex-wrap gap-2">
-                          <span
-                            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${getTransactionBadgeClass(
-                              expense.transactionType,
-                            )}`}
-                          >
-                            {expense.transactionType === "INCOME" ? "+" : "-"}
-                            {formatAmount(expense.amount)}
-                          </span>
-                        </div>
-                        </div>
-                        {expense.expenseTypeName && (
-                          <p className="text-sm text-slate-600">
-                            {expense.expenseTypeName || "-"}
-                          </p>
-                        )}
-                        {expense.remark && (
-                          <p className="text-sm text-slate-500">
-                            {expense.remark}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex justify-end w-full">
-                        <Link href={`/dashboard/daily-expenses/${expense.id}`}>
-                          <button className="rbac-link" type="button">
-                            <FaEdit size={18} />
-                          </button>
-                        </Link>
-                        <button
-                          className="rbac-link danger"
-                          type="button"
-                          onClick={() => handleDeleteDailyExpense(expense)}
-                        >
-                          <FaTrash size={18} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+            <div className="md:hidden mt-4">
+              <FinanceCardList
+                rows={dailyExpenses}
+                loading={loading}
+                emptyLabel="No expense entries found."
+                showCount={false}
+                collapsible={false}
+                onEdit={handleEditTransaction}
+                onDelete={handleDeleteTransaction}
+                cardContent={{
+                  getVariant: () => "expense",
+                  getCode: (row) => row.expenseCompanyCode,
+                  getProjectName: (row) => row.projectName,
+                  getProjectCity: (row) => row.projectCity,
+                  getPaymentMode: (row) => row.paymentMode,
+                  getExpenseByName: (row) => row.expenseByName,
+                  getTitle: (row) => row.expenseTypeName || "Expense",
+                  getRemark: (row) => row.remark || "",
+                  getDateLabel: (row) => formatToDDMMYYYY(row.date),
+                }}
+              />
             </div>
           </div>
 
@@ -685,13 +782,13 @@ function DailyExpenseListContent() {
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Delete daily expense?"
+        title="Delete expense?"
         description="Are you sure you want to delete?"
         confirmLabel="Delete"
         confirmLoading={deleting}
         confirmLoadingLabel="Deleting..."
         cancelLabel="Cancel"
-        onConfirm={confirmDeleteDailyExpense}
+        onConfirm={confirmDeleteTransaction}
         onClose={() => {
           setConfirmOpen(false);
           setConfirmTarget(null);
@@ -699,106 +796,203 @@ function DailyExpenseListContent() {
       />
       <ListingFilterDialog
         open={filterOpen}
-        title="Daily Expense Filters"
+        title="Expense Filters"
         description="Update the filters and apply them when you're ready."
         onClose={closeFilters}
         onApply={applyFilters}
-        activeCount={activeFilterCount}
         maxWidthClassName="max-w-2xl"
       >
-        <Listbox
-          value={draftTransactionTypeFilter}
-          onChange={setDraftTransactionTypeFilter}
-        >
-          <div className="relative min-w-48">
-            <ListboxButton className="rbac-input flex w-full items-center justify-between gap-3 text-left">
-              <span>
-                {transactionTypeOptions.find(
-                  (item) => item.key === draftTransactionTypeFilter,
-                )?.label || "All types"}
-              </span>
-              <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
-            </ListboxButton>
-            <ListboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
-              {transactionTypeOptions.map((option) => (
-                <ListboxOption
-                  key={option.key || "all"}
-                  value={option.key}
-                  className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
-                >
-                  {option.label}
-                </ListboxOption>
-              ))}
-            </ListboxOptions>
-          </div>
-        </Listbox>
+        <div className="grid gap-4 md:grid-cols-2">
+          <CustomDatePicker
+            value={draftFromDate}
+            onChange={setDraftFromDate}
+            placeholder="From date"
+            className="rbac-input-filter"
+          />
 
-        <CustomDatePicker
-          value={draftFromDate}
-          onChange={setDraftFromDate}
-          placeholder="From date"
-          className="rbac-input-filter"
-        />
+          <CustomDatePicker
+            value={draftToDate}
+            onChange={setDraftToDate}
+            placeholder="To date"
+            className="rbac-input-filter"
+          />
 
-        <CustomDatePicker
-          value={draftToDate}
-          onChange={setDraftToDate}
-          placeholder="To date"
-          className="rbac-input-filter"
-        />
+          <Combobox
+            value={draftProjectFilter}
+            onChange={(option: ProjectOption | null) => {
+              setDraftProjectFilter(option);
+              setDraftProjectQuery("");
+            }}
+            nullable
+          >
+            <div className="relative min-w-64">
+              <ComboboxInput
+                className="theme-input rbac-input w-full pr-10"
+                placeholder="Project"
+                displayValue={(option: ProjectOption | null) =>
+                  option ? getProjectLabel(option) : draftProjectQuery
+                }
+                onChange={(event) => {
+                  setDraftProjectQuery(event.target.value);
+                  setDraftProjectFilter(null);
+                }}
+              />
+              <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+                <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+              </ComboboxButton>
+              <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
+                {filteredProjects.length === 0 ? (
+                  <div className="px-3 py-2 text-sm text-[color:var(--theme-text-muted)]">
+                    No projects found
+                  </div>
+                ) : (
+                  filteredProjects.map((project) => (
+                    <ComboboxOption
+                      key={project.id}
+                      value={project}
+                      className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span>{getProjectLabel(project)}</span>
+                      </div>
+                    </ComboboxOption>
+                  ))
+                )}
+              </ComboboxOptions>
+            </div>
+          </Combobox>
 
-        <Combobox
-          value={draftExpenseTypeFilter}
-          onChange={(option: ExpenseTypeOption | null) => {
-            setDraftExpenseTypeFilter(option);
-            setDraftExpenseTypeQuery("");
-          }}
-          nullable
-        >
-          <div className="relative min-w-64">
-            <ComboboxInput
-              className="theme-input rbac-input w-full pr-10"
-              placeholder="Expense Type"
-              displayValue={(option: ExpenseTypeOption | null) =>
-                option ? getExpenseTypeLabel(option) : draftExpenseTypeQuery
-              }
-              onChange={(event) => {
-                setDraftExpenseTypeQuery(event.target.value);
-                setDraftExpenseTypeFilter(null);
-              }}
-            />
-            <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
-              <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
-            </ComboboxButton>
-            <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
-              {expenseTypes
-                .filter((option) =>
-                  getExpenseTypeLabel(option)
-                    .toLowerCase()
-                    .includes(draftExpenseTypeQuery.trim().toLowerCase()),
-                )
-                .map((option) => (
+          <Combobox
+            value={draftExpenseTypeFilter}
+            onChange={(option: ExpenseTypeOption | null) => {
+              setDraftExpenseTypeFilter(option);
+              setDraftExpenseTypeQuery("");
+            }}
+            nullable
+          >
+            <div className="relative min-w-64">
+              <ComboboxInput
+                className="theme-input rbac-input w-full pr-10"
+                placeholder="Category"
+                displayValue={(option: ExpenseTypeOption | null) =>
+                  option ? getExpenseTypeLabel(option) : draftExpenseTypeQuery
+                }
+                onChange={(event) => {
+                  setDraftExpenseTypeQuery(event.target.value);
+                  setDraftExpenseTypeFilter(null);
+                }}
+              />
+              <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+                <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+              </ComboboxButton>
+              <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
+                {expenseTypes
+                  .filter((option) =>
+                    getExpenseTypeLabel(option)
+                      .toLowerCase()
+                      .includes(draftExpenseTypeQuery.trim().toLowerCase()),
+                  )
+                  .map((option) => (
+                    <ComboboxOption
+                      key={option.id}
+                      value={option}
+                      className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span>{option.name}</span>
+                      </div>
+                    </ComboboxOption>
+                  ))}
+              </ComboboxOptions>
+            </div>
+          </Combobox>
+
+          <Combobox
+            value={draftExpenseByFilter}
+            onChange={(option: UserOption | null) => {
+              setDraftExpenseByFilter(option);
+              setDraftExpenseByQuery("");
+            }}
+            nullable
+          >
+            <div className="relative min-w-64">
+              <ComboboxInput
+                className="theme-input rbac-input w-full pr-10"
+                placeholder="Expense By"
+                displayValue={(option: UserOption | null) =>
+                  option ? getUserLabel(option) : draftExpenseByQuery
+                }
+                onChange={(event) => {
+                  setDraftExpenseByQuery(event.target.value);
+                  setDraftExpenseByFilter(null);
+                }}
+              />
+              <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+                <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+              </ComboboxButton>
+              <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
+                {filteredExpenseByUsers.map((user) => (
                   <ComboboxOption
-                    key={option.id}
-                    value={option}
+                    key={user.id}
+                    value={user}
                     className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <span>{option.name}</span>
+                      <span>{getUserLabel(user)}</span>
                     </div>
                   </ComboboxOption>
                 ))}
-            </ComboboxOptions>
-          </div>
-        </Combobox>
+              </ComboboxOptions>
+            </div>
+          </Combobox>
 
-        <input
-          className="rbac-input-filter"
-          type="text"
-          placeholder="Search remark or other text"
-          value={draftQuery}
-          onChange={(event) => setDraftQuery(event.target.value)}
-        />
+          <Combobox
+            value={draftExpenseCompanyFilter}
+            onChange={(option: CompanyOption | null) => {
+              setDraftExpenseCompanyFilter(option);
+              setDraftExpenseCompanyQuery("");
+            }}
+            nullable
+          >
+            <div className="relative min-w-64">
+              <ComboboxInput
+                className="theme-input rbac-input w-full pr-10"
+                placeholder="Company"
+                displayValue={(option: CompanyOption | null) =>
+                  option ? getCompanyLabel(option) : draftExpenseCompanyQuery
+                }
+                onChange={(event) => {
+                  setDraftExpenseCompanyQuery(event.target.value);
+                  setDraftExpenseCompanyFilter(null);
+                }}
+              />
+              <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+                <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+              </ComboboxButton>
+              <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
+                {filteredExpenseCompanies.map((company) => (
+                  <ComboboxOption
+                    key={company.id}
+                    value={company}
+                    className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span>{getCompanyLabel(company)}</span>
+                    </div>
+                  </ComboboxOption>
+                ))}
+              </ComboboxOptions>
+            </div>
+          </Combobox>
+
+          <input
+            className="rbac-input-filter"
+            type="text"
+            placeholder="Search remark or other text"
+            value={draftQuery}
+            onChange={(event) => setDraftQuery(event.target.value)}
+          />
+        </div>
       </ListingFilterDialog>
     </>
   );

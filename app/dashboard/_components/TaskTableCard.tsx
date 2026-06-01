@@ -224,11 +224,6 @@ export function TaskTableCard<T extends TaskTableCardRow>({
                   )}
                 </div>
                 <div className="flex flex-wrap items-start justify-end gap-3">
-                  <div>
-                    <h4 className="mt-1 text-base font-semibold theme-text">
-                      {task.title}
-                    </h4>
-                  </div>
                   <div className="flex flex-col gap-2 justify-end">
                     {renderActions
                       ? renderActions(task)

@@ -18,6 +18,7 @@ import {
   FaSpinner,
   FaFilter,
 } from "react-icons/fa";
+import { Listbox } from "@headlessui/react";
 import Link from "next/link";
 
 type QueryCategory = "REMARKS" | "URGENCY" | "DECISION_PENDING";
@@ -99,7 +100,7 @@ export default function QueryListContent({
   const [total, setTotal] = useState(0);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<QueryStatus | "">(() => {
-    const initialStatus = searchParams.get("status")?.toUpperCase();
+    const initialStatus = searchParams?.get("status")?.toUpperCase();
     return initialStatus === "PENDING" || initialStatus === "COMPLETED"
       ? (initialStatus as QueryStatus)
       : "";
@@ -164,20 +165,13 @@ export default function QueryListContent({
   }, [loadQueries]);
 
   useEffect(() => {
-    const status = searchParams.get("status")?.toUpperCase();
+    const status = searchParams?.get("status")?.toUpperCase();
     if (status === "PENDING" || status === "COMPLETED") {
       setStatusFilter(status as QueryStatus);
     } else {
       setStatusFilter("");
     }
   }, [searchParams]);
-
-  const activeFilterCount = [
-    query.trim(),
-    statusFilter,
-    priorityFilter,
-    categoryFilter,
-  ].filter(Boolean).length;
 
   const appliedFilters = [
     query.trim(),
@@ -310,7 +304,7 @@ export default function QueryListContent({
         header: "Action",
         id: "action",
         cell: ({ row }) => (
-          <div className="rbac-inline-actions flex gap-4">
+          <div className="rbac-inline-actions flex gap-2">
             <button
               className="rbac-link"
               type="button"
@@ -329,7 +323,7 @@ export default function QueryListContent({
         ),
       },
     ],
-    [basePath, handleDelete],
+    [basePath, handleDelete, handleEdit],
   );
 
   const table = useReactTable({
@@ -353,11 +347,6 @@ export default function QueryListContent({
                 onClick={openFilters}
               >
                 <FaFilter /> <span>Filters</span>
-                {activeFilterCount > 0 && (
-                  <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[color:var(--brand)] px-1 text-[10px] font-semibold text-white">
-                    {activeFilterCount}
-                  </span>
-                )}
               </button>
               <Link href={`${basePath}/new`}>
                 <button className="rbac-button" type="button">
@@ -478,7 +467,7 @@ export default function QueryListContent({
                   showCount={false}
                   collapsible={false}
                   renderActions={(query) => (
-                    <div className="flex gap-2">
+                    <div className="flex justify-end">
                       <button
                         className="rbac-link"
                         type="button"
@@ -573,7 +562,6 @@ export default function QueryListContent({
         description="Update the filters and apply them when you're ready."
         onClose={closeFilters}
         onApply={applyFilters}
-        activeCount={activeFilterCount}
       >
         <input
           className="rbac-input-filter"
@@ -582,41 +570,138 @@ export default function QueryListContent({
           value={draftQuery}
           onChange={(event) => setDraftQuery(event.target.value)}
         />
-        <select
-          className="rbac-input-filter rbac-select"
+        <Listbox
           value={draftStatusFilter}
-          onChange={(event) =>
-            setDraftStatusFilter(event.target.value as QueryStatus | "")
+          onChange={(value: QueryStatus | "") =>
+            setDraftStatusFilter(value)
           }
         >
-          <option value="">All status</option>
-          <option value="PENDING">Pending</option>
-          <option value="COMPLETED">Completed</option>
-        </select>
-        <select
-          className="rbac-input-filter rbac-select"
+          <div className="relative">
+            <Listbox.Button className="rbac-input-filter rbac-select flex w-full items-center justify-between text-left">
+              <span>
+                {draftStatusFilter === "PENDING"
+                  ? "Pending"
+                  : draftStatusFilter === "COMPLETED"
+                    ? "Completed"
+                    : "All status"}
+              </span>
+
+            </Listbox.Button>
+
+            <Listbox.Options className="theme-surface absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-md py-1 shadow-lg focus:outline-none">
+              {[
+                { label: "All status", value: "" },
+                { label: "Pending", value: "PENDING" },
+                { label: "Completed", value: "COMPLETED" },
+              ].map((status) => (
+                <Listbox.Option
+                  key={status.value}
+                  value={status.value}
+                  className={({ active }) =>
+                    `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                    }`
+                  }
+                >
+                  {({ selected }) => (
+                    <div className="flex items-center justify-between">
+                      <span>{status.label}</span>
+                    </div>
+                  )}
+                </Listbox.Option>
+              ))}
+            </Listbox.Options>
+          </div>
+        </Listbox>
+        <Listbox
           value={draftPriorityFilter}
-          onChange={(event) =>
-            setDraftPriorityFilter(event.target.value as PriorityLevel | "")
+          onChange={(value: PriorityLevel | "") =>
+            setDraftPriorityFilter(value)
           }
         >
-          <option value="">Priority</option>
-          <option value="LOW">Low</option>
-          <option value="MEDIUM">Medium</option>
-          <option value="HIGH">High</option>
-        </select>
-        <select
-          className="rbac-input-filter rbac-select"
+          <div className="relative">
+            <Listbox.Button className="rbac-input-filter rbac-select flex w-full items-center justify-between text-left">
+              <span>
+                {draftPriorityFilter === "LOW"
+                  ? "Low"
+                  : draftPriorityFilter === "MEDIUM"
+                    ? "Medium"
+                    : draftPriorityFilter === "HIGH"
+                      ? "High"
+                      : "Priority"}
+              </span>
+
+            </Listbox.Button>
+
+            <Listbox.Options className="theme-surface absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-md py-1 shadow-lg focus:outline-none">
+              {[
+                { label: "Priority", value: "" },
+                { label: "Low", value: "LOW" },
+                { label: "Medium", value: "MEDIUM" },
+                { label: "High", value: "HIGH" },
+              ].map((priority) => (
+                <Listbox.Option
+                  key={priority.value}
+                  value={priority.value}
+                  className={({ active }) =>
+                    `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                    }`
+                  }
+                >
+                  {({ selected }) => (
+                    <div className="flex items-center justify-between">
+                      <span>{priority.label}</span>
+                    </div>
+                  )}
+                </Listbox.Option>
+              ))}
+            </Listbox.Options>
+          </div>
+        </Listbox>
+        <Listbox
           value={draftCategoryFilter}
-          onChange={(event) =>
-            setDraftCategoryFilter(event.target.value as QueryCategory | "")
+          onChange={(value: QueryCategory | "") =>
+            setDraftCategoryFilter(value)
           }
         >
-          <option value="">Category</option>
-          <option value="REMARKS">Remarks</option>
-          <option value="DECISION_PENDING">Decision Pending</option>
-          <option value="URGENCY">Urgency</option>
-        </select>
+          <div className="relative">
+            <Listbox.Button className="rbac-input-filter rbac-select flex w-full items-center justify-between text-left">
+              <span>
+                {draftCategoryFilter === "REMARKS"
+                  ? "Remarks"
+                  : draftCategoryFilter === "DECISION_PENDING"
+                    ? "Decision Pending"
+                    : draftCategoryFilter === "URGENCY"
+                      ? "Urgency"
+                      : "Category"}
+              </span>
+
+            </Listbox.Button>
+
+            <Listbox.Options className="theme-surface absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-md py-1 shadow-lg focus:outline-none">
+              {[
+                { label: "Category", value: "" },
+                { label: "Remarks", value: "REMARKS" },
+                { label: "Decision Pending", value: "DECISION_PENDING" },
+                { label: "Urgency", value: "URGENCY" },
+              ].map((category) => (
+                <Listbox.Option
+                  key={category.value}
+                  value={category.value}
+                  className={({ active }) =>
+                    `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                    }`
+                  }
+                >
+                  {({ selected }) => (
+                    <div className="flex items-center justify-between">
+                      <span>{category.label}</span>
+                    </div>
+                  )}
+                </Listbox.Option>
+              ))}
+            </Listbox.Options>
+          </div>
+        </Listbox>
       </ListingFilterDialog>
     </>
   );

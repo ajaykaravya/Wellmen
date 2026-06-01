@@ -23,6 +23,11 @@ model User {
   queryManagements QueryManagement[] @relation("QueryCreatedBy")
   assignedTodos    Todo[]            @relation("TodoAssignee")
   createdTodos     Todo[]            @relation("TodoCreator")
+  financeTransactionsAsExpenseBy FinanceTransaction[] @relation("FinanceTransactionExpenseBy")
+  petiCashGivenBy  PetiCash[]        @relation("PetiCashGivenBy")
+  petiCashGivenTo  PetiCash[]        @relation("PetiCashGivenTo")
+  incomeTransactionsAsReceivedBy IncomeTransaction[] @relation("IncomeTransactionReceivedBy")
+  transportLogsCreated TransportLog[] @relation("TransportLogCreator")
   deviceTokens     DeviceToken[]
   role             Role              @relation(fields: [roleId], references: [id])
 }
@@ -33,6 +38,7 @@ model Todo {
   comments    String?
   startDate   DateTime
   endDate     DateTime?
+  completedDate DateTime?
   status      TodoStatus @default(TODO)
   projectId   String?
   assigneeId  String?
@@ -52,6 +58,7 @@ model Todo {
   @@index([priority])
   @@index([categoryId])
   @@index([projectId])
+  @@index([completedDate])
 }
 
 model Project {
@@ -69,6 +76,9 @@ model Project {
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   dailyReports     DailyReport[]
+  financeTransactions FinanceTransaction[] @relation("FinanceTransactionProject")
+  petiCashTransactions PetiCash[]        @relation("PetiCashProject")
+  incomeTransactions IncomeTransaction[] @relation("IncomeTransactionProject")
   createdBy        User?             @relation("ProjectCreator", fields: [createdById], references: [id])
   queryManagements QueryManagement[]
   todos            Todo[]
@@ -99,6 +109,17 @@ model Role {
   name            String           @unique
   rolePermissions RolePermission[]
   users           User[]
+}
+
+model Company {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  code      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  financeTransactionsAsExpenseCompany FinanceTransaction[] @relation("FinanceTransactionExpenseCompany")
+  petiCashTransactions PetiCash[] @relation("PetiCashCompany")
+  incomeTransactionsAsIncomeCompany IncomeTransaction[] @relation("IncomeTransactionIncomeCompany")
 }
 
 model Permission {
@@ -134,25 +155,170 @@ model ExpenseType {
   status        ExpenseTypeStatus @default(ACTIVE)
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
-  dailyExpenses DailyExpense[]
+  financeTransactions FinanceTransaction[] @relation("FinanceTransactionExpenseType")
 
   @@index([status])
 }
 
-model DailyExpense {
-  id              String         @id @default(uuid())
-  transactionType TransactionType
-  amount          Decimal        @db.Decimal(14, 2)
-  expenseTypeId   String?
-  date            DateTime
-  remark          String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  expenseType     ExpenseType?   @relation(fields: [expenseTypeId], references: [id], onDelete: SetNull)
+model IncomeType {
+  id            String           @id @default(uuid())
+  name          String           @unique
+  status        ExpenseTypeStatus @default(ACTIVE)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  incomeTransactions IncomeTransaction[] @relation("IncomeTransactionIncomeType")
+
+  @@index([status])
+}
+
+model FinanceTransaction {
+  id                        String         @id @default(uuid())
+  transactionType           TransactionType @default(EXPENSE)
+  amount                    Decimal        @db.Decimal(14, 2)
+  expenseTypeId             String?
+  expenseById               String?
+  expenseCompanyId          String?
+  projectId                 String?
+  paymentMode               CashPaymentMode?
+  date                      DateTime
+  remark                    String?
+  createdAt                 DateTime       @default(now())
+  updatedAt                 DateTime       @updatedAt
+  expenseType               ExpenseType?   @relation("FinanceTransactionExpenseType", fields: [expenseTypeId], references: [id], onDelete: SetNull)
+  expenseBy                 User?          @relation("FinanceTransactionExpenseBy", fields: [expenseById], references: [id], onDelete: SetNull)
+  expenseCompany            Company?       @relation("FinanceTransactionExpenseCompany", fields: [expenseCompanyId], references: [id], onDelete: SetNull)
+  project                   Project?       @relation("FinanceTransactionProject", fields: [projectId], references: [id], onDelete: SetNull)
 
   @@index([transactionType])
   @@index([date])
   @@index([expenseTypeId])
+  @@index([expenseById])
+  @@index([expenseCompanyId])
+  @@index([projectId])
+  @@index([paymentMode])
+}
+
+model PetiCash {
+  id            String                   @id @default(uuid())
+  amount        Decimal                  @db.Decimal(14, 2)
+  transactionType PetiCashTransactionType
+  givenById     String?
+  givenToId     String?
+  companyId     String?
+  projectId     String?
+  date          DateTime
+  remarks       String?
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  givenBy       User?                    @relation("PetiCashGivenBy", fields: [givenById], references: [id], onDelete: SetNull)
+  givenTo       User?                    @relation("PetiCashGivenTo", fields: [givenToId], references: [id], onDelete: SetNull)
+  company       Company?                 @relation("PetiCashCompany", fields: [companyId], references: [id], onDelete: SetNull)
+  project       Project?                 @relation("PetiCashProject", fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([transactionType])
+  @@index([date])
+  @@index([givenById])
+  @@index([givenToId])
+  @@index([companyId])
+  @@index([projectId])
+}
+
+model IncomeTransaction {
+  id              String          @id @default(uuid())
+  transactionType  TransactionType @default(INCOME)
+  amount          Decimal         @db.Decimal(14, 2)
+  incomeTypeId    String?
+  incomeCompanyId String?
+  receivedById    String?
+  projectId       String?
+  paymentMode     CashPaymentMode?
+  date            DateTime
+  remark          String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  incomeType      IncomeType?     @relation("IncomeTransactionIncomeType", fields: [incomeTypeId], references: [id], onDelete: SetNull)
+  incomeCompany   Company?        @relation("IncomeTransactionIncomeCompany", fields: [incomeCompanyId], references: [id], onDelete: SetNull)
+  receivedBy      User?           @relation("IncomeTransactionReceivedBy", fields: [receivedById], references: [id], onDelete: SetNull)
+  project         Project?        @relation("IncomeTransactionProject", fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([transactionType])
+  @@index([date])
+  @@index([incomeTypeId])
+  @@index([incomeCompanyId])
+  @@index([receivedById])
+  @@index([projectId])
+  @@index([paymentMode])
+}
+
+model TransportLog {
+  id                    String        @id @default(uuid())
+  serialNo              Int
+  transportType         TransportType
+  date                  DateTime
+  referenceNumber       String?
+  description           String?
+  locationType          String?
+  city                  String?
+  floor                 String?
+  kmStart               Int           @default(0)
+  kmEnd                 Int           @default(0)
+  totalKm               Int           @default(0)
+  loadType              String?
+  driverWages           Decimal       @default(0) @db.Decimal(14, 2)
+  otherExpenses         Decimal       @default(0) @db.Decimal(14, 2)
+  floorRent             Decimal       @default(0) @db.Decimal(14, 2)
+  returnMaterialFreight Decimal       @default(0) @db.Decimal(14, 2)
+  fromLocation          String?
+  toLocation            String?
+  mobileNumber          String?
+  noOfCovers            Int           @default(0)
+  totalWeight           Decimal       @default(0) @db.Decimal(14, 2)
+  weightCharge          Decimal       @default(0) @db.Decimal(14, 2)
+  coverCharge           Decimal       @default(0) @db.Decimal(14, 2)
+  vehicleNumber         String?
+  baseAmount            Decimal       @default(0) @db.Decimal(14, 2)
+  gstAmount             Decimal       @default(0) @db.Decimal(14, 2)
+  tripType              String?
+  tripCharge            Decimal       @default(0) @db.Decimal(14, 2)
+  vehicleType           String?
+  loadingCharges        Decimal       @default(0) @db.Decimal(14, 2)
+  returnMaterialCharges Decimal       @default(0) @db.Decimal(14, 2)
+  transportCharges      Decimal       @default(0) @db.Decimal(14, 2)
+  paymentMode           String?
+  status                String?
+  remark                String?
+  createdById           String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  createdBy             User?         @relation("TransportLogCreator", fields: [createdById], references: [id])
+
+  @@unique([transportType, serialNo])
+  @@index([transportType])
+  @@index([date])
+  @@index([status])
+  @@index([paymentMode])
+  @@index([createdById])
+}
+
+model TransportConfig {
+  id           String              @id @default(uuid())
+  transportType TransportType
+  configType   TransportConfigType
+  configKey    String
+  configData   Json
+  floor        String?
+  loadType     String?
+  tripType     String?
+  minKm        Int?
+  maxKm        Int?
+  rate         Decimal             @default(0) @db.Decimal(14, 2)
+  isActive     Boolean             @default(true)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@unique([transportType, configType, configKey])
+  @@index([transportType, configType])
+  @@index([isActive])
 }
 
 model QueryManagement {
@@ -238,4 +404,34 @@ enum ExpenseTypeStatus {
 enum TransactionType {
   INCOME
   EXPENSE
+}
+
+enum CashPaymentMode {
+  CASH
+  BANK
+  CHEQUE
+  UPI
+  NEFT_RTGS
+}
+
+enum PetiCashTransactionType {
+  CREDIT
+  DEBIT
+}
+
+enum TransportType {
+  BOLERO_DELIVERY
+  BOLERO_RETURN_DC
+  COURIER_DAILY
+  PORTER_DAILY
+  CNG_RICKSHAW
+  LOADING_VEHICLE
+}
+
+enum TransportConfigType {
+  DRIVER_WAGE_SLAB
+  FLOOR_RENT
+  COURIER_WEIGHT_RATE
+  COURIER_COVER_RATE
+  CNG_TRIP_SLAB
 }

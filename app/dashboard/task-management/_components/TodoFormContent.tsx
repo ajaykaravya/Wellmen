@@ -9,6 +9,7 @@ import { getTodayInputDate, formatToDDMMYYYY } from "@/lib/dateUtils";
 import { useDashboardContext } from "../../_components/DashboardShell";
 import CustomDatePicker from "../../../components/CustomDatePicker";
 import { ButtonGroup } from "../../_components/ButtonGroup";
+import { UserCardGroup } from "../../_components/UserCardGroup";
 import {
   Combobox,
   ComboboxButton,
@@ -120,9 +121,6 @@ const formatDateForInput = (value?: string) => {
   return formatted === "-" ? "" : formatted;
 };
 
-const getUserDisplayName = (user: UserOption) =>
-  [user.firstName, user.lastName].filter(Boolean).join(" ");
-
 const getProjectDisplayName = (project: ProjectOption | null) => {
   if (!project) return "";
 
@@ -162,7 +160,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const endpoint = isAdmin ? "/api/todos" : "/api/my-todos";
+        const endpoint = "/api/task-management";
 
         const [usersRes, projectsRes, todoRes] = await Promise.all([
           isAdmin ? fetch("/api/users/options") : Promise.resolve(null),
@@ -211,7 +209,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
 
   useEffect(() => {
     if (todoId || form.taskType) return;
-    const initialType = resolveTaskTypeFromQuery(searchParams.get("type"));
+    const initialType = resolveTaskTypeFromQuery(searchParams?.get("type") || null);
     if (initialType) {
       setForm((prev) => ({
         ...prev,
@@ -317,7 +315,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
 
     try {
       setSaving(true);
-      const endpoint = isAdmin ? "/api/todos" : "/api/my-todos";
+      const endpoint = "/api/task-management";
       const res = await fetch(todoId ? `${endpoint}/${todoId}` : endpoint, {
         method: todoId ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -331,7 +329,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
       }
 
       toast.success(`Task ${todoId ? "updated" : "created"} successfully.`);
-      router.push("/dashboard/task-management");
+      router.push(`/dashboard/task-management?type=${form.taskType.toUpperCase()}`);
     } catch (error) {
       console.error("Failed to save task", error);
       setNote("Failed to save task.");
@@ -555,51 +553,20 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
 
                 {isAdmin && (
                   <div className="mt-5 space-y-2">
-                    <p className="text-sm font-medium">
-                      Select User <span className="text-red-600">*</span>
-                    </p>
-                    {users.length > 0 ? (
-                      <div className="flex flex-wrap items-center gap-2">
-                        {users.map((user) => {
-                          const isSelected = form.assigneeId === user.id;
-
-                          return (
-                            <button
-                              key={user.id}
-                              type="button"
-                              aria-pressed={isSelected}
-                              onClick={() =>
-                                setForm((prev) => ({
-                                  ...prev,
-                                  assigneeId: user.id,
-                                }))
-                              }
-                              className={
-                                isSelected
-                                  ? "rbac-button flex flex-col items-start gap-1 text-left"
-                                  : "rbac-button rbac-button-secondary flex flex-col items-start gap-1 text-left"
-                              }
-                            >
-                              <span className="font-medium">
-                                {getUserDisplayName(user)}
-                              </span>
-                              <span className="text-xs opacity-75">
-                                {user.role || "User"}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-slate-500">
-                        No users available to assign.
-                      </p>
-                    )}
-                    {errors.assigneeId && (
-                      <p className="text-sm text-red-600 mb-2">
-                        {errors.assigneeId}
-                      </p>
-                    )}
+                    <UserCardGroup
+                      title="Select User"
+                      selected={form.assigneeId}
+                      users={users}
+                      onSelect={(value) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          assigneeId: value,
+                        }))
+                      }
+                      error={errors.assigneeId}
+                      required
+                      emptyMessage="No users available to assign."
+                    />
                   </div>
                 )}
 
@@ -724,7 +691,11 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
               <button
                 className="text-red-500"
                 type="button"
-                onClick={() => router.push("/dashboard/task-management")}
+                onClick={() =>
+                  router.push(
+                    `/dashboard/task-management?type=${form.taskType.toUpperCase()}`,
+                  )
+                }
                 disabled={saving}
               >
                 Cancel

@@ -9,6 +9,7 @@ import ConfirmDialog from "../../components/ConfirmDialog";
 import ListingFilterDialog from "../../components/ListingFilterDialog";
 import useDebounce from "@/app/hooks/useDebounce";
 import { toast } from "react-toastify";
+import { useRouter } from "next/navigation"
 import {
   FaChevronLeft,
   FaChevronRight,
@@ -25,6 +26,7 @@ type ReportingCategoryRow = {
 };
 
 function ReportingCategoryListContent() {
+  const router = useRouter();
   const [categories, setCategories] = useState<ReportingCategoryRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
@@ -83,7 +85,9 @@ function ReportingCategoryListContent() {
     setConfirmOpen(true);
   }, []);
 
-  const activeFilterCount = [query.trim()].filter(Boolean).length;
+  const handleEditCategory = useCallback((row: ReportingCategoryRow) => {
+    router.push(`/dashboard/reporting-categories/${row.id}`);
+  }, [router]);
 
   const openFilters = useCallback(() => {
     setDraftQuery(query);
@@ -139,12 +143,10 @@ function ReportingCategoryListContent() {
         header: "Action",
         id: "action",
         cell: ({ row }) => (
-          <div className="justify-end flex gap-4">
-            <Link href={`/dashboard/reporting-categories/${row.original.id}`}>
-              <button className="rbac-link" type="button">
+          <div className="justify-end flex gap-2">
+              <button onClick={()=> handleEditCategory(row.original)} className="rbac-link" type="button">
                 <FaEdit />
               </button>
-            </Link>
             <button
               className="rbac-link danger"
               type="button"
@@ -156,7 +158,7 @@ function ReportingCategoryListContent() {
         ),
       },
     ],
-    [handleDeleteCategory],
+    [handleDeleteCategory, handleEditCategory],
   );
 
   const table = useReactTable({
@@ -180,11 +182,6 @@ function ReportingCategoryListContent() {
                 onClick={openFilters}
               >
                <FaFilter /> <span>Filters</span>
-                {activeFilterCount > 0 && (
-                  <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[color:var(--brand)] px-1 text-[10px] font-semibold text-white">
-                    {activeFilterCount}
-                  </span>
-                )}
               </button>
               <Link href="/dashboard/reporting-categories/new">
                 <button className="rbac-button" type="button">
@@ -296,13 +293,9 @@ function ReportingCategoryListContent() {
                         </h4>
                       </div>
                       <div className="flex">
-                        <Link
-                          href={`/dashboard/reporting-categories/${category.id}`}
-                        >
-                          <button className="rbac-link" type="button">
+                          <button onClick={()=> handleEditCategory(category)} className="rbac-link" type="button">
                             <FaEdit size={18} />
                           </button>
-                        </Link>
                         <button
                         style={{padding:"2px"}}
                           className="rbac-link danger"
@@ -384,7 +377,6 @@ function ReportingCategoryListContent() {
         description="Update the filters and apply them when you're ready."
         onClose={closeFilters}
         onApply={applyFilters}
-        activeCount={activeFilterCount}
       >
         <input
           className="rbac-input-filter"

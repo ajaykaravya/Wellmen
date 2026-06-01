@@ -3,26 +3,32 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
 
-const TRANSACTION_TYPES = ["INCOME", "EXPENSE"];
+const PAYMENT_MODES = ["CASH", "BANK", "CHEQUE", "UPI", "NEFT_RTGS"];
 
 const parsePayload = (body) => {
-  const transactionType = String(body.transactionType || "")
+  const amountRaw = String(body.amount || "").trim();
+  const projectId = String(body.projectId || "").trim();
+  const expenseTypeId = String(body.expenseTypeId || "").trim();
+  const expenseById = String(body.expenseById || "").trim();
+  const expenseCompanyId = String(body.expenseCompanyId || "").trim();
+  const paymentMode = String(body.paymentMode || "")
     .trim()
     .toUpperCase();
-  const amountRaw = String(body.amount || "").trim();
-  const expenseTypeId = String(body.expenseTypeId || "").trim();
   const date = String(body.date || "").trim();
   const remark = String(body.remark || "").trim();
   return {
-    transactionType,
     amountRaw,
+    projectId,
     expenseTypeId,
+    expenseById,
+    expenseCompanyId,
+    paymentMode,
     date,
     remark,
   };
 };
 
-const isValidTransactionType = (value) => TRANSACTION_TYPES.includes(value);
+const isValidPaymentMode = (value) => PAYMENT_MODES.includes(value);
 
 const parseDate = (value) => {
   if (!value) return null;
@@ -49,8 +55,17 @@ const serializeDailyExpense = (row) => ({
   id: row.id,
   transactionType: row.transactionType,
   amount: Number(row.amount),
+  projectId: row.projectId,
+  projectName: row.project?.name || null,
+  projectCity: row.project?.city || null,
   expenseTypeId: row.expenseTypeId,
   expenseTypeName: row.expenseType?.name || null,
+  expenseById: row.expenseById,
+  expenseByName: row.expenseBy?.fullName || null,
+  expenseCompanyId: row.expenseCompanyId,
+  expenseCompanyName: row.expenseCompany?.name || null,
+  expenseCompanyCode: row.expenseCompany?.code || null,
+  paymentMode: row.paymentMode || null,
   date: row.date,
   remark: row.remark,
   createdAt: row.createdAt,
@@ -63,10 +78,15 @@ export async function GET(req) {
 
   const { searchParams } = new URL(req.url);
   const query = String(searchParams.get("q") || "").trim();
-  const transactionType = String(searchParams.get("transactionType") || "")
+  const projectId = String(searchParams.get("projectId") || "").trim();
+  const expenseTypeId = String(searchParams.get("expenseTypeId") || "").trim();
+  const expenseById = String(searchParams.get("expenseById") || "").trim();
+  const expenseCompanyId = String(
+    searchParams.get("expenseCompanyId") || "",
+  ).trim();
+  const paymentMode = String(searchParams.get("paymentMode") || "")
     .trim()
     .toUpperCase();
-  const expenseTypeId = String(searchParams.get("expenseTypeId") || "").trim();
   const fromDate = String(searchParams.get("fromDate") || "").trim();
   const toDate = String(searchParams.get("toDate") || "").trim();
   const pageParam = Number(searchParams.get("page") || "1");
@@ -82,19 +102,72 @@ export async function GET(req) {
     where.OR = [
       { remark: { contains: query, mode: "insensitive" } },
       { expenseType: { name: { contains: query, mode: "insensitive" } } },
+      {
+        expenseBy: {
+          is: {
+            fullName: { contains: query, mode: "insensitive" },
+          },
+        },
+      },
+      {
+        expenseBy: {
+          is: {
+            firstName: { contains: query, mode: "insensitive" },
+          },
+        },
+      },
+      {
+        expenseBy: {
+          is: {
+            lastName: { contains: query, mode: "insensitive" },
+          },
+        },
+      },
+      {
+        expenseCompany: {
+          is: {
+            name: { contains: query, mode: "insensitive" },
+          },
+        },
+      },
+      {
+        project: {
+          is: {
+            name: { contains: query, mode: "insensitive" },
+          },
+        },
+      },
+      {
+        project: {
+          is: {
+            city: { contains: query, mode: "insensitive" },
+          },
+        },
+      },
     ];
   }
-  if (transactionType) {
-    if (!isValidTransactionType(transactionType)) {
-      return NextResponse.json(
-        { error: "Invalid transaction type filter." },
-        { status: 400 },
-      );
-    }
-    where.transactionType = transactionType;
+  where.transactionType = "EXPENSE";
+  if (projectId) {
+    where.projectId = projectId;
   }
   if (expenseTypeId) {
     where.expenseTypeId = expenseTypeId;
+  }
+  if (expenseById) {
+    where.expenseById = expenseById;
+  }
+  if (expenseCompanyId) {
+    where.expenseCompanyId = expenseCompanyId;
+  }
+
+  if (paymentMode) {
+    if (!isValidPaymentMode(paymentMode)) {
+      return NextResponse.json(
+        { error: "Invalid payment mode filter." },
+        { status: 400 },
+      );
+    }
+    where.paymentMode = paymentMode;
   }
 
   if (fromDate || toDate) {
@@ -117,28 +190,21 @@ export async function GET(req) {
     }
   }
 
-  const [total, dailyExpenses, incomeSum, expenseSum] = await Promise.all([
-    prisma.dailyExpense.count({ where }),
-    prisma.dailyExpense.findMany({
+  const [total, dailyExpenses] = await Promise.all([
+    prisma.financeTransaction.count({ where }),
+    prisma.financeTransaction.findMany({
       where,
-      include: { expenseType: true },
-      orderBy: { date: "desc" },
+      include: {
+        project: true,
+        expenseType: true,
+        expenseBy: true,
+        expenseCompany: true,
+      },
+      orderBy: [{ createdAt: "desc" }, { date: "desc" }],
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
-    prisma.dailyExpense.aggregate({
-      _sum: { amount: true },
-      where: { transactionType: "INCOME" },
-    }),
-    prisma.dailyExpense.aggregate({
-      _sum: { amount: true },
-      where: { transactionType: "EXPENSE" },
-    }),
   ]);
-
-  const income = Number(incomeSum._sum.amount || 0);
-  const expense = Number(expenseSum._sum.amount || 0);
-  const balance = income - expense;
 
   return NextResponse.json({
     data: dailyExpenses.map(serializeDailyExpense),
@@ -146,7 +212,6 @@ export async function GET(req) {
     pageSize,
     total,
     totalPages: Math.max(1, Math.ceil(total / pageSize)),
-    balance,
   });
 }
 
@@ -156,13 +221,6 @@ export async function POST(req) {
 
   const body = await req.json();
   const payload = parsePayload(body);
-
-  if (!isValidTransactionType(payload.transactionType)) {
-    return NextResponse.json(
-      { error: "Transaction type is required." },
-      { status: 400 },
-    );
-  }
 
   const amount = Number(payload.amountRaw);
   if (!Number.isFinite(amount) || amount <= 0) {
@@ -174,37 +232,99 @@ export async function POST(req) {
     return NextResponse.json({ error: "Date is required." }, { status: 400 });
   }
 
-  let expenseTypeId = null;
-  if (payload.transactionType === "EXPENSE") {
-    if (!payload.expenseTypeId) {
-      return NextResponse.json(
-        { error: "Expense type is required for expense transactions." },
-        { status: 400 },
-      );
-    }
+  if (!payload.projectId) {
+    return NextResponse.json(
+      { error: "Project is required." },
+      { status: 400 },
+    );
+  }
 
-    const expenseType = await prisma.expenseType.findUnique({
-      where: { id: payload.expenseTypeId },
-    });
-    if (!expenseType) {
-      return NextResponse.json(
-        { error: "Expense type not found." },
-        { status: 404 },
-      );
-    }
-    expenseTypeId = expenseType.id;
+  const project = await prisma.project.findUnique({
+    where: { id: payload.projectId },
+  });
+  if (!project) {
+    return NextResponse.json({ error: "Project not found." }, { status: 404 });
+  }
+
+  let expenseTypeId = null;
+  if (!payload.expenseTypeId) {
+    return NextResponse.json(
+      { error: "Expense type is required." },
+      { status: 400 },
+    );
+  }
+
+  const expenseType = await prisma.expenseType.findUnique({
+    where: { id: payload.expenseTypeId },
+  });
+  if (!expenseType) {
+    return NextResponse.json(
+      { error: "Expense type not found." },
+      { status: 404 },
+    );
+  }
+  expenseTypeId = expenseType.id;
+
+  if (!payload.expenseById) {
+    return NextResponse.json(
+      { error: "Expense by is required." },
+      { status: 400 },
+    );
+  }
+
+  const expenseBy = await prisma.user.findUnique({
+    where: { id: payload.expenseById },
+  });
+  if (!expenseBy) {
+    return NextResponse.json(
+      { error: "Expense by user not found." },
+      { status: 404 },
+    );
+  }
+
+  if (!payload.expenseCompanyId) {
+    return NextResponse.json(
+      { error: "Expense company is required." },
+      { status: 400 },
+    );
+  }
+
+  if (!isValidPaymentMode(payload.paymentMode)) {
+    return NextResponse.json(
+      { error: "Payment mode is required." },
+      { status: 400 },
+    );
+  }
+
+  const expenseCompany = await prisma.company.findUnique({
+    where: { id: payload.expenseCompanyId },
+  });
+  if (!expenseCompany) {
+    return NextResponse.json(
+      { error: "Expense company not found." },
+      { status: 404 },
+    );
   }
 
   try {
-    const dailyExpense = await prisma.dailyExpense.create({
+    const dailyExpense = await prisma.financeTransaction.create({
       data: {
-        transactionType: payload.transactionType,
+        transactionType: "EXPENSE",
         amount: new Prisma.Decimal(amount),
+        projectId: project.id,
         expenseTypeId,
+        expenseById: expenseBy.id,
+        expenseCompanyId: expenseCompany.id,
         date: parsedDate,
+        paymentMode: payload.paymentMode,
         remark: payload.remark || null,
       },
-      include: { expenseType: true },
+      include: {
+        project: true,
+        expenseType: true,
+        expenseBy: true,
+        expenseCompany: true,
+      },
     });
 
     return NextResponse.json(serializeDailyExpense(dailyExpense), {

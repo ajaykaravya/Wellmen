@@ -864,6 +864,10 @@ button,
   color: #ffffff;
 }
 
+.rbac-option-active {
+  background: var(--theme-surface-2);
+}
+
 .rbac-hamburger span {
   display: block;
   width: 20px;
@@ -1443,6 +1447,10 @@ button,
 
   .md\:grid-cols-2 {
     grid-template-columns: 1fr !important;
+  }
+
+  .md\:grid-cols-3 {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   }
 
   .sm\:grid-cols-2 {
