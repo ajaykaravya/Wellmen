@@ -23,7 +23,7 @@ import {
 import { IoIosClose } from "react-icons/io";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Listbox } from "@headlessui/react";
+import { Dialog, DialogBackdrop, DialogPanel, DialogTitle, Listbox } from "@headlessui/react";
 import { FaCheck, FaChevronDown } from "react-icons/fa";
 
 type ProjectStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "ON_HOLD";
@@ -733,67 +733,80 @@ function ProjectListContent() {
       </ListingFilterDialog>
 
       {viewOpen && (
-        <div className="theme-modal-overlay fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="theme-modal-surface w-full max-w-4xl rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-auto">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-semibold">Project details</h2>
-                <p className="mt-1 text-sm">
-                  View full project information.
-                </p>
-              </div>
-              <button type="button" onClick={closeView}>
-                <IoIosClose size={30} />
-              </button>
-            </div>
+        <Dialog
+          open={viewOpen}
+          onClose={closeView}
+          className="relative z-100"
+        >
+          <DialogBackdrop
+            className="theme-modal-overlay fixed inset-0 z-100 bg-black/60 backdrop-blur-sm transition-opacity"
+            aria-hidden="true"
+          />
 
-            {viewLoading && (
-              <div className="flex items-center justify-center py-4">
-                <FaSpinner className="animate-spin mr-2" size={16} />
-              </div>
-            )}
-
-            {!viewLoading && viewData && (
-              <div className="mt-4 grid gap-4">
-                <div className="grid gap-3 md:grid-cols-2">
-                  <p className="text-sm">
-                    <strong>Project Name:</strong> {viewData.name}
-                  </p>
-                  <p className="text-sm">
-                    <strong>City:</strong> {viewData.city || "-"}
-                  </p>
-                  <p className="text-sm">
-                    <strong>Contact Number:</strong> {viewData.contactNumber || "-"}
-                  </p>
-                  <p className="text-sm">
-                    <strong>Email:</strong> {viewData.email || "-"}
-                  </p>
-                  <p className="text-sm">
-                    <strong>Start Date:</strong> {formatToDDMMYYYY(viewData.startDate)}
-                  </p>
-                  <p className="text-sm">
-                    <strong>End Date:</strong> {formatToDDMMYYYY(viewData.endDate)}
-                  </p>
-                  <p className="text-sm">
-                    <strong>Status:</strong> {statusLabel(viewData.status)}
+          <div className="fixed inset-0 z-101 flex items-center justify-center p-4">
+            <DialogPanel className="theme-modal-surface relative z-102 w-full max-w-4xl rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-auto">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <DialogTitle className="text-lg font-semibold">
+                    Project details
+                  </DialogTitle>
+                  <p className="mt-1 text-sm">
+                    View full project information.
                   </p>
                 </div>
-
-                {viewData.address && (
-                  <p className="text-sm whitespace-pre-wrap">
-                    <strong>Address:</strong> {viewData.address}
-                  </p>
-                )}
-
-                {viewData.description && (
-                  <p className="text-sm whitespace-pre-wrap">
-                    <strong>Description:</strong> {viewData.description}
-                  </p>
-                )}
+                <button type="button" onClick={closeView}>
+                  <IoIosClose size={30} />
+                </button>
               </div>
-            )}
+
+              {viewLoading && (
+                <div className="flex items-center justify-center py-4">
+                  <FaSpinner className="animate-spin mr-2" size={16} />
+                </div>
+              )}
+
+              {!viewLoading && viewData && (
+                <div className="mt-4 grid gap-4">
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <p className="text-sm">
+                      <strong>Project Name:</strong> {viewData.name}
+                    </p>
+                    <p className="text-sm">
+                      <strong>City:</strong> {viewData.city || "-"}
+                    </p>
+                    <p className="text-sm">
+                      <strong>Contact Number:</strong> {viewData.contactNumber || "-"}
+                    </p>
+                    <p className="text-sm">
+                      <strong>Email:</strong> {viewData.email || "-"}
+                    </p>
+                    <p className="text-sm">
+                      <strong>Start Date:</strong> {formatToDDMMYYYY(viewData.startDate)}
+                    </p>
+                    <p className="text-sm">
+                      <strong>End Date:</strong> {formatToDDMMYYYY(viewData.endDate)}
+                    </p>
+                    <p className="text-sm">
+                      <strong>Status:</strong> {statusLabel(viewData.status)}
+                    </p>
+                  </div>
+
+                  {viewData.address && (
+                    <p className="text-sm whitespace-pre-wrap">
+                      <strong>Address:</strong> {viewData.address}
+                    </p>
+                  )}
+
+                  {viewData.description && (
+                    <p className="text-sm whitespace-pre-wrap">
+                      <strong>Description:</strong> {viewData.description}
+                    </p>
+                  )}
+                </div>
+              )}
+            </DialogPanel>
           </div>
-        </div>
+        </Dialog>
       )}
     </>
   );

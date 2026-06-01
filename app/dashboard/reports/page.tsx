@@ -803,7 +803,7 @@ function ReportingListContent() {
       <Dialog
         open={viewImageIndex !== null && !!selectedViewImage}
         onClose={() => setViewImageIndex(null)}
-        className="relative z-[60]"
+        className="relative z-60"
       >
         <div className="theme-modal-overlay fixed inset-0" aria-hidden="true" />
 
@@ -865,7 +865,7 @@ function ReportingListContent() {
       <Dialog
         open={viewVideoIndex !== null && !!selectedViewVideo}
         onClose={() => setViewVideoIndex(null)}
-        className="relative z-[60]"
+        className="relative z-60"
       >
         <div className="theme-modal-overlay fixed inset-0" aria-hidden="true" />
 
