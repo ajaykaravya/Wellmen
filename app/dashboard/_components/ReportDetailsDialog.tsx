@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from "@headlessui/react";
 import { FaPlay, FaSpinner } from "react-icons/fa";
 import { IoIosClose } from "react-icons/io";
 import { MdOutlineFileDownload } from "react-icons/md";
@@ -54,14 +55,24 @@ export function ReportDetailsDialog<T extends ReportDetailsDialogRow>({
     : [];
 
   return (
-    <div className="theme-modal-overlay fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="theme-modal-surface w-full max-w-4xl rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-auto">
-        <div className="flex items-start justify-between gap-4">
-          <h2 className="text-lg font-semibold">Report details</h2>
-          <button type="button" onClick={onClose} aria-label="Close report details">
-            <IoIosClose size={30} />
-          </button>
-        </div>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      className="relative z-50"
+    >
+      <DialogBackdrop
+        className="theme-modal-overlay fixed inset-0 z-50 bg-black/60 backdrop-blur-sm transition-opacity"
+        aria-hidden="true"
+      />
+
+      <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+        <DialogPanel className="theme-modal-surface relative w-full max-w-4xl rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-auto">
+          <div className="flex items-start justify-between gap-4">
+            <DialogTitle className="text-lg font-semibold">Report details</DialogTitle>
+            <button type="button" onClick={onClose} aria-label="Close report details">
+              <IoIosClose size={30} />
+            </button>
+          </div>
 
         {loading && (
           <div className="flex items-center justify-center py-4">
@@ -166,7 +177,8 @@ export function ReportDetailsDialog<T extends ReportDetailsDialogRow>({
             ) : null}
           </div>
         )}
+      </DialogPanel>
       </div>
-    </div>
+    </Dialog>
   );
 }
