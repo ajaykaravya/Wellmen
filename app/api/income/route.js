@@ -155,7 +155,7 @@ export async function GET(req) {
         incomeCompany: true,
         receivedBy: { include: { role: true } },
       },
-      orderBy: [{ createdAt: "desc" }, { date: "desc" }],
+      orderBy: [{ date: "desc" }, { date: "desc" }],
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
