@@ -119,7 +119,7 @@ export async function GET(req) {
     prisma.project.count({ where }),
     prisma.project.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: { startDate: "desc" },
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
