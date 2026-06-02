@@ -31,7 +31,7 @@ import { ChevronDownIcon } from "@heroicons/react/16/solid";
 import { FinanceCardList } from "../_components/FinanceCardList";
 import { Listbox } from "@headlessui/react";
 
-type PaymentMode = "CASH" | "BANK";
+type PaymentMode = "CASH" | "BANK" | "CHEQUE" | "UPI" | "NEFT_RTGS";
 
 type ProjectOption = {
   id: string;
@@ -76,6 +76,25 @@ type IncomeRow = {
 };
 
 type CashPaymentMode = "CASH" | "BANK" | "CHEQUE" | "UPI" | "NEFT_RTGS";
+
+const CASH_PAYMENT_MODE_LABELS: Record<CashPaymentMode, string> = {
+  CASH: "Cash",
+  BANK: "Bank",
+  CHEQUE: "Cheque",
+  UPI: "UPI",
+  NEFT_RTGS: "NEFT/RTGS",
+};
+
+const getCashPaymentModeLabel = (
+  mode: CashPaymentMode | string | null | undefined,
+) => {
+  if (!mode) return "-";
+
+  return CASH_PAYMENT_MODE_LABELS[mode as CashPaymentMode] ?? mode.replaceAll("_", " ");
+};
+
+const getPaymentModeFilterLabel = (mode: PaymentMode | "") =>
+  mode ? getCashPaymentModeLabel(mode) : "All payment modes";
 
 const formatAmount = (value: number) =>
   Number(value || 0).toLocaleString(undefined, {
@@ -200,23 +219,6 @@ function IncomeListContent() {
     toDate,
     paymentModeFilter ? `Payment: ${paymentModeFilter}` : "",
   ].filter(Boolean);
-
-  const CASH_PAYMENT_MODE_LABELS: Record<CashPaymentMode, string> = {
-    CASH: "Cash",
-    BANK: "Bank",
-    CHEQUE: "Cheque",
-    UPI: "UPI",
-    NEFT_RTGS: "NEFT/RTGS",
-  };
-
-  const getCashPaymentModeLabel = (mode: CashPaymentMode | string | null | undefined) => {
-    if (!mode) return "-";
-
-    return (
-      CASH_PAYMENT_MODE_LABELS[mode as CashPaymentMode] ??
-      mode.replaceAll("_", " ")
-    );
-  }
 
   useEffect(() => {
     const loadOptions = async () => {
@@ -601,39 +603,43 @@ function IncomeListContent() {
           </div>
 
           <div className="mt-4 flex items-center justify-end gap-3 text-sm">
-            <button
-              className="change-button change-button-secondary"
-              type="button"
-              onClick={() => setPageIndex((prev) => Math.max(prev - 1, 0))}
-              disabled={pageIndex === 0}
-            >
-              <FaChevronLeft size={18} />
-            </button>
-            <span>
-              Page {pageIndex + 1} of {pageCount}
-            </span>
-            <button
-              className="change-button change-button-secondary"
-              type="button"
-              onClick={() => setPageIndex((prev) => Math.min(prev + 1, pageCount - 1))}
-              disabled={pageIndex + 1 >= pageCount}
-            >
-              <FaChevronRight size={18} />
-            </button>
-            <select
-              className="rbac-input rbac-select rbac-pagination"
-              value={pageSize}
-              onChange={(event) => {
-                setPageIndex(0);
-                setPageSize(Number(event.target.value));
-              }}
-            >
-              {[5, 10, 20, 30].map((size) => (
-                <option key={size} value={size}>
-                  Show {size}
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
+                <button
+                  className="change-button change-button-secondary"
+                  type="button"
+                  onClick={() => setPageIndex((prev) => Math.max(prev - 1, 0))}
+                  disabled={pageIndex === 0}
+                >
+                  <FaChevronLeft size={18} />
+                </button>
+                <span>
+                  Page {pageIndex + 1} of {pageCount}
+                </span>
+                <button
+                  className="change-button change-button-secondary"
+                  type="button"
+                  onClick={() => setPageIndex((prev) => Math.min(prev + 1, pageCount - 1))}
+                  disabled={pageIndex + 1 >= pageCount}
+                >
+                  <FaChevronRight size={18} />
+                </button>
+              </div>
+              <select
+                className="rbac-input rbac-select rbac-pagination"
+                value={pageSize}
+                onChange={(event) => {
+                  setPageIndex(0);
+                  setPageSize(Number(event.target.value));
+                }}
+              >
+                {[5, 10, 20, 30].map((size) => (
+                  <option key={size} value={size}>
+                    Show {size}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       </section>
@@ -854,11 +860,7 @@ function IncomeListContent() {
             <div className="relative">
               <Listbox.Button className="rbac-input rbac-select flex w-full items-center justify-between text-left">
                 <span>
-                  {draftPaymentModeFilter === "CASH"
-                    ? "Cash"
-                    : draftPaymentModeFilter === "BANK"
-                      ? "Bank"
-                      : "All payment modes"}
+                  {getPaymentModeFilterLabel(draftPaymentModeFilter)}
                 </span>
 
               </Listbox.Button>
@@ -867,6 +869,7 @@ function IncomeListContent() {
                 {[
                   { label: "All payment modes", value: "" },
                   { label: "Cash", value: "CASH" },
+                  { label: "Bank", value: "BANK" },
                   { label: "Cheque", value: "CHEQUE" },
                   { label: "UPI", value: "UPI" },
                   { label: "NEFT/RTGS", value: "NEFT_RTGS" },
@@ -879,7 +882,7 @@ function IncomeListContent() {
                       }`
                     }
                   >
-                    {({ selected }) => (
+                    {() => (
                       <div className="flex items-center justify-between">
                         <span>{mode.label}</span>
 

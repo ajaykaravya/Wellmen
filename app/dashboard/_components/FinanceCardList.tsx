@@ -135,12 +135,12 @@ export function FinanceCardList<T extends FinanceCardListRow>({
     NEFT_RTGS: "NEFT/RTGS",
   };
 
-  const getCashPaymentModeLabel = (mode: CashPaymentMode | string | null | undefined | any) => {
+  const getCashPaymentModeLabel = (mode: CashPaymentMode | string | null | undefined) => {
     if (!mode) return "-";
 
     return (
       CASH_PAYMENT_MODE_LABELS[mode as CashPaymentMode] ??
-      mode.replaceAll("_", " ")
+      String(mode).replaceAll("_", " ")
     );
   }
 
@@ -249,8 +249,8 @@ export function FinanceCardList<T extends FinanceCardListRow>({
             {title ? (
               <h3 className="sm:text-base text-sm font-medium">
                 {title}
-                {showCount && (
-                  <span className="ml-2 rounded-full bg-[#2596be] px-2 py-1 text-sm font-normal text-white">
+            {showCount && (
+                  <span className="ml-2 rounded-full bg-[color:var(--brand)] px-2 py-1 text-sm font-normal text-white">
                     {rows.length}
                   </span>
                 )}

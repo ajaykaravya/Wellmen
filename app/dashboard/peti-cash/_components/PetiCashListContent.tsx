@@ -583,6 +583,7 @@ function PetiCashListContent() {
               setDraftTransactionTypeFilter("");
               setDraftFromDate("");
               setGivenByFilter(null);
+              setGivenToFilter(null);
               setDraftGivenByFilter(null);
               setDraftToDate("");
               setFilterOpen(false);
@@ -675,43 +676,45 @@ function PetiCashListContent() {
 
           <div className="mt-4 flex flex-wrap items-center justify-end gap-3 text-sm">
             <div className="flex items-center gap-2">
-              <button
-                className="change-button change-button-secondary"
-                type="button"
-                onClick={() => setPageIndex((prev) => Math.max(prev - 1, 0))}
-                disabled={pageIndex === 0}
-              >
-                <FaChevronLeft size={20} />
-              </button>
-              <span>
-                Page {pageIndex + 1} of {pageCount}
-              </span>
-              <button
-                className="change-button change-button-secondary"
-                type="button"
-                onClick={() =>
-                  setPageIndex((prev) => Math.min(prev + 1, pageCount - 1))
-                }
-                disabled={pageIndex + 1 >= pageCount}
-              >
-                <FaChevronRight size={20} />
-              </button>
-            </div>
-            <div>
-              <select
-                className="rbac-input rbac-select rbac-pagination"
-                value={pageSize}
-                onChange={(event) => {
-                  setPageIndex(0);
-                  setPageSize(Number(event.target.value));
-                }}
-              >
-                {[5, 10, 20, 30].map((size) => (
-                  <option key={size} value={size}>
-                    Show {size}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center gap-2">
+                <button
+                  className="change-button change-button-secondary"
+                  type="button"
+                  onClick={() => setPageIndex((prev) => Math.max(prev - 1, 0))}
+                  disabled={pageIndex === 0}
+                >
+                  <FaChevronLeft size={20} />
+                </button>
+                <span>
+                  Page {pageIndex + 1} of {pageCount}
+                </span>
+                <button
+                  className="change-button change-button-secondary"
+                  type="button"
+                  onClick={() =>
+                    setPageIndex((prev) => Math.min(prev + 1, pageCount - 1))
+                  }
+                  disabled={pageIndex + 1 >= pageCount}
+                >
+                  <FaChevronRight size={20} />
+                </button>
+              </div>
+              <div>
+                <select
+                  className="rbac-input rbac-select rbac-pagination"
+                  value={pageSize}
+                  onChange={(event) => {
+                    setPageIndex(0);
+                    setPageSize(Number(event.target.value));
+                  }}
+                >
+                  {[5, 10, 20, 30].map((size) => (
+                    <option key={size} value={size}>
+                      Show {size}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
         </div>

@@ -246,6 +246,9 @@ function ProjectListContent() {
       {
         header: "Email",
         accessorKey: "email",
+        cell: (info) => (
+          <span className="rbac-muted">{String(info.getValue() || "-")}</span>
+        ),
       },
       {
         header: "Start Date",

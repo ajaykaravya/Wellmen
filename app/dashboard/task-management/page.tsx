@@ -34,6 +34,12 @@ type UserOption = {
   role?: string | null;
 };
 
+type CategoryOption = {
+  id: string;
+  name: string;
+  category: string;
+};
+
 type TodoRow = {
   id: string;
   title: string;
@@ -57,6 +63,8 @@ type TodoRow = {
     role?: string | null;
   } | null;
 };
+
+type TaskType = TodoRow["type"];
 
 type TodoUpdateDraft = {
   comments: string;
@@ -83,17 +91,27 @@ const renderProjectName = (name?: string | null, city?: string | null) => (
   </div>
 );
 
+const categoryApiMap: Record<TodoRow["type"], string> = {
+  PROJECT: "/api/categories",
+  OFFICE: "/api/office-categories",
+  SERVICE: "/api/service-categories",
+};
+
+const resolveTaskTypeFromQuery = (
+  value: string | null | undefined,
+): TaskType => {
+  if (value === "PROJECT" || value === "OFFICE" || value === "SERVICE") {
+    return value;
+  }
+
+  return "PROJECT";
+};
+
 function TodoListContent() {
   const router = useRouter();
   const { isAdmin } = useDashboardContext();
   const searchParams = useSearchParams();
-  const taskTypeFromQuery = (() => {
-    const value = searchParams?.get("type");
-    if (value === "PROJECT" || value === "OFFICE" || value === "SERVICE") {
-      return value;
-    }
-    return "PROJECT";
-  })();
+  const taskTypeFromQuery = resolveTaskTypeFromQuery(searchParams?.get("type"));
   const [todos, setTodos] = useState<TodoRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
@@ -102,17 +120,20 @@ function TodoListContent() {
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 400);
   const [statusFilter, setStatusFilter] = useState("");
-  const [taskTypeFilter, setTaskTypeFilter] = useState(taskTypeFromQuery);
+  const [taskTypeFilter, setTaskTypeFilter] = useState<TaskType>(taskTypeFromQuery);
   const [categoryFilter, setCategoryFilter] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [assigneeFilter, setAssigneeFilter] = useState("");
   const [assignees, setAssignees] = useState<UserOption[]>([]);
+  const [categoriesByType, setCategoriesByType] = useState<
+    Partial<Record<TodoRow["type"], CategoryOption[]>>
+  >({});
   const [filterOpen, setFilterOpen] = useState(false);
   const [draftQuery, setDraftQuery] = useState("");
   const [draftStatusFilter, setDraftStatusFilter] = useState("");
   const [draftTaskTypeFilter, setDraftTaskTypeFilter] =
-    useState(taskTypeFromQuery);
+    useState<TaskType>(taskTypeFromQuery);
   const [draftCategoryFilter, setDraftCategoryFilter] = useState("");
   const [draftFromDate, setDraftFromDate] = useState("");
   const [draftToDate, setDraftToDate] = useState("");
@@ -183,10 +204,29 @@ function TodoListContent() {
     ? `${selectedAssignee.firstName} ${selectedAssignee.lastName}`
     : assigneeFilter;
 
+  const currentCategoryOptions = useMemo(
+    () => categoriesByType[taskTypeFilter] || [],
+    [categoriesByType, taskTypeFilter],
+  );
+  const selectedCategory = categoryFilter
+    ? currentCategoryOptions.find((category: CategoryOption) => category.id === categoryFilter) ||
+      null
+    : null;
+
+  useEffect(() => {
+    if (!categoryFilter || !currentCategoryOptions.length) return;
+    const isStillValid = currentCategoryOptions.some(
+      (category: CategoryOption) => category.id === categoryFilter,
+    );
+    if (!isStillValid) {
+      setCategoryFilter("");
+    }
+  }, [categoryFilter, currentCategoryOptions]);
+
   const appliedFilters = [
     query.trim(),
     statusFilter ? statusLabel(statusFilter) : "",
-    categoryFilter.trim(),
+    selectedCategory?.name || categoryFilter.trim(),
     selectedAssigneeLabel || "",
     fromDate,
     toDate,
@@ -225,6 +265,43 @@ function TodoListContent() {
     loadAssignees();
   }, [loadAssignees]);
 
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const entries = await Promise.all(
+          (Object.entries(categoryApiMap) as Array<
+            [TodoRow["type"], string]
+          >).map(async ([type, endpoint]) => {
+            const res = await fetch(endpoint);
+            if (!res.ok) {
+              return [type, [] as CategoryOption[]] as const;
+            }
+
+            const data = await res.json();
+            const nextCategories = Array.isArray(data)
+              ? data
+              : Array.isArray(data?.data)
+                ? data.data
+                : [];
+
+            return [type, nextCategories as CategoryOption[]] as const;
+          }),
+        );
+
+        setCategoriesByType(
+          Object.fromEntries(entries) as Partial<
+            Record<TodoRow["type"], CategoryOption[]>
+          >,
+        );
+      } catch (error) {
+        console.error("Failed to load task categories", error);
+        setCategoriesByType({});
+      }
+    };
+
+    loadCategories();
+  }, []);
+
   const loadTodos = useCallback(async () => {
     setLoading(true);
     try {
@@ -236,7 +313,7 @@ function TodoListContent() {
       if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
       if (statusFilter) params.set("status", statusFilter);
       if (taskTypeFilter) params.set("type", taskTypeFilter);
-      if (categoryFilter.trim()) params.set("category", categoryFilter.trim());
+      if (categoryFilter.trim()) params.set("categoryId", categoryFilter.trim());
       if (fromDate) params.set("fromDate", fromDate);
       if (toDate) params.set("toDate", toDate);
       if (isAdmin && assigneeFilter) params.set("assigneeId", assigneeFilter);
@@ -994,24 +1071,57 @@ function TodoListContent() {
                     }`
                   }
                 >
-                  {({ selected }) => (
-                    <div className="flex items-center justify-between">
-                      <span>{status.label}</span>
+                  <div className="flex items-center justify-between">
+                    <span>{status.label}</span>
 
-                    </div>
-                  )}
+                  </div>
                 </Listbox.Option>
               ))}
             </Listbox.Options>
           </div>
         </Listbox>
-        <input
-          className="rbac-input-filter"
-          type="text"
-          placeholder="Category"
-          value={draftCategoryFilter}
-          onChange={(event) => setDraftCategoryFilter(event.target.value)}
-        />
+        <Listbox value={draftCategoryFilter} onChange={setDraftCategoryFilter}>
+          <div className="relative">
+            <Listbox.Button className="rbac-input-filter rbac-select flex w-full items-center justify-between text-left">
+              <span>
+                {draftCategoryFilter
+                  ? currentCategoryOptions.find(
+                    (category: CategoryOption) => category.id === draftCategoryFilter,
+                  )?.name || "All categories"
+                  : "All categories"}
+              </span>
+            </Listbox.Button>
+
+            <Listbox.Options className="theme-surface absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-md py-1 shadow-lg focus:outline-none">
+              <Listbox.Option
+                value=""
+                className={({ active }) =>
+                  `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                  }`
+                }
+              >
+                <div className="flex items-center justify-between">
+                  <span>All categories</span>
+                </div>
+              </Listbox.Option>
+
+              {currentCategoryOptions.map((category: CategoryOption) => (
+                <Listbox.Option
+                  key={category.id}
+                  value={category.id}
+                  className={({ active }) =>
+                    `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                    }`
+                  }
+                >
+                  <div className="flex items-center justify-between">
+                    <span>{category.name}</span>
+                  </div>
+                </Listbox.Option>
+              ))}
+            </Listbox.Options>
+          </div>
+        </Listbox>
         {isAdmin && (
           <Listbox value={draftAssigneeFilter} onChange={setDraftAssigneeFilter}>
             <div className="relative">
@@ -1040,12 +1150,10 @@ function TodoListContent() {
                     }`
                   }
                 >
-                  {({ selected }) => (
-                    <div className="flex items-center justify-between">
-                      <span>All assignees</span>
+                  <div className="flex items-center justify-between">
+                    <span>All assignees</span>
 
-                    </div>
-                  )}
+                  </div>
                 </Listbox.Option>
 
                 {assignees.map((user) => (
@@ -1057,15 +1165,13 @@ function TodoListContent() {
                       }`
                     }
                   >
-                    {({ selected }) => (
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="truncate">
-                          {user.firstName} {user.lastName} -{" "}
-                          {user.role || "No role"}
-                        </span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate">
+                        {user.firstName} {user.lastName} -{" "}
+                        {user.role || "No role"}
+                      </span>
 
-                      </div>
-                    )}
+                    </div>
                   </Listbox.Option>
                 ))}
               </Listbox.Options>
