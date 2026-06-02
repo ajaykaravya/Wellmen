@@ -30,7 +30,6 @@ type MenuKey =
   | "permissions"
   | "reports"
   | "team"
-  | "profile"
   | "task-management"
   | "transport-management"
   | "query-management"
@@ -82,7 +81,6 @@ const routeByMenu: Record<MenuKey, string> = {
   permissions: "/dashboard/permissions",
   reports: "/dashboard/reports",
   team: "/dashboard/team",
-  profile: "/dashboard/profile",
   "task-management": "/dashboard/task-management",
   "transport-management": "/dashboard/transport-management",
   "query-management": "/dashboard/query-management",
@@ -138,7 +136,6 @@ const getActiveMenu = (pathname: string | null): MenuKey => {
   if (safePathname.startsWith("/dashboard/income-types")) return "incomeTypes";
   if (safePathname.startsWith("/dashboard/income")) return "income";
   if (safePathname.startsWith("/dashboard/team")) return "team";
-  if (safePathname.startsWith("/dashboard/profile")) return "profile";
   return "dashboard";
 };
 
@@ -247,11 +244,22 @@ export default function DashboardShell({
       hasDropdown?: boolean;
       dropdownItems?: { key: MenuKey; label: string }[];
     }[] = [{ key: "dashboard", label: "Dashboard" }];
-
+    items.push({ key: "task-management", label: "Task Management" });
+    items.push({ key: "reports", label: "Reporting" });
+    items.push(
+      isAdmin
+        ? { key: "query-management", label: "Query Management" }
+        : { key: "my-query-management", label: "My Query Management" },
+    );
     if (isAdmin) {
-      items.push({ key: "users", label: "Users" });
-      items.push({ key: "projects", label: "Projects" });
-      items.push({ key: "hospitals", label: "Hospitals" });
+      items.push({ key: "dailyExpenses", label: "Expense" });
+      items.push({ key: "transport-management", label: "Transport Management" });
+      items.push({ key: "petiCash", label: "Peti Cash" });
+      items.push({ key: "income", label: "Income" });
+      items.push({
+        key: "employeeFinancialReport",
+        label: "Employee Financial Report",
+      });
       items.push({
         key: "masterData",
         label: "Master Data",
@@ -266,23 +274,10 @@ export default function DashboardShell({
           { key: "transportConfigs", label: "Transport" },
         ],
       });
-      items.push({ key: "dailyExpenses", label: "Expense" });
-      items.push({ key: "petiCash", label: "Peti Cash" });
-      items.push({
-        key: "employeeFinancialReport",
-        label: "Employee Financial Report",
-      });
-      items.push({ key: "income", label: "Income" });
-      items.push({ key: "transport-management", label: "Transport Management" });
+      items.push({ key: "projects", label: "Projects" });
+      items.push({ key: "hospitals", label: "Hospitals" });
+      items.push({ key: "users", label: "Users" });
     }
-    items.push({ key: "task-management", label: "Task Management" });
-    items.push(
-      isAdmin
-        ? { key: "query-management", label: "Query Management" }
-        : { key: "my-query-management", label: "My Query Management" },
-    );
-    items.push({ key: "reports", label: "Reporting" });
-    items.push({ key: "profile", label: "My Profile" });
     return items;
   }, [isAdmin]);
 
@@ -330,8 +325,8 @@ export default function DashboardShell({
                   <div className="rbac-logo">
                     <img
                       src={`${theme === "dark"
-                          ? "/images/logo_white.png"
-                          : "/images/logo.svg"
+                        ? "/images/logo_white.png"
+                        : "/images/logo.svg"
                         }`}
                       className="w-full"
                       alt="WellMen"
@@ -427,8 +422,8 @@ export default function DashboardShell({
               <div className="rbac-logo">
                 <img
                   src={`${theme === "dark"
-                      ? "/images/logo_white.png"
-                      : "/images/logo.svg"
+                    ? "/images/logo_white.png"
+                    : "/images/logo.svg"
                     }`}
                   alt="WellMen"
                 />

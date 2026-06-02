@@ -108,7 +108,7 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
           inputMode="numeric"
           autoComplete="off"
           disabled={disabled}
-          className={`theme-input w-full px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10 ${className} ${disabled ? "cursor-not-allowed opacity-70" : "cursor-text"}`}
+          className={`theme-input w-full px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[color:var(--focus-ring)] focus:border-transparent pr-10 ${className} ${disabled ? "cursor-not-allowed opacity-70" : "cursor-text"}`}
         />
         <FaCalendarAlt
           className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none"

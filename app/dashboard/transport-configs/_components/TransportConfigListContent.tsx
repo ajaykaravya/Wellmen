@@ -229,14 +229,14 @@ export default function TransportConfigListContent() {
         id: "action",
         cell: ({ row }) => (
           <div className="rbac-inline-actions justify-end flex gap-4">
-              <button
-                className="rbac-link"
-                type="button"
-                aria-label="Edit transport config"
-                onClick={() => handleEdit(row.original)}
-              >
-                <FaEdit />
-              </button>
+            <button
+              className="rbac-link"
+              type="button"
+              aria-label="Edit transport config"
+              onClick={() => handleEdit(row.original)}
+            >
+              <FaEdit />
+            </button>
             <button
               className="rbac-link danger"
               type="button"
@@ -249,7 +249,7 @@ export default function TransportConfigListContent() {
         ),
       },
     ],
-    [buildRuleSummary, handleDelete , handleEdit],
+    [buildRuleSummary, handleDelete, handleEdit],
   );
 
   const table = useReactTable({
@@ -306,16 +306,15 @@ export default function TransportConfigListContent() {
                     {headerGroup.headers.map((header) => (
                       <th
                         key={header.id}
-                        className={`text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200 ${
-                          header.id === "action" ? "text-right" : "text-left"
-                        }`}
+                        className={`text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200 ${header.id === "action" ? "text-right" : "text-left"
+                          }`}
                       >
                         {header.isPlaceholder
                           ? null
                           : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
                       </th>
                     ))}
                   </tr>
@@ -353,9 +352,8 @@ export default function TransportConfigListContent() {
                       {row.getVisibleCells().map((cell) => (
                         <td
                           key={cell.id}
-                          className={`px-4 py-3 text-sm border-b border-slate-100 ${
-                            cell.column.id === "action" ? "text-right" : ""
-                          }`}
+                          className={`px-4 py-3 text-sm border-b border-slate-100 ${cell.column.id === "action" ? "text-right" : ""
+                            }`}
                         >
                           {flexRender(
                             cell.column.columnDef.cell,
@@ -406,14 +404,14 @@ export default function TransportConfigListContent() {
                         </div>
                       </div>
                       <div className="flex justify-end">
-                          <button
-                            className="rbac-link"
-                            type="button"
-                            aria-label="Edit transport config"
-                            onClick={() => handleEdit(row.original)}
-                          >
-                            <FaEdit size={18} />
-                          </button>
+                        <button
+                          className="rbac-link"
+                          type="button"
+                          aria-label="Edit transport config"
+                          onClick={() => handleEdit(row.original)}
+                        >
+                          <FaEdit size={18} />
+                        </button>
                         <button
                           className="rbac-link danger"
                           type="button"
@@ -431,43 +429,45 @@ export default function TransportConfigListContent() {
 
           <div className="mt-4 flex flex-wrap items-center justify-end gap-3 text-sm">
             <div className="flex items-center gap-2">
-              <button
-                className="change-button change-button-secondary"
-                type="button"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-              >
-                <FaChevronLeft size={20} />
-              </button>
-              <span>
-                Page {pagination.pageIndex + 1} of {pageCount}
-              </span>
-              <button
-                className="change-button change-button-secondary"
-                type="button"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-              >
-                <FaChevronRight size={20} />
-              </button>
-            </div>
-            <div>
-              <select
-                className="rbac-input rbac-select rbac-pagination"
-                value={pagination.pageSize}
-                onChange={(event) => {
-                  setPagination({
-                    pageIndex: 0,
-                    pageSize: Number(event.target.value),
-                  });
-                }}
-              >
-                {[5, 10, 20, 30].map((size) => (
-                  <option key={size} value={size}>
-                    Show {size}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center gap-2">
+                <button
+                  className="change-button change-button-secondary"
+                  type="button"
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                >
+                  <FaChevronLeft size={20} />
+                </button>
+                <span>
+                  Page {pagination.pageIndex + 1} of {pageCount}
+                </span>
+                <button
+                  className="change-button change-button-secondary"
+                  type="button"
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                >
+                  <FaChevronRight size={20} />
+                </button>
+              </div>
+              <div>
+                <select
+                  className="rbac-input rbac-select rbac-pagination"
+                  value={pagination.pageSize}
+                  onChange={(event) => {
+                    setPagination({
+                      pageIndex: 0,
+                      pageSize: Number(event.target.value),
+                    });
+                  }}
+                >
+                  {[5, 10, 20, 30].map((size) => (
+                    <option key={size} value={size}>
+                      Show {size}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 

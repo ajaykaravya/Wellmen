@@ -107,9 +107,9 @@ export default function ProjectFormContent({
     if (!form.address.trim()) newErrors.address = "Address is required.";
     if (!form.city.trim()) newErrors.city = "City is required.";
     if (!form.contactNumber.trim())
-      newErrors.contactNumber = "Contact number is required.";
+      newErrors.contactNumber = "Mobile number is required.";
     else if (!isMobileValid(form.contactNumber.trim())) {
-      newErrors.contactNumber = "Contact number must be 10 digits.";
+      newErrors.contactNumber = "Mobile number must be 10 digits.";
     }
     if (form.email.trim() && !isEmailValid(form.email.trim())) {
       newErrors.email = "Email must contain @ and .";

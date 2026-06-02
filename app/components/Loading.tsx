@@ -17,7 +17,8 @@ export default function Loading({ message = "Loading...", size = "md" }: Loading
 
   return (
     <div className="flex flex-col items-center justify-center p-8 space-y-4">
-      <FaSpinner className="animate-spin text-blue-500" size={spinnerSizes[size]} />
+      <FaSpinner className="animate-spin text-[color:var(--brand)]" size={spinnerSizes[size]} />
+      <p className="text-sm theme-text-muted">{message}</p>
     </div>
   );
 }

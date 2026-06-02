@@ -1005,6 +1005,10 @@ function OverviewContent() {
     }
   }, [closeChangePasswordModal, passwordForm]);
 
+  const handleNavigateProfile = useCallback(() => {
+    router.push("/dashboard/profile");
+  }, [router]);
+
   return (
     <>
       <header
@@ -1057,9 +1061,9 @@ function OverviewContent() {
               {({ focus }) => (
                 <button
                   type="button"
-                  className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors ${focus
+                  className={`w-full rounded-xl px-3 py-1.5 text-left text-sm transition-colors ${focus
                     ? "theme-button-secondary theme-text"
-                    : "theme-text-muted"
+                    : ""
                     }`}
                   onClick={() => {
                     setPasswordNotice(null);
@@ -1074,7 +1078,23 @@ function OverviewContent() {
               {({ focus }) => (
                 <button
                   type="button"
-                  className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-colors ${focus
+                  className={`w-full rounded-xl px-3 py-1.5 text-left text-sm transition-colors ${focus
+                    ? "theme-button-secondary theme-text"
+                    : ""
+                    }`}
+                  onClick={() =>
+                    handleNavigateProfile()
+                  }
+                >
+                  My Profile
+                </button>
+              )}
+            </MenuItem>
+            <MenuItem>
+              {({ focus }) => (
+                <button
+                  type="button"
+                  className={`w-full rounded-xl px-3 py-1.5 text-left text-sm transition-colors ${focus
                     ? "theme-status-danger"
                     : "text-[color:var(--theme-danger-text)]"
                     }`}
@@ -1284,7 +1304,7 @@ function OverviewContent() {
       <section className="rbac-section mt-4 rbac-container">
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
           <div className="rbac-card p-4 sm:p-6 flex items-center gap-4">
-            <div className="bg-cyan-500 text-white rounded-full p-3 shrink-0">
+            <div className="bg-[color:var(--brand)] text-white rounded-full p-3 shrink-0">
               <FaClock size={24} />
             </div>
             <div>
@@ -1501,8 +1521,10 @@ function OverviewContent() {
                   <div className="flex items-center">
                     <h3 className="sm:text-base text-sm font-medium w-full">
                       {isAdmin ? "Reportings" : "Today's reporting"}
+                      <span className="ml-2 text-white text-sm font-normal bg-[color:var(--brand)] px-2 py-1 rounded-full">
+                        {isAdmin ? adminReports.length : userReports.length}
+                      </span>
                     </h3>
-                    <p className="ml-2 text-white text-sm font-normal bg-[#2596be] px-2 py-1 rounded-full">{isAdmin ? adminReports.length : userReports.length}</p>
                   </div>
                   <div className="flex items-center gap-2 justify-end w-full">
                     {!isAdmin && (
@@ -1629,8 +1651,8 @@ function OverviewContent() {
             </span>
             <span
               className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ring-1 ${totalBalance < 0
-                  ? "bg-red-100 text-red-800 ring-red-200"
-                  : "bg-green-100 text-green-800 ring-green-200"
+                ? "bg-red-100 text-red-800 ring-red-200"
+                : "bg-green-100 text-green-800 ring-green-200"
                 }`}
             >
               Total Balance: {balanceLoading ? "Loading..." : formatAmount(totalBalance)}

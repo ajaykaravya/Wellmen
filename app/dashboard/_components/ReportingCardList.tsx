@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { ReactNode } from "react";
 import {
-  FaChevronRight,
   FaEdit,
   FaEye,
   FaLink,
@@ -151,7 +150,7 @@ export function ReportingCardList<T extends ReportingCardRow>({
                       : renderDefaultActions(row)}
                   </div>
                   {showCount && (
-                    <span className="inline-flex rounded-full bg-[#2596be] px-2 py-1 text-xs font-medium text-white">
+                    <span className="inline-flex rounded-full bg-[color:var(--brand)] px-2 py-1 text-xs font-medium text-white">
                       {rows.length}
                     </span>
                   )}

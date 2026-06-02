@@ -18,7 +18,7 @@ type QueryRow = {
   createdByName: string;
 };
 
-type QueryCardContainerProps<T> = {
+type QueryCardContainerProps = {
   title: string;
   rows: QueryRow[];
   loading?: boolean;
@@ -40,7 +40,7 @@ type QueryCardContainerProps<T> = {
   actionButtonClassName?: string;
 };
 
-export function QueryTableCard<T>({
+export function QueryTableCard({
   title,
   rows,
   loading = false,
@@ -60,7 +60,7 @@ export function QueryTableCard<T>({
   renderActions,
   actionLabel,
   actionButtonClassName = "rbac-button rbac-button-secondary",
-}: QueryCardContainerProps<T>) {
+}: QueryCardContainerProps) {
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const { isAdmin } = useDashboardContext();
   const formatText = (text: string) => {
@@ -101,7 +101,7 @@ export function QueryTableCard<T>({
             {title}
 
             {showCount && (
-              <span className="ml-2 text-white text-sm font-normal bg-[#2596be] px-2 py-1 rounded-full">
+              <span className="ml-2 text-white text-sm font-normal bg-[color:var(--brand)] px-2 py-1 rounded-full">
                 {rows.length}
               </span>
             )}

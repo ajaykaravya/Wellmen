@@ -9,6 +9,10 @@
   --brand: #2596be;
   --brand-dark: #1f7ea5;
   --brand-soft: #67bed9;
+  --brand-rgb: 37 150 190;
+  --brand-shadow: rgba(31, 107, 255, 0.25);
+  --brand-shadow-strong: rgba(31, 107, 255, 0.3);
+  --brand-border-soft: rgba(31, 107, 255, 0.2);
   --accent: #11a36a;
   --card: #f7fbff;
   --surface-2: #f0f6ff;
@@ -47,7 +51,7 @@
   --theme-button-border: var(--button-secondary-border);
   --theme-button-hover-bg: #edf4fb;
   --theme-danger-bg: #fff1f2;
-  --theme-danger-text: #b42318;
+  --theme-danger-text: #ff1100;
   --theme-success-bg: #ecfdf3;
   --theme-success-text: #027a48;
   --theme-warning-bg: #fff7ed;
@@ -59,33 +63,39 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #060f1b;
-  --bg-soft: #0b1627;
-  --ink: #e7eef8;
-  --muted: #9aacbf;
-  --card: #111d2d;
-  --surface-2: #162437;
-  --stroke: rgba(148, 163, 184, 0.22);
-  --shadow: 0 18px 40px rgba(2, 6, 23, 0.45);
-  --header-bg: linear-gradient(130deg, #10324a 0%, #1a4f72 100%);
-  --header-text: #f8fbff;
-  --sidebar-bg: #0d1624;
-  --profile-bg: #111c2b;
-  --input-bg: #101c2d;
-  --input-text: #e6eef8;
-  --input-border: rgba(148, 163, 184, 0.24);
-  --input-placeholder: #72839a;
-  --button-secondary-bg: #172638;
-  --button-secondary-text: #deebf9;
-  --button-secondary-border: rgba(148, 163, 184, 0.3);
-  --nav-active-bg: rgba(37, 150, 190, 0.3);
-  --nav-active-text: #ffffff;
-  --focus-ring: #67bed9;
+  --bg: #050814;
+  --bg-soft: #0b1220;
+  --ink: #f4f7fb;
+  --muted: #9ba8ba;
+  --brand: #f97316;
+  --brand-soft: #fb923c;
+  --brand-shadow: rgba(249, 115, 22, 0.26);
+  --brand-shadow-strong: rgba(249, 115, 22, 0.34);
+  --brand-border-soft: rgba(249, 115, 22, 0.22);
+  --accent: #fb923c;
+  --card: #111827;
+  --surface-2: #172235;
+  --stroke: rgba(148, 163, 184, 0.18);
+  --shadow: 0 18px 40px rgba(2, 6, 23, 0.55);
+  --header-bg: linear-gradient(130deg, #0f172a 0%, #1f2937 100%);
+  --header-text: #fff8f0;
+  --sidebar-bg: #0b1220;
+  --profile-bg: #111c2c;
+  --input-bg: #0f1726;
+  --input-text: #f4f7fb;
+  --input-border: rgba(148, 163, 184, 0.22);
+  --input-placeholder: #7f90a6;
+  --button-secondary-bg: #172235;
+  --button-secondary-text: #f8fafc;
+  --button-secondary-border: #fb923c;
+  --nav-active-bg: #f97316;
+  --nav-active-text: #fff8f0;
+  --focus-ring: #fb923c;
   --theme-page-bg: var(--bg);
   --theme-page-bg-soft: var(--bg-soft);
   --theme-surface: var(--card);
   --theme-surface-2: var(--surface-2);
-  --theme-surface-inverse: #101826;
+  --theme-surface-inverse: #0d1524;
   --theme-text: var(--ink);
   --theme-text-muted: var(--muted);
   --theme-border: var(--stroke);
@@ -96,16 +106,15 @@
   --theme-button-bg: var(--button-secondary-bg);
   --theme-button-text: var(--button-secondary-text);
   --theme-button-border: var(--button-secondary-border);
-  --theme-button-hover-bg: #1d2f44;
-  --theme-danger-bg: rgba(153, 27, 27, 0.3);
-  --theme-danger-text: #fecaca;
+  --theme-button-hover-bg: #223047;
+  --theme-danger-bg: rgba(153, 27, 27, 0.34);
   --theme-success-bg: rgba(6, 95, 70, 0.34);
   --theme-success-text: #bbf7d0;
-  --theme-warning-bg: rgba(180, 83, 9, 0.3);
+  --theme-warning-bg: rgba(180, 83, 9, 0.32);
   --theme-warning-text: #fed7aa;
   --theme-modal-overlay: rgba(2, 6, 23, 0.7);
-  --theme-glow-a: rgba(52, 78, 112, 0.16);
-  --theme-glow-b: rgba(24, 53, 84, 0.2);
+  --theme-glow-a: rgba(249, 115, 22, 0.08);
+  --theme-glow-b: rgba(251, 146, 60, 0.1);
 }
 
 * {
@@ -189,7 +198,7 @@ a {
 }
 
 .auth-hero {
-  background: linear-gradient(140deg, #ffffff 0%, #f3f7ff 100%);
+  background: linear-gradient(140deg, var(--theme-surface) 0%, var(--theme-surface-2) 100%);
   border-radius: var(--radius);
   padding: 32px;
   border: 1px solid var(--stroke);
@@ -279,12 +288,12 @@ button,
   align-items: center;
   justify-content: center;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 12px 25px rgba(31, 107, 255, 0.25);
+  box-shadow: 0 12px 25px var(--brand-shadow);
 }
 
 .primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 16px 30px rgba(31, 107, 255, 0.3);
+  box-shadow: 0 16px 30px var(--brand-shadow-strong);
 }
 
 .ghost {
@@ -292,12 +301,12 @@ button,
   color: var(--brand);
   padding: 8px 14px;
   border-radius: 999px;
-  border: 1px solid rgba(31, 107, 255, 0.2);
+  border: 1px solid var(--brand-border-soft);
 }
 
 .note {
   background: var(--brand-soft);
-  color: var(--brand);
+  color: var(--brand-dark);
   padding: 10px 12px;
   border-radius: 12px;
   font-size: 0.95rem;
@@ -343,7 +352,7 @@ button,
 
 .sidebar {
   padding: 28px 22px;
-  background: #ffffff;
+  background: var(--sidebar-bg);
   border-right: 1px solid var(--stroke);
   display: grid;
   gap: 24px;
@@ -364,7 +373,7 @@ button,
   place-items: center;
   font-weight: 700;
   color: white;
-  background: linear-gradient(135deg, var(--brand) 0%, #63a4ff 100%);
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-soft) 100%);
 }
 
 .brand-title {
@@ -401,7 +410,7 @@ button,
   margin-top: auto;
   padding: 16px;
   border-radius: 16px;
-  background: #f4f8ff;
+  background: var(--theme-surface-2);
   display: grid;
   gap: 8px;
 }
@@ -450,7 +459,7 @@ button,
 }
 
 .stat-card {
-  background: #ffffff;
+  background: var(--card);
   border: 1px solid var(--stroke);
   border-radius: 18px;
   padding: 18px;
@@ -482,8 +491,8 @@ button,
   position: relative;
   height: 160px;
   border-radius: 16px;
-  background: linear-gradient(180deg, #f5f9ff 0%, #ffffff 100%);
-  border: 1px dashed rgba(31, 107, 255, 0.2);
+  background: linear-gradient(180deg, var(--theme-surface-2) 0%, var(--theme-surface) 100%);
+  border: 1px dashed var(--brand-border-soft);
   overflow: hidden;
 }
 
@@ -502,7 +511,7 @@ button,
 }
 
 .chart-line.secondary {
-  background: #7fb3ff;
+  background: var(--brand-soft);
   top: 70%;
   transform: rotate(6deg);
 }
@@ -515,7 +524,7 @@ button,
 .pill {
   padding: 6px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(31, 107, 255, 0.2);
+  border: 1px solid var(--brand-border-soft);
   color: var(--muted);
   font-size: 0.85rem;
 }
@@ -527,7 +536,7 @@ button,
 }
 
 .summary-card {
-  background: linear-gradient(140deg, #1f6bff 0%, #4f8bff 100%);
+  background: linear-gradient(140deg, var(--brand-dark) 0%, var(--brand) 100%);
   color: white;
   display: grid;
   gap: 16px;
@@ -550,7 +559,7 @@ button,
 }
 
 .quick-tips {
-  background: #ffffff;
+  background: var(--card);
 }
 
 .report-grid {
@@ -560,10 +569,10 @@ button,
 }
 
 .report-card {
-  background: #f7f9ff;
+  background: var(--card);
   border-radius: 16px;
   padding: 18px;
-  border: 1px solid rgba(31, 107, 255, 0.08);
+  border: 1px solid var(--stroke);
   display: grid;
   gap: 6px;
 }
@@ -575,10 +584,10 @@ button,
 }
 
 .settings-item {
-  background: #f7faff;
+  background: var(--card);
   border-radius: 16px;
   padding: 18px;
-  border: 1px solid rgba(31, 107, 255, 0.08);
+  border: 1px solid var(--stroke);
   display: grid;
   gap: 6px;
 }
@@ -806,7 +815,7 @@ button,
 }
 
 .theme-table tbody tr:hover {
-  background: rgba(37, 150, 190, 0.08) !important;
+  background: rgb(var(--brand-rgb) / 0.08) !important;
 }
 
 .theme-table .bg-white {
@@ -862,6 +871,40 @@ button,
 .react-datepicker__day--keyboard-selected {
   background: var(--brand);
   color: #ffffff;
+}
+
+:root[data-theme="dark"] .bg-blue-50,
+:root[data-theme="dark"] .bg-cyan-100,
+:root[data-theme="dark"] .bg-sky-100,
+:root[data-theme="dark"] .bg-sky-500 {
+  background-color: rgba(249, 115, 22, 0.18) !important;
+}
+
+:root[data-theme="dark"] .text-blue-500,
+:root[data-theme="dark"] .text-blue-700,
+:root[data-theme="dark"] .text-cyan-800,
+:root[data-theme="dark"] .text-sky-700,
+:root[data-theme="dark"] .text-sky-800 {
+  color: #fb923c !important;
+}
+
+:root[data-theme="dark"] .ring-blue-200,
+:root[data-theme="dark"] .ring-cyan-200,
+:root[data-theme="dark"] .ring-sky-200 {
+  --tw-ring-color: rgba(249, 115, 22, 0.28) !important;
+}
+
+:root[data-theme="dark"] .shadow-blue-200 {
+  --tw-shadow-color: rgba(249, 115, 22, 0.22) !important;
+  --tw-shadow: var(--tw-shadow-colored) !important;
+}
+
+:root[data-theme="dark"] [class*="bg-[#2596be]"] {
+  background-color: var(--brand) !important;
+}
+
+:root[data-theme="dark"] [class*="text-[#2596be]"] {
+  color: var(--brand) !important;
 }
 
 .rbac-option-active {
@@ -1018,7 +1061,7 @@ button,
 }
 
 .rbac-card-accent {
-  background: linear-gradient(135deg, #1f6bff 0%, #4a8bff 100%);
+  background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%);
   color: white;
 }
 
@@ -1078,7 +1121,7 @@ button,
 .sparkline-bar {
   width: 12%;
   border-radius: 10px;
-  background: linear-gradient(130deg, #2596be, #67bed9);
+  background: linear-gradient(130deg, var(--brand), var(--brand-soft));
   transition: height 0.35s ease;
 }
 
