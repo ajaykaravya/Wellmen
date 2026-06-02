@@ -62,7 +62,7 @@ export default function CategoryFormContent({ categoryId }: CategoryFormContentP
 
     const newErrors: Partial<Record<keyof CategoryFormState, string>> = {};
     if (!form.category.trim()) newErrors.category = "Category is required.";
-    if (!form.name.trim()) newErrors.name = "Name is required.";
+    if (!form.name.trim()) newErrors.name = "Category name is required.";
 
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) {

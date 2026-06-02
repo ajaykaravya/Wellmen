@@ -101,11 +101,6 @@ const STATUS_OPTIONS_BY_TRANSPORT_TYPE: Partial<
 const defaultTransportType = TRANSPORT_TYPES[0]?.key ?? "BOLERO_DELIVERY";
 const isValidTransportType = (value: string | null): value is TransportType =>
   Boolean(value && TRANSPORT_TYPES.some((option) => option.key === value));
-const showStatusAndPaymentForTypes = new Set<TransportType>([
-  "PORTER_DAILY",
-  "CNG_RICKSHAW",
-  "LOADING_VEHICLE",
-]);
 
 const formatMoney = (value: number) =>
   Number(value || 0).toLocaleString(undefined, {
@@ -126,63 +121,168 @@ const formatStatus = (value: string | null | undefined) =>
       .replace(/^./, (char) => char.toUpperCase())
     : "-";
 
-const buildRowSummary = (row: TransportRow) => {
+const getListingTypeFields = (row: TransportRow) => {
   switch (row.transportType) {
     case "BOLERO_DELIVERY":
     case "BOLERO_RETURN_DC":
-      return [row.referenceNumber, row.description, row.city, row.loadType]
-        .map((item) => formatText(item))
-        .join(" · ");
+      return [
+        { label: "Load Type", value: formatText(row.loadType) },
+      ];
     case "COURIER_DAILY":
-      return [
-        row.referenceNumber,
-        row.description,
-        row.fromLocation && row.toLocation
-          ? `${row.fromLocation} -> ${row.toLocation}`
-          : "",
-        row.city,
-      ]
-        .filter(Boolean)
-        .join(" · ");
     case "PORTER_DAILY":
-      return [
-        row.referenceNumber,
-        row.description,
-        row.fromLocation && row.toLocation
-          ? `${row.fromLocation} -> ${row.toLocation}`
-          : "",
-        row.city,
-      ]
-        .filter(Boolean)
-        .join(" · ");
-    case "CNG_RICKSHAW":
-      return [
-        row.referenceNumber ? `No ${row.referenceNumber}` : "",
-        row.description,
-        row.tripType || "",
-        row.fromLocation && row.toLocation
-          ? `${row.fromLocation} -> ${row.toLocation}`
-          : "",
-        row.city,
-      ]
-        .filter(Boolean)
-        .join(" · ");
     case "LOADING_VEHICLE":
       return [
-        row.referenceNumber,
-        row.description,
-        row.vehicleType,
-        row.vehicleNumber ? `Vehicle ${row.vehicleNumber}` : "",
-        row.fromLocation && row.toLocation
-          ? `${row.fromLocation} -> ${row.toLocation}`
-          : "",
-        row.city,
-      ]
-        .filter(Boolean)
-        .join(" · ");
+        { label: "From", value: formatText(row.fromLocation) },
+        { label: "To", value: formatText(row.toLocation) },
+      ];
+    case "CNG_RICKSHAW":
+      return [
+        { label: "Trip Type", value: formatText(row.tripType) },
+        { label: "From", value: formatText(row.fromLocation) },
+        { label: "To", value: formatText(row.toLocation) },
+      ];
     default:
-      return row.city || "-";
+      return [];
   }
+};
+
+const createTextColumn = (
+  header: string,
+  accessorKey: keyof Pick<TransportRow, "loadType" | "fromLocation" | "toLocation" | "tripType" | "status">,
+  size = 180,
+): ColumnDef<TransportRow> => ({
+  header,
+  accessorKey,
+  size,
+  cell: ({ row }) => (
+    <span className="rbac-muted">
+      {formatText(row.original[accessorKey]) || "-"}
+    </span>
+  ),
+});
+
+const createFromToColumns = (): ColumnDef<TransportRow>[] => [
+  createTextColumn("From", "fromLocation"),
+  createTextColumn("To", "toLocation"),
+];
+
+const createStatusColumn = (): ColumnDef<TransportRow> => ({
+  header: "Status",
+  accessorKey: "status",
+  size: 140,
+  cell: ({ row }) =>
+    row.original.status ? <span>{formatStatus(row.original.status)}</span> : "-",
+});
+
+const getListingColumns = (
+  transportType: TransportType,
+  handlers: {
+    onView: (row: TransportRow) => void;
+    onEdit: (row: TransportRow) => void;
+    onDelete: (row: TransportRow) => void;
+  },
+): ColumnDef<TransportRow>[] => {
+  const columns: ColumnDef<TransportRow>[] = [
+    {
+      header: "Date",
+      accessorKey: "date",
+      size: 160,
+      cell: ({ row }) => <div>{formatDate(row.original.date)}</div>,
+    },
+    {
+      header: "City",
+      accessorKey: "city",
+      size: 300,
+      cell: (info) => (
+        <span className="rbac-muted">{String(info.getValue() || "-")}</span>
+      ),
+    },
+  ];
+
+  switch (transportType) {
+    case "BOLERO_DELIVERY":
+    case "BOLERO_RETURN_DC":
+      columns.push(createTextColumn("Load Type", "loadType"));
+      break;
+    case "COURIER_DAILY":
+      columns.push(...createFromToColumns());
+      break;
+    case "PORTER_DAILY":
+      columns.push(...createFromToColumns(), createStatusColumn());
+      break;
+    case "CNG_RICKSHAW":
+      columns.push(
+        createTextColumn("Trip Type", "tripType", 160),
+        ...createFromToColumns(),
+        createStatusColumn(),
+      );
+      break;
+    case "LOADING_VEHICLE":
+      columns.push(...createFromToColumns(), createStatusColumn());
+      break;
+  }
+
+  columns.push(
+    {
+      header: "Reference No.",
+      accessorKey: "referenceNumber",
+      size: 300,
+      cell: (info) => (
+        <span className="rbac-muted">{String(info.getValue() || "-")}</span>
+      ),
+    },
+    {
+      header: "Total",
+      accessorKey: "totalAmount",
+      size: 140,
+      cell: ({ row }) => (
+        <span className="font-semibold text-slate-900">
+          ₹{formatMoney(row.original.totalAmount)}
+        </span>
+      ),
+    },
+    {
+      header: "Created By",
+      accessorKey: "createdByName",
+      size: 180,
+      cell: ({ row }) => <span>{row.original.createdByName || "-"}</span>,
+    },
+    {
+      header: "Action",
+      id: "action",
+      size: 160,
+      cell: ({ row }) => (
+        <div className="flex justify-end gap-2">
+          <button
+            className="rbac-link"
+            type="button"
+            onClick={() => handlers.onView(row.original)}
+            aria-label="View transport log"
+          >
+            <FaEye />
+          </button>
+          <button
+            className="rbac-link"
+            type="button"
+            onClick={() => handlers.onEdit(row.original)}
+            aria-label="Edit transport log"
+          >
+            <FaEdit />
+          </button>
+          <button
+            className="rbac-link danger"
+            type="button"
+            onClick={() => handlers.onDelete(row.original)}
+            aria-label="Delete transport log"
+          >
+            <FaTrash />
+          </button>
+        </div>
+      ),
+    },
+  );
+
+  return columns;
 };
 
 const getCommonDetails = (row: TransportRow): DetailSection => ({
@@ -395,7 +495,7 @@ function TransportListView() {
   const [viewLoading, setViewLoading] = useState(false);
   const [viewData, setViewData] = useState<TransportRow | null>(null);
   const currentStatusOptions =
-  STATUS_OPTIONS_BY_TRANSPORT_TYPE[transportTypeFilter] || [];
+    STATUS_OPTIONS_BY_TRANSPORT_TYPE[transportTypeFilter] || [];
 
   useEffect(() => {
     const urlTransportType = searchParams?.get("type") ?? null;
@@ -433,8 +533,17 @@ function TransportListView() {
     setDraftTripTypeFilter(tripTypeFilter);
     setDraftVehicleTypeFilter(vehicleTypeFilter);
     setFilterOpen(true);
-  }, [fromDate, paymentModeFilter, query, statusFilter, toDate, locationTypeFilter,
-    loadTypeFilter, tripTypeFilter, vehicleTypeFilter]);
+  }, [
+    fromDate,
+    loadTypeFilter,
+    locationTypeFilter,
+    paymentModeFilter,
+    query,
+    statusFilter,
+    toDate,
+    tripTypeFilter,
+    vehicleTypeFilter,
+  ]);
 
   const applyFilters = useCallback(() => {
     setPageIndex(0);
@@ -451,6 +560,7 @@ function TransportListView() {
   }, [
     draftFromDate,
     draftQuery,
+    draftPaymentModeFilter,
     draftStatusFilter,
     draftToDate,
     draftLocationTypeFilter,
@@ -471,7 +581,7 @@ function TransportListView() {
     setLoadTypeFilter("");
     setDraftLoadTypeFilter("");
     setTripTypeFilter("");
-    setDraftTripTypeFilter("")
+    setDraftTripTypeFilter("");
     setVehicleTypeFilter("");
     setDraftVehicleTypeFilter("");
   };
@@ -620,127 +730,12 @@ function TransportListView() {
   }, [confirmTarget, loadRows]);
 
   const columns = useMemo<ColumnDef<TransportRow>[]>(
-    () => {
-      const baseColumns: ColumnDef<TransportRow>[] = [
-        {
-          header: "Date",
-          accessorKey: "date",
-          size: 160,
-          cell: ({ row }) => <div>{formatDate(row.original.date)}</div>,
-        },
-        {
-          header: "City",
-          accessorKey: "city",
-          size: 300,
-          cell: (info) => (
-            <span className="rbac-muted">{String(info.getValue() || "-")}</span>
-          ),
-        },
-        {
-          header: "Summary",
-          id: "summary",
-          size: 420,
-          cell: ({ row }) => (
-            <div className="max-w-[420px] whitespace-normal text-sm text-slate-700">
-              {buildRowSummary(row.original)}
-            </div>
-          ),
-        },
-      ];
-
-      if (showStatusAndPaymentForTypes.has(transportTypeFilter)) {
-        baseColumns.push(
-          {
-            header: "Status",
-            accessorKey: "status",
-            size: 140,
-            cell: ({ row }) =>
-              row.original.status ? (
-                <span className="inline-flex rounded-full px-3 py-1 text-xs font-medium text-slate-700">
-                  {formatStatus(row.original.status)}
-                </span>
-              ) : (
-                "-"
-              ),
-          },
-          {
-            header: "Payment",
-            accessorKey: "paymentMode",
-            size: 140,
-            cell: ({ row }) =>
-              row.original.paymentMode ? (
-                <span className="inline-flex rounded-full px-3 py-1 text-xs font-medium text-slate-700">
-                  {row.original.paymentMode}
-                </span>
-              ) : (
-                "-"
-              ),
-          },
-        );
-      }
-
-      baseColumns.push(
-        {
-          header: "Reference No.",
-          accessorKey: "referenceNumber",
-          size: 300,
-          cell: (info) => (
-            <span className="rbac-muted">{String(info.getValue() || "-")}</span>
-          ),
-        },
-        {
-          header: "Total",
-          accessorKey: "totalAmount",
-          size: 140,
-          cell: ({ row }) => (
-            <span className="font-semibold text-slate-900">
-              ₹{formatMoney(row.original.totalAmount)}
-            </span>
-          ),
-        },
-        {
-          header: "Created By",
-          accessorKey: "createdByName",
-          size: 180,
-          cell: ({ row }) => <span>{row.original.createdByName || "-"}</span>,
-        },
-        {
-          header: "Action",
-          id: "action",
-          size: 160,
-          cell: ({ row }) => (
-            <div className="flex justify-end gap-2">
-              <button
-                className="rbac-link"
-                type="button"
-                onClick={() => handleView(row.original)}
-                aria-label="View transport log"
-              >
-                <FaEye />
-              </button>
-              <button
-                className="rbac-link"
-                type="button"
-                onClick={() => handleEdit(row.original)}
-                aria-label="Edit transport log"
-              >
-                <FaEdit />
-              </button>
-              <button
-                className="rbac-link danger"
-                type="button"
-                onClick={() => handleDelete(row.original)}
-                aria-label="Delete transport log"
-              >
-                <FaTrash />
-              </button>
-            </div>
-          ),
-        },
-      );
-
-      return baseColumns;
-    },
+    () =>
+      getListingColumns(transportTypeFilter, {
+        onView: handleView,
+        onEdit: handleEdit,
+        onDelete: handleDelete,
+      }),
     [handleDelete, handleEdit, handleView, transportTypeFilter],
   );
 
@@ -900,19 +895,23 @@ function TransportListView() {
                               {formatDate(row.date)}
                             </p>
                             <p className="text-slate-500">{row.city || ""}</p>
-                            <p className="mt-1">{buildRowSummary(row)}</p>
-                            {showStatusAndPaymentForTypes.has(
-                              row.transportType,
-                            ) && (
-                                <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                                  <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
-                                    Status: {formatStatus(row.status)}
-                                  </span>
-                                  <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
-                                    Payment: {formatText(row.paymentMode)}
-                                  </span>
-                                </div>
+                            <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                              {getListingTypeFields(row).map((field) => (
+                                <span
+                                  key={field.label}
+                                  className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700"
+                                >
+                                  {field.label}: {field.value || "-"}
+                                </span>
+                              ))}
+                              {(row.transportType === "PORTER_DAILY" ||
+                                row.transportType === "CNG_RICKSHAW" ||
+                                row.transportType === "LOADING_VEHICLE") && (
+                                <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
+                                  Status: {formatStatus(row.status)}
+                                </span>
                               )}
+                            </div>
                             {row.createdByName && (
                               <p className="mt-2 text-xs text-slate-500">
                                 By {row.createdByName}
@@ -1232,8 +1231,8 @@ function TransportListView() {
 
         {(transportTypeFilter === "BOLERO_DELIVERY" || transportTypeFilter === "BOLERO_RETURN_DC") && (
           <div className="grid gap-4 md:grid-cols-2">
-            <label className="rbac-label">
-              Location Type
+            <div className="rbac-label">
+              <span>Location Type</span>
               <Listbox
                 value={draftLocationTypeFilter}
                 onChange={setDraftLocationTypeFilter}
@@ -1269,9 +1268,9 @@ function TransportListView() {
                   </Listbox.Options>
                 </div>
               </Listbox>
-            </label>
-            <label className="rbac-label">
-              Load Type
+            </div>
+            <div className="rbac-label">
+              <span>Load Type</span>
               <Listbox
                 value={draftLoadTypeFilter}
                 onChange={setDraftLoadTypeFilter}
@@ -1313,7 +1312,7 @@ function TransportListView() {
                   </Listbox.Options>
                 </div>
               </Listbox>
-            </label>
+            </div>
           </div>
         )}
         <div className="grid gap-4 md:grid-cols-2">
