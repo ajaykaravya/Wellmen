@@ -20,6 +20,7 @@ import {
 } from "react-icons/fa";
 import { Listbox } from "@headlessui/react";
 import Link from "next/link";
+import { useDashboardContext } from "../../_components/DashboardShell";
 
 type QueryCategory = "REMARKS" | "URGENCY" | "DECISION_PENDING";
 type QueryStatus = "PENDING" | "COMPLETED";
@@ -92,6 +93,7 @@ export default function QueryListContent({
   emptyMessage = "No queries found.",
 }: QueryListContentProps) {
   const router = useRouter();
+  const { isAdmin } = useDashboardContext();
   const searchParams = useSearchParams();
   const [queries, setQueries] = useState<QueryRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -250,6 +252,19 @@ export default function QueryListContent({
 
   const columns = useMemo<ColumnDef<QueryRow>[]>(
     () => [
+      ...(isAdmin
+        ? [
+            {
+              header: "By",
+              accessorKey: "createdByName",
+              cell: (info:any) => (
+                <span className="rbac-muted">
+                  {String(info.getValue() || "-")}
+                </span>
+              ),
+            },
+          ]
+        : []),
       {
         header: "Category",
         accessorKey: "category",
