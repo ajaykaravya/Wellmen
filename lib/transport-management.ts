@@ -139,6 +139,62 @@ const formatAmount = (value: MaybeNumber) =>
     maximumFractionDigits: 2,
   });
 
+export const calculateTransportTotalAmount = (
+  row: {
+    transportType?: string | null;
+    driverWages?: MaybeNumber;
+    otherExpenses?: MaybeNumber;
+    floorRent?: MaybeNumber;
+    returnMaterialFreight?: MaybeNumber;
+    weightCharge?: MaybeNumber;
+    coverCharge?: MaybeNumber;
+    baseAmount?: MaybeNumber;
+    gstAmount?: MaybeNumber;
+    tripCharge?: MaybeNumber;
+    loadingCharges?: MaybeNumber;
+    returnMaterialCharges?: MaybeNumber;
+    transportCharges?: MaybeNumber;
+  },
+) => {
+  switch (row.transportType) {
+    case "BOLERO_DELIVERY":
+      return (
+        Number(row.driverWages || 0) +
+        Number(row.otherExpenses || 0) +
+        Number(row.floorRent || 0)
+      );
+    case "BOLERO_RETURN_DC":
+      return (
+        Number(row.driverWages || 0) +
+        Number(row.otherExpenses || 0) +
+        Number(row.returnMaterialFreight || 0)
+      );
+    case "COURIER_DAILY":
+      return (
+        Number(row.weightCharge || 0) +
+        Number(row.coverCharge || 0) +
+        Number(row.otherExpenses || 0)
+      );
+    case "PORTER_DAILY":
+      return (
+        Number(row.baseAmount || 0) +
+        Number(row.gstAmount || 0) +
+        Number(row.otherExpenses || 0)
+      );
+    case "CNG_RICKSHAW":
+      return Number(row.tripCharge || 0) + Number(row.otherExpenses || 0);
+    case "LOADING_VEHICLE":
+      return (
+        Number(row.loadingCharges || 0) +
+        Number(row.returnMaterialCharges || 0) +
+        Number(row.transportCharges || 0) +
+        Number(row.otherExpenses || 0)
+      );
+    default:
+      return 0;
+  }
+};
+
 export const getTransportTypeLabel = (value?: string | null) =>
   TRANSPORT_TYPES.find((item) => item.key === value)?.label ?? value ?? "-";
 
