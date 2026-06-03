@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { ReactNode, useState } from "react";
 import { FaChevronRight, FaEdit, FaSpinner } from "react-icons/fa";
+import { formatToDDMMYYYY } from "@/lib/dateUtils";
 
 export type TaskTableCardRow = {
   id: string;
   title: string;
   description: string | null;
   comments?: string | null;
+  startDate: string;
   status: string;
   projectName?: string | null;
   projectCity?: string | null;
@@ -111,7 +113,7 @@ export function TaskTableCard<T extends TaskTableCardRow>({
                   </p>
                 )}
               </div>
-              <div className="flex flex-col gap-2 justify-end">
+              <div className="flex flex-col gap-2 justify-end" style={{ alignItems:"end" }}>
                 {renderActions
                   ? renderActions(task)
                   : onUpdate && (
@@ -132,8 +134,7 @@ export function TaskTableCard<T extends TaskTableCardRow>({
                 >
                   {formatStatusText(task.status)}
                 </span>
-
-
+                <p className="text-sm">{formatToDDMMYYYY(task.startDate)}</p>
               </div>
             </div>
           ))}
@@ -180,10 +181,10 @@ export function TaskTableCard<T extends TaskTableCardRow>({
 
       <div
         className={`overflow-hidden transition-[max-height,opacity,transform,margin-top] duration-300 ease-in-out ${!collapsible
-            ? "mt-4 max-h-[4000px] opacity-100 translate-y-0"
-            : collapsed
-              ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none"
-              : "mt-4 max-h-[4000px] opacity-100 translate-y-0"
+          ? "mt-4 max-h-[4000px] opacity-100 translate-y-0"
+          : collapsed
+            ? "mt-0 max-h-0 opacity-0 -translate-y-2 pointer-events-none"
+            : "mt-4 max-h-[4000px] opacity-100 translate-y-0"
           }`}
         aria-hidden={collapsible ? collapsed : false}
       >
@@ -224,7 +225,7 @@ export function TaskTableCard<T extends TaskTableCardRow>({
                   )}
                 </div>
                 <div className="flex flex-wrap items-start justify-end gap-3">
-                  <div className="flex flex-col gap-2 justify-end">
+                  <div className="flex flex-col gap-2 justify-end" style={{ alignItems: "end" }}>
                     {renderActions
                       ? renderActions(task)
                       : onUpdate && (
@@ -246,9 +247,8 @@ export function TaskTableCard<T extends TaskTableCardRow>({
                   >
                     {formatStatusText(task.status)}
                   </span>
+                  <p className="text-sm">{formatToDDMMYYYY(task.startDate)}</p>
                 </div>
-
-
               </div>
             ))}
         </div>
