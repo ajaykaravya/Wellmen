@@ -224,7 +224,7 @@ export function TaskTableCard<T extends TaskTableCardRow>({
                     </p>
                   )}
                 </div>
-                <div className="flex flex-wrap items-start justify-end gap-3">
+                <div className="flex flex-col items-end justify-end gap-3">
                   <div className="flex flex-col gap-2 justify-end" style={{ alignItems: "end" }}>
                     {renderActions
                       ? renderActions(task)
