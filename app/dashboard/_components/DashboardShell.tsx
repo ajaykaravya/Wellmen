@@ -29,6 +29,7 @@ type MenuKey =
   | "roles"
   | "permissions"
   | "reports"
+  | "reportsMenu"
   | "team"
   | "task-management"
   | "transport-management"
@@ -47,7 +48,8 @@ type MenuKey =
   | "petiCash"
   | "employeeFinancialReport"
   | "income"
-  | "incomeTypes";
+  | "incomeTypes"
+  | "transportReports";
 
 type DashboardContextValue = {
   user: SessionUser | null;
@@ -88,6 +90,7 @@ const routeByMenu: Record<MenuKey, string> = {
   projects: "/dashboard/projects",
   hospitals: "/dashboard/hospitals",
   masterData: "/dashboard/master-data",
+  reportsMenu: "/dashboard/reports",
   transportConfigs: "/dashboard/transport-configs",
   projectcategories: "/dashboard/project-categories",
   officeCategories: "/dashboard/office-categories",
@@ -97,6 +100,7 @@ const routeByMenu: Record<MenuKey, string> = {
   dailyExpenses: "/dashboard/daily-expenses",
   petiCash: "/dashboard/peti-cash",
   employeeFinancialReport: "/dashboard/employee-financial-report",
+  transportReports: "/dashboard/transport-reports",
   income: "/dashboard/income",
   incomeTypes: "/dashboard/income-types",
 };
@@ -133,6 +137,8 @@ const getActiveMenu = (pathname: string | null): MenuKey => {
   if (safePathname.startsWith("/dashboard/peti-cash")) return "petiCash";
   if (safePathname.startsWith("/dashboard/employee-financial-report"))
     return "employeeFinancialReport";
+  if (safePathname.startsWith("/dashboard/transport-reports"))
+    return "transportReports";
   if (safePathname.startsWith("/dashboard/income-types")) return "incomeTypes";
   if (safePathname.startsWith("/dashboard/income")) return "income";
   if (safePathname.startsWith("/dashboard/team")) return "team";
@@ -164,6 +170,7 @@ export default function DashboardShell({
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [masterDataExpanded, setMasterDataExpanded] = useState(false);
+  const [reportsExpanded, setReportsExpanded] = useState(false);
   const { theme, toggleTheme } = useThemeMode();
 
   const isAdmin = user?.role === "Admin" || user?.role === "Manager";
@@ -183,6 +190,12 @@ export default function DashboardShell({
       "transportConfigs",
       "incomeTypes",
     ].includes(activeMenu);
+  }, [activeMenu]);
+
+  const isReportsActive = useMemo(() => {
+    return ["employeeFinancialReport", "transportReports"].includes(
+      activeMenu,
+    );
   }, [activeMenu]);
 
   useEffect(() => {
@@ -237,6 +250,14 @@ export default function DashboardShell({
     }
   }, [isNestedShell, isMasterDataActive, masterDataExpanded]);
 
+  useEffect(() => {
+    if (isNestedShell) return;
+    // Auto-expand Reports section when on any report page
+    if (isReportsActive && !reportsExpanded) {
+      setReportsExpanded(true);
+    }
+  }, [isNestedShell, isReportsActive, reportsExpanded]);
+
   const menuItems = useMemo(() => {
     const items: {
       key: MenuKey;
@@ -257,8 +278,13 @@ export default function DashboardShell({
       items.push({ key: "petiCash", label: "Peti Cash" });
       items.push({ key: "income", label: "Income" });
       items.push({
-        key: "employeeFinancialReport",
-        label: "Employee Financial Report",
+        key: "reportsMenu",
+        label: "Reports",
+        hasDropdown: true,
+        dropdownItems: [
+          { key: "employeeFinancialReport", label: "Employee Financial Report" },
+          { key: "transportReports", label: "Transport Reports" },
+        ],
       });
       items.push({
         key: "masterData",
@@ -341,24 +367,33 @@ export default function DashboardShell({
             <nav className="rbac-nav">
               {menuItems.map((item) => {
                 if (item.hasDropdown && item.dropdownItems) {
+                  const isDropdownOpen =
+                    item.key === "masterData"
+                      ? masterDataExpanded
+                      : reportsExpanded;
+                  const isDropdownActive =
+                    item.key === "masterData"
+                      ? isMasterDataActive
+                      : isReportsActive;
+
                   return (
                     <div key={item.key}>
                       <button
-                        className={`rbac-nav-item w-full text-left flex items-center justify-between ${isMasterDataActive ? "active" : ""
-                          }`}
+                        className={`rbac-nav-item w-full text-left flex items-center justify-between ${isDropdownActive ? "active" : ""}`}
                         onClick={() =>
-                          setMasterDataExpanded(!masterDataExpanded)
+                          item.key === "masterData"
+                            ? setMasterDataExpanded(!masterDataExpanded)
+                            : setReportsExpanded(!reportsExpanded)
                         }
                       >
                         {item.label}
                         <span
-                          className={`ml-2 transition-transform ${masterDataExpanded ? "rotate-90" : ""
-                            }`}
+                          className={`ml-2 transition-transform ${isDropdownOpen ? "rotate-90" : ""}`}
                         >
                           <FaChevronRight size={20} />
                         </span>
                       </button>
-                      {masterDataExpanded && (
+                      {isDropdownOpen && (
                         <div className="ml-4 space-y-1 mt-1">
                           {item.dropdownItems.map((dropdownItem) => (
                             <Link

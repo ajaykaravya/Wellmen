@@ -752,9 +752,7 @@ function TransportListView() {
       <section className="rbac-section rbac-container">
         <div className="rbac-card">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
               <h3 className="rbac-title-lg">Transport Management</h3>
-            </div>
             <div className="flex items-center gap-2">
               <button
                 className="rbac-button rbac-button-secondary theme-button-secondary inline-flex items-center gap-2"
