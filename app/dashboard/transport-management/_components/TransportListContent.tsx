@@ -752,9 +752,7 @@ function TransportListView() {
       <section className="rbac-section rbac-container">
         <div className="rbac-card">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
               <h3 className="rbac-title-lg">Transport Management</h3>
-            </div>
             <div className="flex items-center gap-2">
               <button
                 className="rbac-button rbac-button-secondary theme-button-secondary inline-flex items-center gap-2"
@@ -882,24 +880,19 @@ function TransportListView() {
                     <div key={row.id} className="rbac-card p-4 sm:p-5">
                       <div className="flex items-start justify-between gap-3">
                         <div className="space-y-2">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                          <div className="text-sm">
+                            <p className="rounded-full text-sm  font-medium">
                               {getTransportTypeShortLabel(row.transportType)}
-                            </span>
-                            <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800">
-                              ₹{formatMoney(row.totalAmount)}
-                            </span>
-                          </div>
-                          <div className="text-sm text-slate-600">
-                            <p className="font-semibold text-slate-900">
-                              {formatDate(row.date)}
                             </p>
-                            <p className="text-slate-500">{row.city || ""}</p>
-                            <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                            <p className="rounded-full text-sm font-medium">
+                              ₹{formatMoney(row.totalAmount)}
+                            </p>
+                            <p>{row.city || ""}</p>
+                            <div className="text-sm">
                               {getListingTypeFields(row).map((field) => (
                                 <span
                                   key={field.label}
-                                  className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700"
+                                  className="rbac-muted block"
                                 >
                                   {field.label}: {field.value || "-"}
                                 </span>
@@ -907,46 +900,51 @@ function TransportListView() {
                               {(row.transportType === "PORTER_DAILY" ||
                                 row.transportType === "CNG_RICKSHAW" ||
                                 row.transportType === "LOADING_VEHICLE") && (
-                                <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
+                                  <span>
                                   Status: {formatStatus(row.status)}
-                                </span>
-                              )}
+                                  </span>
+                                )}
                             </div>
                             {row.createdByName && (
-                              <p className="mt-2 text-xs text-slate-500">
+                              <p className="text-sm">
                                 By {row.createdByName}
                               </p>
                             )}
                           </div>
                         </div>
-                        <div className="flex justify-end">
-                          <button
-                            style={{ padding: "2px" }}
-                            className="rbac-link"
-                            type="button"
-                            onClick={() => handleView(row)}
-                            title="View"
-                            aria-label="View transport log"
-                          >
-                            <FaEye size={18} />
-                          </button>
-                          <button
-                            className="rbac-link"
-                            type="button"
-                            title="Edit"
-                            onClick={() => handleEdit(row)}
-                          >
-                            <FaEdit size={18} />
-                          </button>
-                          <button
-                            style={{ padding: "2px" }}
-                            className="rbac-link danger"
-                            type="button"
-                            title="Delete"
-                            onClick={() => handleDelete(row)}
-                          >
-                            <FaTrash size={18} />
-                          </button>
+                        <div className="flex flex-col items-end h-[stretch] justify-between gap-2">
+                          <div className="flex justify-end">
+                            <button
+                              style={{ padding: "2px" }}
+                              className="rbac-link"
+                              type="button"
+                              onClick={() => handleView(row)}
+                              title="View"
+                              aria-label="View transport log"
+                            >
+                              <FaEye size={18} />
+                            </button>
+                            <button
+                              className="rbac-link"
+                              type="button"
+                              title="Edit"
+                              onClick={() => handleEdit(row)}
+                            >
+                              <FaEdit size={18} />
+                            </button>
+                            <button
+                              style={{ padding: "2px" }}
+                              className="rbac-link danger"
+                              type="button"
+                              title="Delete"
+                              onClick={() => handleDelete(row)}
+                            >
+                              <FaTrash size={18} />
+                            </button>
+                          </div>
+                          <p className="text-sm">
+                            {formatDate(row.date)}
+                          </p>
                         </div>
                       </div>
                     </div>
