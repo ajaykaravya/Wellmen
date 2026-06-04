@@ -274,9 +274,9 @@ export default function DashboardShell({
     );
     if (isAdmin) {
       items.push({ key: "transport-management", label: "Transport Management" });
+      items.push({ key: "income", label: "Income" });
       items.push({ key: "dailyExpenses", label: "Expense" });
       items.push({ key: "petiCash", label: "Peti Cash" });
-      items.push({ key: "income", label: "Income" });
       items.push({
         key: "reportsMenu",
         label: "Reports",
