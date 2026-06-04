@@ -130,7 +130,7 @@ export default function ReportingCategoryFormContent({
             <label className="rbac-label">
               Name <span className="text-red-600">*</span>
               <input
-                className="rbac-input mb-2"
+                className="rbac-input mb-1"
                 placeholder="Name"
                 value={form.name}
                 onChange={(event) =>
@@ -139,7 +139,7 @@ export default function ReportingCategoryFormContent({
               />
             </label>
             {errors.name && (
-              <p className="text-sm text-red-600 mb-2">{errors.name}</p>
+              <p className="text-sm text-red-600">{errors.name}</p>
             )}
           </fieldset>
 

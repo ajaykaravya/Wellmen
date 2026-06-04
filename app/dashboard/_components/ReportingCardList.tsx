@@ -65,6 +65,7 @@ export function ReportingCardList<T extends ReportingCardRow>({
       <div className="flex items-center gap-2">
         {onView && (
           <button
+            style={{ padding: "2px" }}
             className="rbac-link"
             type="button"
             onClick={() => onView(row)}

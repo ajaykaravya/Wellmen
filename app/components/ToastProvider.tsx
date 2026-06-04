@@ -2,6 +2,7 @@
 
 import { ToastContainer } from "react-toastify";
 import { useThemeMode } from "./ThemeProvider";
+// @ts-ignore
 import "react-toastify/dist/ReactToastify.css";
 
 export default function ToastProvider() {

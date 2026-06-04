@@ -11,7 +11,7 @@ export default function TransportEditPage() {
   if (!transportId || typeof transportId !== "string") return null;
 
   return (
-    <DashboardShell>
+    <DashboardShell requireAdmin>
       <TransportFormContent transportId={transportId} />
     </DashboardShell>
   );

@@ -54,10 +54,10 @@ const categoryOptions: Array<{
   key: Exclude<QueryCategory, "">;
   label: string;
 }> = [
-  { key: "REMARKS", label: "Remarks" },
-  { key: "URGENCY", label: "Urgency" },
-  { key: "DECISION_PENDING", label: "Decision Pending" },
-];
+    { key: "REMARKS", label: "Remarks" },
+    { key: "URGENCY", label: "Urgency" },
+    { key: "DECISION_PENDING", label: "Decision Pending" },
+  ];
 
 const statusOptions: Array<{ key: QueryStatus; label: string }> = [
   { key: "PENDING", label: "Pending" },
@@ -174,10 +174,10 @@ export default function QueryFormContent({
     const normalizedQuery = projectQuery.trim().toLowerCase();
     const filtered = normalizedQuery
       ? projects.filter((project) => {
-          const name = project.name.toLowerCase();
-          const city = (project.city || "").toLowerCase();
-          return name.includes(normalizedQuery) || city.includes(normalizedQuery);
-        })
+        const name = project.name.toLowerCase();
+        const city = (project.city || "").toLowerCase();
+        return name.includes(normalizedQuery) || city.includes(normalizedQuery);
+      })
       : projects;
 
     if (
@@ -307,16 +307,16 @@ export default function QueryFormContent({
                 typeof data === "string"
                   ? new TextEncoder().encode(data).buffer
                   : (() => {
-                      const bytes = new Uint8Array(data.byteLength);
-                      bytes.set(
-                        new Uint8Array(
-                          data.buffer,
-                          data.byteOffset,
-                          data.byteLength,
-                        ),
-                      );
-                      return bytes.buffer;
-                    })();
+                    const bytes = new Uint8Array(data.byteLength);
+                    bytes.set(
+                      new Uint8Array(
+                        data.buffer,
+                        data.byteOffset,
+                        data.byteLength,
+                      ),
+                    );
+                    return bytes.buffer;
+                  })();
               return new File([normalizedData], file.name, {
                 type: file.type,
               });
@@ -409,7 +409,7 @@ export default function QueryFormContent({
                 }}
                 nullable
               >
-                <div className="relative mb-2">
+                <div className="relative mb-1">
                   <ComboboxInput
                     className="theme-input rbac-input w-full pr-10"
                     placeholder="Search projects"
@@ -461,26 +461,28 @@ export default function QueryFormContent({
                 required
               />
 
-              <label className="rbac-label">
-                Description <span className="text-red-600">*</span>
-                <textarea
-                  className="rbac-input"
-                  rows={4}
-                  placeholder="Describe the query"
-                  value={form.description}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      description: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              {errors.description && (
-                <p className="text-sm text-red-600">{errors.description}</p>
-              )}
+              <div>
+                <label className="rbac-label">
+                  Description <span className="text-red-600">*</span>
+                  <textarea
+                    className="rbac-input"
+                    rows={4}
+                    placeholder="Describe the query"
+                    value={form.description}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        description: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                {errors.description && (
+                  <p className="text-sm text-red-600">{errors.description}</p>
+                )}
+              </div>
 
-              <div className="grid gap-5 md:grid-cols-2">
+              <div className="grid gap-2 md:gap-4 md:grid-cols-2">
                 <label className="rbac-label">
                   Upload images
                   <input

@@ -878,7 +878,7 @@ function TransportListView() {
                 {!loading &&
                   rows.map((row) => (
                     <div key={row.id} className="rbac-card p-4 sm:p-5">
-                      <div className="flex items-start justify-between gap-3">
+                      <div className="flex justify-between gap-3">
                         <div className="space-y-2">
                           <div className="text-sm">
                             <p className="rounded-full text-sm  font-medium">
@@ -912,7 +912,7 @@ function TransportListView() {
                             )}
                           </div>
                         </div>
-                        <div className="flex flex-col items-end h-[stretch] justify-between gap-2">
+                        <div className="flex flex-col items-end justify-between gap-2">
                           <div className="flex justify-end">
                             <button
                               style={{ padding: "2px" }}
@@ -1427,7 +1427,7 @@ function TransportListView() {
 
 export default function TransportListContent() {
   return (
-    <DashboardShell>
+    <DashboardShell requireAdmin>
       <TransportListView />
     </DashboardShell>
   );

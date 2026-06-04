@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ReactNode, useState } from "react";
 import { FaChevronRight, FaEdit, FaSpinner } from "react-icons/fa";
 import { formatToDDMMYYYY } from "@/lib/dateUtils";
+import { useDashboardContext } from "./DashboardShell";
 
 export type TaskTableCardRow = {
   id: string;
@@ -76,6 +77,7 @@ export function TaskTableCard<T extends TaskTableCardRow>({
   renderActions,
 }: TaskTableCardProps<T>) {
   const [collapsed, setCollapsed] = useState(true);
+  const { isAdmin } = useDashboardContext();
 
   if (!showHeader) {
     return (
@@ -107,13 +109,13 @@ export function TaskTableCard<T extends TaskTableCardRow>({
                 {"comments" in task && (
                   <p className="text-sm">{task.comments || ""}</p>
                 )}
-                {task.assignee && (
+                {task.assignee && isAdmin && (
                   <p className="text-sm">
                     {task.assignee.firstName} {task.assignee.lastName}
                   </p>
                 )}
               </div>
-              <div className="flex flex-col gap-2 justify-end" style={{ alignItems:"end" }}>
+              <div className="flex flex-col gap-2 justify-end" style={{ alignItems: "end" }}>
                 {renderActions
                   ? renderActions(task)
                   : onUpdate && (
@@ -218,7 +220,7 @@ export function TaskTableCard<T extends TaskTableCardRow>({
                   {"comments" in task && (
                     <p className="text-sm">{task.comments || ""}</p>
                   )}
-                  {task.assignee && (
+                  {task.assignee && isAdmin && (
                     <p className="text-sm">
                       {task.assignee.firstName} {task.assignee.lastName}
                     </p>

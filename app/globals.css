@@ -650,7 +650,7 @@ button,
 
 .rbac-nav {
   display: grid;
-  gap: 8px;
+  gap: 4px;
 }
 
 .rbac-nav-scroll::-webkit-scrollbar {

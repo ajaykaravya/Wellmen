@@ -405,7 +405,7 @@ export default function IncomeFormContent({ incomeId }: IncomeFormContentProps) 
                 </div>
               </Combobox>
               {errors.incomeTypeId && (
-                <p className="my-2 text-sm text-red-600">{errors.incomeTypeId}</p>
+                <p className="mt-1 text-sm text-red-600">{errors.incomeTypeId}</p>
               )}
             </div>
 
@@ -461,7 +461,7 @@ export default function IncomeFormContent({ incomeId }: IncomeFormContentProps) 
                 </div>
               </Combobox>
               {errors.projectId && (
-                <p className="my-2 text-sm text-red-600">{errors.projectId}</p>
+                <p className="mt-1 text-sm text-red-600">{errors.projectId}</p>
               )}
             </div>
 
@@ -484,7 +484,7 @@ export default function IncomeFormContent({ incomeId }: IncomeFormContentProps) 
             <label className="rbac-label">
               Amount <span className="text-red-600">*</span>
               <input
-                className="rbac-input mb-2"
+                className="rbac-input mb-1"
                 type="number"
                 step="0.01"
                 min="0"
