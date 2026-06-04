@@ -1427,7 +1427,7 @@ function TransportListView() {
 
 export default function TransportListContent() {
   return (
-    <DashboardShell>
+    <DashboardShell requireAdmin>
       <TransportListView />
     </DashboardShell>
   );

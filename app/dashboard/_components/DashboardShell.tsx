@@ -273,8 +273,8 @@ export default function DashboardShell({
         : { key: "my-query-management", label: "My Query Management" },
     );
     if (isAdmin) {
-      items.push({ key: "dailyExpenses", label: "Expense" });
       items.push({ key: "transport-management", label: "Transport Management" });
+      items.push({ key: "dailyExpenses", label: "Expense" });
       items.push({ key: "petiCash", label: "Peti Cash" });
       items.push({ key: "income", label: "Income" });
       items.push({

@@ -1,5 +1,10 @@
+import DashboardShell from "../_components/DashboardShell";
 import TransportConfigListContent from "./_components/TransportConfigListContent";
 
 export default function TransportConfigPage() {
-  return <TransportConfigListContent />;
+  return (
+    <DashboardShell requireAdmin>
+      <TransportConfigListContent />
+    </DashboardShell>
+  )
 }
