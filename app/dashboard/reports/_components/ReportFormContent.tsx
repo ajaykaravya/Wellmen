@@ -148,8 +148,8 @@ export default function ReportFormContent({
               Array.isArray(report.videoUrls)
                 ? report.videoUrls
                 : report.videoUrl
-                ? [report.videoUrl]
-                : [],
+                  ? [report.videoUrl]
+                  : [],
             );
           }
         }
@@ -191,12 +191,12 @@ export default function ReportFormContent({
     const normalizedQuery = projectQuery.trim().toLowerCase();
     const filtered = normalizedQuery
       ? projects.filter((project) => {
-          const name = project.name.toLowerCase();
-          const status = (project.status || "").toLowerCase();
-          return (
-            name.includes(normalizedQuery) || status.includes(normalizedQuery)
-          );
-        })
+        const name = project.name.toLowerCase();
+        const status = (project.status || "").toLowerCase();
+        return (
+          name.includes(normalizedQuery) || status.includes(normalizedQuery)
+        );
+      })
       : projects;
 
     if (
@@ -402,7 +402,7 @@ export default function ReportFormContent({
                   : ""
               }
             >
-              <div className="grid gap-5 md:grid-cols-2">
+              <div className="grid gap-2 md:gap-4 md:grid-cols-2">
                 <label className="rbac-label">
                   Date <span className="text-red-600">*</span>
                   <CustomDatePicker
@@ -481,58 +481,58 @@ export default function ReportFormContent({
                     {errors.projectId}
                   </p>
                 )}
+              </div>
 
-                <div>
-                  <label className="rbac-label">
-                    Reporting Category <span className="text-red-600">*</span>
-                    <select
-                      className="rbac-input rbac-select"
-                      value={form.categoryId}
-                      onChange={(event) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          categoryId: event.target.value,
-                        }))
-                      }
-                    >
-                      <option value="">Select reporting category</option>
-                      {categories.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+              <div className="grid md:grid-cols-2 mt-1">
+                <label className="rbac-label">
+                  Reporting Category <span className="text-red-600">*</span>
+                  <select
+                    className="rbac-input rbac-select"
+                    value={form.categoryId}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        categoryId: event.target.value,
+                      }))
+                    }
+                  >
+                    <option value="">Select reporting category</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
                   {errors.categoryId && (
                     <p className="text-sm text-red-600 mt-1">
                       {errors.categoryId}
                     </p>
                   )}
-                </div>
+                </label>
               </div>
-
-              <label className="rbac-label mt-5">
-                Description <span className="text-red-600">*</span>
-                <textarea
-                  className="rbac-input"
-                  rows={4}
-                  placeholder="Detailed description"
-                  value={form.description}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      description: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              {errors.description && (
-                <p className="text-sm text-red-600 mt-1">
-                  {errors.description}
-                </p>
-              )}
-
-              <div className="grid gap-5 mt-5 md:grid-cols-2">
+              <div className="mt-2">
+                <label className="rbac-label">
+                  Description <span className="text-red-600">*</span>
+                  <textarea
+                    className="rbac-input"
+                    rows={4}
+                    placeholder="Detailed description"
+                    value={form.description}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        description: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                {errors.description && (
+                  <p className="text-sm text-red-600">
+                    {errors.description}
+                  </p>
+                )}
+              </div>
+              <div className="grid gap-2 md:gap-4 mt-1 md:grid-cols-2">
                 <label className="rbac-label">
                   Upload images
                   <input
@@ -546,7 +546,7 @@ export default function ReportFormContent({
                     }}
                   />
                   <p className="text-xs text-slate-500 mt-1">
-                    You can upload multiple images. Max size per video is 10MB.
+                    You can upload multiple images. Max size per image is 10MB.
                   </p>
                 </label>
 

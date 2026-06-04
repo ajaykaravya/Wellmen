@@ -263,7 +263,7 @@ export default function TransportFormContent({
 
   const renderFieldError = (field: keyof TransportFormState) =>
     errors[field] ? (
-      <p className="text-sm text-red-600 mb-2">{errors[field]}</p>
+      <p className="text-sm text-red-600 mt-1 mb-2">{errors[field]}</p>
     ) : null;
 
   const boleroTotalKm = useMemo(
@@ -479,6 +479,11 @@ export default function TransportFormContent({
         if (!form.city.trim()) nextErrors.city = "City is required.";
         if (!form.noOfCovers.trim())
           nextErrors.noOfCovers = "No. of covers is required.";
+        if (!form.mobileNumber.trim())
+          nextErrors.mobileNumber = "Mobile number is required.";
+        if (!form.vehicleNumber.trim())
+          nextErrors.vehicleNumber = "Vehicle number is required.";
+        if (!form.status.trim()) nextErrors.status = "Status is required.";
         if (!form.totalWeight.trim())
           nextErrors.totalWeight = "Total weight is required.";
         break;
@@ -720,7 +725,7 @@ export default function TransportFormContent({
                 />
               </div>
             ) : null}
-            <div className="grid gap-2 md:gap-4 md:grid-cols-4">
+            <div className="grid mt-1 gap-2 md:gap-4 md:grid-cols-4">
               <div>
                 <label className="rbac-label">
                   From Location <span className="text-red-600">*</span>
@@ -753,7 +758,7 @@ export default function TransportFormContent({
                 <label className="rbac-label">
                   City <span className="text-red-600">*</span>
                   <input
-                    className="rbac-input mb-2"
+                    className="rbac-input"
                     placeholder="City"
                     value={form.city}
                     onChange={(event) => setField("city", event.target.value)}
@@ -764,7 +769,7 @@ export default function TransportFormContent({
             </div>
             {form.transportType === "BOLERO_DELIVERY" ||
               form.transportType === "BOLERO_RETURN_DC" ? (
-              <div>
+              <div className="mt-2">
                 <ButtonGroup
                   title="Load Type"
                   selected={form.loadType || null}
@@ -831,7 +836,7 @@ export default function TransportFormContent({
                       aria-readonly="true"
                     />
                     {driverWageWarning && (
-                      <p className="mt-2 text-xs text-red-600">
+                      <p className="mt-1 text-xs text-red-600">
                         {driverWageWarning}
                       </p>
                     )}
@@ -1027,7 +1032,6 @@ export default function TransportFormContent({
                     required
                     error={errors.tripType}
                   />
-                  {renderFieldError("tripType")}
                 </div>
                 <div className="grid gap-2 md:gap-4 md:grid-cols-2 mt-2">
                   <div>
@@ -1079,7 +1083,6 @@ export default function TransportFormContent({
                     required
                     error={errors.vehicleType}
                   />
-                  {renderFieldError("vehicleType")}
                 </div>
                 <div className="grid gap-2 md:gap-4 md:grid-cols-4 mt-2">
                   <label className="rbac-label">

@@ -426,7 +426,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
                     }}
                     nullable
                   >
-                    <div className="relative mb-2">
+                    <div className="relative mb-1">
                       <ComboboxInput
                         className="theme-input rbac-input w-full pr-10"
                         placeholder="Search projects"
@@ -484,7 +484,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
                     }
                     disabled={!selectedTaskType}
                   >
-                    <div className="relative mb-2">
+                    <div className="relative mb-1">
                       <ListboxButton className="rbac-input flex w-full items-center justify-between gap-3 text-left">
                         <span
                           className={

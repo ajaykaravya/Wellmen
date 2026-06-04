@@ -202,7 +202,7 @@ export default function ProjectFormContent({
                 <label className="rbac-label">
                   Project name <span className="text-red-600">*</span>
                   <input
-                    className="rbac-input mb-2"
+                    className="rbac-input mb-1"
                     placeholder="Project name"
                     value={form.name}
                     onChange={(event) =>
@@ -211,7 +211,7 @@ export default function ProjectFormContent({
                   />
                 </label>
                 {errors.name && (
-                  <p className="text-sm text-red-600 mb-2">{errors.name}</p>
+                  <p className="text-sm text-red-600">{errors.name}</p>
                 )}
 
                 <label className="rbac-label">
@@ -230,7 +230,7 @@ export default function ProjectFormContent({
                   />
                 </label>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-0 md:gap-4 md:grid-cols-2">
                   <label className="rbac-label">
                     Address <span className="text-red-600">*</span>
                     <textarea
@@ -245,7 +245,7 @@ export default function ProjectFormContent({
                       }
                     />
                     {errors.address && (
-                      <p className="text-sm text-red-600 mb-2">
+                      <p className="text-sm text-red-600">
                         {errors.address}
                       </p>
                     )}
@@ -254,7 +254,7 @@ export default function ProjectFormContent({
                   <label className="rbac-label">
                     City <span className="text-red-600">*</span>
                     <input
-                      className="rbac-input mb-2"
+                      className="rbac-input mb-1"
                       placeholder="City"
                       value={form.city}
                       onChange={(event) =>
@@ -265,18 +265,18 @@ export default function ProjectFormContent({
                       }
                     />
                     {errors.city && (
-                      <p className="text-sm text-red-600 mb-2">
+                      <p className="text-sm text-red-600">
                         {errors.city}
                       </p>
                     )}
                   </label>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-0 md:gap-4 md:grid-cols-2">
                   <label className="rbac-label">
                     Mobile number <span className="text-red-600">*</span>
                     <input
-                      className="rbac-input mb-2"
+                      className="rbac-input mb-1"
                       placeholder="Mobile number"
                       maxLength={10}
                       value={form.contactNumber}
