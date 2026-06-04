@@ -385,7 +385,7 @@ export default function DailyExpenseFormContent({
                 </div>
               </Combobox>
               {errors.expenseTypeId && (
-                <p className="text-sm text-red-600 my-2">
+                <p className="text-sm text-red-600 mt-1">
                   {errors.expenseTypeId}
                 </p>
               )}
@@ -446,7 +446,7 @@ export default function DailyExpenseFormContent({
                 </div>
               </Combobox>
               {errors.projectId && (
-                <p className="my-2 text-sm text-red-600">{errors.projectId}</p>
+                <p className="mt-1 text-sm text-red-600">{errors.projectId}</p>
               )}
             </div>
 
@@ -466,7 +466,7 @@ export default function DailyExpenseFormContent({
             <label className="rbac-label">
               Amount <span className="text-red-600">*</span>
               <input
-                className="rbac-input mb-2"
+                className="rbac-input mb-1"
                 type="number"
                 step="0.01"
                 min="0"

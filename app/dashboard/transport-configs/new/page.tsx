@@ -1,3 +1,4 @@
+import DashboardShell from "../../_components/DashboardShell";
 import TransportConfigFormContent from "../_components/TransportConfigFormContent";
 
 type TransportConfigNewPageProps = {
@@ -12,8 +13,10 @@ export default async function TransportConfigNewPage({
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
 
   return (
+    <DashboardShell requireAdmin>
     <TransportConfigFormContent
       initialTransportType={resolvedSearchParams?.transportType}
     />
+    </DashboardShell>
   );
 }

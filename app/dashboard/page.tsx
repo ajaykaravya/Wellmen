@@ -1012,7 +1012,7 @@ function OverviewContent() {
   return (
     <>
       <header
-        className="flex justify-between gap-3 z-50 p-4 sm:p-3"
+        className="flex justify-between items-center gap-3 z-50 p-4 sm:p-3"
         style={{
           background: "var(--card)",
           borderBottom: "1px solid var(--stroke)",

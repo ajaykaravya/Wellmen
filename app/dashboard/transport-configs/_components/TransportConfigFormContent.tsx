@@ -445,7 +445,7 @@ export default function TransportConfigFormContent({
                   <label className="rbac-label">
                     Min KM <span className="text-red-600">*</span>
                     <input
-                      className="rbac-input mb-2"
+                      className="rbac-input mb-1"
                       type="number"
                       step="1"
                       min="0"
@@ -463,7 +463,7 @@ export default function TransportConfigFormContent({
                   <label className="rbac-label">
                     Max KM <span className="text-red-600">*</span>
                     <input
-                      className="rbac-input mb-2"
+                      className="rbac-input mb-1"
                       type="number"
                       step="1"
                       min="0"
@@ -482,12 +482,10 @@ export default function TransportConfigFormContent({
 
               {form.configType === "CNG_TRIP_SLAB" && (
                 <>
-
-
                   <label className="rbac-label">
                     Min KM <span className="text-red-600">*</span>
                     <input
-                      className="rbac-input mb-2"
+                      className="rbac-input mb-1"
                       type="number"
                       step="1"
                       min="0"
@@ -505,7 +503,7 @@ export default function TransportConfigFormContent({
                   <label className="rbac-label">
                     Max KM <span className="text-red-600">*</span>
                     <input
-                      className="rbac-input mb-2"
+                      className="rbac-input mb-1"
                       type="number"
                       step="1"
                       min="0"
@@ -556,7 +554,7 @@ export default function TransportConfigFormContent({
               <label className="rbac-label md:col-span-2">
                 Rate <span className="text-red-600">*</span>
                 <input
-                  className="rbac-input mb-2"
+                  className="rbac-input mb-1"
                   type="number"
                   step="0.01"
                   min="0"

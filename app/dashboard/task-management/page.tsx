@@ -738,7 +738,7 @@ function TodoListContent() {
               setPageIndex(0);
               setQuery("");
               setStatusFilter("");
-              setTaskTypeFilter("PROJECT");
+              setTaskTypeFilter(taskTypeFromQuery);
               setCategoryFilter("");
               setAssigneeFilter("");
               setFromDate("");

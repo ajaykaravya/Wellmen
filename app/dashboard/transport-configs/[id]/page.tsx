@@ -1,3 +1,4 @@
+import DashboardShell from "../../_components/DashboardShell";
 import TransportConfigFormContent from "../_components/TransportConfigFormContent";
 
 type TransportConfigEditPageProps = {
@@ -12,5 +13,9 @@ export default async function TransportConfigEditPage({
 
   if (!transportConfigId || typeof transportConfigId !== "string") return null;
 
-  return <TransportConfigFormContent transportConfigId={transportConfigId} />;
+  return (
+      <DashboardShell requireAdmin>
+        <TransportConfigFormContent transportConfigId={transportConfigId} />
+      </DashboardShell>
+    );
 }

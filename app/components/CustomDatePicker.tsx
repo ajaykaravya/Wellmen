@@ -2,6 +2,7 @@
 
 import React, { useRef, useState } from "react";
 import DatePicker from "react-datepicker";
+// @ts-ignore
 import "react-datepicker/dist/react-datepicker.css";
 import { FaCalendarAlt } from "react-icons/fa";
 
