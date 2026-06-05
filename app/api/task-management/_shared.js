@@ -119,6 +119,8 @@ export const serializeTodo = (todo, userId) => ({
   assigneeId: todo.assigneeId,
   assignee: buildAssignee(todo),
   createdById: todo.createdById,
-  canManage: Boolean(userId && todo.createdById === userId),
+  canManage: Boolean(
+    userId && (todo.createdById === userId || todo.assigneeId === userId),
+  ),
   createdAt: todo.createdAt,
 });
