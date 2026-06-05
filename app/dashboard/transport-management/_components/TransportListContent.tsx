@@ -127,6 +127,8 @@ const getListingTypeFields = (row: TransportRow) => {
     case "BOLERO_RETURN_DC":
       return [
         { label: "Load Type", value: formatText(row.loadType) },
+        { label: "From", value: formatText(row.fromLocation) },
+        { label: "To", value: formatText(row.toLocation) },
       ];
     case "COURIER_DAILY":
     case "PORTER_DAILY":
@@ -252,7 +254,7 @@ const getListingColumns = (
       id: "action",
       size: 160,
       cell: ({ row }) => (
-        <div className="flex justify-end gap-2">
+        <div className="flex gap-2">
           <button
             className="rbac-link"
             type="button"
@@ -306,8 +308,6 @@ const getTypeDetails = (row: TransportRow): DetailSection => {
       return {
         title: "Trip Details",
         fields: [
-          { label: "DC Number", value: formatText(row.referenceNumber) },
-          { label: "Description", value: formatText(row.description) },
           { label: "Location Type", value: formatText(row.locationType) },
           { label: "From Location", value: formatText(row.fromLocation) },
           { label: "To Location", value: formatText(row.toLocation) },
@@ -329,8 +329,6 @@ const getTypeDetails = (row: TransportRow): DetailSection => {
       return {
         title: "Trip Details",
         fields: [
-          { label: "DC Number", value: formatText(row.referenceNumber) },
-          { label: "Description", value: formatText(row.description) },
           { label: "Location Type", value: formatText(row.locationType) },
           { label: "From Location", value: formatText(row.fromLocation) },
           { label: "To Location", value: formatText(row.toLocation) },
@@ -355,8 +353,6 @@ const getTypeDetails = (row: TransportRow): DetailSection => {
       return {
         title: "Delivery Details",
         fields: [
-          { label: "Courier Number", value: formatText(row.referenceNumber) },
-          { label: "Description", value: formatText(row.description) },
           { label: "City", value: formatText(row.city) },
           { label: "From Location", value: formatText(row.fromLocation) },
           { label: "To Location", value: formatText(row.toLocation) },
@@ -381,8 +377,6 @@ const getTypeDetails = (row: TransportRow): DetailSection => {
       return {
         title: "Delivery Details",
         fields: [
-          { label: "DC Number", value: formatText(row.referenceNumber) },
-          { label: "Description", value: formatText(row.description) },
           { label: "City", value: formatText(row.city) },
           { label: "From Location", value: formatText(row.fromLocation) },
           { label: "To Location", value: formatText(row.toLocation) },
@@ -401,8 +395,6 @@ const getTypeDetails = (row: TransportRow): DetailSection => {
       return {
         title: "Trip Details",
         fields: [
-          { label: "DC Number", value: formatText(row.referenceNumber) },
-          { label: "Description", value: formatText(row.description) },
           { label: "City", value: formatText(row.city) },
           { label: "Trip Type", value: formatText(row.tripType) },
           { label: "From Location", value: formatText(row.fromLocation) },
@@ -423,8 +415,6 @@ const getTypeDetails = (row: TransportRow): DetailSection => {
       return {
         title: "Vehicle Details",
         fields: [
-          { label: "DC Number", value: formatText(row.referenceNumber) },
-          { label: "Description", value: formatText(row.description) },
           { label: "City", value: formatText(row.city) },
           { label: "Vehicle Type", value: formatText(row.vehicleType) },
           { label: "Vehicle Number", value: formatText(row.vehicleNumber) },
@@ -881,15 +871,7 @@ function TransportListView() {
                       <div className="flex justify-between gap-3">
                         <div className="space-y-2">
                           <div className="text-sm">
-                            <p className="rounded-full text-sm  font-medium">
-                              {getTransportTypeShortLabel(row.transportType)}
-                            </p>
-                            <p className="rounded-full text-sm font-medium">
-                              ₹{formatMoney(row.totalAmount)}
-                            </p>
-                            <p>{row.city || ""}</p>
-                            <div className="text-sm">
-                              {getListingTypeFields(row).map((field) => (
+                            {getListingTypeFields(row).map((field) => (
                                 <span
                                   key={field.label}
                                   className="rbac-muted block"
@@ -897,6 +879,12 @@ function TransportListView() {
                                   {field.label}: {field.value || "-"}
                                 </span>
                               ))}
+                            <p>City: {row.city || ""}</p>
+                            <p className="rounded-full text-sm font-medium">
+                              ₹{formatMoney(row.totalAmount)}
+                            </p>
+                            <div className="text-sm">
+                              
                               {(row.transportType === "PORTER_DAILY" ||
                                 row.transportType === "CNG_RICKSHAW" ||
                                 row.transportType === "LOADING_VEHICLE") && (
@@ -907,7 +895,7 @@ function TransportListView() {
                             </div>
                             {row.createdByName && (
                               <p className="text-sm">
-                                By {row.createdByName}
+                                By: {row.createdByName}
                               </p>
                             )}
                           </div>
@@ -1386,21 +1374,21 @@ function TransportListView() {
                     (section) => (
                       <div
                         key={section.title}
-                        className="rounded-xl border border-slate-200 bg-white p-4"
+                        className="rounded-xl border border-slate-200 p-4"
                       >
-                        <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+                        <h4 className="text-sm font-semibold uppercase tracking-wide">
                           {section.title}
                         </h4>
                         <dl className="mt-3 grid gap-4 sm:grid-cols-2">
                           {section.fields.map((field) => (
                             <div
                               key={field.label}
-                              className="rounded-lg bg-slate-50 p-3"
+                              className="rounded-lg p-3 border border-slate-200"
                             >
-                              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                              <dt className="text-xs font-medium uppercase tracking-wide">
                                 {field.label}
                               </dt>
-                              <dd className="mt-1 text-sm font-medium text-slate-900">
+                              <dd className="mt-1 text-sm font-medium">
                                 {field.value}
                               </dd>
                             </div>
