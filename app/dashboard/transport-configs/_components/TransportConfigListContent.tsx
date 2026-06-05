@@ -393,12 +393,12 @@ export default function TransportConfigListContent() {
                             ₹{formatMoney(row.original.rate)}
                           </span>
                         </div>
-                        <div className="text-sm text-slate-600">
-                          <p className="font-semibold text-slate-900">
+                        <div className="text-sm">
+                          <p className="font-semibold">
                             {row.original.configTypeLabel ||
                               getTransportConfigTypeLabel(row.original.configType)}
                           </p>
-                          <p className="text-slate-500">
+                          <p>
                             {buildRuleSummary(row.original)}
                           </p>
                         </div>

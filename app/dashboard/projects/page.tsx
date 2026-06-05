@@ -383,7 +383,7 @@ function ProjectListContent() {
       {" "}
       <section className="rbac-section rbac-container">
         <div className="rbac-card">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="rbac-title-lg">Projects List</h3>
             <div className="flex
              gap-2">
