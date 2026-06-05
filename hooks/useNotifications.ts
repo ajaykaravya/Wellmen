@@ -1,15 +1,8 @@
 // hooks/useNotifications.ts
 
 import { createElement, useEffect, useRef, useState } from "react";
-import {
-    collection,
-    onSnapshot,
-    query,
-    orderBy,
-} from "firebase/firestore";
 import { Capacitor } from "@capacitor/core";
 import { toast } from "react-toastify";
-import { db } from "@/lib/firebase";
 
 type NotificationItem = {
     id: string;
@@ -27,49 +20,74 @@ const renderNotificationMessage = (message: string) =>
 export function useNotifications(adminId: string) {
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const hasHydratedRef = useRef(false);
+    const previousIdsRef = useRef(new Set<string>());
 
     useEffect(() => {
-        if (!adminId || !db) return;
+        if (!adminId) return;
+
         const shouldToast = Capacitor.getPlatform() === "web";
+        let isMounted = true;
 
-        const q = query(
-            collection(db, "notifications", adminId, "items"),
-            orderBy("createdAt", "desc")
-        );
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const all = snapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...(doc.data() as Omit<NotificationItem, "id">),
-            })) as NotificationItem[];
-
-            if (hasHydratedRef.current) {
-                snapshot.docChanges().forEach((change) => {
-                    if (change.type !== "added") return;
-                    const data = {
-                        id: change.doc.id,
-                        ...(change.doc.data() as Omit<NotificationItem, "id">),
-                    } as NotificationItem;
-
-                    if (shouldToast) {
-                        toast.info(
-                            renderNotificationMessage(
-                                data.message || data.title || "New notification",
-                            ),
-                            {
-                                toastId: `notif-${change.doc.id}`,
-                            },
-                        );
-                    }
+        const fetchNotifications = async () => {
+            try {
+                const response = await fetch("/api/notifications", {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
                 });
-            } else {
-                hasHydratedRef.current = true;
+
+                if (!response.ok) {
+                    console.error("Failed to fetch notifications:", response.statusText);
+                    return;
+                }
+
+                const data = await response.json();
+                const all = data.notifications || [];
+
+                if (!isMounted) return;
+
+                if (hasHydratedRef.current) {
+                    // Show toast for newly added notifications
+                    all.forEach((notif: NotificationItem) => {
+                        if (!previousIdsRef.current.has(notif.id)) {
+                            previousIdsRef.current.add(notif.id);
+                            if (shouldToast) {
+                                toast.info(
+                                    renderNotificationMessage(
+                                        notif.message || notif.title || "New notification",
+                                    ),
+                                    {
+                                        toastId: `notif-${notif.id}`,
+                                    },
+                                );
+                            }
+                        }
+                    });
+                } else {
+                    // First load - populate all IDs without toasting
+                    all.forEach((notif: NotificationItem) => {
+                        previousIdsRef.current.add(notif.id);
+                    });
+                    hasHydratedRef.current = true;
+                }
+
+                setNotifications(all);
+            } catch (error) {
+                console.error("Error fetching notifications:", error);
             }
+        };
 
-            setNotifications(all);
-        });
+        // Fetch immediately
+        fetchNotifications();
 
-        return () => unsubscribe();
+        // Set up polling interval (every 5 seconds)
+        const interval = setInterval(fetchNotifications, 5000);
+
+        return () => {
+            isMounted = false;
+            clearInterval(interval);
+        };
     }, [adminId]);
 
     return { notifications };
