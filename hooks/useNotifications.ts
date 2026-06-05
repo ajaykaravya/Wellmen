@@ -21,14 +21,30 @@ export function useNotifications(adminId: string) {
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const hasHydratedRef = useRef(false);
     const previousIdsRef = useRef(new Set<string>());
+    const lastFetchedAtRef = useRef(0);
+    const inFlightRef = useRef(false);
 
     useEffect(() => {
-        if (!adminId) return;
+        previousIdsRef.current.clear();
+        hasHydratedRef.current = false;
+        lastFetchedAtRef.current = 0;
+
+        if (!adminId) {
+            setNotifications([]);
+            return;
+        }
 
         const shouldToast = Capacitor.getPlatform() === "web";
         let isMounted = true;
 
-        const fetchNotifications = async () => {
+        const fetchNotifications = async (force = false) => {
+            const now = Date.now();
+            if (!force && now - lastFetchedAtRef.current < 60_000) return;
+            if (inFlightRef.current) return;
+
+            inFlightRef.current = true;
+            lastFetchedAtRef.current = now;
+
             try {
                 const response = await fetch("/api/notifications", {
                     method: "GET",
@@ -75,18 +91,32 @@ export function useNotifications(adminId: string) {
                 setNotifications(all);
             } catch (error) {
                 console.error("Error fetching notifications:", error);
+            } finally {
+                inFlightRef.current = false;
             }
         };
 
-        // Fetch immediately
-        fetchNotifications();
+        fetchNotifications(true);
 
-        // Set up polling interval (every 5 seconds)
-        const interval = setInterval(fetchNotifications, 5000);
+        const refreshOnFocus = () => {
+            if (document.visibilityState === "visible") {
+                fetchNotifications();
+            }
+        };
+
+        const refreshOnDemand = () => {
+            fetchNotifications(true);
+        };
+
+        window.addEventListener("focus", refreshOnFocus);
+        document.addEventListener("visibilitychange", refreshOnFocus);
+        window.addEventListener("wellmen:notifications-refresh", refreshOnDemand);
 
         return () => {
             isMounted = false;
-            clearInterval(interval);
+            window.removeEventListener("focus", refreshOnFocus);
+            document.removeEventListener("visibilitychange", refreshOnFocus);
+            window.removeEventListener("wellmen:notifications-refresh", refreshOnDemand);
         };
     }, [adminId]);
 

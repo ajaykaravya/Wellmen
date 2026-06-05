@@ -49,10 +49,9 @@ async function loadAllowedTodo(req, params) {
 
   const isAdmin = isAdminRole(gate.auth);
   const userId = gate.auth?.user?.id || "";
-  const canRead = todo.assigneeId === userId;
-  const canManage = todo.createdById === userId;
+  const canManage = todo.createdById === userId || todo.assigneeId === userId;
 
-  if (!isAdmin && !canRead) {
+  if (!isAdmin && !canManage) {
     return {
       ok: false,
       res: NextResponse.json({ error: "Forbidden." }, { status: 403 }),
@@ -75,7 +74,7 @@ export async function PUT(req, { params }) {
 
   if (!loaded.isAdmin && !loaded.canManage) {
     return NextResponse.json(
-      { error: "You can only modify todos created by you." },
+      { error: "You can only modify tasks created by or assigned to you." },
       { status: 403 },
     );
   }
@@ -287,7 +286,7 @@ export async function DELETE(req, { params }) {
 
   if (!loaded.isAdmin && !loaded.canManage) {
     return NextResponse.json(
-      { error: "You can only delete todos created by you." },
+      { error: "You can only delete tasks created by or assigned to you." },
       { status: 403 },
     );
   }
