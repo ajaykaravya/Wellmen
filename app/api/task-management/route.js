@@ -30,7 +30,9 @@ const buildListWhere = ({ searchParams, userId, isAdmin }) => {
   const andConditions = [];
 
   if (!isAdmin) {
-    where.assigneeId = userId || undefined;
+    andConditions.push({
+      OR: [{ createdById: userId }, { assigneeId: userId }],
+    });
   } else if (assigneeId) {
     where.assigneeId = assigneeId;
   }
