@@ -8,6 +8,8 @@ import Link from "next/link";
 import Loading from "../../../components/Loading";
 import CustomDatePicker from "../../../components/CustomDatePicker";
 import { ButtonGroup } from "../../_components/ButtonGroup";
+import { transportConfigsApi } from "@/lib/api/dashboard/transport-configs";
+import { transportManagementApi } from "@/lib/api/dashboard/transport-management";
 import {
   CNG_STATUS_OPTIONS,
   FLOOR_OPTIONS,
@@ -142,13 +144,7 @@ export default function TransportFormContent({
 
     const loadData = async () => {
       try {
-        const res = await fetch(`/api/transport-management/${transportId}`);
-        if (!res.ok) {
-          setNote("Failed to load transport log.");
-          return;
-        }
-
-        const data = await res.json();
+        const data = await transportManagementApi.get(transportId);
         setForm({
           transportType: data.transportType || "BOLERO_DELIVERY",
           date:
@@ -215,25 +211,20 @@ export default function TransportFormContent({
       setTransportConfigLoaded(false);
 
       try {
-        const res = await fetch(
-          `/api/transport-configs?transportType=${form.transportType}`,
-        );
-        if (!res.ok) {
-          const payload = await res.json().catch(() => ({}));
-          if (!cancelled) {
-            setNote(payload.error || "Failed to load transport configs.");
-          }
-          return;
-        }
-
-        const data = await res.json();
+        const data = await transportConfigsApi.list({
+          transportType: form.transportType,
+        });
         if (!cancelled) {
           setTransportConfigs(Array.isArray(data?.data) ? data.data : []);
         }
       } catch (error) {
         console.error("Failed to load transport configs", error);
         if (!cancelled) {
-          setNote("Failed to load transport configs.");
+          setNote(
+            error instanceof Error
+              ? error.message
+              : "Failed to load transport configs.",
+          );
         }
       } finally {
         if (!cancelled) setTransportConfigLoaded(true);
@@ -601,23 +592,11 @@ export default function TransportFormContent({
 
     try {
       setSaving(true);
-      const res = await fetch(
-        transportId
-          ? `/api/transport-management/${transportId}`
-          : "/api/transport-management",
-        {
-          method: transportId ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(buildPayload()),
-        },
-      );
-
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        const errorMessage = payload.error || "Failed to save transport log.";
-        setNote(errorMessage);
-        toast.error(errorMessage);
-        return;
+      const payload = buildPayload();
+      if (transportId) {
+        await transportManagementApi.update(transportId, payload);
+      } else {
+        await transportManagementApi.create(payload);
       }
 
       toast.success(
@@ -628,7 +607,10 @@ export default function TransportFormContent({
       );
     } catch (error) {
       console.error("Failed to save transport log", error);
-      setNote("Failed to save transport log.");
+      const message =
+        error instanceof Error ? error.message : "Failed to save transport log.";
+      setNote(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }

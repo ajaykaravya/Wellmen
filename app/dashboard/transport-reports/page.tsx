@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import DashboardShell from "../_components/DashboardShell";
+import { requestJson } from "@/lib/api/client";
 
 type TransportReportRow = {
   transportType: string;
@@ -77,19 +78,11 @@ export default function TransportReportsPage() {
       });
 
       try {
-        const res = await fetch(
-          `/api/transport-reports?year=${encodeURIComponent(selectedYear)}&month=${encodeURIComponent(selectedMonth)}`,
-          { signal: controller.signal },
-        );
-
-        if (!res.ok) {
-          const payload = await res.json().catch(() => ({}));
-          throw new Error(
-            payload.error || "Failed to load transport reports.",
-          );
-        }
-
-        const payload = (await res.json()) as TransportReportsResponse;
+        const payload = await requestJson<TransportReportsResponse>({
+          path: "/api/transport-reports",
+          query: { year: selectedYear, month: selectedMonth },
+          signal: controller.signal,
+        });
         if (Array.isArray(payload.availableYears) && payload.availableYears.length) {
           setAvailableYears(
             payload.availableYears.map((year) => String(year)),

@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Loading from "../../../components/Loading";
 import { toast } from "react-toastify";
+import { usersApi } from "@/lib/api/dashboard/users";
+import { loadRoleOptions } from "@/lib/api/dashboard/shared-options";
 
 type UserFormState = {
   firstName: string;
@@ -52,13 +54,7 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
 
     const loadUser = async () => {
       try {
-        const res = await fetch(`/api/users/${userId}`);
-        if (!res.ok) {
-          const payload = await res.json().catch(() => ({}));
-          setFormLoading(false);
-          return;
-        }
-        const data = await res.json();
+        const data = await usersApi.get(userId);
         setForm((prev) => ({
           ...prev,
           firstName: data.firstName || "",
@@ -81,10 +77,7 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
   useEffect(() => {
     const loadRoles = async () => {
       try {
-        const res = await fetch("/api/roles");
-        if (!res.ok) throw new Error("Failed to fetch roles");
-
-        const data = await res.json();
+        const data = await loadRoleOptions();
         setRoles(data);
       } catch (error) {
         console.error("Failed to load roles", error);
@@ -137,28 +130,21 @@ export default function UserFormContent({ userId }: UserFormContentProps) {
     setErrors({});
     try {
       setSaving(true);
-      const endpoint = userId ? `/api/users/${userId}` : "/api/users";
-      const method = userId ? "PUT" : "POST";
-      const res = await fetch(endpoint, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        const errorMessage = payload.error || "Failed to save user";
-        setNote(errorMessage);
-        toast.error(errorMessage);
-        return;
+      if (userId) {
+        await usersApi.update(userId, form);
+      } else {
+        await usersApi.create(form);
       }
 
       toast.success(
         userId ? "User updated successfully" : "User added successfully",
       );
       router.push("/dashboard/users");
-    } catch (error: any) {
-      toast.error(error || "Failed to save user");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to save user";
+      setNote(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }

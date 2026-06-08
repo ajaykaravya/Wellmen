@@ -9,6 +9,7 @@ import ConfirmDialog from "../../components/ConfirmDialog";
 import ListingFilterDialog from "../../components/ListingFilterDialog";
 import useDebounce from "@/app/hooks/useDebounce";
 import { toast } from "react-toastify";
+import { incomeTypesApi } from "@/lib/api/dashboard/income-types";
 import {
   FaChevronLeft,
   FaChevronRight,
@@ -48,26 +49,19 @@ function IncomeTypeListContent() {
   const loadIncomeTypes = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: String(pageIndex + 1),
-        pageSize: String(pageSize),
+      const data = await incomeTypesApi.list({
+        page: pageIndex + 1,
+        pageSize,
+        q: debouncedQuery.trim() || undefined,
+        status: statusFilter || undefined,
       });
-      if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
-      if (statusFilter) params.set("status", statusFilter);
-
-      const res = await fetch(`/api/income-types?${params.toString()}`);
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to load income types.");
-        return;
-      }
-
-      const data = await res.json();
       setIncomeTypes(Array.isArray(data?.data) ? data.data : []);
       setTotal(typeof data?.total === "number" ? data.total : 0);
     } catch (error) {
       console.error("Failed to load income types", error);
-      toast.error("Failed to load income types.");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to load income types.",
+      );
     } finally {
       setLoading(false);
     }
@@ -101,19 +95,14 @@ function IncomeTypeListContent() {
     if (!confirmTarget) return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/income-types/${confirmTarget.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to delete income type.");
-        return;
-      }
+      await incomeTypesApi.remove(confirmTarget.id);
       await loadIncomeTypes();
       toast.success("Income type deleted successfully.");
     } catch (error) {
       console.error("Failed to delete income type", error);
-      toast.error("Failed to delete income type.");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete income type.",
+      );
     } finally {
       setDeleting(false);
       setConfirmOpen(false);

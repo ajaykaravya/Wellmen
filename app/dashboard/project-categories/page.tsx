@@ -9,6 +9,7 @@ import ConfirmDialog from "../../components/ConfirmDialog";
 import ListingFilterDialog from "../../components/ListingFilterDialog";
 import useDebounce from "@/app/hooks/useDebounce";
 import { toast } from "react-toastify";
+import { categoriesApi } from "@/lib/api/dashboard/categories";
 import {
   FaChevronLeft,
   FaChevronRight,
@@ -43,25 +44,18 @@ function CategoryListContent() {
   const loadCategories = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: String(pageIndex + 1),
-        pageSize: String(pageSize),
+      const data = await categoriesApi.list({
+        page: pageIndex + 1,
+        pageSize,
+        q: debouncedQuery.trim() || undefined,
       });
-      if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
-
-      const res = await fetch(`/api/categories?${params.toString()}`);
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to load categories.");
-        return;
-      }
-
-      const data = await res.json();
       setCategories(Array.isArray(data?.data) ? data.data : []);
       setTotal(typeof data?.total === "number" ? data.total : 0);
     } catch (error) {
       console.error("Failed to load categories", error);
-      toast.error("Failed to load categories.");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to load categories.",
+      );
     } finally {
       setLoading(false);
     }
@@ -109,19 +103,14 @@ function CategoryListContent() {
     if (!confirmTarget) return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/categories/${confirmTarget.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to delete category.");
-        return;
-      }
+      await categoriesApi.remove(confirmTarget.id);
       await loadCategories();
       toast.success("Category deleted successfully.");
     } catch (error) {
       console.error("Failed to delete category", error);
-      toast.error("Failed to delete category.");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete category.",
+      );
     } finally {
       setDeleting(false);
       setConfirmOpen(false);

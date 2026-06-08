@@ -13,6 +13,8 @@ import { FinanceCardList } from "../../_components/FinanceCardList";
 import { formatToDDMMYYYY } from "@/lib/dateUtils";
 import { Combobox, ComboboxButton, ComboboxInput, ComboboxOption, ComboboxOptions } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
+import { loadCompanyOptions } from "@/lib/api/dashboard/shared-options";
+import { loadEmployeeFinancialReport } from "@/lib/api/dashboard/employee-financial-report";
 
 type ReportUserOption = {
   id: string;
@@ -159,20 +161,12 @@ export default function EmployeeFinancialReportContent() {
 
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (appliedUserId) params.set("userId", appliedUserId);
-      if (appliedCompanyId) params.set("companyId", appliedCompanyId);
-      if (appliedFromDate) params.set("fromDate", appliedFromDate);
-      if (appliedToDate) params.set("toDate", appliedToDate);
-
-      const res = await fetch(`/api/employee-financial-report?${params.toString()}`);
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to load employee financial report.");
-        return;
-      }
-
-      const data = (await res.json()) as ReportResponse;
+      const data = (await loadEmployeeFinancialReport({
+        userId: appliedUserId || undefined,
+        companyId: appliedCompanyId || undefined,
+        fromDate: appliedFromDate || undefined,
+        toDate: appliedToDate || undefined,
+      })) as ReportResponse;
       setUsers(Array.isArray(data.users) ? data.users : []);
       setRows(Array.isArray(data.data) ? data.data : []);
       setSummary(
@@ -185,7 +179,11 @@ export default function EmployeeFinancialReportContent() {
       setTotal(typeof data.total === "number" ? data.total : 0);
     } catch (error) {
       console.error("Failed to load employee financial report", error);
-      toast.error("Failed to load employee financial report.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to load employee financial report.",
+      );
     } finally {
       setLoading(false);
     }
@@ -198,10 +196,8 @@ export default function EmployeeFinancialReportContent() {
   useEffect(() => {
     const loadCompanies = async () => {
       try {
-        const res = await fetch("/api/companies/options");
-        if (!res.ok) return;
-        const data = (await res.json()) as CompanyResponse[];
-        setCompanies(Array.isArray(data) ? data : []);
+        const data = await loadCompanyOptions();
+        setCompanies(data);
       } catch (error) {
         console.error("Failed to load company options", error);
       }

@@ -10,6 +10,15 @@ import CustomDatePicker from "../../../components/CustomDatePicker";
 import { ButtonGroup } from "../../_components/ButtonGroup";
 import { UserCardGroup } from "../../_components/UserCardGroup";
 import { formatToDDMMYYYY, getTodayInputDate } from "@/lib/dateUtils";
+import { petiCashApi } from "@/lib/api/dashboard/peti-cash";
+import {
+  loadCompanyOptions,
+  loadProjectOptions,
+  loadUserOptions,
+  type CompanyOption,
+  type ProjectOption,
+  type UserOption,
+} from "@/lib/api/dashboard/shared-options";
 import {
   Combobox,
   ComboboxButton,
@@ -20,24 +29,6 @@ import {
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
 
 type TransactionType = "CREDIT" | "DEBIT";
-
-type UserOption = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  role?: string | null;
-};
-
-type CompanyOption = {
-  id: string;
-  name: string;
-};
-
-type ProjectOption = {
-  id: string;
-  name: string;
-  city?: string | null;
-};
 
 type PetiCashFormState = {
   amount: string;
@@ -103,41 +94,19 @@ export default function PetiCashFormContent({
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [usersRes, companiesRes, projectsRes, petiCashRes] = await Promise.all([
-          fetch("/api/users/options"),
-          fetch("/api/companies/options"),
-          fetch("/api/projects/options"),
-          petiCashId ? fetch(`/api/peti-cash/${petiCashId}`) : Promise.resolve(null),
+        const [users, companies, projects, petiCash] = await Promise.all([
+          loadUserOptions(),
+          loadCompanyOptions(),
+          loadProjectOptions(),
+          petiCashId ? petiCashApi.get(petiCashId) : Promise.resolve(null),
         ]);
 
-        if (usersRes.ok) {
-          const data = await usersRes.json();
-          setUsers(Array.isArray(data) ? data : []);
-        } else {
-          throw new Error("Failed to load users");
-        }
+        setUsers(users);
+        setCompanies(companies);
+        setProjects(projects);
 
-        if (companiesRes.ok) {
-          const data = await companiesRes.json();
-          setCompanies(Array.isArray(data) ? data : []);
-        } else {
-          throw new Error("Failed to load companies");
-        }
-
-        if (projectsRes.ok) {
-          const data = await projectsRes.json();
-          setProjects(Array.isArray(data) ? data : []);
-        } else {
-          throw new Error("Failed to load projects");
-        }
-
-        if (petiCashRes) {
-          if (!petiCashRes.ok) {
-            setNote("Failed to load peti cash.");
-            return;
-          }
-
-          const data = (await petiCashRes.json()) as PetiCashPayload;
+        if (petiCash) {
+          const data = petiCash as PetiCashPayload;
           setTransactionType(data.transactionType);
           setForm({
             amount: String(data.amount ?? ""),
@@ -163,7 +132,9 @@ export default function PetiCashFormContent({
         }
       } catch (error) {
         console.error("Failed to load peti cash data", error);
-        setNote("Failed to load peti cash data.");
+        setNote(
+          error instanceof Error ? error.message : "Failed to load peti cash data.",
+        );
       } finally {
         setLoading(false);
       }
@@ -230,37 +201,31 @@ export default function PetiCashFormContent({
 
     try {
       setSaving(true);
-      const res = await fetch(
-        petiCashId ? `/api/peti-cash/${petiCashId}` : "/api/peti-cash",
-        {
-          method: petiCashId ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            transactionType,
-            amount: form.amount,
-            givenById: form.givenById,
-            givenToId: form.givenToId,
-            companyId: form.companyId,
-            projectId: form.projectId,
-            date: form.date,
-            remarks: form.remarks,
-          }),
-        },
-      );
+      const payload = {
+        transactionType,
+        amount: form.amount,
+        givenById: form.givenById,
+        givenToId: form.givenToId,
+        companyId: form.companyId,
+        projectId: form.projectId,
+        date: form.date,
+        remarks: form.remarks,
+      };
 
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        const errorMessage = payload.error || "Failed to save peti cash.";
-        setNote(errorMessage);
-        toast.error(errorMessage);
-        return;
+      if (petiCashId) {
+        await petiCashApi.update(petiCashId, payload);
+      } else {
+        await petiCashApi.create(payload);
       }
 
       toast.success(`Peti cash ${petiCashId ? "updated" : "created"} successfully.`);
       router.push("/dashboard/peti-cash");
     } catch (error) {
       console.error("Failed to save peti cash", error);
-      setNote("Failed to save peti cash.");
+      const message =
+        error instanceof Error ? error.message : "Failed to save peti cash.";
+      setNote(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }

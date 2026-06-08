@@ -53,6 +53,13 @@ import { IoIosClose } from "react-icons/io";
 import { QueryTableCard } from "./_components/QueryTableCard";
 import { ReportingCardList } from "./_components/ReportingCardList";
 import { ReportDetailsDialog } from "./_components/ReportDetailsDialog";
+import { dailyExpenseApi } from "@/lib/api/dashboard/daily-expenses";
+import { incomeApi } from "@/lib/api/dashboard/income";
+import { petiCashApi } from "@/lib/api/dashboard/peti-cash";
+import { queryManagementApi } from "@/lib/api/dashboard/query-management";
+import { reportApi } from "@/lib/api/dashboard/reports";
+import { taskManagementApi } from "@/lib/api/dashboard/task-management";
+import { requestJson } from "@/lib/api/client";
 
 ChartJS.register(
   CategoryScale,
@@ -106,11 +113,17 @@ type TodoDraft = {
   status: TodoStatus;
 };
 
+type CrudListResponse<T> = {
+  data: T[];
+  total: number;
+  totalPages?: number;
+};
+
 type AdminReportRow = {
   id: string;
   reportDate: string;
   projectName: string;
-  projectCity: string | null;
+  projectCity?: string | null;
   categoryName: string;
   description: string;
   createdByName: string;
@@ -328,13 +341,12 @@ function OverviewContent() {
     setLoading(true);
     try {
       const today = getTodayInputDate();
-      const endpoint = "/api/task-management";
-      const res = await fetch(
-        `${endpoint}?fromDate=${today}&includePendingOld=true&page=1&pageSize=10`,
-      );
-      if (!res.ok) return;
-
-      const data = await res.json();
+      const data = (await taskManagementApi.list({
+        fromDate: today,
+        includePendingOld: true,
+        page: 1,
+        pageSize: 10,
+      })) as CrudListResponse<TodoRow>;
       const rows = Array.isArray(data?.data) ? data.data : [];
       setTodos(rows);
     } catch (error) {
@@ -350,11 +362,7 @@ function OverviewContent() {
 
   const loadQuery = useCallback(async () => {
     try {
-      const endpoint = "/api/query-management";
-      const res = await fetch(endpoint);
-      if (!res.ok) return;
-
-      const data = await res.json();
+      const data = (await queryManagementApi.list()) as CrudListResponse<QueryRow>;
       const rows = Array.isArray(data?.data) ? data.data : [];
       setQuery(rows);
     } catch (error) {
@@ -371,16 +379,11 @@ function OverviewContent() {
 
     setAdminLoading(true);
     try {
-      const params = new URLSearchParams({
+      const data = (await reportApi.list({
         date: adminDate,
-        page: "1",
-        pageSize: "50",
-      });
-
-      const res = await fetch(`/api/reports?${params.toString()}`);
-      if (!res.ok) return;
-
-      const data = await res.json();
+        page: 1,
+        pageSize: 50,
+      })) as CrudListResponse<AdminReportRow>;
       setAdminReports(Array.isArray(data?.data) ? data.data : []);
     } catch (error) {
       console.error("Failed to load admin reports", error);
@@ -399,11 +402,11 @@ function OverviewContent() {
     setUserReportsLoading(true);
     try {
       const today = getTodayInputDate();
-      const res = await fetch(
-        `/api/reports?fromDate=${today}&page=1&pageSize=20`,
-      );
-      if (!res.ok) return;
-      const data = await res.json();
+      const data = (await reportApi.list({
+        fromDate: today,
+        page: 1,
+        pageSize: 20,
+      })) as CrudListResponse<AdminReportRow>;
       setUserReports(Array.isArray(data?.data) ? data.data : []);
     } catch (error) {
       console.error("Failed to load user reports", error);
@@ -421,15 +424,12 @@ function OverviewContent() {
 
     setIncomeLoading(true);
     try {
-      const params = new URLSearchParams({
+      const data = (await incomeApi.list({
         fromDate: incomeDate,
         toDate: incomeDate,
-        page: "1",
-        pageSize: "20",
-      });
-      const res = await fetch(`/api/income?${params.toString()}`);
-      if (!res.ok) return;
-      const data = await res.json();
+        page: 1,
+        pageSize: 20,
+      })) as CrudListResponse<IncomeEntryRow>;
       setIncomeEntries(Array.isArray(data?.data) ? data.data : []);
     } catch (error) {
       console.error("Failed to load income entries", error);
@@ -443,15 +443,13 @@ function OverviewContent() {
     if (!isAdmin) return;
     setTotalIncomeLoading(true);
     try {
-      const res = await fetch("/api/income");
-
-      if (!res.ok) return;
-
-      const response = await res.json();
+      const response = (await incomeApi.list()) as CrudListResponse<{
+        amount: number;
+      }>;
 
       const total = response.data.reduce(
-        (sum: number, item: { amount: number }) => sum + Number(item.amount),
-        0
+        (sum, item) => sum + Number(item.amount),
+        0,
       );
 
       setTotalIncome(total);
@@ -476,15 +474,10 @@ function OverviewContent() {
       const rows: PetiCashBalanceRow[] = [];
 
       while (currentPage <= totalPages) {
-        const params = new URLSearchParams({
-          page: String(currentPage),
-          pageSize: "100",
-        });
-
-        const res = await fetch(`/api/peti-cash?${params.toString()}`);
-        if (!res.ok) return;
-
-        const response = await res.json();
+        const response = (await petiCashApi.list({
+          page: currentPage,
+          pageSize: 100,
+        })) as CrudListResponse<PetiCashBalanceRow>;
         const pageRows = Array.isArray(response?.data) ? response.data : [];
         rows.push(...pageRows);
 
@@ -519,15 +512,12 @@ function OverviewContent() {
 
     setExpenseLoading(true);
     try {
-      const params = new URLSearchParams({
+      const data = (await dailyExpenseApi.list({
         fromDate: expenseDate,
         toDate: expenseDate,
-        page: "1",
-        pageSize: "20",
-      });
-      const res = await fetch(`/api/daily-expenses?${params.toString()}`);
-      if (!res.ok) return;
-      const data = await res.json();
+        page: 1,
+        pageSize: 20,
+      })) as CrudListResponse<ExpenseEntryRow>;
       setExpenseEntries(Array.isArray(data?.data) ? data.data : []);
     } catch (error) {
       console.error("Failed to load expense entries", error);
@@ -541,15 +531,12 @@ function OverviewContent() {
 
     setPetiCashLoading(true);
     try {
-      const params = new URLSearchParams({
+      const data = (await petiCashApi.list({
         fromDate: petiCashDate,
         toDate: petiCashDate,
-        page: "1",
-        pageSize: "20",
-      });
-      const res = await fetch(`/api/peti-cash?${params.toString()}`);
-      if (!res.ok) return;
-      const data = await res.json();
+        page: 1,
+        pageSize: 20,
+      })) as CrudListResponse<PetiCashEntryRow>;
       setPetiCashEntries(Array.isArray(data?.data) ? data.data : []);
     } catch (error) {
       console.error("Failed to load peti cash entries", error);
@@ -577,19 +564,12 @@ function OverviewContent() {
     if (!confirmIncomeTarget) return;
     setDeletingIncome(true);
     try {
-      const res = await fetch(`/api/income/${confirmIncomeTarget.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to delete income.");
-        return;
-      }
+      await incomeApi.remove(confirmIncomeTarget.id);
       toast.success("Income deleted successfully.");
       await loadIncomeEntries();
     } catch (error) {
-      console.error(error);
-      toast.error("Failed to delete income.");
+      console.error("Failed to delete income", error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete income.");
     } finally {
       setDeletingIncome(false);
       setConfirmIncomeOpen(false);
@@ -610,19 +590,12 @@ function OverviewContent() {
     if (!confirmExpenseTarget) return;
     setDeletingExpense(true);
     try {
-      const res = await fetch(`/api/daily-expenses/${confirmExpenseTarget.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to delete expense.");
-        return;
-      }
+      await dailyExpenseApi.remove(confirmExpenseTarget.id);
       toast.success("Expense deleted successfully.");
       await loadExpenseEntries();
     } catch (error) {
-      console.error(error);
-      toast.error("Failed to delete expense.");
+      console.error("Failed to delete expense", error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete expense.");
     } finally {
       setDeletingExpense(false);
       setConfirmExpenseOpen(false);
@@ -643,19 +616,12 @@ function OverviewContent() {
     if (!confirmPetiCashTarget) return;
     setDeletingPetiCash(true);
     try {
-      const res = await fetch(`/api/peti-cash/${confirmPetiCashTarget.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to delete peti cash.");
-        return;
-      }
+      await petiCashApi.remove(confirmPetiCashTarget.id);
       toast.success("Peti cash deleted successfully.");
       await loadPetiCashEntries();
     } catch (error) {
-      console.error(error);
-      toast.error("Failed to delete peti cash.");
+      console.error("Failed to delete peti cash", error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete peti cash.");
     } finally {
       setDeletingPetiCash(false);
       setConfirmPetiCashOpen(false);
@@ -671,19 +637,13 @@ function OverviewContent() {
     setReportVideoIndex(null);
 
     try {
-      const res = await fetch(`/api/reports/${row.id}`);
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to load report details.");
-        setReportViewOpen(false);
-        return;
-      }
-
-      const data = await res.json();
+      const data = (await reportApi.get(row.id)) as AdminReportRow;
       setReportViewData(data);
     } catch (error) {
       console.error("Failed to load report details", error);
-      toast.error("Failed to load report details.");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to load report details.",
+      );
       setReportViewOpen(false);
     } finally {
       setReportViewLoading(false);
@@ -695,22 +655,10 @@ function OverviewContent() {
 
     setSavingId(row.id);
     try {
-      const res = await fetch(`/api/task-management/${row.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          comments: draft.comments,
-          status: draft.status,
-        }),
-      });
-
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to update task.");
-        return false;
-      }
-
-      const updated = await res.json();
+      const updated = (await taskManagementApi.patch(row.id, {
+        comments: draft.comments,
+        status: draft.status,
+      })) as TodoRow;
       setTodos((prev) =>
         prev.map((item) =>
           item.id === row.id
@@ -726,7 +674,7 @@ function OverviewContent() {
       return true;
     } catch (error) {
       console.error("Failed to update task", error);
-      toast.error("Failed to update task.");
+      toast.error(error instanceof Error ? error.message : "Failed to update task.");
       return false;
     } finally {
       setSavingId(null);
@@ -832,18 +780,12 @@ function OverviewContent() {
     if (!confirmTodoTarget) return;
     setDeletingTodo(true);
     try {
-      const endpoint = "/api/task-management";
-      const res = await fetch(`${endpoint}/${confirmTodoTarget.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to delete task.");
-        return;
-      }
+      await taskManagementApi.remove(confirmTodoTarget.id);
       await loadTodos();
       toast.success("Task deleted successfully.");
     } catch (error) {
-      console.error(error);
-      toast.error("Failed to delete task.");
+      console.error("Failed to delete task", error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete task.");
     } finally {
       setDeletingTodo(false);
       setConfirmTodoOpen(false);
@@ -860,18 +802,12 @@ function OverviewContent() {
     if (!confirmQueryTarget) return;
     setDeletingQuery(true);
     try {
-      const endpoint = "/api/query-management";
-      const res = await fetch(`${endpoint}/${confirmQueryTarget.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to delete query.");
-        return;
-      }
+      await queryManagementApi.remove(confirmQueryTarget.id);
       await loadQuery();
       toast.success("Query deleted successfully.");
     } catch (error) {
-      console.error(error);
-      toast.error("Failed to delete query.");
+      console.error("Failed to delete query", error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete query.");
     } finally {
       setDeletingQuery(false);
       setConfirmQueryOpen(false);
@@ -892,12 +828,7 @@ function OverviewContent() {
     if (!confirmReportTarget) return;
     setDeletingReport(true);
     try {
-      const res = await fetch(`/api/reports/${confirmReportTarget.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to delete reporting.");
-        return;
-      }
+      await reportApi.remove(confirmReportTarget.id);
       if (isAdmin) {
         await loadAdminReports();
       } else {
@@ -905,8 +836,10 @@ function OverviewContent() {
       }
       toast.success("Reporting deleted successfully.");
     } catch (error) {
-      console.error(error);
-      toast.error("Failed to delete reporting.");
+      console.error("Failed to delete reporting", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete reporting.",
+      );
     } finally {
       setDeletingReport(false);
       setConfirmReportOpen(false);
@@ -927,7 +860,7 @@ function OverviewContent() {
   const handleLogout = useCallback(async () => {
     setLogoutLoading(true);
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await requestJson({ path: "/api/auth/logout", method: "POST" });
       clearCachedSession();
       router.push("/login");
     } catch (error) {
@@ -968,26 +901,15 @@ function OverviewContent() {
 
     setChangePasswordSubmitting(true);
     try {
-      const res = await fetch("/api/auth/change-password", {
+      await requestJson({
+        path: "/api/auth/change-password",
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+        body: {
           currentPassword,
           newPassword,
           confirmPassword,
-        }),
+        },
       });
-
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setPasswordNotice({
-          type: "error",
-          message: payload.error || "Failed to change password.",
-        });
-        return;
-      }
 
       setPasswordNotice({
         type: "success",
@@ -998,7 +920,8 @@ function OverviewContent() {
       console.error("Failed to change password", error);
       setPasswordNotice({
         type: "error",
-        message: "Failed to change password.",
+        message:
+          error instanceof Error ? error.message : "Failed to change password.",
       });
     } finally {
       setChangePasswordSubmitting(false);

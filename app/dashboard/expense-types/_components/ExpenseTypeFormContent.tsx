@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import Loading from "../../../components/Loading";
 import Link from "next/link";
+import { expenseTypesApi } from "@/lib/api/dashboard/expense-types";
 
 type ExpenseTypeStatus = "ACTIVE" | "INACTIVE";
 
@@ -46,13 +47,7 @@ export default function ExpenseTypeFormContent({
       }
 
       try {
-        const res = await fetch(`/api/expense-types/${expenseTypeId}`);
-        if (!res.ok) {
-          setNote("Failed to load expense type.");
-          return;
-        }
-
-        const data = await res.json();
+        const data = await expenseTypesApi.get(expenseTypeId);
         setForm({
           name: data.name || "",
           status: data.status === "INACTIVE" ? "INACTIVE" : "ACTIVE",
@@ -83,24 +78,15 @@ export default function ExpenseTypeFormContent({
 
     try {
       setSaving(true);
-      const res = await fetch(
-        expenseTypeId ? `/api/expense-types/${expenseTypeId}` : "/api/expense-types",
-        {
-          method: expenseTypeId ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: form.name.trim(),
-            status: form.status,
-          }),
-        },
-      );
+      const payload = {
+        name: form.name.trim(),
+        status: form.status,
+      };
 
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        const errorMessage = payload.error || "Failed to save expense type.";
-        setNote(errorMessage);
-        toast.error(errorMessage);
-        return;
+      if (expenseTypeId) {
+        await expenseTypesApi.update(expenseTypeId, payload);
+      } else {
+        await expenseTypesApi.create(payload);
       }
 
       toast.success(
@@ -109,7 +95,10 @@ export default function ExpenseTypeFormContent({
       router.push("/dashboard/expense-types");
     } catch (error) {
       console.error("Failed to save expense type", error);
-      setNote("Failed to save expense type.");
+      const message =
+        error instanceof Error ? error.message : "Failed to save expense type.";
+      setNote(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }

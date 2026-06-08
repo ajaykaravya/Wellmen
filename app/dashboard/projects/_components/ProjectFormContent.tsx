@@ -8,6 +8,7 @@ import Loading from "../../../components/Loading";
 import CustomDatePicker from "../../../components/CustomDatePicker";
 import Link from "next/link";
 import { formatToDDMMYYYY, getTodayInputDate } from "@/lib/dateUtils";
+import { projectsApi } from "@/lib/api/dashboard/projects";
 
 type ProjectFormState = {
   name: string;
@@ -68,13 +69,7 @@ export default function ProjectFormContent({
       }
 
       try {
-        const res = await fetch(`/api/projects/${projectId}`);
-        if (!res.ok) {
-          setNote("Failed to load project.");
-          return;
-        }
-
-        const project = await res.json();
+        const project = await projectsApi.get(projectId);
         setForm({
           name: project.name || "",
           address: project.address || "",
@@ -123,42 +118,22 @@ export default function ProjectFormContent({
 
     try {
       setSaving(true);
-      const res = await fetch(
-        projectId ? `/api/projects/${projectId}` : "/api/projects",
-        {
-          method: projectId ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: form.name.trim(),
-            address: form.address.trim(),
-            city: form.city.trim(),
-            contactNumber: form.contactNumber.trim(),
-            email: form.email.trim(),
-            startDate: form.startDate,
-            endDate: form.endDate,
-            description: form.description.trim(),
-            status: isHospital ? "COMPLETED" : form.status,
-          }),
-        },
-      );
+      const payload = {
+        name: form.name.trim(),
+        address: form.address.trim(),
+        city: form.city.trim(),
+        contactNumber: form.contactNumber.trim(),
+        email: form.email.trim(),
+        startDate: form.startDate,
+        endDate: form.endDate,
+        description: form.description.trim(),
+        status: isHospital ? "COMPLETED" : form.status,
+      };
 
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        const errorMessage = payload.error || "Failed to save project.";
-        const backendErrors: Partial<Record<keyof ProjectFormState, string>> =
-          {};
-
-        if (errorMessage.toLowerCase().includes("end date")) {
-          backendErrors.endDate = errorMessage;
-        }
-        if (errorMessage.toLowerCase().includes("start date")) {
-          backendErrors.startDate = errorMessage;
-        }
-
-        setErrors((prev) => ({ ...prev, ...backendErrors }));
-        setNote(errorMessage);
-        toast.error(errorMessage);
-        return;
+      if (projectId) {
+        await projectsApi.update(projectId, payload);
+      } else {
+        await projectsApi.create(payload);
       }
 
       toast.success(
@@ -169,7 +144,9 @@ export default function ProjectFormContent({
       router.push(isHospital ? "/dashboard/hospitals" : "/dashboard/projects");
     } catch (error) {
       console.error("Failed to save project", error);
-      setNote("Failed to save project.");
+      const message = error instanceof Error ? error.message : "Failed to save project.";
+      setNote(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }

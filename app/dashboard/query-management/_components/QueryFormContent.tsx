@@ -17,13 +17,8 @@ import {
   ComboboxOptions,
 } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
-
-type ProjectOption = {
-  id: string;
-  name: string;
-  city?: string | null;
-  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "ON_HOLD";
-};
+import { createQueryManagementApi } from "@/lib/api/dashboard/query-management";
+import { loadProjectOptions, type ProjectOption } from "@/lib/api/dashboard/shared-options";
 
 type QueryCategory = "REMARKS" | "URGENCY" | "DECISION_PENDING" | "";
 type QueryStatus = "PENDING" | "COMPLETED";
@@ -78,6 +73,7 @@ export default function QueryFormContent({
   submitLabel,
 }: QueryFormContentProps) {
   const router = useRouter();
+  const api = useMemo(() => createQueryManagementApi(apiBase), [apiBase]);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -108,18 +104,15 @@ export default function QueryFormContent({
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [projectsRes, queryRes] = await Promise.all([
-          fetch("/api/projects/options"),
-          queryId ? fetch(`${apiBase}/${queryId}`) : Promise.resolve(null),
+        const [projects, query] = await Promise.all([
+          loadProjectOptions(),
+          queryId ? api.get(queryId) : Promise.resolve(null),
         ]);
 
-        if (projectsRes.ok) {
-          const data = await projectsRes.json();
-          setProjects(Array.isArray(data) ? data : []);
-        }
+        setProjects(projects);
 
-        if (queryRes?.ok) {
-          const data = (await queryRes.json()) as QueryPayload;
+        if (query) {
+          const data = query as QueryPayload;
           setForm({
             projectId: data.projectId || "",
             category: data.category || "",
@@ -133,19 +126,17 @@ export default function QueryFormContent({
           setExistingVideoUrls(
             Array.isArray(data.videoUrls) ? data.videoUrls : [],
           );
-        } else if (queryRes && !queryRes.ok) {
-          setNote("Failed to load query.");
         }
       } catch (error) {
         console.error("Failed to load query data", error);
-        setNote("Failed to load query.");
+        setNote(error instanceof Error ? error.message : "Failed to load query.");
       } finally {
         setLoading(false);
       }
     };
 
     loadData();
-  }, [apiBase, queryId]);
+  }, [api, queryId]);
 
   useEffect(() => {
     const urls = imageFiles.map((file) => URL.createObjectURL(file));
@@ -197,7 +188,6 @@ export default function QueryFormContent({
     return city ? `${name} - ${city}` : name;
   };
 
-  const formatQueryLabel = (value: string) => value.replaceAll("_", " ");
   const setFieldValue = <K extends keyof QueryFormState>(
     field: K,
     value: QueryFormState[K],
@@ -348,24 +338,20 @@ export default function QueryFormContent({
         payload.append("existingVideoUrls", JSON.stringify(existingVideoUrls));
       }
 
-      const res = await fetch(queryId ? `${apiBase}/${queryId}` : apiBase, {
-        method: queryId ? "PUT" : "POST",
-        body: payload,
-      });
-
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        const errorMessage = payload.error || "Failed to save query.";
-        setNote(errorMessage);
-        toast.error(errorMessage);
-        return;
+      if (queryId) {
+        await api.update(queryId, payload);
+      } else {
+        await api.create(payload);
       }
 
       toast.success(`Query ${queryId ? "updated" : "created"} successfully.`);
       router.push(returnPath);
     } catch (error) {
       console.error("Failed to save query", error);
-      setNote("Failed to save query.");
+      const message =
+        error instanceof Error ? error.message : "Failed to save query.";
+      setNote(message);
+      toast.error(message);
     } finally {
       setSaving(false);
       setCompressing(false);

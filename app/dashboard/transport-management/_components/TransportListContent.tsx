@@ -23,6 +23,7 @@ import AppliedFilterSummary from "../../../components/AppliedFilterSummary";
 import ConfirmDialog from "../../../components/ConfirmDialog";
 import CustomDatePicker from "../../../components/CustomDatePicker";
 import ListingFilterDialog from "../../../components/ListingFilterDialog";
+import { transportManagementApi } from "@/lib/api/dashboard/transport-management";
 import {
   CNG_STATUS_OPTIONS,
   COURIER_STATUS_OPTIONS,
@@ -579,42 +580,27 @@ function TransportListView() {
   const loadRows = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: String(pageIndex + 1),
-        pageSize: String(pageSize),
+      const data = await transportManagementApi.list({
+        page: pageIndex + 1,
+        pageSize,
         transportType: transportTypeFilter,
+        q: debouncedQuery.trim() || undefined,
+        status: statusFilter || undefined,
+        paymentMode: paymentModeFilter || undefined,
+        fromDate: fromDate || undefined,
+        toDate: toDate || undefined,
+        locationType: locationTypeFilter || undefined,
+        loadType: loadTypeFilter || undefined,
+        tripType: tripTypeFilter || undefined,
+        vehicleType: vehicleTypeFilter || undefined,
       });
-      if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
-      if (statusFilter) params.set("status", statusFilter);
-      if (paymentModeFilter) params.set("paymentMode", paymentModeFilter);
-      if (fromDate) params.set("fromDate", fromDate);
-      if (toDate) params.set("toDate", toDate);
-      if (locationTypeFilter) {
-        params.set("locationType", locationTypeFilter);
-      }
-      if (loadTypeFilter) {
-        params.set("loadType", loadTypeFilter);
-      }
-      if (tripTypeFilter) {
-        params.set("tripType", tripTypeFilter);
-      }
-      if (vehicleTypeFilter) {
-        params.set("vehicleType", vehicleTypeFilter);
-      }
-
-      const res = await fetch(`/api/transport-management?${params.toString()}`);
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to load transport logs.");
-        return;
-      }
-
-      const data = await res.json();
       setRows(Array.isArray(data?.data) ? data.data : []);
       setTotal(typeof data?.total === "number" ? data.total : 0);
     } catch (error) {
       console.error("Failed to load transport logs", error);
-      toast.error("Failed to load transport logs.");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to load transport logs.",
+      );
     } finally {
       setLoading(false);
     }
@@ -671,19 +657,15 @@ function TransportListView() {
     setViewData(null);
 
     try {
-      const res = await fetch(`/api/transport-management/${row.id}`);
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to load transport log details.");
-        setViewOpen(false);
-        return;
-      }
-
-      const data = await res.json();
-      setViewData(data);
+      const data = await transportManagementApi.get(row.id);
+      setViewData(data as TransportRow);
     } catch (error) {
       console.error("Failed to load transport log details", error);
-      toast.error("Failed to load transport log details.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to load transport log details.",
+      );
       setViewOpen(false);
     } finally {
       setViewLoading(false);
@@ -699,19 +681,14 @@ function TransportListView() {
     if (!confirmTarget) return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/transport-management/${confirmTarget.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to delete transport log.");
-        return;
-      }
+      await transportManagementApi.remove(confirmTarget.id);
       await loadRows();
       toast.success("Transport log deleted successfully.");
     } catch (error) {
       console.error("Failed to delete transport log", error);
-      toast.error("Failed to delete transport log.");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete transport log.",
+      );
     } finally {
       setDeleting(false);
       setConfirmOpen(false);

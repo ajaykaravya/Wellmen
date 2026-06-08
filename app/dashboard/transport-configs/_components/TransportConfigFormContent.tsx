@@ -8,6 +8,11 @@ import { toast } from "react-toastify";
 import Loading from "../../../components/Loading";
 import DashboardShell from "../../_components/DashboardShell";
 import { ButtonGroup } from "../../_components/ButtonGroup";
+import { transportConfigsApi } from "@/lib/api/dashboard/transport-configs";
+import type {
+  TransportConfigType,
+  TransportType,
+} from "@/lib/transport-management";
 import {
   FLOOR_OPTIONS,
   LOAD_TYPE_OPTIONS,
@@ -17,8 +22,8 @@ import {
 } from "@/lib/transport-management";
 
 type TransportConfigFormState = {
-  transportType: string;
-  configType: string;
+  transportType: TransportType;
+  configType: TransportConfigType;
   floor: string;
   loadType: string;
   minKm: string;
@@ -42,9 +47,12 @@ const transportTypeOptions = TRANSPORT_TYPES.filter((option) =>
   label: option.label,
 }));
 
-const DEFAULT_TRANSPORT_TYPE = transportTypeOptions[0]?.key ?? "BOLERO_DELIVERY";
+const DEFAULT_TRANSPORT_TYPE: TransportType =
+  transportTypeOptions[0]?.key ?? "BOLERO_DELIVERY";
 
-const CONFIG_TYPES_BY_TRANSPORT: Record<string, Array<{ key: string; label: string }>> = {
+const CONFIG_TYPES_BY_TRANSPORT: Partial<
+  Record<TransportType, Array<{ key: TransportConfigType; label: string }>>
+> = {
   BOLERO_DELIVERY: [
     { key: "DRIVER_WAGE_SLAB", label: "Driver Wage Slab" },
     { key: "FLOOR_RENT", label: "Floor Rent" },
@@ -60,10 +68,12 @@ const CONFIG_TYPES_BY_TRANSPORT: Record<string, Array<{ key: string; label: stri
   CNG_RICKSHAW: [{ key: "CNG_TRIP_SLAB", label: "CNG Trip Slab" }],
 };
 
-const getDefaultConfigType = (transportType: string) =>
+const getDefaultConfigType = (transportType: TransportType): TransportConfigType =>
   CONFIG_TYPES_BY_TRANSPORT[transportType]?.[0]?.key ?? "FLOOR_RENT";
 
-const createEmptyForm = (transportType = "BOLERO_DELIVERY"): TransportConfigFormState => ({
+const createEmptyForm = (
+  transportType: TransportType = "BOLERO_DELIVERY",
+): TransportConfigFormState => ({
   transportType,
   configType: getDefaultConfigType(transportType),
   floor: "",
@@ -80,10 +90,13 @@ const formatMoney = (value: string) =>
     maximumFractionDigits: 2,
   });
 
-const isCourierRateConfig = (configType: string) =>
+const isCourierRateConfig = (configType: TransportConfigType) =>
   configType === "COURIER_WEIGHT_RATE" || configType === "COURIER_COVER_RATE";
 
-const clearRuleFields = (next: TransportConfigFormState, configType: string) => {
+const clearRuleFields = (
+  next: TransportConfigFormState,
+  configType: TransportConfigType,
+) => {
   next.floor = "";
   next.loadType = "";
   next.minKm = "";
@@ -115,7 +128,7 @@ export default function TransportConfigFormContent({
   const initialType = transportTypeOptions.some(
     (option) => option.key === initialTransportType,
   )
-    ? initialTransportType
+    ? (initialTransportType as TransportType)
     : DEFAULT_TRANSPORT_TYPE;
   const [form, setForm] = useState<TransportConfigFormState>(
     createEmptyForm(initialType),
@@ -135,13 +148,7 @@ export default function TransportConfigFormContent({
       }
 
       try {
-        const res = await fetch(`/api/transport-configs/${transportConfigId}`);
-        if (!res.ok) {
-          setNote("Failed to load transport config.");
-          return;
-        }
-
-        const data = await res.json();
+        const data = await transportConfigsApi.get(transportConfigId);
         const transportType = data.transportType || "BOLERO_DELIVERY";
         setForm({
           transportType,
@@ -174,12 +181,9 @@ export default function TransportConfigFormContent({
 
     const loadCourierRate = async () => {
       try {
-        const res = await fetch(
-          `/api/transport-configs?transportType=${form.transportType}`,
-        );
-        if (!res.ok) return;
-
-        const data = await res.json();
+        const data = await transportConfigsApi.list({
+          transportType: form.transportType,
+        });
         const existingConfig = Array.isArray(data?.data)
           ? data.data.find(
             (item: { configType?: string; rate?: number | string }) =>
@@ -229,7 +233,7 @@ export default function TransportConfigFormContent({
     [configTypeOptions, form.configType],
   );
 
-  const updateTransportType = (value: string) => {
+  const updateTransportType = (value: TransportType) => {
     setForm((prev) => {
       const nextType = value;
       const nextConfigType = getDefaultConfigType(nextType);
@@ -246,7 +250,7 @@ export default function TransportConfigFormContent({
     setErrors({});
   };
 
-  const updateConfigType = (value: string) => {
+  const updateConfigType = (value: TransportConfigType) => {
     setForm((prev) =>
       clearRuleFields(
         {
@@ -298,32 +302,21 @@ export default function TransportConfigFormContent({
 
     try {
       setSaving(true);
-      const res = await fetch(
-        transportConfigId
-          ? `/api/transport-configs/${transportConfigId}`
-          : "/api/transport-configs",
-        {
-          method: transportConfigId ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            transportType: form.transportType,
-            configType: form.configType,
-            floor: form.floor,
-            loadType: form.loadType,
-            minKm: form.minKm,
-            maxKm: form.maxKm,
-            tripType: form.tripType,
-            rate: form.rate,
-          }),
-        },
-      );
+      const payload = {
+        transportType: form.transportType,
+        configType: form.configType,
+        floor: form.floor,
+        loadType: form.loadType,
+        minKm: form.minKm,
+        maxKm: form.maxKm,
+        tripType: form.tripType,
+        rate: form.rate,
+      };
 
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        const errorMessage = payload.error || "Failed to save transport config.";
-        setNote(errorMessage);
-        toast.error(errorMessage);
-        return;
+      if (transportConfigId) {
+        await transportConfigsApi.update(transportConfigId, payload);
+      } else {
+        await transportConfigsApi.create(payload);
       }
 
       toast.success(
@@ -336,7 +329,12 @@ export default function TransportConfigFormContent({
       }
     } catch (error) {
       console.error("Failed to save transport config", error);
-      setNote("Failed to save transport config.");
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to save transport config.";
+      setNote(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }

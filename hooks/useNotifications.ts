@@ -23,16 +23,11 @@ export function useNotifications(adminId: string) {
     const previousIdsRef = useRef(new Set<string>());
     const lastFetchedAtRef = useRef(0);
     const inFlightRef = useRef(false);
-    const pollingTimerRef = useRef<number | null>(null);
 
     useEffect(() => {
         previousIdsRef.current.clear();
         hasHydratedRef.current = false;
         lastFetchedAtRef.current = 0;
-        if (pollingTimerRef.current) {
-            window.clearInterval(pollingTimerRef.current);
-            pollingTimerRef.current = null;
-        }
 
         if (!adminId) {
             setNotifications([]);
@@ -104,10 +99,6 @@ export function useNotifications(adminId: string) {
 
         fetchNotifications(true);
 
-        pollingTimerRef.current = window.setInterval(() => {
-            void fetchNotifications();
-        }, 15_000);
-
         const refreshOnFocus = () => {
             if (document.visibilityState === "visible") {
                 fetchNotifications(true);
@@ -124,10 +115,6 @@ export function useNotifications(adminId: string) {
 
         return () => {
             isMounted = false;
-            if (pollingTimerRef.current) {
-                window.clearInterval(pollingTimerRef.current);
-                pollingTimerRef.current = null;
-            }
             window.removeEventListener("focus", refreshOnFocus);
             document.removeEventListener("visibilitychange", refreshOnFocus);
             window.removeEventListener("wellmen:notifications-refresh", refreshOnDemand);
