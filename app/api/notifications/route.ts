@@ -3,6 +3,8 @@ import { requireAuth } from "@/lib/rbac";
 import { firestore } from "@/lib/firebase-admin";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET(req: Request) {
   const gate = await requireAuth(req);
@@ -36,12 +38,24 @@ export async function GET(req: Request) {
       ...doc.data(),
     }));
 
-    return NextResponse.json({ notifications });
+    return NextResponse.json(
+      { notifications },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, max-age=0, must-revalidate",
+        },
+      },
+    );
   } catch (error) {
     console.error("Error fetching notifications:", error);
     return NextResponse.json(
       { error: "Failed to fetch notifications" },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          "Cache-Control": "no-store, no-cache, max-age=0, must-revalidate",
+        },
+      },
     );
   }
 }
