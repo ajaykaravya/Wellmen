@@ -10,6 +10,17 @@ import CustomDatePicker from "../../../components/CustomDatePicker";
 import { ButtonGroup } from "../../_components/ButtonGroup";
 import { UserCardGroup } from "../../_components/UserCardGroup";
 import { formatToDDMMYYYY, getTodayInputDate } from "@/lib/dateUtils";
+import { incomeApi } from "@/lib/api/dashboard/income";
+import {
+  loadCompanyOptions,
+  loadIncomeTypeOptions,
+  loadProjectOptions,
+  loadUserOptions,
+  type CompanyOption,
+  type IncomeTypeOption,
+  type ProjectOption,
+  type UserOption,
+} from "@/lib/api/dashboard/shared-options";
 import {
   Combobox,
   ComboboxButton,
@@ -20,30 +31,6 @@ import {
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
 
 type PaymentMode = "CASH" | "BANK" | "CHEQUE" | "UPI" | "NEFT_RTGS";
-
-type ProjectOption = {
-  id: string;
-  name: string;
-  city?: string | null;
-};
-
-type CompanyOption = {
-  id: string;
-  name: string;
-};
-
-type IncomeTypeOption = {
-  id: string;
-  name: string;
-  status: "ACTIVE" | "INACTIVE";
-};
-
-type UserOption = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  role?: string | null;
-};
 
 type IncomeFormState = {
   incomeTypeId: string;
@@ -129,60 +116,23 @@ export default function IncomeFormContent({ incomeId }: IncomeFormContentProps) 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [projectsRes, companiesRes, incomeTypesRes, usersRes, incomeRes] =
-          await Promise.all([
-            fetch("/api/projects/options"),
-            fetch("/api/companies/options"),
-            fetch("/api/income-types/options"),
-            fetch("/api/users/options"),
-            incomeId ? fetch(`/api/income/${incomeId}`) : Promise.resolve(null),
-          ]);
+        const [projects, companies, incomeTypes, users, income] = await Promise.all([
+          loadProjectOptions(),
+          loadCompanyOptions(),
+          loadIncomeTypeOptions(),
+          loadUserOptions(),
+          incomeId ? incomeApi.get(incomeId) : Promise.resolve(null),
+        ]);
 
-        if (projectsRes.ok) {
-          const data = await projectsRes.json();
-          setProjects(Array.isArray(data) ? data : []);
-        } else {
-          throw new Error("Failed to load projects");
-        }
+        setProjects(projects);
+        setCompanies(companies);
+        setIncomeTypes(
+          incomeTypes.filter((incomeType) => incomeType.status === "ACTIVE"),
+        );
+        setUsers(users.filter((user) => isPrivilegedUser(user)));
 
-        if (companiesRes.ok) {
-          const data = await companiesRes.json();
-          setCompanies(Array.isArray(data) ? data : []);
-        } else {
-          throw new Error("Failed to load companies");
-        }
-
-        if (incomeTypesRes.ok) {
-          const data = await incomeTypesRes.json();
-          setIncomeTypes(
-            Array.isArray(data)
-              ? data.filter(
-                (incomeType: IncomeTypeOption) => incomeType.status === "ACTIVE",
-              )
-              : [],
-          );
-        } else {
-          throw new Error("Failed to load income types");
-        }
-
-        if (usersRes.ok) {
-          const data = await usersRes.json();
-          setUsers(
-            Array.isArray(data)
-              ? data.filter((user: UserOption) => isPrivilegedUser(user))
-              : [],
-          );
-        } else {
-          throw new Error("Failed to load users");
-        }
-
-        if (incomeRes) {
-          if (!incomeRes.ok) {
-            setNote("Failed to load income.");
-            return;
-          }
-
-          const data = (await incomeRes.json()) as IncomePayload;
+        if (income) {
+          const data = income as IncomePayload;
           setForm({
             incomeTypeId: data.incomeTypeId || "",
             projectId: data.projectId || "",
@@ -209,7 +159,9 @@ export default function IncomeFormContent({ incomeId }: IncomeFormContentProps) 
         }
       } catch (error) {
         console.error("Failed to load income data", error);
-        setNote("Failed to load income data.");
+        setNote(
+          error instanceof Error ? error.message : "Failed to load income data.",
+        );
       } finally {
         setLoading(false);
       }
@@ -265,34 +217,31 @@ export default function IncomeFormContent({ incomeId }: IncomeFormContentProps) 
 
     try {
       setSaving(true);
-      const res = await fetch(incomeId ? `/api/income/${incomeId}` : "/api/income", {
-        method: incomeId ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          incomeTypeId: form.incomeTypeId,
-          projectId: form.projectId,
-          incomeCompanyId: form.incomeCompanyId,
-          receivedById: form.receivedById,
-          amount: form.amount,
-          paymentMode: form.paymentMode,
-          date: form.date,
-          remark: form.remark,
-        }),
-      });
+      const payload = {
+        incomeTypeId: form.incomeTypeId,
+        projectId: form.projectId,
+        incomeCompanyId: form.incomeCompanyId,
+        receivedById: form.receivedById,
+        amount: form.amount,
+        paymentMode: form.paymentMode,
+        date: form.date,
+        remark: form.remark,
+      };
 
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        const errorMessage = payload.error || "Failed to save income.";
-        setNote(errorMessage);
-        toast.error(errorMessage);
-        return;
+      if (incomeId) {
+        await incomeApi.update(incomeId, payload);
+      } else {
+        await incomeApi.create(payload);
       }
 
       toast.success(`Income ${incomeId ? "updated" : "created"} successfully.`);
       router.push("/dashboard/income");
     } catch (error) {
       console.error("Failed to save income", error);
-      setNote("Failed to save income.");
+      const message =
+        error instanceof Error ? error.message : "Failed to save income.";
+      setNote(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }

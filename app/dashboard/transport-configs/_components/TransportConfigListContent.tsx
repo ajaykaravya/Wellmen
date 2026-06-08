@@ -20,6 +20,7 @@ import DashboardShell from "../../_components/DashboardShell";
 import ConfirmDialog from "../../../components/ConfirmDialog";
 import { ButtonGroup } from "../../_components/ButtonGroup";
 import TransportConfigFormContent from "./TransportConfigFormContent";
+import { transportConfigsApi } from "@/lib/api/dashboard/transport-configs";
 import {
   getTransportConfigTypeLabel,
   getTransportTypeLabel,
@@ -108,20 +109,15 @@ export default function TransportConfigListContent() {
   const loadRows = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(
-        `/api/transport-configs?transportType=${selectedTransportType}`,
-      );
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to load transport configs.");
-        return;
-      }
-
-      const data = await res.json();
+      const data = await transportConfigsApi.list({
+        transportType: selectedTransportType,
+      });
       setRows(Array.isArray(data?.data) ? data.data : []);
     } catch (error) {
       console.error("Failed to load transport configs", error);
-      toast.error("Failed to load transport configs.");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to load transport configs.",
+      );
     } finally {
       setLoading(false);
     }
@@ -172,19 +168,14 @@ export default function TransportConfigListContent() {
     if (!confirmTarget) return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/transport-configs/${confirmTarget.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to delete transport config.");
-        return;
-      }
+      await transportConfigsApi.remove(confirmTarget.id);
       await loadRows();
       toast.success("Transport config deleted successfully.");
     } catch (error) {
       console.error("Failed to delete transport config", error);
-      toast.error("Failed to delete transport config.");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete transport config.",
+      );
     } finally {
       setDeleting(false);
       setConfirmOpen(false);

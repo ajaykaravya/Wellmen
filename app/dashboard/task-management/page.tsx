@@ -24,21 +24,15 @@ import {
   FaSpinner,
   FaFilter,
 } from "react-icons/fa";
+import { taskManagementApi } from "@/lib/api/dashboard/task-management";
+import {
+  loadCategoryOptions,
+  loadUserOptions,
+  type CategoryOption,
+  type UserOption,
+} from "@/lib/api/dashboard/shared-options";
 
 type TodoStatus = "TODO" | "IN_PROGRESS" | "ON_HOLD" | "COMPLETED";
-
-type UserOption = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  role?: string | null;
-};
-
-type CategoryOption = {
-  id: string;
-  name: string;
-  category: string;
-};
 
 type TodoRow = {
   id: string;
@@ -252,10 +246,8 @@ function TodoListContent() {
   const loadAssignees = useCallback(async () => {
     if (!isAdmin) return;
     try {
-      const res = await fetch("/api/users/options");
-      if (!res.ok) return;
-      const data = await res.json();
-      setAssignees(Array.isArray(data) ? data : []);
+      const data = await loadUserOptions();
+      setAssignees(data);
     } catch (error) {
       console.error("Failed to load assignees", error);
     }
@@ -272,18 +264,7 @@ function TodoListContent() {
           (Object.entries(categoryApiMap) as Array<
             [TodoRow["type"], string]
           >).map(async ([type, endpoint]) => {
-            const res = await fetch(endpoint);
-            if (!res.ok) {
-              return [type, [] as CategoryOption[]] as const;
-            }
-
-            const data = await res.json();
-            const nextCategories = Array.isArray(data)
-              ? data
-              : Array.isArray(data?.data)
-                ? data.data
-                : [];
-
+            const nextCategories = await loadCategoryOptions(endpoint);
             return [type, nextCategories as CategoryOption[]] as const;
           }),
         );
@@ -305,24 +286,17 @@ function TodoListContent() {
   const loadTodos = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: String(pageIndex + 1),
-        pageSize: String(pageSize),
-      });
-
-      if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
-      if (statusFilter) params.set("status", statusFilter);
-      if (taskTypeFilter) params.set("type", taskTypeFilter);
-      if (categoryFilter.trim()) params.set("categoryId", categoryFilter.trim());
-      if (fromDate) params.set("fromDate", fromDate);
-      if (toDate) params.set("toDate", toDate);
-      if (isAdmin && assigneeFilter) params.set("assigneeId", assigneeFilter);
-
-      const endpoint = "/api/task-management";
-      const res = await fetch(`${endpoint}?${params.toString()}`);
-      if (!res.ok) return;
-
-      const data = await res.json();
+      const data = (await taskManagementApi.list({
+        page: pageIndex + 1,
+        pageSize,
+        q: debouncedQuery.trim() || undefined,
+        status: statusFilter || undefined,
+        type: taskTypeFilter || undefined,
+        categoryId: categoryFilter.trim() || undefined,
+        fromDate: fromDate || undefined,
+        toDate: toDate || undefined,
+        assigneeId: isAdmin ? assigneeFilter || undefined : undefined,
+      })) as { data: TodoRow[]; total: number };
       setTodos(Array.isArray(data?.data) ? data.data : []);
       setTotal(typeof data?.total === "number" ? data.total : 0);
     } catch (error) {
@@ -378,22 +352,10 @@ function TodoListContent() {
     async (row: TodoRow, draft: TodoUpdateDraft) => {
       setSavingId(row.id);
       try {
-        const res = await fetch(`/api/task-management/${row.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            comments: draft.comments,
-            status: draft.status,
-          }),
-        });
-
-        if (!res.ok) {
-          const payload = await res.json().catch(() => ({}));
-          toast.error(payload.error || "Failed to update task.");
-          return false;
-        }
-
-        const updated = await res.json();
+        const updated = (await taskManagementApi.patch(row.id, {
+          comments: draft.comments,
+          status: draft.status,
+        })) as TodoRow;
         setTodos((prev) =>
           prev.map((item) =>
             item.id === row.id
@@ -410,7 +372,7 @@ function TodoListContent() {
         return true;
       } catch (error) {
         console.error("Failed to update task", error);
-        toast.error("Failed to update task.");
+        toast.error(error instanceof Error ? error.message : "Failed to update task.");
         return false;
       } finally {
         setSavingId(null);
@@ -441,22 +403,13 @@ function TodoListContent() {
     if (!confirmTarget) return;
     setDeleting(true);
     try {
-      const endpoint = "/api/task-management";
-      const res = await fetch(`${endpoint}/${confirmTarget.id}`, {
-        method: "DELETE",
-      });
-
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to delete task.");
-        return;
-      }
+      await taskManagementApi.remove(confirmTarget.id);
 
       await loadTodos();
       toast.success("Task deleted successfully.");
     } catch (error) {
       console.error("Failed to delete task", error);
-      toast.error("Failed to delete task.");
+      toast.error(error instanceof Error ? error.message : "Failed to delete task.");
     } finally {
       setDeleting(false);
       setConfirmOpen(false);

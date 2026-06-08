@@ -40,20 +40,13 @@ import Link from "next/link";
 import { ReportingCardList } from "../_components/ReportingCardList";
 import { ReportDetailsDialog } from "../_components/ReportDetailsDialog";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
-
-type ProjectOption = {
-  id: string;
-  name: string;
-  status: string;
-  city?: string;
-};
-
-type UserOption = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  role?: string | null;
-};
+import { reportApi } from "@/lib/api/dashboard/reports";
+import {
+  loadProjectOptions,
+  loadUserOptions,
+  type ProjectOption,
+  type UserOption,
+} from "@/lib/api/dashboard/shared-options";
 
 type ReportRow = {
   id: string;
@@ -124,10 +117,8 @@ function ReportingListContent() {
 
   const loadProjects = useCallback(async () => {
     try {
-      const res = await fetch("/api/projects/options");
-      if (!res.ok) return;
-      const data = await res.json();
-      setProjects(Array.isArray(data) ? data : []);
+      const data = await loadProjectOptions();
+      setProjects(data);
     } catch (error) {
       console.error("Failed to load project options", error);
     }
@@ -137,11 +128,8 @@ function ReportingListContent() {
     if (!isAdmin) return;
 
     try {
-      const res = await fetch("/api/users/options");
-      if (!res.ok) return;
-      const data = await res.json();
-      const rows = Array.isArray(data) ? data.filter(isSelectableEmployee) : [];
-      setEmployees(rows);
+      const data = await loadUserOptions();
+      setEmployees(data.filter(isSelectableEmployee));
     } catch (error) {
       console.error("Failed to load employees", error);
     }
@@ -155,21 +143,15 @@ function ReportingListContent() {
   const loadReports = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: String(pageIndex + 1),
-        pageSize: String(pageSize),
+      const data = await reportApi.list({
+        page: pageIndex + 1,
+        pageSize,
+        q: debouncedQuery.trim() || undefined,
+        projectId: projectFilter?.id,
+        employeeId: isAdmin ? employeeFilter || undefined : undefined,
+        fromDate: fromDate || undefined,
+        toDate: toDate || undefined,
       });
-
-      if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
-      if (projectFilter?.id) params.set("projectId", projectFilter.id);
-      if (isAdmin && employeeFilter) params.set("employeeId", employeeFilter);
-      if (fromDate) params.set("fromDate", fromDate);
-      if (toDate) params.set("toDate", toDate);
-
-      const res = await fetch(`/api/reports?${params.toString()}`);
-      if (!res.ok) return;
-
-      const data = await res.json();
       setReports(Array.isArray(data?.data) ? data.data : []);
       setTotal(typeof data?.total === "number" ? data.total : 0);
     } catch (error) {
@@ -282,19 +264,13 @@ function ReportingListContent() {
     setViewVideoIndex(null);
 
     try {
-      const res = await fetch(`/api/reports/${row.id}`);
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to load report details.");
-        setViewOpen(false);
-        return;
-      }
-
-      const data = await res.json();
-      setViewData(data);
+      const data = await reportApi.get(row.id);
+      setViewData(data as ReportRow);
     } catch (error) {
       console.error("Failed to load report details", error);
-      toast.error("Failed to load report details.");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to load report details.",
+      );
       setViewOpen(false);
     } finally {
       setViewLoading(false);
@@ -373,21 +349,14 @@ function ReportingListContent() {
     setDeleting(true);
 
     try {
-      const res = await fetch(`/api/reports/${confirmTarget.id}`, {
-        method: "DELETE",
-      });
-
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to delete reporting.");
-        return;
-      }
-
+      await reportApi.remove(confirmTarget.id);
       await loadReports();
       toast.success("Reporting deleted successfully.");
     } catch (error) {
       console.error("Failed to delete reporting", error);
-      toast.error("Failed to delete reporting.");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete reporting.",
+      );
     } finally {
       setDeleting(false);
       setConfirmOpen(false);

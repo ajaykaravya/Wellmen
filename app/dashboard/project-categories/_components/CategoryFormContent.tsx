@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import Loading from "../../../components/Loading";
 import Link from "next/link";
+import { categoriesApi } from "@/lib/api/dashboard/categories";
 
 type CategoryFormState = {
   category: string;
@@ -35,12 +36,7 @@ export default function CategoryFormContent({ categoryId }: CategoryFormContentP
       }
 
       try {
-        const res = await fetch(`/api/categories/${categoryId}`);
-        if (!res.ok) {
-          setNote("Failed to load category.");
-          return;
-        }
-        const data = await res.json();
+        const data = await categoriesApi.get(categoryId);
         setForm({
           category: data.category || "",
           name: data.name || "",
@@ -71,28 +67,24 @@ export default function CategoryFormContent({ categoryId }: CategoryFormContentP
 
     try {
       setSaving(true);
-      const res = await fetch(categoryId ? `/api/categories/${categoryId}` : "/api/categories", {
-        method: categoryId ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          category: form.category.trim() || "PROJECT_WORK",
-          name: form.name.trim(),
-        }),
-      });
+      const payload = {
+        category: "PROJECT_WORK" as const,
+        name: form.name.trim(),
+      };
 
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        const errorMessage = payload.error || "Failed to save category.";
-        setNote(errorMessage);
-        toast.error(errorMessage);
-        return;
+      if (categoryId) {
+        await categoriesApi.update(categoryId, payload);
+      } else {
+        await categoriesApi.create(payload);
       }
 
       toast.success(`Category ${categoryId ? "updated" : "created"} successfully.`);
       router.push("/dashboard/project-categories");
     } catch (error) {
       console.error("Failed to save category", error);
-      setNote("Failed to save category.");
+      const message = error instanceof Error ? error.message : "Failed to save category.";
+      setNote(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }

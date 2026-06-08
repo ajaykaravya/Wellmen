@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import Loading from "../../../components/Loading";
 import Link from "next/link";
+import { officeCategoriesApi } from "@/lib/api/dashboard/office-categories";
 
 type OfficeCategoryFormState = {
   name: string;
@@ -33,13 +34,7 @@ export default function OfficeCategoryFormContent({ categoryId }: OfficeCategory
       }
 
       try {
-        const res = await fetch(`/api/office-categories/${categoryId}`);
-        if (!res.ok) {
-          setNote("Failed to load office category.");
-          return;
-        }
-
-        const data = await res.json();
+        const data = await officeCategoriesApi.get(categoryId);
         setForm({ name: data.name || "" });
       } catch (error) {
         console.error("Failed to load office category", error);
@@ -66,25 +61,21 @@ export default function OfficeCategoryFormContent({ categoryId }: OfficeCategory
 
     try {
       setSaving(true);
-      const res = await fetch(categoryId ? `/api/office-categories/${categoryId}` : "/api/office-categories", {
-        method: categoryId ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category: "OFFICE_WORK", name: form.name.trim() }),
-      });
-
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        const errorMessage = payload.error || "Failed to save office category.";
-        setNote(errorMessage);
-        toast.error(errorMessage);
-        return;
+      const payload = { name: form.name.trim() };
+      if (categoryId) {
+        await officeCategoriesApi.update(categoryId, payload);
+      } else {
+        await officeCategoriesApi.create(payload);
       }
 
       toast.success(`Office category ${categoryId ? "updated" : "created"} successfully.`);
       router.push("/dashboard/office-categories");
     } catch (error) {
       console.error("Failed to save office category", error);
-      setNote("Failed to save office category.");
+      const message =
+        error instanceof Error ? error.message : "Failed to save office category.";
+      setNote(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }

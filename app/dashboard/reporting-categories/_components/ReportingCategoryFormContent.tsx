@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import Loading from "../../../components/Loading";
 import Link from "next/link";
+import { reportingCategoriesApi } from "@/lib/api/dashboard/reporting-categories";
 
 type ReportingCategoryFormState = {
   name: string;
@@ -37,13 +38,7 @@ export default function ReportingCategoryFormContent({
       }
 
       try {
-        const res = await fetch(`/api/reporting-categories/${categoryId}`);
-        if (!res.ok) {
-          setNote("Failed to load reporting category.");
-          return;
-        }
-
-        const data = await res.json();
+        const data = await reportingCategoriesApi.get(categoryId);
         setForm({ name: data.name || "" });
       } catch (error) {
         console.error("Failed to load reporting category", error);
@@ -71,27 +66,15 @@ export default function ReportingCategoryFormContent({
 
     try {
       setSaving(true);
-      const res = await fetch(
-        categoryId
-          ? `/api/reporting-categories/${categoryId}`
-          : "/api/reporting-categories",
-        {
-          method: categoryId ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            category: "REPORTING_WORK",
-            name: form.name.trim(),
-          }),
-        },
-      );
+      const payload = {
+        category: "REPORTING_WORK" as const,
+        name: form.name.trim(),
+      };
 
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        const errorMessage =
-          payload.error || "Failed to save reporting category.";
-        setNote(errorMessage);
-        toast.error(errorMessage);
-        return;
+      if (categoryId) {
+        await reportingCategoriesApi.update(categoryId, payload);
+      } else {
+        await reportingCategoriesApi.create(payload);
       }
 
       toast.success(
@@ -100,7 +83,10 @@ export default function ReportingCategoryFormContent({
       router.push("/dashboard/reporting-categories");
     } catch (error) {
       console.error("Failed to save reporting category", error);
-      setNote("Failed to save reporting category.");
+      const message =
+        error instanceof Error ? error.message : "Failed to save reporting category.";
+      setNote(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }

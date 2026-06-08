@@ -11,6 +11,7 @@ import ConfirmDialog from "../../components/ConfirmDialog";
 import CustomDatePicker from "../../components/CustomDatePicker";
 import ListingFilterDialog from "../../components/ListingFilterDialog";
 import { toast } from "react-toastify";
+import { projectsApi } from "@/lib/api/dashboard/projects";
 import {
   FaChevronLeft,
   FaChevronRight,
@@ -72,36 +73,24 @@ function ProjectListContent() {
   const loadProjects = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: String(pageIndex + 1),
-        pageSize: String(pageSize),
+      const data = await projectsApi.list({
+        page: pageIndex + 1,
+        pageSize,
+        q: debouncedQuery.trim() || undefined,
+        city: cityFilter || undefined,
+        fromDate: fromDate || undefined,
+        toDate: toDate || undefined,
       });
-
-      if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
-      if (cityFilter) params.set("city", cityFilter);
-      if (fromDate) params.set("fromDate", fromDate);
-      if (toDate) params.set("toDate", toDate);
-
-      const res = await fetch(`/api/projects?${params.toString()}`);
-      if (!res.ok) return;
-
-      const data = await res.json();
-      setProjects(Array.isArray(data?.data) ? data.data : []);
-      const completed = Array.isArray(data?.data)
-        ? data.data.filter(
-          (project: ProjectRow) => project.status === "COMPLETED",
-        )
-        : [];
-
+      const rows = Array.isArray(data?.data) ? data.data : [];
+      const completed = rows.filter(
+        (project: ProjectRow) => project.status === "COMPLETED",
+      );
       setProjects(completed);
-
-      const completedCities = [
+      setCityOptions([
         ...new Set(
           completed.map((project: ProjectRow) => project.city).filter(Boolean),
         ),
-      ] as string[];
-
-      setCityOptions(completedCities);
+      ] as string[]);
       setTotal(typeof data?.total === "number" ? data.total : 0);
     } catch (error) {
       console.error("Failed to load projects", error);
@@ -165,19 +154,13 @@ function ProjectListContent() {
     setViewData(null);
 
     try {
-      const res = await fetch(`/api/projects/${row.id}`);
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to load project details.");
-        setViewOpen(false);
-        return;
-      }
-
-      const data = await res.json();
-      setViewData(data);
+      const data = await projectsApi.get(row.id);
+      setViewData(data as ProjectRow);
     } catch (error) {
       console.error("Failed to load project details", error);
-      toast.error("Failed to load project details.");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to load project details.",
+      );
       setViewOpen(false);
     } finally {
       setViewLoading(false);
@@ -193,21 +176,14 @@ function ProjectListContent() {
     if (!confirmTarget) return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/projects/${confirmTarget.id}`, {
-        method: "DELETE",
-      });
-
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to delete project.");
-        return;
-      }
-
+      await projectsApi.remove(confirmTarget.id);
       await loadProjects();
       toast.success("Project deleted successfully.");
     } catch (error) {
       console.error("Failed to delete project", error);
-      toast.error("Failed to delete project.");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete project.",
+      );
     } finally {
       setDeleting(false);
       setConfirmOpen(false);

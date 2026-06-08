@@ -15,6 +15,8 @@ import AppliedFilterSummary from "../../components/AppliedFilterSummary";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import ListingFilterDialog from "../../components/ListingFilterDialog";
 import { toast } from "react-toastify";
+import { usersApi } from "@/lib/api/dashboard/users";
+import { loadRoleOptions } from "@/lib/api/dashboard/shared-options";
 import {
   FaChevronLeft,
   FaChevronRight,
@@ -34,7 +36,7 @@ type UserRow = {
   id: string;
   firstName: string;
   lastName: string;
-  email: string;
+  email: string | null;
   mobileNumber?: string | null;
   role?: string | null;
 };
@@ -86,17 +88,12 @@ function UsersContent() {
     if (!isAdmin) return;
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: String(pageIndex + 1),
-        pageSize: String(pageSize),
+      const data = await usersApi.list({
+        page: pageIndex + 1,
+        pageSize,
+        q: debouncedQuery.trim() || undefined,
+        role: roleFilter || undefined,
       });
-
-      if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
-      if (roleFilter) params.set("role", roleFilter);
-
-      const res = await fetch(`/api/users?${params.toString()}`);
-      if (!res.ok) return;
-      const data = await res.json();
       setUsers(Array.isArray(data?.data) ? data.data : []);
       setTotal(typeof data?.total === "number" ? data.total : 0);
     } catch (error) {
@@ -113,10 +110,7 @@ function UsersContent() {
   useEffect(() => {
     const loadRoles = async () => {
       try {
-        const res = await fetch("/api/roles");
-        if (!res.ok) throw new Error("Failed to fetch roles");
-
-        const data = await res.json();
+        const data = await loadRoleOptions();
         setRoles(data);
       } catch (error) {
         console.error("Failed to load roles", error);
@@ -140,19 +134,12 @@ function UsersContent() {
     if (!confirmTarget) return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/users/${confirmTarget.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to delete user.");
-        return;
-      }
+      await usersApi.remove(confirmTarget.id);
       await loadUsers();
       toast.success("User deleted successfully.");
     } catch (error) {
       console.error("Failed to delete user", error);
-      toast.error("Failed to delete user.");
+      toast.error(error instanceof Error ? error.message : "Failed to delete user.");
     } finally {
       setDeleting(false);
       setConfirmOpen(false);

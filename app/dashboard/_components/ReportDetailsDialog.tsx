@@ -6,6 +6,7 @@ import { FaPlay, FaSpinner } from "react-icons/fa";
 import { IoIosClose } from "react-icons/io";
 import { MdOutlineFileDownload } from "react-icons/md";
 import { formatToDDMMYYYY } from "@/lib/dateUtils";
+import { useDashboardContext } from "./DashboardShell";
 
 type ReportDetailsDialogRow = {
   reportDate: string;
@@ -42,6 +43,8 @@ export function ReportDetailsDialog<T extends ReportDetailsDialogRow>({
   onOpenImage,
   onOpenVideo,
 }: ReportDetailsDialogProps<T>) {
+  const { isAdmin } = useDashboardContext();
+
   if (!open) {
     return null;
   }
@@ -49,9 +52,9 @@ export function ReportDetailsDialog<T extends ReportDetailsDialogRow>({
   const mediaUrls = report
     ? report.videoUrls && report.videoUrls.length > 0
       ? report.videoUrls
-      : report.videoUrl
-      ? [report.videoUrl]
-      : []
+    : report.videoUrl
+    ? [report.videoUrl]
+    : []
     : [];
 
   return (
@@ -90,7 +93,7 @@ export function ReportDetailsDialog<T extends ReportDetailsDialogRow>({
                 <strong>Project:</strong> {report.projectName}
                 <span className="text-slate-500"> ({report.projectCity || "-"})</span>
               </p>
-              {showEmployee && (
+              {showEmployee && isAdmin && (
                 <p className="text-sm">
                   <strong>Employee:</strong> {report.createdByName || "-"}
                 </p>

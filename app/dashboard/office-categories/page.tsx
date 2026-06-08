@@ -9,6 +9,7 @@ import ConfirmDialog from "../../components/ConfirmDialog";
 import ListingFilterDialog from "../../components/ListingFilterDialog";
 import useDebounce from "@/app/hooks/useDebounce";
 import { toast } from "react-toastify";
+import { officeCategoriesApi } from "@/lib/api/dashboard/office-categories";
 import {
   FaChevronLeft,
   FaChevronRight,
@@ -45,25 +46,18 @@ function OfficeCategoryListContent() {
   const loadCategories = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: String(pageIndex + 1),
-        pageSize: String(pageSize),
+      const data = await officeCategoriesApi.list({
+        page: pageIndex + 1,
+        pageSize,
+        q: debouncedQuery.trim() || undefined,
       });
-      if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
-
-      const res = await fetch(`/api/office-categories?${params.toString()}`);
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to load office categories.");
-        return;
-      }
-
-      const data = await res.json();
       setCategories(Array.isArray(data?.data) ? data.data : []);
       setTotal(typeof data?.total === "number" ? data.total : 0);
     } catch (error) {
       console.error("Failed to load office categories", error);
-      toast.error("Failed to load office categories.");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to load office categories.",
+      );
     } finally {
       setLoading(false);
     }
@@ -111,19 +105,14 @@ function OfficeCategoryListContent() {
     if (!confirmTarget) return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/office-categories/${confirmTarget.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to delete office category.");
-        return;
-      }
+      await officeCategoriesApi.remove(confirmTarget.id);
       await loadCategories();
       toast.success("Office category deleted successfully.");
     } catch (error) {
       console.error("Failed to delete office category", error);
-      toast.error("Failed to delete office category.");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete office category.",
+      );
     } finally {
       setDeleting(false);
       setConfirmOpen(false);

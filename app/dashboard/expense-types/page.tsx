@@ -9,6 +9,7 @@ import ConfirmDialog from "../../components/ConfirmDialog";
 import ListingFilterDialog from "../../components/ListingFilterDialog";
 import useDebounce from "@/app/hooks/useDebounce";
 import { toast } from "react-toastify";
+import { expenseTypesApi } from "@/lib/api/dashboard/expense-types";
 import {
   FaChevronLeft,
   FaChevronRight,
@@ -48,26 +49,19 @@ function ExpenseTypeListContent() {
   const loadExpenseTypes = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: String(pageIndex + 1),
-        pageSize: String(pageSize),
+      const data = await expenseTypesApi.list({
+        page: pageIndex + 1,
+        pageSize,
+        q: debouncedQuery.trim() || undefined,
+        status: statusFilter || undefined,
       });
-      if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
-      if (statusFilter) params.set("status", statusFilter);
-
-      const res = await fetch(`/api/expense-types?${params.toString()}`);
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to load expense types.");
-        return;
-      }
-
-      const data = await res.json();
       setExpenseTypes(Array.isArray(data?.data) ? data.data : []);
       setTotal(typeof data?.total === "number" ? data.total : 0);
     } catch (error) {
       console.error("Failed to load expense types", error);
-      toast.error("Failed to load expense types.");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to load expense types.",
+      );
     } finally {
       setLoading(false);
     }
@@ -98,19 +92,14 @@ function ExpenseTypeListContent() {
     if (!confirmTarget) return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/expense-types/${confirmTarget.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to delete expense type.");
-        return;
-      }
+      await expenseTypesApi.remove(confirmTarget.id);
       await loadExpenseTypes();
       toast.success("Expense type deleted successfully.");
     } catch (error) {
       console.error("Failed to delete expense type", error);
-      toast.error("Failed to delete expense type.");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete expense type.",
+      );
     } finally {
       setDeleting(false);
       setConfirmOpen(false);

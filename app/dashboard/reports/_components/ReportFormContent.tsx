@@ -12,6 +12,13 @@ import ConfirmDialog from "../../../components/ConfirmDialog";
 import Loading from "../../../components/Loading";
 import Link from "next/link";
 import { getTodayInputDate, formatToDDMMYYYY } from "@/lib/dateUtils";
+import { reportApi } from "@/lib/api/dashboard/reports";
+import {
+  loadCategoryOptions,
+  loadProjectOptions,
+  type CategoryOption,
+  type ProjectOption,
+} from "@/lib/api/dashboard/shared-options";
 import {
   Combobox,
   ComboboxButton,
@@ -20,18 +27,6 @@ import {
   ComboboxOptions,
 } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
-
-type ProjectOption = {
-  id: string;
-  name: string;
-  status: string;
-  city?: string | null;
-};
-
-type CategoryOption = {
-  id: string;
-  name: string;
-};
 
 type ReportPayload = {
   id: string;
@@ -108,54 +103,44 @@ export default function ReportFormContent({
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [projectsRes, categoriesRes, reportRes] = await Promise.all([
-          fetch("/api/projects/options"),
-          fetch("/api/reporting-categories?page=1&pageSize=100"),
-          reportId ? fetch(`/api/reports/${reportId}`) : Promise.resolve(null),
+        const [projects, categories, report] = await Promise.all([
+          loadProjectOptions(),
+          loadCategoryOptions("/api/reporting-categories?page=1&pageSize=100"),
+          reportId ? reportApi.get(reportId) : Promise.resolve(null),
         ]);
 
-        if (projectsRes.ok) {
-          const data = await projectsRes.json();
-          const rows = Array.isArray(data) ? data : [];
-          setProjects(rows);
+        setProjects(projects);
+        if (projects.length > 0) {
           setForm((prev) => ({
             ...prev,
-            projectId: prev.projectId || rows[0]?.id || "",
+            projectId: prev.projectId || projects[0]?.id || "",
           }));
         }
 
-        if (categoriesRes?.ok) {
-          const data = await categoriesRes.json();
-          const rows = Array.isArray(data?.data) ? data.data : [];
-          setCategories(rows);
-        }
+        setCategories(categories);
 
-        if (reportRes) {
-          if (!reportRes.ok) {
-            setNote("Failed to load reporting details.");
-          } else {
-            const report = (await reportRes.json()) as ReportPayload;
-            setForm({
-              reportDate: formatDateForInput(report.reportDate),
-              projectId: report.projectId || "",
-              categoryId: report.categoryId || "",
-              description: report.description || "",
-            });
-            setExistingImages(
-              Array.isArray(report.imageUrls) ? report.imageUrls : [],
-            );
-            setExistingVideoUrls(
-              Array.isArray(report.videoUrls)
-                ? report.videoUrls
-                : report.videoUrl
-                  ? [report.videoUrl]
-                  : [],
-            );
-          }
+        if (report) {
+          const data = report as ReportPayload;
+          setForm({
+            reportDate: formatDateForInput(data.reportDate),
+            projectId: data.projectId || "",
+            categoryId: data.categoryId || "",
+            description: data.description || "",
+          });
+          setExistingImages(
+            Array.isArray(data.imageUrls) ? data.imageUrls : [],
+          );
+          setExistingVideoUrls(
+            Array.isArray(data.videoUrls)
+              ? data.videoUrls
+              : data.videoUrl
+                ? [data.videoUrl]
+                : [],
+          );
         }
       } catch (error) {
         console.error("Failed to load report form data", error);
-        setNote("Failed to load reporting form.");
+        setNote(error instanceof Error ? error.message : "Failed to load reporting form.");
       } finally {
         setLoading(false);
       }
@@ -351,16 +336,10 @@ export default function ReportFormContent({
         payload.append("existingImages", JSON.stringify(existingImages));
         payload.append("existingVideoUrls", JSON.stringify(existingVideoUrls));
       }
-      const endpoint = reportId ? `/api/reports/${reportId}` : "/api/reports";
-      const res = await fetch(endpoint, {
-        method: reportId ? "PUT" : "POST",
-        body: payload,
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setNote(data.error || "Failed to save report.");
-        return;
+      if (reportId) {
+        await reportApi.update(reportId, payload);
+      } else {
+        await reportApi.create(payload);
       }
 
       toast.success(
@@ -369,8 +348,9 @@ export default function ReportFormContent({
       router.push("/dashboard/reports");
     } catch (error) {
       console.error("Failed to save report", error);
-      toast.error("Failed to save report.");
-      setNote("Failed to save report.");
+      const message = error instanceof Error ? error.message : "Failed to save report.";
+      toast.error(message);
+      setNote(message);
     } finally {
       setSubmitting(false);
       setCompressing(false);

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import Loading from "../../../components/Loading";
 import Link from "next/link";
+import { incomeTypesApi } from "@/lib/api/dashboard/income-types";
 
 type IncomeTypeStatus = "ACTIVE" | "INACTIVE";
 
@@ -46,13 +47,7 @@ export default function IncomeTypeFormContent({
       }
 
       try {
-        const res = await fetch(`/api/income-types/${incomeTypeId}`);
-        if (!res.ok) {
-          setNote("Failed to load income type.");
-          return;
-        }
-
-        const data = await res.json();
+        const data = await incomeTypesApi.get(incomeTypeId);
         setForm({
           name: data.name || "",
           status: data.status === "INACTIVE" ? "INACTIVE" : "ACTIVE",
@@ -83,24 +78,15 @@ export default function IncomeTypeFormContent({
 
     try {
       setSaving(true);
-      const res = await fetch(
-        incomeTypeId ? `/api/income-types/${incomeTypeId}` : "/api/income-types",
-        {
-          method: incomeTypeId ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: form.name.trim(),
-            status: form.status,
-          }),
-        },
-      );
+      const payload = {
+        name: form.name.trim(),
+        status: form.status,
+      };
 
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        const errorMessage = payload.error || "Failed to save income type.";
-        setNote(errorMessage);
-        toast.error(errorMessage);
-        return;
+      if (incomeTypeId) {
+        await incomeTypesApi.update(incomeTypeId, payload);
+      } else {
+        await incomeTypesApi.create(payload);
       }
 
       toast.success(
@@ -109,7 +95,10 @@ export default function IncomeTypeFormContent({
       router.push("/dashboard/income-types");
     } catch (error) {
       console.error("Failed to save income type", error);
-      setNote("Failed to save income type.");
+      const message =
+        error instanceof Error ? error.message : "Failed to save income type.";
+      setNote(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }

@@ -9,6 +9,7 @@ import ConfirmDialog from "../../components/ConfirmDialog";
 import ListingFilterDialog from "../../components/ListingFilterDialog";
 import useDebounce from "@/app/hooks/useDebounce";
 import { toast } from "react-toastify";
+import { serviceCategoriesApi } from "@/lib/api/dashboard/service-categories";
 import {
   FaChevronLeft,
   FaChevronRight,
@@ -45,25 +46,18 @@ function ServiceCategoryListContent() {
   const loadCategories = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: String(pageIndex + 1),
-        pageSize: String(pageSize),
+      const data = await serviceCategoriesApi.list({
+        page: pageIndex + 1,
+        pageSize,
+        q: debouncedQuery.trim() || undefined,
       });
-      if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
-
-      const res = await fetch(`/api/service-categories?${params.toString()}`);
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to load service categories.");
-        return;
-      }
-
-      const data = await res.json();
       setCategories(Array.isArray(data?.data) ? data.data : []);
       setTotal(typeof data?.total === "number" ? data.total : 0);
     } catch (error) {
       console.error("Failed to load service categories", error);
-      toast.error("Failed to load service categories.");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to load service categories.",
+      );
     } finally {
       setLoading(false);
     }
@@ -111,19 +105,14 @@ function ServiceCategoryListContent() {
     if (!confirmTarget) return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/service-categories/${confirmTarget.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to delete service category.");
-        return;
-      }
+      await serviceCategoriesApi.remove(confirmTarget.id);
       await loadCategories();
       toast.success("Service category deleted successfully.");
     } catch (error) {
       console.error("Failed to delete service category", error);
-      toast.error("Failed to delete service category.");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete service category.",
+      );
     } finally {
       setDeleting(false);
       setConfirmOpen(false);
