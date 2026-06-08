@@ -10,6 +10,7 @@ import ListingFilterDialog from "../../../components/ListingFilterDialog";
 import useDebounce from "@/app/hooks/useDebounce";
 import { QueryTableCard } from "../../../dashboard/_components/QueryTableCard";
 import { toast } from "react-toastify";
+import { createQueryManagementApi } from "@/lib/api/dashboard/query-management";
 import {
   FaChevronLeft,
   FaChevronRight,
@@ -95,6 +96,7 @@ export default function QueryListContent({
   const router = useRouter();
   const { isAdmin } = useDashboardContext();
   const searchParams = useSearchParams();
+  const api = useMemo(() => createQueryManagementApi(apiBase), [apiBase]);
   const [queries, setQueries] = useState<QueryRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
@@ -127,33 +129,24 @@ export default function QueryListContent({
   const loadQueries = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: String(pageIndex + 1),
-        pageSize: String(pageSize),
-      });
-
-      if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
-      if (statusFilter) params.set("status", statusFilter);
-      if (priorityFilter) params.set("priority", priorityFilter);
-      if (categoryFilter) params.set("category", categoryFilter);
-      const res = await fetch(`${apiBase}?${params.toString()}`);
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to load queries.");
-        return;
-      }
-
-      const data = await res.json();
+      const data = (await api.list({
+        page: pageIndex + 1,
+        pageSize,
+        q: debouncedQuery.trim() || undefined,
+        status: statusFilter || undefined,
+        priority: priorityFilter || undefined,
+        category: categoryFilter || undefined,
+      })) as { data: QueryRow[]; total: number };
       setQueries(Array.isArray(data?.data) ? data.data : []);
       setTotal(typeof data?.total === "number" ? data.total : 0);
     } catch (error) {
       console.error("Failed to load queries", error);
-      toast.error("Failed to load queries.");
+      toast.error(error instanceof Error ? error.message : "Failed to load queries.");
     } finally {
       setLoading(false);
     }
   }, [
-    apiBase,
+    api,
     debouncedQuery,
     pageIndex,
     pageSize,
@@ -228,27 +221,19 @@ export default function QueryListContent({
     setDeleting(true);
 
     try {
-      const res = await fetch(`${apiBase}/${confirmTarget.id}`, {
-        method: "DELETE",
-      });
-
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to delete query.");
-        return;
-      }
+      await api.remove(confirmTarget.id);
 
       await loadQueries();
       toast.success("Query deleted successfully.");
     } catch (error) {
       console.error("Failed to delete query", error);
-      toast.error("Failed to delete query.");
+      toast.error(error instanceof Error ? error.message : "Failed to delete query.");
     } finally {
       setDeleting(false);
       setConfirmOpen(false);
       setConfirmTarget(null);
     }
-  }, [apiBase, confirmTarget, loadQueries]);
+  }, [api, confirmTarget, loadQueries]);
 
   const columns = useMemo<ColumnDef<QueryRow>[]>(
     () => [
@@ -257,7 +242,7 @@ export default function QueryListContent({
             {
               header: "By",
               accessorKey: "createdByName",
-              cell: (info:any) => (
+              cell: (info: any) => (
                 <span className="rbac-muted">
                   {String(info.getValue() || "-")}
                 </span>
@@ -338,7 +323,7 @@ export default function QueryListContent({
         ),
       },
     ],
-    [basePath, handleDelete, handleEdit],
+    [handleDelete, handleEdit, isAdmin],
   );
 
   const table = useReactTable({
@@ -617,7 +602,7 @@ export default function QueryListContent({
                     }`
                   }
                 >
-                  {({ selected }) => (
+                  {() => (
                     <div className="flex items-center justify-between">
                       <span>{status.label}</span>
                     </div>
@@ -662,7 +647,7 @@ export default function QueryListContent({
                     }`
                   }
                 >
-                  {({ selected }) => (
+                  {() => (
                     <div className="flex items-center justify-between">
                       <span>{priority.label}</span>
                     </div>
@@ -707,7 +692,7 @@ export default function QueryListContent({
                     }`
                   }
                 >
-                  {({ selected }) => (
+                  {() => (
                     <div className="flex items-center justify-between">
                       <span>{category.label}</span>
                     </div>

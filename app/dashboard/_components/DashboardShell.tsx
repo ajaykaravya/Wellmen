@@ -12,6 +12,7 @@ import {
   deactivateCurrentPushToken,
   useMobilePushNotifications,
 } from "@/hooks/useMobilePushNotifications";
+import { requestJson } from "@/lib/api/client";
 
 type SessionUser = {
   id: string;
@@ -210,12 +211,10 @@ export default function DashboardShell({
       }
 
       try {
-        const res = await fetch("/api/auth/session");
-        if (!res.ok) {
-          router.replace("/login");
-          return;
-        }
-        const data = await res.json();
+        const data = await requestJson<{
+          user: SessionUser;
+          permissions: string[];
+        }>({ path: "/api/auth/session" });
         const userData = data.user;
         const permsData = data.permissions || [];
 
@@ -315,7 +314,7 @@ export default function DashboardShell({
     setLogoutLoading(true);
     try {
       await deactivateCurrentPushToken();
-      await fetch("/api/auth/logout", { method: "POST" });
+      await requestJson({ path: "/api/auth/logout", method: "POST" });
       clearCachedSession();
       setUser(null);
       setPermissions([]);

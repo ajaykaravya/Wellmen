@@ -10,6 +10,17 @@ import CustomDatePicker from "../../../components/CustomDatePicker";
 import { ButtonGroup } from "../../_components/ButtonGroup";
 import { UserCardGroup } from "../../_components/UserCardGroup";
 import { formatToDDMMYYYY, getTodayInputDate } from "@/lib/dateUtils";
+import { dailyExpenseApi } from "@/lib/api/dashboard/daily-expenses";
+import {
+  loadCompanyOptions,
+  loadExpenseTypeOptions,
+  loadProjectOptions,
+  loadUserOptions,
+  type CompanyOption,
+  type ExpenseTypeOption,
+  type ProjectOption,
+  type UserOption,
+} from "@/lib/api/dashboard/shared-options";
 import {
   Combobox,
   ComboboxButton,
@@ -22,31 +33,6 @@ import { ChevronDownIcon } from "@heroicons/react/16/solid";
 type TransactionType = "EXPENSE";
 
 type PaymentMode = "CASH" | "BANK" | "CHEQUE" | "UPI" | "NEFT_RTGS";
-
-
-type UserOption = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  role?: string | null;
-};
-
-type ProjectOption = {
-  id: string;
-  name: string;
-  city?: string | null;
-};
-
-type CompanyOption = {
-  id: string;
-  name: string;
-};
-
-type ExpenseTypeOption = {
-  id: string;
-  name: string;
-  status: "ACTIVE" | "INACTIVE";
-};
 
 type DailyExpenseFormState = {
   transactionType: TransactionType;
@@ -110,65 +96,43 @@ export default function DailyExpenseFormContent({
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [projectsRes, expenseTypesRes, usersRes, companiesRes, dailyExpenseRes] =
-          await Promise.all([
-            fetch("/api/projects/options"),
-            fetch("/api/expense-types/options"),
-            fetch("/api/users/options"),
-            fetch("/api/companies/options"),
-            dailyExpenseId
-              ? fetch(`/api/daily-expenses/${dailyExpenseId}`)
-              : Promise.resolve(null),
-          ]);
+        const [projects, expenseTypes, users, companies, dailyExpense] = await Promise.all([
+          loadProjectOptions(),
+          loadExpenseTypeOptions(),
+          loadUserOptions(),
+          loadCompanyOptions(),
+          dailyExpenseId ? dailyExpenseApi.get(dailyExpenseId) : Promise.resolve(null),
+        ]);
 
-        if (projectsRes.ok) {
-          const data = await projectsRes.json();
-          setProjects(Array.isArray(data) ? data : []);
-        } else {
-          throw new Error("Failed to load projects");
-        }
+        setProjects(projects);
+        setExpenseTypes(
+          expenseTypes.filter((item) => item.status === "ACTIVE"),
+        );
+        setUsers(users);
+        setCompanies(companies);
 
-        if (expenseTypesRes.ok) {
-          const data = await expenseTypesRes.json();
-          setExpenseTypes(
-            Array.isArray(data)
-              ? data.filter(
-                (item: ExpenseTypeOption) => item.status === "ACTIVE",
-              )
-              : [],
-          );
-        } else {
-          throw new Error("Failed to load expense types");
-        }
+        if (dailyExpense) {
+          const data = dailyExpense as {
+            amount?: number;
+            projectId?: string;
+            expenseTypeId?: string;
+            expenseById?: string;
+            paymentMode?: PaymentMode;
+            expenseCompanyId?: string;
+            date?: string;
+            remark?: string;
+            projectName?: string | null;
+            projectCity?: string | null;
+            expenseTypeName?: string | null;
+          };
 
-        if (usersRes.ok) {
-          const data = await usersRes.json();
-          setUsers(Array.isArray(data) ? data : []);
-        } else {
-          throw new Error("Failed to load users");
-        }
-
-        if (companiesRes.ok) {
-          const data = await companiesRes.json();
-          setCompanies(Array.isArray(data) ? data : []);
-        } else {
-          throw new Error("Failed to load companies");
-        }
-
-        if (dailyExpenseRes) {
-          if (!dailyExpenseRes.ok) {
-            setNote("Failed to load daily expense.");
-            return;
-          }
-
-          const data = await dailyExpenseRes.json();
           setForm({
             transactionType: "EXPENSE",
             amount: String(data.amount ?? ""),
             projectId: data.projectId || "",
             expenseTypeId: data.expenseTypeId || "",
             expenseById: data.expenseById || "",
-            paymentMode: data.paymentMode || "",
+            paymentMode: (data.paymentMode as PaymentMode) || "CASH",
             expenseCompanyId: data.expenseCompanyId || "",
             date:
               formatToDDMMYYYY(data.date) === "-"
@@ -181,7 +145,9 @@ export default function DailyExpenseFormContent({
         }
       } catch (error) {
         console.error("Failed to load daily expense data", error);
-        setNote("Failed to load daily expense data.");
+        setNote(
+          error instanceof Error ? error.message : "Failed to load daily expense data.",
+        );
       } finally {
         setLoading(false);
       }
@@ -239,31 +205,22 @@ export default function DailyExpenseFormContent({
 
     try {
       setSaving(true);
-      const res = await fetch(
-        dailyExpenseId ? `/api/daily-expenses/${dailyExpenseId}` : "/api/daily-expenses",
-        {
-          method: dailyExpenseId ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            transactionType: "EXPENSE",
-            amount: form.amount,
-            projectId: form.projectId,
-            expenseTypeId: form.expenseTypeId,
-            expenseById: form.expenseById,
-            expenseCompanyId: form.expenseCompanyId,
-            paymentMode: form.paymentMode,
-            date: form.date,
-            remark: form.remark,
-          }),
-        },
-      );
+      const payload = {
+        transactionType: "EXPENSE" as const,
+        amount: form.amount,
+        projectId: form.projectId,
+        expenseTypeId: form.expenseTypeId,
+        expenseById: form.expenseById,
+        expenseCompanyId: form.expenseCompanyId,
+        paymentMode: form.paymentMode,
+        date: form.date,
+        remark: form.remark,
+      };
 
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        const errorMessage = payload.error || "Failed to save daily expense.";
-        setNote(errorMessage);
-        toast.error(errorMessage);
-        return;
+      if (dailyExpenseId) {
+        await dailyExpenseApi.update(dailyExpenseId, payload);
+      } else {
+        await dailyExpenseApi.create(payload);
       }
 
       toast.success(
@@ -272,7 +229,10 @@ export default function DailyExpenseFormContent({
       router.push("/dashboard/daily-expenses");
     } catch (error) {
       console.error("Failed to save daily expense", error);
-      setNote("Failed to save daily expense.");
+      const message =
+        error instanceof Error ? error.message : "Failed to save daily expense.";
+      setNote(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }

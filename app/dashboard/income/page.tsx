@@ -21,6 +21,19 @@ import {
 import CustomDatePicker from "../../components/CustomDatePicker";
 import { formatToDDMMYYYY } from "@/lib/dateUtils";
 import {
+  incomeApi,
+} from "@/lib/api/dashboard/income";
+import {
+  loadCompanyOptions,
+  loadIncomeTypeOptions,
+  loadProjectOptions,
+  loadUserOptions,
+  type CompanyOption,
+  type IncomeTypeOption,
+  type ProjectOption,
+  type UserOption,
+} from "@/lib/api/dashboard/shared-options";
+import {
   Combobox,
   ComboboxButton,
   ComboboxInput,
@@ -32,30 +45,6 @@ import { FinanceCardList } from "../_components/FinanceCardList";
 import { Listbox } from "@headlessui/react";
 
 type PaymentMode = "CASH" | "BANK" | "CHEQUE" | "UPI" | "NEFT_RTGS";
-
-type ProjectOption = {
-  id: string;
-  name: string;
-  city?: string | null;
-};
-
-type CompanyOption = {
-  id: string;
-  name: string;
-};
-
-type IncomeTypeOption = {
-  id: string;
-  name: string;
-  status: "ACTIVE" | "INACTIVE";
-};
-
-type UserOption = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  role?: string | null;
-};
 
 type IncomeRow = {
   id: string;
@@ -223,36 +212,19 @@ function IncomeListContent() {
   useEffect(() => {
     const loadOptions = async () => {
       try {
-        const [projectsRes, companiesRes, incomeTypesRes, usersRes] = await Promise.all([
-          fetch("/api/projects/options"),
-          fetch("/api/companies/options"),
-          fetch("/api/income-types/options"),
-          fetch("/api/users/options"),
+        const [projects, companies, incomeTypes, users] = await Promise.all([
+          loadProjectOptions(),
+          loadCompanyOptions(),
+          loadIncomeTypeOptions(),
+          loadUserOptions(),
         ]);
 
-        if (projectsRes.ok) {
-          const data = await projectsRes.json();
-          setProjects(Array.isArray(data) ? data : []);
-        }
-
-        if (companiesRes.ok) {
-          const data = await companiesRes.json();
-          setCompanies(Array.isArray(data) ? data : []);
-        }
-
-        if (incomeTypesRes.ok) {
-          const data = await incomeTypesRes.json();
-          setIncomeTypes(
-            Array.isArray(data)
-              ? data.filter((item: IncomeTypeOption) => item.status === "ACTIVE")
-              : [],
-          );
-        }
-
-        if (usersRes.ok) {
-          const data = await usersRes.json();
-          setUsers(Array.isArray(data) ? data : []);
-        }
+        setProjects(projects);
+        setCompanies(companies);
+        setIncomeTypes(
+          incomeTypes.filter((item) => item.status === "ACTIVE"),
+        );
+        setUsers(users);
       } catch (error) {
         console.error("Failed to load income filter options", error);
       }
@@ -294,33 +266,23 @@ function IncomeListContent() {
   const loadRows = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: String(pageIndex + 1),
-        pageSize: String(pageSize),
-      });
-      if (query.trim()) params.set("q", query.trim());
-      if (projectFilter?.id) params.set("projectId", projectFilter.id);
-      if (incomeTypeFilter?.id) params.set("incomeTypeId", incomeTypeFilter.id);
-      if (incomeCompanyFilter?.id)
-        params.set("incomeCompanyId", incomeCompanyFilter.id);
-      if (receivedByFilter?.id) params.set("receivedById", receivedByFilter.id);
-      if (fromDate) params.set("fromDate", fromDate);
-      if (toDate) params.set("toDate", toDate);
-      if (paymentModeFilter) params.set("paymentMode", paymentModeFilter);
-
-      const res = await fetch(`/api/income?${params.toString()}`);
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to load income.");
-        return;
-      }
-
-      const data = await res.json();
+      const data = (await incomeApi.list({
+        page: pageIndex + 1,
+        pageSize,
+        q: query.trim() || undefined,
+        projectId: projectFilter?.id,
+        incomeTypeId: incomeTypeFilter?.id,
+        incomeCompanyId: incomeCompanyFilter?.id,
+        receivedById: receivedByFilter?.id,
+        fromDate: fromDate || undefined,
+        toDate: toDate || undefined,
+        paymentMode: paymentModeFilter || undefined,
+      })) as { data: IncomeRow[]; total: number };
       setRows(Array.isArray(data?.data) ? data.data : []);
       setTotal(typeof data?.total === "number" ? data.total : 0);
     } catch (error) {
       console.error("Failed to load income", error);
-      toast.error("Failed to load income.");
+      toast.error(error instanceof Error ? error.message : "Failed to load income.");
     } finally {
       setLoading(false);
     }
@@ -459,19 +421,12 @@ function IncomeListContent() {
     if (!confirmTarget) return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/income/${confirmTarget.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to delete income.");
-        return;
-      }
+      await incomeApi.remove(confirmTarget.id);
       toast.success("Income deleted successfully.");
       await loadRows();
     } catch (error) {
       console.error("Failed to delete income", error);
-      toast.error("Failed to delete income.");
+      toast.error(error instanceof Error ? error.message : "Failed to delete income.");
     } finally {
       setDeleting(false);
       setConfirmOpen(false);

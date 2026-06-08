@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import Loading from "../../../components/Loading";
 import Link from "next/link";
+import { serviceCategoriesApi } from "@/lib/api/dashboard/service-categories";
 
 type ServiceCategoryFormState = {
   name: string;
@@ -33,13 +34,7 @@ export default function ServiceCategoryFormContent({ categoryId }: ServiceCatego
       }
 
       try {
-        const res = await fetch(`/api/service-categories/${categoryId}`);
-        if (!res.ok) {
-          setNote("Failed to load service category.");
-          return;
-        }
-
-        const data = await res.json();
+        const data = await serviceCategoriesApi.get(categoryId);
         setForm({ name: data.name || "" });
       } catch (error) {
         console.error("Failed to load service category", error);
@@ -66,25 +61,22 @@ export default function ServiceCategoryFormContent({ categoryId }: ServiceCatego
 
     try {
       setSaving(true);
-      const res = await fetch(categoryId ? `/api/service-categories/${categoryId}` : "/api/service-categories", {
-        method: categoryId ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category: "SERVICE_WORK", name: form.name.trim() }),
-      });
+      const payload = { name: form.name.trim() };
 
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        const errorMessage = payload.error || "Failed to save service category.";
-        setNote(errorMessage);
-        toast.error(errorMessage);
-        return;
+      if (categoryId) {
+        await serviceCategoriesApi.update(categoryId, payload);
+      } else {
+        await serviceCategoriesApi.create(payload);
       }
 
       toast.success(`Service category ${categoryId ? "updated" : "created"} successfully.`);
       router.push("/dashboard/service-categories");
     } catch (error) {
       console.error("Failed to save service category", error);
-      setNote("Failed to save service category.");
+      const message =
+        error instanceof Error ? error.message : "Failed to save service category.";
+      setNote(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }

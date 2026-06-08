@@ -22,27 +22,15 @@ import {
   ListboxOptions,
 } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
-
-type UserOption = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  mobileNumber: string;
-  role?: string | null;
-};
-
-type ProjectOption = {
-  id: string;
-  name: string;
-  city?: string | null;
-  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "ON_HOLD";
-};
-
-type CategoryOption = {
-  id: string;
-  name: string;
-  category: string;
-};
+import { taskManagementApi } from "@/lib/api/dashboard/task-management";
+import {
+  loadCategoryOptions,
+  loadProjectOptions,
+  loadUserOptions,
+  type CategoryOption,
+  type ProjectOption,
+  type UserOption,
+} from "@/lib/api/dashboard/shared-options";
 
 type TodoFormState = {
   description: string;
@@ -99,6 +87,23 @@ const resolveTaskTypeFromQuery = (value: string | null) => {
     return value.toLowerCase() as TaskType;
   }
   return null;
+};
+
+const resolveTaskType = (value?: string | null): TaskType | "" => {
+  const normalized = String(value || "").trim().toLowerCase();
+  return normalized === "project" ||
+    normalized === "office" ||
+    normalized === "service"
+    ? (normalized as TaskType)
+    : "";
+};
+
+const resolvePriorityLevel = (value?: string | null): PriorityLevel => {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "low" || normalized === "medium" || normalized === "high") {
+    return normalized;
+  }
+  return "medium";
 };
 
 const parseDateInput = (value: string) => {
@@ -160,45 +165,48 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const endpoint = "/api/task-management";
-
-        const [usersRes, projectsRes, todoRes] = await Promise.all([
-          isAdmin ? fetch("/api/users/options") : Promise.resolve(null),
-          fetch("/api/projects/options"),
-          todoId ? fetch(`${endpoint}/${todoId}`) : Promise.resolve(null),
+        const [users, projects, todo] = await Promise.all([
+          isAdmin ? loadUserOptions() : Promise.resolve([] as UserOption[]),
+          loadProjectOptions(),
+          todoId ? taskManagementApi.get(todoId) : Promise.resolve(null),
         ]);
 
-        if (usersRes?.ok) {
-          const data = await usersRes.json();
-          setUsers(Array.isArray(data) ? data : []);
-        }
+        setUsers(users);
+        setProjects(projects);
 
-        if (projectsRes.ok) {
-          const data = await projectsRes.json();
-          setProjects(Array.isArray(data) ? data : []);
-        }
+        if (todo) {
+          const data = todo as {
+            description?: string;
+            comments?: string;
+            startDate?: string;
+            endDate?: string;
+            status?: TodoFormState["status"];
+            projectId?: string;
+            categoryId?: string;
+            assigneeId?: string;
+            type?: string;
+            subCategory?: ServiceSubCategory;
+            priority?: string;
+          };
 
-        if (todoRes?.ok) {
-          const todo = await todoRes.json();
           setForm({
-            description: todo.description || "",
-            remarks: todo.comments || "",
-            startDate: formatDateForInput(todo.startDate),
-            endDate: formatDateForInput(todo.endDate),
-            status: todo.status || "TODO",
-            projectId: todo.projectId || "",
-            categoryId: todo.categoryId || "",
-            assigneeId: todo.assigneeId || "",
-            taskType: todo.type ? todo.type.toLowerCase() : "",
-            subCategory: todo.subCategory || "",
+            description: data.description || "",
+            remarks: data.comments || "",
+            startDate: formatDateForInput(data.startDate),
+            endDate: formatDateForInput(data.endDate),
+            status: data.status || "TODO",
+            projectId: data.projectId || "",
+            categoryId: data.categoryId || "",
+            assigneeId: data.assigneeId || "",
+            taskType: resolveTaskType(data.type),
+            subCategory: data.subCategory || "",
           });
 
-          if (todo.priority) {
-            setPriority(todo.priority.toLowerCase());
-          }
+          setPriority(resolvePriorityLevel(data.priority));
         }
       } catch (error) {
         console.error("Failed to load task data", error);
+        setNote(error instanceof Error ? error.message : "Failed to load task data.");
       } finally {
         setLoading(false);
       }
@@ -224,19 +232,14 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
     if (!selectedTaskType) return;
     const fetchCategories = async () => {
       try {
-        const res = await fetch(categoryApiMap[selectedTaskType]);
-        if (!res.ok) throw new Error("Failed to fetch categories");
+        const data = await loadCategoryOptions(categoryApiMap[selectedTaskType]);
 
-        const data = await res.json();
-
-        setCategories(Array.isArray(data?.data) ? data.data : []);
+        setCategories(data);
         setForm((prev) => {
           const currentCategoryId = prev.categoryId || "";
-          const stillValid = Array.isArray(data?.data)
-            ? data.data.some(
-                (category: CategoryOption) => category.id === currentCategoryId,
-              )
-            : false;
+          const stillValid = data.some(
+            (category: CategoryOption) => category.id === currentCategoryId,
+          );
 
           return {
             ...prev,
@@ -315,24 +318,17 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
 
     try {
       setSaving(true);
-      const endpoint = "/api/task-management";
-      const res = await fetch(todoId ? `${endpoint}/${todoId}` : endpoint, {
-        method: todoId ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(basePayload),
-      });
-
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        setNote(payload.error || "Failed to save task.");
-        return;
+      if (todoId) {
+        await taskManagementApi.update(todoId, basePayload);
+      } else {
+        await taskManagementApi.create(basePayload);
       }
 
       toast.success(`Task ${todoId ? "updated" : "created"} successfully.`);
       router.push(`/dashboard/task-management?type=${form.taskType.toUpperCase()}`);
     } catch (error) {
       console.error("Failed to save task", error);
-      setNote("Failed to save task.");
+      setNote(error instanceof Error ? error.message : "Failed to save task.");
     } finally {
       setSaving(false);
     }

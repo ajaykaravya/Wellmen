@@ -20,6 +20,17 @@ import {
 import Link from "next/link";
 import { formatToDDMMYYYY } from "@/lib/dateUtils";
 import CustomDatePicker from "../../components/CustomDatePicker";
+import { dailyExpenseApi } from "@/lib/api/dashboard/daily-expenses";
+import {
+  loadCompanyOptions,
+  loadExpenseTypeOptions,
+  loadProjectOptions,
+  loadUserOptions,
+  type CompanyOption,
+  type ExpenseTypeOption,
+  type ProjectOption,
+  type UserOption,
+} from "@/lib/api/dashboard/shared-options";
 import * as XLSX from "xlsx";
 import {
   Combobox,
@@ -53,30 +64,6 @@ type DailyExpenseRow = {
   remark: string | null;
 };
 
-type ExpenseTypeOption = {
-  id: string;
-  name: string;
-  status: "ACTIVE" | "INACTIVE";
-};
-
-type ProjectOption = {
-  id: string;
-  name: string;
-  city?: string | null;
-};
-
-type UserOption = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  role?: string | null;
-};
-
-type CompanyOption = {
-  id: string;
-  name: string;
-};
-
 const formatAmount = (value: number) =>
   Number(value || 0).toLocaleString(undefined, {
     minimumFractionDigits: 2,
@@ -92,11 +79,6 @@ const getUserLabel = (option: UserOption) =>
   `${option.firstName} ${option.lastName} - ${option.role || ""}`.trim();
 
 const getCompanyLabel = (option: CompanyOption) => option.name;
-
-const getTransactionLabel = () => "Expense";
-
-const getTransactionClassName = () =>
-  "bg-rose-100 text-rose-800 ring-1 ring-rose-200";
 
 const getRowCompanyLabel = (row: DailyExpenseRow) =>
   row.expenseCompanyName || row.expenseCompanyCode || null;
@@ -203,53 +185,20 @@ function DailyExpenseListContent() {
     toDate,
   ].filter(Boolean);
 
-  const calculateBalance = (
-    transactions: Array<{
-      amount: number | string | null | undefined;
-      transactionType: TransactionType;
-    }>,
-  ) =>
-    transactions.reduce((total, item) => {
-      const amount = Number(item.amount || 0);
-
-      if (item.transactionType === "EXPENSE") return total - amount;
-
-      return total;
-    }, 0);
-
   useEffect(() => {
     const loadExpenseTypes = async () => {
       try {
-        const [projectsRes, expenseTypesRes, usersRes, companiesRes] = await Promise.all([
-          fetch("/api/projects/options"),
-          fetch("/api/expense-types/options"),
-          fetch("/api/users/options"),
-          fetch("/api/companies/options"),
+        const [projects, expenseTypes, users, companies] = await Promise.all([
+          loadProjectOptions(),
+          loadExpenseTypeOptions(),
+          loadUserOptions(),
+          loadCompanyOptions(),
         ]);
 
-        if (projectsRes.ok) {
-          const data = await projectsRes.json();
-          setProjects(Array.isArray(data) ? data : []);
-        }
-
-        if (expenseTypesRes.ok) {
-          const data = await expenseTypesRes.json();
-          setExpenseTypes(
-            Array.isArray(data)
-              ? data.filter((item: ExpenseTypeOption) => item.status === "ACTIVE")
-              : [],
-          );
-        }
-
-        if (usersRes.ok) {
-          const data = await usersRes.json();
-          setUsers(Array.isArray(data) ? data : []);
-        }
-
-        if (companiesRes.ok) {
-          const data = await companiesRes.json();
-          setCompanies(Array.isArray(data) ? data : []);
-        }
+        setProjects(projects);
+        setExpenseTypes(expenseTypes.filter((item) => item.status === "ACTIVE"));
+        setUsers(users);
+        setCompanies(companies);
       } catch (error) {
         console.error("Failed to load expense filter options", error);
       }
@@ -283,33 +232,24 @@ function DailyExpenseListContent() {
   const loadDailyExpenses = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: String(pageIndex + 1),
-        pageSize: String(pageSize),
-      });
-      if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
-      if (projectFilter?.id) params.set("projectId", projectFilter.id);
-      if (expenseTypeFilter?.id)
-        params.set("expenseTypeId", expenseTypeFilter.id);
-      if (expenseByFilter?.id) params.set("expenseById", expenseByFilter.id);
-      if (expenseCompanyFilter?.id)
-        params.set("expenseCompanyId", expenseCompanyFilter.id);
-      if (fromDate) params.set("fromDate", fromDate);
-      if (toDate) params.set("toDate", toDate);
-
-      const res = await fetch(`/api/daily-expenses?${params.toString()}`);
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to load daily expenses.");
-        return;
-      }
-
-      const data = await res.json();
+      const data = (await dailyExpenseApi.list({
+        page: pageIndex + 1,
+        pageSize,
+        q: debouncedQuery.trim() || undefined,
+        projectId: projectFilter?.id,
+        expenseTypeId: expenseTypeFilter?.id,
+        expenseById: expenseByFilter?.id,
+        expenseCompanyId: expenseCompanyFilter?.id,
+        fromDate: fromDate || undefined,
+        toDate: toDate || undefined,
+      })) as { data: DailyExpenseRow[]; total: number };
       setDailyExpenses(Array.isArray(data?.data) ? data.data : []);
       setTotal(typeof data?.total === "number" ? data.total : 0);
     } catch (error) {
       console.error("Failed to load daily expenses", error);
-      toast.error("Failed to load daily expenses.");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to load daily expenses.",
+      );
     } finally {
       setLoading(false);
     }
@@ -353,19 +293,14 @@ function DailyExpenseListContent() {
     if (!confirmTarget) return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/daily-expenses/${confirmTarget.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to delete daily expense.");
-        return;
-      }
+      await dailyExpenseApi.remove(confirmTarget.id);
       await loadDailyExpenses();
       toast.success("Daily expense deleted successfully.");
     } catch (error) {
       console.error("Failed to delete transaction", error);
-      toast.error("Failed to delete daily expense.");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete daily expense.",
+      );
     } finally {
       setDeleting(false);
       setConfirmOpen(false);
@@ -379,27 +314,17 @@ function DailyExpenseListContent() {
     let totalPages = 1;
 
     while (currentPage <= totalPages) {
-      const params = new URLSearchParams({
-        page: String(currentPage),
-        pageSize: "100",
-      });
-      if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
-      if (projectFilter?.id) params.set("projectId", projectFilter.id);
-      if (expenseTypeFilter?.id)
-        params.set("expenseTypeId", expenseTypeFilter.id);
-      if (expenseByFilter?.id) params.set("expenseById", expenseByFilter.id);
-      if (expenseCompanyFilter?.id)
-        params.set("expenseCompanyId", expenseCompanyFilter.id);
-      if (fromDate) params.set("fromDate", fromDate);
-      if (toDate) params.set("toDate", toDate);
-
-      const res = await fetch(`/api/daily-expenses?${params.toString()}`);
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        throw new Error(payload.error || "Failed to load daily expenses.");
-      }
-
-      const data = await res.json();
+      const data = (await dailyExpenseApi.list({
+        page: currentPage,
+        pageSize: 100,
+        q: debouncedQuery.trim() || undefined,
+        projectId: projectFilter?.id,
+        expenseTypeId: expenseTypeFilter?.id,
+        expenseById: expenseByFilter?.id,
+        expenseCompanyId: expenseCompanyFilter?.id,
+        fromDate: fromDate || undefined,
+        toDate: toDate || undefined,
+      })) as { data: DailyExpenseRow[]; total?: number; totalPages?: number };
       const rows = Array.isArray(data?.data) ? data.data : [];
       accumulated.push(...rows);
       totalPages =

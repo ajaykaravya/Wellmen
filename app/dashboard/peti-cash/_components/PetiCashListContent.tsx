@@ -28,6 +28,15 @@ import AppliedFilterSummary from "../../../components/AppliedFilterSummary";
 import ConfirmDialog from "../../../components/ConfirmDialog";
 import CustomDatePicker from "../../../components/CustomDatePicker";
 import { formatToDDMMYYYY } from "@/lib/dateUtils";
+import { petiCashApi } from "@/lib/api/dashboard/peti-cash";
+import {
+  loadCompanyOptions,
+  loadProjectOptions,
+  loadUserOptions,
+  type CompanyOption,
+  type ProjectOption,
+  type UserOption,
+} from "@/lib/api/dashboard/shared-options";
 
 type TransactionType = "CREDIT" | "DEBIT";
 
@@ -49,25 +58,6 @@ type PetiCashRow = {
   projectCity: string | null;
   date: string;
   remarks: string | null;
-};
-
-type UserOption = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  role?: string | null;
-};
-
-type ProjectOption = {
-  id: string;
-  name: string;
-  city?: string | null;
-};
-
-type CompanyOption = {
-  id: string;
-  name: string;
-  code?: string | null;
 };
 
 const formatAmount = (value: number) =>
@@ -136,31 +126,22 @@ function PetiCashListContent() {
   const loadRows = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: String(pageIndex + 1),
-        pageSize: String(pageSize),
-      });
-      if (transactionTypeFilter) params.set("transactionType", transactionTypeFilter);
-      if (givenByFilter?.id) params.set("givenById", givenByFilter.id);
-      if (givenToFilter?.id) params.set("givenToId", givenToFilter.id);
-      if (projectFilter?.id) params.set("projectId", projectFilter.id);
-      if (companyFilter?.id) params.set("companyId", companyFilter.id);
-      if (fromDate) params.set("fromDate", fromDate);
-      if (toDate) params.set("toDate", toDate);
-
-      const res = await fetch(`/api/peti-cash?${params.toString()}`);
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to load peti cash.");
-        return;
-      }
-
-      const data = await res.json();
+      const data = (await petiCashApi.list({
+        page: pageIndex + 1,
+        pageSize,
+        transactionType: transactionTypeFilter || undefined,
+        givenById: givenByFilter?.id,
+        givenToId: givenToFilter?.id,
+        projectId: projectFilter?.id,
+        companyId: companyFilter?.id,
+        fromDate: fromDate || undefined,
+        toDate: toDate || undefined,
+      })) as { data: PetiCashRow[]; total: number };
       setRows(Array.isArray(data?.data) ? data.data : []);
       setTotal(typeof data?.total === "number" ? data.total : 0);
     } catch (error) {
       console.error("Failed to load peti cash", error);
-      toast.error("Failed to load peti cash.");
+      toast.error(error instanceof Error ? error.message : "Failed to load peti cash.");
     } finally {
       setLoading(false);
     }
@@ -179,28 +160,22 @@ function PetiCashListContent() {
   const loadBalance = useCallback(async () => {
     setBalanceLoading(true);
     try {
-      const filters = new URLSearchParams();
-      if (transactionTypeFilter) filters.set("transactionType", transactionTypeFilter);
-      if (givenByFilter?.id) filters.set("givenById", givenByFilter.id);
-      if (givenToFilter?.id) filters.set("givenToId", givenToFilter.id);
-      if (projectFilter?.id) filters.set("projectId", projectFilter.id);
-      if (companyFilter?.id) filters.set("companyId", companyFilter.id);
-      if (fromDate) filters.set("fromDate", fromDate);
-      if (toDate) filters.set("toDate", toDate);
-
       const accumulated: PetiCashRow[] = [];
       let currentPage = 1;
       let totalPages = 1;
 
       while (currentPage <= totalPages) {
-        const params = new URLSearchParams(filters);
-        params.set("page", String(currentPage));
-        params.set("pageSize", "100");
-
-        const res = await fetch(`/api/peti-cash?${params.toString()}`);
-        if (!res.ok) return;
-
-        const data = await res.json();
+        const data = (await petiCashApi.list({
+          page: currentPage,
+          pageSize: 100,
+          transactionType: transactionTypeFilter || undefined,
+          givenById: givenByFilter?.id,
+          givenToId: givenToFilter?.id,
+          projectId: projectFilter?.id,
+          companyId: companyFilter?.id,
+          fromDate: fromDate || undefined,
+          toDate: toDate || undefined,
+        })) as { data: PetiCashRow[]; totalPages?: number };
         const pageRows = Array.isArray(data?.data) ? data.data : [];
         accumulated.push(...pageRows);
         totalPages =
@@ -242,26 +217,14 @@ function PetiCashListContent() {
   useEffect(() => {
     const loadOptions = async () => {
       try {
-        const [usersRes, projectsRes, companiesRes] = await Promise.all([
-          fetch("/api/users/options"),
-          fetch("/api/projects/options"),
-          fetch("/api/companies/options"),
+        const [users, projects, companies] = await Promise.all([
+          loadUserOptions(),
+          loadProjectOptions(),
+          loadCompanyOptions(),
         ]);
-
-        if (usersRes.ok) {
-          const data = await usersRes.json();
-          setUsers(Array.isArray(data) ? data : []);
-        }
-
-        if (projectsRes.ok) {
-          const data = await projectsRes.json();
-          setProjects(Array.isArray(data) ? data : []);
-        }
-
-        if (companiesRes.ok) {
-          const data = await companiesRes.json();
-          setCompanies(Array.isArray(data) ? data : []);
-        }
+        setUsers(users);
+        setProjects(projects);
+        setCompanies(companies);
       } catch (error) {
         console.error("Failed to load peti cash filter options", error);
       }
@@ -366,19 +329,12 @@ function PetiCashListContent() {
     if (!confirmTarget) return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/peti-cash/${confirmTarget.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to delete peti cash.");
-        return;
-      }
+      await petiCashApi.remove(confirmTarget.id);
       toast.success("Peti cash deleted successfully.");
       await loadRows();
     } catch (error) {
       console.error("Failed to delete peti cash", error);
-      toast.error("Failed to delete peti cash.");
+      toast.error(error instanceof Error ? error.message : "Failed to delete peti cash.");
     } finally {
       setDeleting(false);
       setConfirmOpen(false);
@@ -392,19 +348,13 @@ function PetiCashListContent() {
     setViewData(null);
 
     try {
-      const res = await fetch(`/api/peti-cash/${row.id}`);
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || "Failed to load peti cash details.");
-        setViewOpen(false);
-        return;
-      }
-
-      const data = await res.json();
+      const data = (await petiCashApi.get(row.id)) as PetiCashRow;
       setViewData(data);
     } catch (error) {
       console.error("Failed to load peti cash details", error);
-      toast.error("Failed to load peti cash details.");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to load peti cash details.",
+      );
       setViewOpen(false);
     } finally {
       setViewLoading(false);
@@ -519,7 +469,7 @@ function PetiCashListContent() {
         ),
       },
     ],
-    [handleDelete, handleEdit]);
+    [handleDelete, handleEdit, handleView]);
 
   const table = useReactTable({
     data: rows,
@@ -743,212 +693,214 @@ function PetiCashListContent() {
         onApply={applyFilters}
         maxWidthClassName="max-w-2xl"
       >
-        <CustomDatePicker
-          value={draftFromDate}
-          onChange={setDraftFromDate}
-          placeholder="From date"
-          className="rbac-input-filter"
-        />
+        <div className="grid md:grid-cols-2 gap-4">
+          <CustomDatePicker
+            value={draftFromDate}
+            onChange={setDraftFromDate}
+            placeholder="From date"
+            className="rbac-input-filter"
+          />
 
-        <CustomDatePicker
-          value={draftToDate}
-          onChange={setDraftToDate}
-          placeholder="To date"
-          className="rbac-input-filter"
-        />
+          <CustomDatePicker
+            value={draftToDate}
+            onChange={setDraftToDate}
+            placeholder="To date"
+            className="rbac-input-filter"
+          />
 
-        <Combobox
-          value={draftTransactionTypeFilter}
-          onChange={(option: TransactionType | "" | null) => {
-            setDraftTransactionTypeFilter(option ?? "");
-          }}
-          nullable
-        >
-          <div className="relative min-w-64">
-            <ComboboxInput
-              className="theme-input rbac-input w-full pr-10"
-              placeholder="Type"
-              displayValue={(option: TransactionType | "" | null) =>
-                option ? (option === "CREDIT" ? "Credit" : "Debit") : ""
-              }
-              onChange={() => {
-                setDraftTransactionTypeFilter("");
-              }}
-            />
-            <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
-              <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
-            </ComboboxButton>
-            <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
-              {(["CREDIT", "DEBIT"] as const).map((type) => (
-                <ComboboxOption
-                  key={type}
-                  value={type}
-                  className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span>{type === "CREDIT" ? "Credit" : "Debit"}</span>
-                  </div>
-                </ComboboxOption>
-              ))}
-            </ComboboxOptions>
-          </div>
-        </Combobox>
+          <Combobox
+            value={draftTransactionTypeFilter}
+            onChange={(option: TransactionType | "" | null) => {
+              setDraftTransactionTypeFilter(option ?? "");
+            }}
+            nullable
+          >
+            <div className="relative min-w-64">
+              <ComboboxInput
+                className="theme-input rbac-input w-full pr-10"
+                placeholder="Type"
+                displayValue={(option: TransactionType | "" | null) =>
+                  option ? (option === "CREDIT" ? "Credit" : "Debit") : ""
+                }
+                onChange={() => {
+                  setDraftTransactionTypeFilter("");
+                }}
+              />
+              <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+                <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+              </ComboboxButton>
+              <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
+                {(["CREDIT", "DEBIT"] as const).map((type) => (
+                  <ComboboxOption
+                    key={type}
+                    value={type}
+                    className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span>{type === "CREDIT" ? "Credit" : "Debit"}</span>
+                    </div>
+                  </ComboboxOption>
+                ))}
+              </ComboboxOptions>
+            </div>
+          </Combobox>
 
-        <Combobox
-          value={draftGivenByFilter}
-          onChange={(option: UserOption | null) => {
-            setDraftGivenByFilter(option);
-            setDraftGivenByQuery("");
-          }}
-          nullable
-        >
-          <div className="relative min-w-64">
-            <ComboboxInput
-              className="theme-input rbac-input w-full pr-10"
-              placeholder="Given By"
-              displayValue={(option: UserOption | null) =>
-                option ? getUserLabel(option) : draftGivenByQuery
-              }
-              onChange={(event) => {
-                setDraftGivenByQuery(event.target.value);
-                setDraftGivenByFilter(null);
-              }}
-            />
-            <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
-              <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
-            </ComboboxButton>
-            <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
-              {filteredUsers(draftGivenByQuery).map((user) => (
-                <ComboboxOption
-                  key={user.id}
-                  value={user}
-                  className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span>{getUserLabel(user)}</span>
-                  </div>
-                </ComboboxOption>
-              ))}
-            </ComboboxOptions>
-          </div>
-        </Combobox>
+          <Combobox
+            value={draftGivenByFilter}
+            onChange={(option: UserOption | null) => {
+              setDraftGivenByFilter(option);
+              setDraftGivenByQuery("");
+            }}
+            nullable
+          >
+            <div className="relative min-w-64">
+              <ComboboxInput
+                className="theme-input rbac-input w-full pr-10"
+                placeholder="Given By"
+                displayValue={(option: UserOption | null) =>
+                  option ? getUserLabel(option) : draftGivenByQuery
+                }
+                onChange={(event) => {
+                  setDraftGivenByQuery(event.target.value);
+                  setDraftGivenByFilter(null);
+                }}
+              />
+              <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+                <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+              </ComboboxButton>
+              <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
+                {filteredUsers(draftGivenByQuery).map((user) => (
+                  <ComboboxOption
+                    key={user.id}
+                    value={user}
+                    className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span>{getUserLabel(user)}</span>
+                    </div>
+                  </ComboboxOption>
+                ))}
+              </ComboboxOptions>
+            </div>
+          </Combobox>
 
-        <Combobox
-          value={draftGivenToFilter}
-          onChange={(option: UserOption | null) => {
-            setDraftGivenToFilter(option);
-            setDraftGivenToQuery("");
-          }}
-          nullable
-        >
-          <div className="relative min-w-64">
-            <ComboboxInput
-              className="theme-input rbac-input w-full pr-10"
-              placeholder="Given To"
-              displayValue={(option: UserOption | null) =>
-                option ? getUserLabel(option) : draftGivenToQuery
-              }
-              onChange={(event) => {
-                setDraftGivenToQuery(event.target.value);
-                setDraftGivenToFilter(null);
-              }}
-            />
-            <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
-              <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
-            </ComboboxButton>
-            <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
-              {filteredUsers(draftGivenToQuery).map((user) => (
-                <ComboboxOption
-                  key={user.id}
-                  value={user}
-                  className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span>{getUserLabel(user)}</span>
-                  </div>
-                </ComboboxOption>
-              ))}
-            </ComboboxOptions>
-          </div>
-        </Combobox>
+          <Combobox
+            value={draftGivenToFilter}
+            onChange={(option: UserOption | null) => {
+              setDraftGivenToFilter(option);
+              setDraftGivenToQuery("");
+            }}
+            nullable
+          >
+            <div className="relative min-w-64">
+              <ComboboxInput
+                className="theme-input rbac-input w-full pr-10"
+                placeholder="Given To"
+                displayValue={(option: UserOption | null) =>
+                  option ? getUserLabel(option) : draftGivenToQuery
+                }
+                onChange={(event) => {
+                  setDraftGivenToQuery(event.target.value);
+                  setDraftGivenToFilter(null);
+                }}
+              />
+              <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+                <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+              </ComboboxButton>
+              <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
+                {filteredUsers(draftGivenToQuery).map((user) => (
+                  <ComboboxOption
+                    key={user.id}
+                    value={user}
+                    className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span>{getUserLabel(user)}</span>
+                    </div>
+                  </ComboboxOption>
+                ))}
+              </ComboboxOptions>
+            </div>
+          </Combobox>
 
-        <Combobox
-          value={draftProjectFilter}
-          onChange={(option: ProjectOption | null) => {
-            setDraftProjectFilter(option);
-            setDraftProjectQuery("");
-          }}
-          nullable
-        >
-          <div className="relative min-w-64">
-            <ComboboxInput
-              className="theme-input rbac-input w-full pr-10"
-              placeholder="Project"
-              displayValue={(option: ProjectOption | null) =>
-                option ? getProjectLabel(option) : draftProjectQuery
-              }
-              onChange={(event) => {
-                setDraftProjectQuery(event.target.value);
-                setDraftProjectFilter(null);
-              }}
-            />
-            <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
-              <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
-            </ComboboxButton>
-            <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
-              {filteredProjects(draftProjectQuery).map((project) => (
-                <ComboboxOption
-                  key={project.id}
-                  value={project}
-                  className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span>{getProjectLabel(project)}</span>
-                  </div>
-                </ComboboxOption>
-              ))}
-            </ComboboxOptions>
-          </div>
-        </Combobox>
+          <Combobox
+            value={draftProjectFilter}
+            onChange={(option: ProjectOption | null) => {
+              setDraftProjectFilter(option);
+              setDraftProjectQuery("");
+            }}
+            nullable
+          >
+            <div className="relative min-w-64">
+              <ComboboxInput
+                className="theme-input rbac-input w-full pr-10"
+                placeholder="Project"
+                displayValue={(option: ProjectOption | null) =>
+                  option ? getProjectLabel(option) : draftProjectQuery
+                }
+                onChange={(event) => {
+                  setDraftProjectQuery(event.target.value);
+                  setDraftProjectFilter(null);
+                }}
+              />
+              <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+                <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+              </ComboboxButton>
+              <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
+                {filteredProjects(draftProjectQuery).map((project) => (
+                  <ComboboxOption
+                    key={project.id}
+                    value={project}
+                    className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span>{getProjectLabel(project)}</span>
+                    </div>
+                  </ComboboxOption>
+                ))}
+              </ComboboxOptions>
+            </div>
+          </Combobox>
 
-        <Combobox
-          value={draftCompanyFilter}
-          onChange={(option: CompanyOption | null) => {
-            setDraftCompanyFilter(option);
-            setDraftCompanyQuery("");
-          }}
-          nullable
-        >
-          <div className="relative min-w-64">
-            <ComboboxInput
-              className="theme-input rbac-input w-full pr-10"
-              placeholder="Company"
-              displayValue={(option: CompanyOption | null) =>
-                option ? getCompanyLabel(option) : draftCompanyQuery
-              }
-              onChange={(event) => {
-                setDraftCompanyQuery(event.target.value);
-                setDraftCompanyFilter(null);
-              }}
-            />
-            <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
-              <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
-            </ComboboxButton>
-            <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
-              {filteredCompanies(draftCompanyQuery).map((company) => (
-                <ComboboxOption
-                  key={company.id}
-                  value={company}
-                  className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span>{getCompanyLabel(company)}</span>
-                  </div>
-                </ComboboxOption>
-              ))}
-            </ComboboxOptions>
-          </div>
-        </Combobox>
+          <Combobox
+            value={draftCompanyFilter}
+            onChange={(option: CompanyOption | null) => {
+              setDraftCompanyFilter(option);
+              setDraftCompanyQuery("");
+            }}
+            nullable
+          >
+            <div className="relative min-w-64">
+              <ComboboxInput
+                className="theme-input rbac-input w-full pr-10"
+                placeholder="Company"
+                displayValue={(option: CompanyOption | null) =>
+                  option ? getCompanyLabel(option) : draftCompanyQuery
+                }
+                onChange={(event) => {
+                  setDraftCompanyQuery(event.target.value);
+                  setDraftCompanyFilter(null);
+                }}
+              />
+              <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+                <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+              </ComboboxButton>
+              <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
+                {filteredCompanies(draftCompanyQuery).map((company) => (
+                  <ComboboxOption
+                    key={company.id}
+                    value={company}
+                    className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span>{getCompanyLabel(company)}</span>
+                    </div>
+                  </ComboboxOption>
+                ))}
+              </ComboboxOptions>
+            </div>
+          </Combobox>
+        </div>
       </ListingFilterDialog>
 
       {viewOpen && (
