@@ -1,13 +1,27 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { FaSpinner } from "react-icons/fa";
+import {
+  FaBolt,
+  FaBuilding,
+  FaFileInvoiceDollar,
+  FaHospital,
+  FaMobileAlt,
+  FaMoneyBillWave,
+  FaSpinner,
+  FaUniversity,
+  FaWrench,
+} from "react-icons/fa";
+import { FaListCheck } from "react-icons/fa6";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import Loading from "../../../components/Loading";
 import Link from "next/link";
 import CustomDatePicker from "../../../components/CustomDatePicker";
-import { ButtonGroup } from "../../_components/ButtonGroup";
+import CashEntryStepper from "../../_components/CashEntryStepper";
+import CashEntrySuccessView from "../../_components/CashEntrySuccessView";
+import SelectionCardGrid from "../../_components/SelectionCardGrid";
+import SelectionPills from "../../_components/SelectionPills";
 import { UserCardGroup } from "../../_components/UserCardGroup";
 import { formatToDDMMYYYY, getTodayInputDate } from "@/lib/dateUtils";
 import { dailyExpenseApi } from "@/lib/api/dashboard/daily-expenses";
@@ -48,7 +62,36 @@ type DailyExpenseFormState = {
 
 type DailyExpenseFormContentProps = {
   dailyExpenseId?: string;
+  onGoDashboard?: () => void;
 };
+
+type DailyExpenseSuccessEntry = {
+  company: string;
+  paymentMode: string;
+  category: string;
+  party: string;
+  amount: string;
+  date: string;
+};
+
+const cashEntrySteps = [
+  { label: "Company" },
+  { label: "Mode" },
+  { label: "Category" },
+  { label: "Details" },
+] as const;
+
+const createInitialDailyExpenseForm = (): DailyExpenseFormState => ({
+  transactionType: "EXPENSE",
+  amount: "",
+  projectId: "",
+  expenseTypeId: "",
+  expenseById: "",
+  expenseCompanyId: "",
+  paymentMode: "CASH",
+  date: getTodayInputDate(),
+  remark: "",
+});
 
 function getDisplayLabel(option: ExpenseTypeOption) {
   return option.name;
@@ -60,26 +103,59 @@ function getProjectLabel(option: ProjectOption) {
 
 const paymentModeOptions: Array<{ key: PaymentMode; label: string }> = [
   { key: "CASH", label: "Cash" },
+  { key: "BANK", label: "Bank" },
   { key: "CHEQUE", label: "Cheque" },
   { key: "UPI", label: "UPI" },
   { key: "NEFT_RTGS", label: "NEFT/RTGS" },
 ];
 
+const paymentModeIcons: Record<PaymentMode, React.ReactNode> = {
+  CASH: <FaMoneyBillWave size={22} />,
+  BANK: <FaUniversity size={22} />,
+  CHEQUE: <FaFileInvoiceDollar size={22} />,
+  UPI: <FaMobileAlt size={22} />,
+  NEFT_RTGS: <FaBolt size={22} />,
+};
+
+function getCompanyCardIcon(index: number) {
+  const icons = [
+    <FaBuilding key="company-building" size={22} />,
+    <FaHospital key="company-hospital" size={22} />,
+    <FaWrench key="company-wrench" size={22} />,
+  ];
+  return icons[index % icons.length];
+}
+
+function getCardTone(index: number) {
+  const tones = [
+    "border-sky-500/20",
+    "border-emerald-500/20",
+    "border-amber-500/20",
+    "border-fuchsia-500/20",
+    "border-rose-500/20",
+  ];
+  return tones[index % tones.length];
+}
+
 export default function DailyExpenseFormContent({
   dailyExpenseId,
+  onGoDashboard,
 }: DailyExpenseFormContentProps) {
   const router = useRouter();
-  const [form, setForm] = useState<DailyExpenseFormState>({
-    transactionType: "EXPENSE",
-    amount: "",
-    projectId: "",
-    expenseTypeId: "",
-    expenseById: "",
-    expenseCompanyId: "",
-    paymentMode: "CASH",
-    date: getTodayInputDate(),
-    remark: "",
-  });
+  const [form, setForm] = useState<DailyExpenseFormState>(createInitialDailyExpenseForm());
+
+  const clearError = (field: keyof DailyExpenseFormState) => {
+    setErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const goToNextStep = () => {
+    setCurrentStep((prev) => Math.min(prev + 1, cashEntrySteps.length - 1));
+  };
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [expenseTypes, setExpenseTypes] = useState<ExpenseTypeOption[]>([]);
   const [users, setUsers] = useState<UserOption[]>([]);
@@ -88,6 +164,8 @@ export default function DailyExpenseFormContent({
   const [projectQuery, setProjectQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [savedEntry, setSavedEntry] = useState<DailyExpenseSuccessEntry | null>(null);
   const [errors, setErrors] = useState<
     Partial<Record<keyof DailyExpenseFormState, string>>
   >({});
@@ -164,11 +242,6 @@ export default function DailyExpenseFormContent({
     );
   }, [expenseTypes, expenseTypeQuery]);
 
-  const selectedExpenseType = useMemo(
-    () => expenseTypes.find((option) => option.id === form.expenseTypeId) || null,
-    [expenseTypes, form.expenseTypeId],
-  );
-
   const filteredProjects = useMemo(() => {
     const query = projectQuery.trim().toLowerCase();
     if (!query) return projects;
@@ -182,26 +255,76 @@ export default function DailyExpenseFormContent({
     [form.projectId, projects],
   );
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setNote(null);
+  const selectedCompany = useMemo(
+    () => companies.find((company) => company.id === form.expenseCompanyId) || null,
+    [companies, form.expenseCompanyId],
+  );
 
+  const selectedPaymentModeLabel = useMemo(
+    () => paymentModeOptions.find((option) => option.key === form.paymentMode)?.label || "",
+    [form.paymentMode],
+  );
+
+  const selectedExpenseTypeLabel = useMemo(
+    () => expenseTypes.find((option) => option.id === form.expenseTypeId)?.name || "",
+    [expenseTypes, form.expenseTypeId],
+  );
+
+  const selectedSummaryItems = useMemo(
+    () =>
+      [
+        currentStep > 0 && selectedCompany
+          ? { label: selectedCompany.name, tone: "brand" as const }
+          : null,
+        currentStep > 1 && selectedPaymentModeLabel
+          ? { label: selectedPaymentModeLabel, tone: "success" as const }
+          : null,
+        currentStep > 2 && selectedExpenseTypeLabel
+          ? { label: selectedExpenseTypeLabel, tone: "warning" as const }
+          : null,
+      ].filter(Boolean) as Array<{ label: string; tone: "brand" | "success" | "warning" }>,
+    [currentStep, selectedCompany, selectedExpenseTypeLabel, selectedPaymentModeLabel],
+  );
+
+  const selectedExpenseByLabel = useMemo(
+    () => {
+      const user = users.find((item) => item.id === form.expenseById);
+      return user ? `${user.firstName} ${user.lastName}`.trim() : "";
+    },
+    [form.expenseById, users],
+  );
+
+  const resetToNewEntry = () => {
+    setForm(createInitialDailyExpenseForm());
+    setCurrentStep(0);
+    setSavedEntry(null);
+    setErrors({});
+    setNote(null);
+    setProjectQuery("");
+    setExpenseTypeQuery("");
+  };
+
+  const handleSave = async () => {
+    setNote(null);
     const newErrors: Partial<Record<keyof DailyExpenseFormState, string>> = {};
+    if (!form.expenseCompanyId) {
+      newErrors.expenseCompanyId = "Expense company is required.";
+    }
+    if (!form.paymentMode) {
+      newErrors.paymentMode = "Payment mode is required.";
+    }
+    if (!form.expenseTypeId) {
+      newErrors.expenseTypeId = "Expense type is required.";
+    }
+    if (!form.projectId) newErrors.projectId = "Project is required.";
+    if (!form.expenseById) newErrors.expenseById = "Expense by is required.";
     if (!form.amount.trim() || Number(form.amount) <= 0) {
       newErrors.amount = "Amount is required.";
     }
     if (!form.date.trim()) newErrors.date = "Date is required.";
-    if (!form.projectId) newErrors.projectId = "Project is required.";
-    if (!form.expenseTypeId) newErrors.expenseTypeId = "Expense type is required.";
-    if (!form.expenseById) newErrors.expenseById = "Expense by is required.";
-    if (!form.paymentMode) newErrors.paymentMode = "Payment mode is required.";
-    if (!form.expenseCompanyId)
-      newErrors.expenseCompanyId = "Expense company is required.";
 
     setErrors(newErrors);
-    if (Object.keys(newErrors).length > 0) {
-      return;
-    }
+    if (Object.keys(newErrors).length > 0) return;
 
     try {
       setSaving(true);
@@ -223,10 +346,17 @@ export default function DailyExpenseFormContent({
         await dailyExpenseApi.create(payload);
       }
 
+      setSavedEntry({
+        company: selectedCompany?.name || "-",
+        paymentMode: selectedPaymentModeLabel || "-",
+        category: selectedExpenseTypeLabel || "-",
+        party: selectedProject ? getProjectLabel(selectedProject) : "-",
+        amount: `₹${Number(form.amount || 0).toFixed(2)}`,
+        date: form.date,
+      });
       toast.success(
         `Daily expense ${dailyExpenseId ? "updated" : "created"} successfully.`,
       );
-      router.push("/dashboard/daily-expenses");
     } catch (error) {
       console.error("Failed to save daily expense", error);
       const message =
@@ -245,252 +375,274 @@ export default function DailyExpenseFormContent({
       </div>
     );
 
+  if (savedEntry) {
+    return (
+      <CashEntrySuccessView
+        title="Expense Saved!"
+        subtitle={`${savedEntry.amount} — ${savedEntry.category}`}
+        details={[
+          { label: "Company", value: savedEntry.company },
+          { label: "Mode", value: savedEntry.paymentMode },
+          { label: "Category", value: savedEntry.category },
+          { label: "Party", value: savedEntry.party },
+          { label: "Amount", value: savedEntry.amount },
+          { label: "Date", value: savedEntry.date },
+        ]}
+        onAddAnother={resetToNewEntry}
+        onDashboard={onGoDashboard || (() => router.push("/dashboard"))}
+      />
+    );
+  }
+
   return (
-    <section className="rbac-section rbac-container">
-      <div className="rbac-card">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="rbac-title-lg">
-            {dailyExpenseId ? "Edit Daily Expense" : "Add New Daily Expense"}
-          </h3>
-        </div>
-
-        <form className="rbac-form" onSubmit={handleSubmit}>
-          <fieldset
-            disabled={saving}
-            className={saving ? "opacity-70 pointer-events-none" : ""}
-          >
-
-
+    <CashEntryStepper
+      title={dailyExpenseId ? "Edit Daily Expense" : "Add New Daily Expense"}
+      steps={cashEntrySteps}
+      activeStep={currentStep}
+      onBack={currentStep > 0 ? () => setCurrentStep((prev) => prev - 1) : undefined}
+      onStepClick={(stepIndex) => setCurrentStep(stepIndex)}
+    >
+      <form className="rbac-form" onSubmit={(event) => event.preventDefault()}>
+        <fieldset
+          disabled={saving}
+          className={saving ? "opacity-70 pointer-events-none" : ""}
+        >
+          {currentStep === 0 && (
             <div className="mb-2">
-              <ButtonGroup
-                title="Expense Company"
+              <SelectionCardGrid
+                title="Select Company"
                 selected={form.expenseCompanyId}
-                options={companies.map((company) => ({
+                options={companies.map((company, index) => ({
                   key: company.id,
                   label: company.name,
+                  subtitle: "Tap to select →",
+                  icon: getCompanyCardIcon(index),
+                  accentClassName: getCardTone(index),
                 }))}
-                onSelect={(value) =>
-                  setForm((prev) => ({ ...prev, expenseCompanyId: value }))
-                }
+                onSelect={(value) => {
+                  setForm((prev) => ({ ...prev, expenseCompanyId: value }));
+                  clearError("expenseCompanyId");
+                  goToNextStep();
+                }}
                 error={errors.expenseCompanyId}
                 required
+                columnsClassName="grid grid-cols-1 gap-3"
               />
             </div>
-            <div className="mb-2">
-              <UserCardGroup
-                title="Expense By"
-                selected={form.expenseById}
-                users={users}
-                onSelect={(value) =>
-                  setForm((prev) => ({ ...prev, expenseById: value }))
-                }
-                error={errors.expenseById}
-                required
-                emptyMessage="No users available to select."
-              />
-            </div>
+          )}
 
+          {currentStep === 1 && (
             <div className="mb-2">
+              <SelectionPills items={selectedSummaryItems} />
+              <div className="mt-4">
+                <SelectionCardGrid
+                  title="Type of Transaction"
+                  selected={form.paymentMode}
+                  options={paymentModeOptions.map((option) => ({
+                    key: option.key,
+                    label: option.label,
+                    icon: paymentModeIcons[option.key],
+                  }))}
+                  onSelect={(value) => {
+                    setForm((prev) => ({
+                      ...prev,
+                      paymentMode: value as PaymentMode,
+                    }));
+                    clearError("paymentMode");
+                    goToNextStep();
+                  }}
+                  error={errors.paymentMode}
+                  required
+                  columnsClassName="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
+                />
+              </div>
+            </div>
+          )}
+
+          {currentStep === 2 && (
+            <div className="mb-2">
+              <SelectionPills items={selectedSummaryItems} />
+              <div className="mt-4">
+                <SelectionCardGrid
+                  title="Select Category"
+                  selected={form.expenseTypeId}
+                  options={filteredExpenseTypes.map((option, index) => ({
+                    key: option.id,
+                    label: option.name,
+                    subtitle: "Tap to select →",
+                    icon: <FaListCheck size={22} />,
+                    accentClassName: getCardTone(index),
+                  }))}
+                  onSelect={(value) => {
+                    setForm((prev) => ({
+                      ...prev,
+                      expenseTypeId: value,
+                    }));
+                    setExpenseTypeQuery("");
+                    clearError("expenseTypeId");
+                    goToNextStep();
+                  }}
+                  error={errors.expenseTypeId}
+                  required
+                  columnsClassName="grid grid-cols-1 gap-3"
+                />
+              </div>
+            </div>
+          )}
+
+          {currentStep === 3 && (
+            <>
+              <SelectionPills items={selectedSummaryItems} />
+              <div className="mb-2">
+                <label className="rbac-label">
+                  Project <span className="text-red-600">*</span>
+                </label>
+                <Combobox
+                  value={selectedProject}
+                  onChange={(project: ProjectOption | null) => {
+                    setForm((prev) => ({
+                      ...prev,
+                      projectId: project?.id || "",
+                    }));
+                    setProjectQuery("");
+                    clearError("projectId");
+                  }}
+                  nullable
+                >
+                  <div className="relative">
+                    <ComboboxInput
+                      className="theme-input rbac-input w-full pr-10"
+                      placeholder="Search project"
+                      displayValue={(project: ProjectOption | null) =>
+                        project ? getProjectLabel(project) : projectQuery
+                      }
+                      onChange={(event) => {
+                        setProjectQuery(event.target.value);
+                        setForm((prev) => ({ ...prev, projectId: "" }));
+                        clearError("projectId");
+                      }}
+                    />
+                    <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+                      <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+                    </ComboboxButton>
+                    <ComboboxOptions
+                      modal={false}
+                      className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]"
+                    >
+                      {filteredProjects.length === 0 ? (
+                        <div className="px-3 py-2 text-sm text-[color:var(--theme-text-muted)]">
+                          No projects found
+                        </div>
+                      ) : (
+                        filteredProjects.map((project) => (
+                          <ComboboxOption
+                            key={project.id}
+                            value={project}
+                            className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <span>{getProjectLabel(project)}</span>
+                            </div>
+                          </ComboboxOption>
+                        ))
+                      )}
+                    </ComboboxOptions>
+                  </div>
+                </Combobox>
+                {errors.projectId && (
+                  <p className="mt-1 text-sm text-red-600">{errors.projectId}</p>
+                )}
+              </div>
+
+              <div className="mb-2">
+                <UserCardGroup
+                  title="Expense By"
+                  selected={form.expenseById}
+                  users={users}
+                  onSelect={(value) => {
+                    setForm((prev) => ({ ...prev, expenseById: value }));
+                    clearError("expenseById");
+                  }}
+                  error={errors.expenseById}
+                  required
+                  emptyMessage="No users available to select."
+                />
+              </div>
+
               <label className="rbac-label">
-                Category <span className="text-red-600">*</span>
+                Amount <span className="text-red-600">*</span>
+                <input
+                  className="rbac-input mb-1"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Amount"
+                  value={form.amount}
+                  onWheel={(event) => event.currentTarget.blur()}
+                  onChange={(event) => {
+                    setForm((prev) => ({ ...prev, amount: event.target.value }));
+                    clearError("amount");
+                  }}
+                />
               </label>
-              <Combobox
-                value={selectedExpenseType}
-                onChange={(expenseType: ExpenseTypeOption | null) => {
-                  setForm((prev) => ({
-                    ...prev,
-                    expenseTypeId: expenseType?.id || "",
-                  }));
-                  setExpenseTypeQuery("");
-                }}
-                nullable
-              >
-                <div className="relative">
-                  <ComboboxInput
-                    className="theme-input rbac-input w-full pr-10"
-                    placeholder="Search expense type"
-                    displayValue={(expenseType: ExpenseTypeOption | null) =>
-                      expenseType ? getDisplayLabel(expenseType) : expenseTypeQuery
-                    }
-                    onChange={(event) => {
-                      setExpenseTypeQuery(event.target.value);
-                      setForm((prev) => ({ ...prev, expenseTypeId: "" }));
-                    }}
-                  />
-                  <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
-                    <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
-                  </ComboboxButton>
-                  <ComboboxOptions
-                    modal={false}
-                    className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]"
-                  >
-                    {filteredExpenseTypes.length === 0 ? (
-                      <div className="px-3 py-2 text-sm text-[color:var(--theme-text-muted)]">
-                        No expense types found
-                      </div>
-                    ) : (
-                      filteredExpenseTypes.map((option) => (
-                        <ComboboxOption
-                          key={option.id}
-                          value={option}
-                          className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <span>{option.name}</span>
-                          </div>
-                        </ComboboxOption>
-                      ))
-                    )}
-                  </ComboboxOptions>
-                </div>
-              </Combobox>
-              {errors.expenseTypeId && (
-                <p className="text-sm text-red-600 mt-1">
-                  {errors.expenseTypeId}
-                </p>
+              {errors.amount && (
+                <p className="mb-2 text-sm text-red-600">{errors.amount}</p>
               )}
-            </div>
 
-            <div className="mb-2">
               <label className="rbac-label">
-                Project <span className="text-red-600">*</span>
+                Date <span className="text-red-600">*</span>
+                <CustomDatePicker
+                  value={form.date}
+                  onChange={(value) => {
+                    setForm((prev) => ({
+                      ...prev,
+                      date: value || getTodayInputDate(),
+                    }));
+                    clearError("date");
+                  }}
+                  className="mb-2"
+                  placeholder="Select date"
+                />
               </label>
-              <Combobox
-                value={selectedProject}
-                onChange={(project: ProjectOption | null) => {
-                  setForm((prev) => ({
-                    ...prev,
-                    projectId: project?.id || "",
-                  }));
-                  setProjectQuery("");
-                }}
-                nullable
-              >
-                <div className="relative">
-                  <ComboboxInput
-                    className="theme-input rbac-input w-full pr-10"
-                    placeholder="Search project"
-                    displayValue={(project: ProjectOption | null) =>
-                      project ? getProjectLabel(project) : projectQuery
-                    }
-                    onChange={(event) => {
-                      setProjectQuery(event.target.value);
-                      setForm((prev) => ({ ...prev, projectId: "" }));
-                    }}
-                  />
-                  <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
-                    <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
-                  </ComboboxButton>
-                  <ComboboxOptions
-                    modal={false}
-                    className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]"
-                  >
-                    {filteredProjects.length === 0 ? (
-                      <div className="px-3 py-2 text-sm text-[color:var(--theme-text-muted)]">
-                        No projects found
-                      </div>
-                    ) : (
-                      filteredProjects.map((project) => (
-                        <ComboboxOption
-                          key={project.id}
-                          value={project}
-                          className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <span>{getProjectLabel(project)}</span>
-                          </div>
-                        </ComboboxOption>
-                      ))
-                    )}
-                  </ComboboxOptions>
-                </div>
-              </Combobox>
-              {errors.projectId && (
-                <p className="mt-1 text-sm text-red-600">{errors.projectId}</p>
+              {errors.date && (
+                <p className="mb-2 text-sm text-red-600">{errors.date}</p>
               )}
-            </div>
 
-            <div className="mb-2">
-              <ButtonGroup
-                title="Payment Mode"
-                selected={form.paymentMode}
-                options={paymentModeOptions}
-                onSelect={(value) =>
-                  setForm((prev) => ({ ...prev, paymentMode: value as PaymentMode }))
-                }
-                error={errors.paymentMode}
-                required
-              />
-            </div>
+              <label className="rbac-label">
+                Remark
+                <textarea
+                  className="rbac-input mb-2 min-h-24"
+                  placeholder="Remark"
+                  value={form.remark}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, remark: event.target.value }))
+                  }
+                />
+              </label>
 
-            <label className="rbac-label">
-              Amount <span className="text-red-600">*</span>
-              <input
-                className="rbac-input mb-1"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="Amount"
-                value={form.amount}
-                onWheel={(event) => event.currentTarget.blur()}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, amount: event.target.value }))
-                }
-              />
-            </label>
-            {errors.amount && (
-              <p className="text-sm text-red-600 mb-2">{errors.amount}</p>
-            )}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-4">
+                <button
+                  className="rbac-button"
+                  type="button"
+                  onClick={handleSave}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <span className="inline-flex items-center gap-2">
+                      <FaSpinner className="animate-spin" size={16} />
+                      Saving...
+                    </span>
+                  ) : (
+                    "Save Entry"
+                  )}
+                </button>
+              </div>
+            </>
+          )}
+        </fieldset>
+      </form>
 
-            <label className="rbac-label">
-              Date <span className="text-red-600">*</span>
-              <CustomDatePicker
-                value={form.date}
-                onChange={(value) =>
-                  setForm((prev) => ({ ...prev, date: value || getTodayInputDate() }))
-                }
-                className="mb-2"
-                placeholder="Select date"
-              />
-            </label>
-            {errors.date && (
-              <p className="text-sm text-red-600 mb-2">{errors.date}</p>
-            )}
-
-            <label className="rbac-label">
-              Remark
-              <textarea
-                className="rbac-input mb-2 min-h-24"
-                placeholder="Remark"
-                value={form.remark}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, remark: event.target.value }))
-                }
-              />
-            </label>
-          </fieldset>
-
-          {note && <p className="text-sm text-red-600 mb-4">{note}</p>}
-
-          <div className="rbac-actions">
-            <button className="rbac-button" type="submit" disabled={saving}>
-              {saving ? (
-                <span className="inline-flex items-center gap-2">
-                  <FaSpinner className="animate-spin" size={16} />
-                  Saving...
-                </span>
-              ) : (
-                "Save"
-              )}
-            </button>
-            <Link href="/dashboard/daily-expenses">
-              <button className="text-red-500" type="button" disabled={saving}>
-                Cancel
-              </button>
-            </Link>
-          </div>
-        </form>
-      </div>
-    </section>
+      {note && <p className="mt-4 text-sm text-red-600">{note}</p>}
+    </CashEntryStepper>
   );
 }

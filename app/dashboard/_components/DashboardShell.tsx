@@ -50,7 +50,8 @@ type MenuKey =
   | "employeeFinancialReport"
   | "income"
   | "incomeTypes"
-  | "transportReports";
+  | "transportReports"
+  | "cashTracker";
 
 type DashboardContextValue = {
   user: SessionUser | null;
@@ -104,6 +105,7 @@ const routeByMenu: Record<MenuKey, string> = {
   transportReports: "/dashboard/transport-reports",
   income: "/dashboard/income",
   incomeTypes: "/dashboard/income-types",
+  cashTracker: "/dashboard/cash-tracker",
 };
 
 const getActiveMenu = (pathname: string | null): MenuKey => {
@@ -143,6 +145,7 @@ const getActiveMenu = (pathname: string | null): MenuKey => {
   if (safePathname.startsWith("/dashboard/income-types")) return "incomeTypes";
   if (safePathname.startsWith("/dashboard/income")) return "income";
   if (safePathname.startsWith("/dashboard/team")) return "team";
+  if (safePathname.startsWith("/dashboard/cash-tracker")) return "cashTracker";
   return "dashboard";
 };
 
@@ -273,6 +276,7 @@ export default function DashboardShell({
     );
     if (isAdmin) {
       items.push({ key: "transport-management", label: "Transport Management" });
+      items.push({key: "cashTracker", label: "Cash Tracker"});
       items.push({ key: "income", label: "Income" });
       items.push({ key: "dailyExpenses", label: "Expense" });
       items.push({ key: "petiCash", label: "Peti Cash" });

@@ -27,6 +27,8 @@ import {
   ComboboxOptions,
 } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
+import {  FaChevronLeft } from "react-icons/fa";
+
 
 type TransactionType = "CREDIT" | "DEBIT";
 
@@ -52,6 +54,7 @@ type PetiCashPayload = PetiCashFormState & {
 type PetiCashFormContentProps = {
   petiCashId?: string;
   defaultTransactionType?: TransactionType;
+  backButton?: boolean;
 };
 
 const isAdmin = (role?: string | null) => role === "Admin";
@@ -66,6 +69,7 @@ const getProjectLabel = (project: ProjectOption) =>
 export default function PetiCashFormContent({
   petiCashId,
   defaultTransactionType = "CREDIT",
+  backButton = false,
 }: PetiCashFormContentProps) {
   const router = useRouter();
   const [users, setUsers] = useState<UserOption[]>([]);
@@ -240,11 +244,18 @@ export default function PetiCashFormContent({
   }
 
   return (
-    <section className="rbac-section rbac-container">
+    <section className="rbac-section">
       <div className="rbac-card">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div>
-            <h3 className="rbac-title-lg">{title}</h3>
+        <div className="mb-4 flex items-center justify-between gap-3 w-full">
+          <div className="w-full">
+            <div className="flex items-center justify-between w-full">
+              <h3 className="rbac-title-lg">{title}</h3>
+              {backButton && (
+                <div className="flex items-center gap-2 cursor-pointer">
+                <FaChevronLeft /> <p className="text-sm"> Back </p>
+                </div>
+              )}
+            </div>
             <p className="text-sm text-slate-500">{helperText}</p>
           </div>
         </div>

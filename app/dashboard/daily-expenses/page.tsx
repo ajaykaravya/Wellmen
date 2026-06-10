@@ -289,6 +289,13 @@ function DailyExpenseListContent() {
     [router],
   );
 
+  const renderProjectName = (name?: string | null, city?: string | null) => (
+    <div className="flex flex-col">
+      <span>{name || "-"}</span>
+      <span className="text-xs text-slate-500">{city || "-"}</span>
+    </div>
+  );
+
   const confirmDeleteTransaction = useCallback(async () => {
     if (!confirmTarget) return;
     setDeleting(true);
@@ -430,13 +437,11 @@ function DailyExpenseListContent() {
       {
         header: "Project",
         accessorKey: "projectName",
-        cell: ({ row }) => (
-          <span className="rbac-muted">
-            {row.original.projectName
-              ? `${row.original.projectName}${row.original.projectCity ? ` (${row.original.projectCity})` : ""}`
-              : "-"}
-          </span>
-        ),
+        cell: ({ row, getValue }) =>
+          renderProjectName(
+            String(getValue() || "-"),
+            row.original.projectCity,
+          ),
       },
       {
         header: "Expense By",

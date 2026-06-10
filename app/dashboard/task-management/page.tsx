@@ -420,7 +420,7 @@ function TodoListContent() {
   const adminColumns = useMemo<ColumnDef<TodoRow>[]>(
     () => [
       {
-        header: "Project Name",
+        header: "Project",
         accessorKey: "projectName",
         size: 600,
         cell: ({ row, getValue }) =>

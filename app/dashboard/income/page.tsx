@@ -263,6 +263,13 @@ function IncomeListContent() {
     return users.filter((user) => getUserLabel(user).toLowerCase().includes(q));
   }, [draftReceivedByQuery, users]);
 
+  const renderProjectName = (name?: string | null, city?: string | null) => (
+    <div className="flex flex-col">
+      <span>{name || "-"}</span>
+      <span className="text-xs text-slate-500">{city || "-"}</span>
+    </div>
+  );
+
   const loadRows = useCallback(async () => {
     setLoading(true);
     try {
@@ -329,7 +336,7 @@ function IncomeListContent() {
         header: "Date",
         accessorKey: "date",
         cell: ({ row }) => (
-          <div className="flex flex-wrap items-center gap-2 text-slate-600">
+          <div className="rbac-muted">
             <span>{formatToDDMMYYYY(row.original.date)}</span>
           </div>
         ),
@@ -338,7 +345,7 @@ function IncomeListContent() {
         header: "Category",
         accessorKey: "incomeTypeName",
         cell: ({ row }) => (
-          <span className="text-slate-600">
+          <span className="rbac-muted">
             {row.original.incomeTypeName || "-"}
           </span>
         ),
@@ -346,18 +353,17 @@ function IncomeListContent() {
       {
         header: "Project",
         accessorKey: "projectName",
-        cell: ({ row }) => (
-          <span className="text-slate-600">
-            {row.original.projectName || "-"}
-            {row.original.projectCity ? ` (${row.original.projectCity})` : ""}
-          </span>
-        ),
+        cell: ({ row, getValue }) =>
+          renderProjectName(
+            String(getValue() || "-"),
+            row.original.projectCity,
+          ),
       },
       {
         header: "Income Company",
         accessorKey: "incomeCompanyName",
         cell: ({ row }) => (
-          <div className="flex flex-wrap items-center gap-2 text-slate-600">
+          <div className="rbac-muted">
             <span>{row.original.incomeCompanyName || "-"}</span>
           </div>
         ),
@@ -366,21 +372,21 @@ function IncomeListContent() {
         header: "Received By",
         accessorKey: "receivedByName",
         cell: ({ row }) => (
-          <span className="text-slate-600">{row.original.receivedByName || "-"}</span>
+          <span className="rbac-muted">{row.original.receivedByName || "-"}</span>
         ),
       },
       {
         header: "Payment Mode",
         accessorKey: "paymentMode",
         cell: ({ row }) => (
-          <span className="text-slate-600">{getCashPaymentModeLabel(row.original.paymentMode) || "-"}</span>
+          <span className="rbac-muted">{getCashPaymentModeLabel(row.original.paymentMode) || "-"}</span>
         ),
       },
       {
         header: "Amount",
         accessorKey: "amount",
         cell: ({ row }) => (
-          <span className="text-slate-600">{formatAmount(row.original.amount)}</span>
+          <span className="rbac-muted">{formatAmount(row.original.amount)}</span>
         ),
       },
       {
