@@ -1,6 +1,7 @@
 "use client";
 
-import { type ComponentType, useState } from "react";
+import { type ComponentType } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   FaChartBar,
   FaMoneyBillWave,
@@ -11,8 +12,24 @@ import DashboardShell from "../_components/DashboardShell";
 import IncomeFormContent from "../income/_components/IncomeFormContent";
 import DailyExpenseFormContent from "../daily-expenses/_components/DailyExpenseFormContent";
 import CashPetiLedger from "../_components/CashPetiLedger";
+import CashTrackerDashboard from "../_components/CashTrackerDashboard";
 
 type CashTrackerTab = "expense" | "income" | "cashPeti" | "dashboard";
+
+const DEFAULT_TAB: CashTrackerTab = "expense";
+
+function resolveTabFromQuery(value: string | null | undefined): CashTrackerTab {
+  if (
+    value === "expense" ||
+    value === "income" ||
+    value === "cashPeti" ||
+    value === "dashboard"
+  ) {
+    return value;
+  }
+
+  return DEFAULT_TAB;
+}
 
 const cashTrackerTabs: {
   key: CashTrackerTab;
@@ -26,7 +43,23 @@ const cashTrackerTabs: {
 ];
 
 export default function CashTrackerPage() {
-  const [selectedTab, setSelectedTab] = useState<CashTrackerTab>("expense");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const selectedTab = resolveTabFromQuery(searchParams?.get("tab"));
+
+  const setSelectedTab = (tab: CashTrackerTab) => {
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
+
+    if (tab === DEFAULT_TAB) {
+      params.delete("tab");
+    } else {
+      params.set("tab", tab);
+    }
+
+    const query = params.toString();
+    router.replace(query ? `?${query}` : "?", { scroll: false });
+  };
+
   const goToDashboard = () => setSelectedTab("dashboard");
 
   const renderContent = () => {
@@ -40,6 +73,10 @@ export default function CashTrackerPage() {
 
     if (selectedTab === "cashPeti") {
       return <CashPetiLedger />;
+    }
+
+    if (selectedTab === "dashboard") {
+      return <CashTrackerDashboard />;
     }
 
     return (

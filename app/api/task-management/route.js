@@ -77,10 +77,14 @@ const buildListWhere = ({ searchParams, userId, isAdmin }) => {
   const parsedFromDate = parseDate(fromDate);
   const parsedToDate = parseDate(toDate);
   if (fromDate && !parsedFromDate) {
-    return { error: NextResponse.json({ error: "Invalid fromDate." }, { status: 400 }) };
+    return {
+      error: NextResponse.json({ error: "Invalid fromDate." }, { status: 400 }),
+    };
   }
   if (toDate && !parsedToDate) {
-    return { error: NextResponse.json({ error: "Invalid toDate." }, { status: 400 }) };
+    return {
+      error: NextResponse.json({ error: "Invalid toDate." }, { status: 400 }),
+    };
   }
 
   if (includePendingOld) {
@@ -119,7 +123,9 @@ const buildListWhere = ({ searchParams, userId, isAdmin }) => {
   } else if (date) {
     const start = new Date(date);
     if (Number.isNaN(start.getTime())) {
-      return { error: NextResponse.json({ error: "Invalid date." }, { status: 400 }) };
+      return {
+        error: NextResponse.json({ error: "Invalid date." }, { status: 400 }),
+      };
     }
 
     const end = new Date(date);
@@ -153,13 +159,16 @@ export async function GET(req) {
   const userId = gate.auth?.user?.id || "";
   const isAdmin = isAdminRole(gate.auth);
   const searchParams = new URL(req.url).searchParams;
-  const pageParam = Number(searchParams.get("page") || "1");
-  const pageSizeParam = Number(searchParams.get("pageSize") || "10");
-  const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+  const pageParam = searchParams.get("page");
+  const pageSizeParam = searchParams.get("pageSize");
+
+  const page =
+    pageParam && Number.isFinite(Number(pageParam)) ? Number(pageParam) : null;
+
   const pageSize =
-    Number.isFinite(pageSizeParam) && pageSizeParam > 0
-      ? Math.min(pageSizeParam, 100)
-      : 10;
+    pageSizeParam && Number.isFinite(Number(pageSizeParam))
+      ? Math.min(Number(pageSizeParam), 100)
+      : null;
 
   const listWhere = buildListWhere({ searchParams, userId, isAdmin });
   if (listWhere.error) return listWhere.error;
@@ -172,8 +181,12 @@ export async function GET(req) {
       where,
       orderBy: { startDate: "desc" },
       include: buildTodoInclude,
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      ...(page && pageSize
+        ? {
+            skip: (page - 1) * pageSize,
+            take: pageSize,
+          }
+        : {}),
     }),
   ]);
 
@@ -184,7 +197,7 @@ export async function GET(req) {
     page,
     pageSize,
     total,
-    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    totalPages: page && pageSize ? Math.max(1, Math.ceil(total / pageSize)) : 1,
   });
 }
 

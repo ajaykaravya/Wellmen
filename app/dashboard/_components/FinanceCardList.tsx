@@ -89,7 +89,7 @@ export function FinanceCardList<T extends FinanceCardListRow>({
   emptyLabel = "No records found.",
   showCount = true,
   addHref,
-  addLabel = "Add",
+  addLabel = "View all",
   collapsible = true,
   defaultCollapsed = true,
   amountBadgeClassName = "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200",

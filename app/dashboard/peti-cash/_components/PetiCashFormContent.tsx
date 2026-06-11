@@ -1,21 +1,23 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { FaSpinner } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import Loading from "../../../components/Loading";
-import Link from "next/link";
 import CustomDatePicker from "../../../components/CustomDatePicker";
-import { ButtonGroup } from "../../_components/ButtonGroup";
-import { UserCardGroup } from "../../_components/UserCardGroup";
+import UserSelectionCardGrid from "../../_components/UserSelectionCardGrid";
+import PetiCashStepper from "../../_components/PetiCashStepper";
+import SelectionCardGrid from "../../_components/SelectionCardGrid";
+import SelectionPills from "../../_components/SelectionPills";
 import { formatToDDMMYYYY, getTodayInputDate } from "@/lib/dateUtils";
 import { petiCashApi } from "@/lib/api/dashboard/peti-cash";
 import {
   loadCompanyOptions,
+  loadExpenseTypeOptions,
   loadProjectOptions,
   loadUserOptions,
   type CompanyOption,
+  type ExpenseTypeOption,
   type ProjectOption,
   type UserOption,
 } from "@/lib/api/dashboard/shared-options";
@@ -27,10 +29,22 @@ import {
   ComboboxOptions,
 } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
-import {  FaChevronLeft } from "react-icons/fa";
-
+import {
+  FaBuilding,
+  FaHospital,
+  FaSpinner,
+  FaWrench,
+} from "react-icons/fa";
+import { FaListCheck } from "react-icons/fa6";
 
 type TransactionType = "CREDIT" | "DEBIT";
+
+type PetiCashStepKey = "givenBy" | "givenTo" | "company" | "category" | "details";
+
+type PetiCashStep = {
+  key: PetiCashStepKey;
+  label: string;
+};
 
 type PetiCashFormState = {
   amount: string;
@@ -38,6 +52,7 @@ type PetiCashFormState = {
   givenToId: string;
   companyId: string;
   projectId: string;
+  expenseTypeId: string;
   date: string;
   remarks: string;
 };
@@ -49,35 +64,79 @@ type PetiCashPayload = PetiCashFormState & {
   companyName?: string | null;
   projectName?: string | null;
   projectCity?: string | null;
+  expenseTypeName?: string | null;
 };
 
 type PetiCashFormContentProps = {
   petiCashId?: string;
   defaultTransactionType?: TransactionType;
   backButton?: boolean;
+  onBack?: () => void;
+  onSaved?: () => void;
 };
 
 const isAdmin = (role?: string | null) => role === "Admin";
 const isManager = (role?: string | null) => role === "Manager";
 const isEmployee = (role?: string | null) => role !== "Admin" && role !== "Manager";
 
-const getCompanyLabel = (company: CompanyOption) => company.name;
-
 const getProjectLabel = (project: ProjectOption) =>
   project.city ? `${project.name} (${project.city})` : project.name;
+
+function getUserDisplayName(user: UserOption) {
+  return [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+}
+
+function getPetiCashSteps(transactionType: TransactionType): PetiCashStep[] {
+  const baseSteps: PetiCashStep[] = [
+    { key: "givenBy", label: "Given By" },
+    { key: "givenTo", label: "Given To" },
+    { key: "company", label: "Company" },
+  ];
+
+  if (transactionType === "DEBIT") {
+    baseSteps.push({ key: "category", label: "Category" });
+  }
+
+  baseSteps.push({ key: "details", label: "Details" });
+  return baseSteps;
+}
+
+function getCompanyCardIcon(index: number) {
+  const icons = [
+    <FaBuilding key="company-building" size={22} />,
+    <FaHospital key="company-hospital" size={22} />,
+    <FaWrench key="company-wrench" size={22} />,
+  ];
+  return icons[index % icons.length];
+}
+
+function getCardTone(index: number) {
+  const tones = [
+    "border-sky-500/20",
+    "border-emerald-500/20",
+    "border-amber-500/20",
+    "border-fuchsia-500/20",
+    "border-rose-500/20",
+  ];
+  return tones[index % tones.length];
+}
 
 export default function PetiCashFormContent({
   petiCashId,
   defaultTransactionType = "CREDIT",
   backButton = false,
+  onBack,
+  onSaved,
 }: PetiCashFormContentProps) {
   const router = useRouter();
   const [users, setUsers] = useState<UserOption[]>([]);
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
+  const [expenseTypes, setExpenseTypes] = useState<ExpenseTypeOption[]>([]);
   const [projectQuery, setProjectQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
   const [note, setNote] = useState<string | null>(null);
   const [errors, setErrors] = useState<Partial<Record<keyof PetiCashFormState, string>>>({});
   const [transactionType, setTransactionType] = useState<TransactionType>(defaultTransactionType);
@@ -87,27 +146,47 @@ export default function PetiCashFormContent({
     givenToId: "",
     companyId: "",
     projectId: "",
+    expenseTypeId: "",
     date: getTodayInputDate(),
     remarks: "",
   });
 
+  const steps = useMemo(() => getPetiCashSteps(transactionType), [transactionType]);
+  const currentStepKey = steps[currentStep]?.key;
+
+  const clearError = (field: keyof PetiCashFormState) => {
+    setErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const goToNextStep = () => {
+    setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+  };
+
   useEffect(() => {
     setTransactionType(defaultTransactionType);
+    setCurrentStep(0);
   }, [defaultTransactionType]);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [users, companies, projects, petiCash] = await Promise.all([
+        const [users, companies, projects, expenseTypes, petiCash] = await Promise.all([
           loadUserOptions(),
           loadCompanyOptions(),
           loadProjectOptions(),
+          loadExpenseTypeOptions(),
           petiCashId ? petiCashApi.get(petiCashId) : Promise.resolve(null),
         ]);
 
         setUsers(users);
         setCompanies(companies);
         setProjects(projects);
+        setExpenseTypes(expenseTypes.filter((item) => item.status === "ACTIVE"));
 
         if (petiCash) {
           const data = petiCash as PetiCashPayload;
@@ -118,6 +197,7 @@ export default function PetiCashFormContent({
             givenToId: data.givenToId || "",
             companyId: data.companyId || "",
             projectId: data.projectId || "",
+            expenseTypeId: data.expenseTypeId || "",
             date:
               formatToDDMMYYYY(data.date) === "-"
                 ? getTodayInputDate()
@@ -127,10 +207,10 @@ export default function PetiCashFormContent({
           setProjectQuery(
             data.projectName
               ? getProjectLabel({
-                id: data.projectId || "",
-                name: data.projectName,
-                city: data.projectCity,
-              })
+                  id: data.projectId || "",
+                  name: data.projectName,
+                  city: data.projectCity,
+                })
               : "",
           );
         }
@@ -174,19 +254,77 @@ export default function PetiCashFormContent({
     return users.filter((user) => isEmployee(user.role));
   }, [transactionType, users]);
 
+  const selectedGivenByLabel = useMemo(() => {
+    const user = users.find((item) => item.id === form.givenById);
+    return user ? getUserDisplayName(user) : "";
+  }, [form.givenById, users]);
+
+  const selectedGivenToLabel = useMemo(() => {
+    const user = users.find((item) => item.id === form.givenToId);
+    return user ? getUserDisplayName(user) : "";
+  }, [form.givenToId, users]);
+
+  const selectedCompanyLabel = useMemo(
+    () => companies.find((company) => company.id === form.companyId)?.name || "",
+    [companies, form.companyId],
+  );
+
+  const selectedExpenseTypeLabel = useMemo(
+    () => expenseTypes.find((option) => option.id === form.expenseTypeId)?.name || "",
+    [expenseTypes, form.expenseTypeId],
+  );
+
+  const selectedSummaryItems = useMemo(() => {
+    const givenByIndex = steps.findIndex((step) => step.key === "givenBy");
+    const givenToIndex = steps.findIndex((step) => step.key === "givenTo");
+    const companyIndex = steps.findIndex((step) => step.key === "company");
+    const categoryIndex = steps.findIndex((step) => step.key === "category");
+
+    return [
+      currentStep > givenByIndex && selectedGivenByLabel
+        ? { label: selectedGivenByLabel, tone: "brand" as const }
+        : null,
+      currentStep > givenToIndex && selectedGivenToLabel
+        ? { label: selectedGivenToLabel, tone: "success" as const }
+        : null,
+      currentStep > companyIndex && selectedCompanyLabel
+        ? { label: selectedCompanyLabel, tone: "warning" as const }
+        : null,
+      categoryIndex >= 0 &&
+      currentStep > categoryIndex &&
+      selectedExpenseTypeLabel
+        ? { label: selectedExpenseTypeLabel, tone: "default" as const }
+        : null,
+    ].filter(Boolean) as Array<{
+      label: string;
+      tone: "brand" | "success" | "warning" | "default";
+    }>;
+  }, [
+    currentStep,
+    selectedCompanyLabel,
+    selectedExpenseTypeLabel,
+    selectedGivenByLabel,
+    selectedGivenToLabel,
+    steps,
+  ]);
+
   const title = petiCashId
     ? "Edit Peti Cash"
     : transactionType === "CREDIT"
-      ? "Add Cash"
-      : "Give Cash";
+      ? "Cash Received"
+      : "Cash Spent";
 
-  const helperText =
-    transactionType === "CREDIT"
-      ? "Given by: Admin, Given to: Manager"
-      : "Given by: Manager, Given to: Employee";
+  const handleStepperBack = () => {
+    if (currentStep > 0) {
+      setCurrentStep((prev) => prev - 1);
+      return;
+    }
+    if (backButton && onBack) {
+      onBack();
+    }
+  };
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const handleSave = async () => {
     setNote(null);
 
     const newErrors: Partial<Record<keyof PetiCashFormState, string>> = {};
@@ -197,6 +335,9 @@ export default function PetiCashFormContent({
     if (!form.givenById) newErrors.givenById = "Given by is required.";
     if (!form.givenToId) newErrors.givenToId = "Given to is required.";
     if (!form.companyId) newErrors.companyId = "Company is required.";
+    if (transactionType === "DEBIT" && !form.expenseTypeId) {
+      newErrors.expenseTypeId = "Expense category is required.";
+    }
 
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) {
@@ -212,6 +353,7 @@ export default function PetiCashFormContent({
         givenToId: form.givenToId,
         companyId: form.companyId,
         projectId: form.projectId,
+        expenseTypeId: transactionType === "DEBIT" ? form.expenseTypeId : "",
         date: form.date,
         remarks: form.remarks,
       };
@@ -223,7 +365,11 @@ export default function PetiCashFormContent({
       }
 
       toast.success(`Peti cash ${petiCashId ? "updated" : "created"} successfully.`);
-      router.push("/dashboard/peti-cash");
+      if (onSaved) {
+        onSaved();
+      } else {
+        router.push("/dashboard/peti-cash");
+      }
     } catch (error) {
       console.error("Failed to save peti cash", error);
       const message =
@@ -244,74 +390,119 @@ export default function PetiCashFormContent({
   }
 
   return (
-    <section className="rbac-section">
-      <div className="rbac-card">
-        <div className="mb-4 flex items-center justify-between gap-3 w-full">
-          <div className="w-full">
-            <div className="flex items-center justify-between w-full">
-              <h3 className="rbac-title-lg">{title}</h3>
-              {backButton && (
-                <div className="flex items-center gap-2 cursor-pointer">
-                <FaChevronLeft /> <p className="text-sm"> Back </p>
-                </div>
-              )}
-            </div>
-            <p className="text-sm text-slate-500">{helperText}</p>
-          </div>
-        </div>
-
-        <form className="rbac-form" onSubmit={handleSubmit}>
-          <fieldset
-            disabled={saving}
-            className={saving ? "pointer-events-none opacity-70" : ""}
-          >
+    <PetiCashStepper
+      title={title}
+      steps={steps}
+      activeStep={currentStep}
+      onBack={
+        currentStep > 0 || (backButton && onBack) ? handleStepperBack : undefined
+      }
+      onStepClick={(stepIndex) => setCurrentStep(stepIndex)}
+    >
+      <form className="rbac-form" onSubmit={(event) => event.preventDefault()}>
+        <fieldset
+          disabled={saving}
+          className={saving ? "pointer-events-none opacity-70" : ""}
+        >
+          {currentStepKey === "givenBy" && (
             <div className="mb-2">
-              <UserCardGroup
+              <UserSelectionCardGrid
                 title="Given By"
                 selected={form.givenById}
                 users={givenByUsers}
-                onSelect={(value) =>
-                  setForm((prev) => ({ ...prev, givenById: value }))
-                }
+                onSelect={(value) => {
+                  setForm((prev) => ({ ...prev, givenById: value }));
+                  clearError("givenById");
+                  goToNextStep();
+                }}
                 error={errors.givenById}
                 required
                 emptyMessage="No users available for this transaction type."
               />
             </div>
+          )}
 
+          {currentStepKey === "givenTo" && (
             <div className="mb-2">
-              <UserCardGroup
-                title="Given To"
-                selected={form.givenToId}
-                users={givenToUsers}
-                onSelect={(value) =>
-                  setForm((prev) => ({ ...prev, givenToId: value }))
-                }
-                error={errors.givenToId}
-                required
-                emptyMessage="No users available for this transaction type."
-              />
+              <SelectionPills items={selectedSummaryItems} />
+              <div className="mt-4">
+                <UserSelectionCardGrid
+                  title="Given To"
+                  selected={form.givenToId}
+                  users={givenToUsers}
+                  onSelect={(value) => {
+                    setForm((prev) => ({ ...prev, givenToId: value }));
+                    clearError("givenToId");
+                    goToNextStep();
+                  }}
+                  error={errors.givenToId}
+                  required
+                  emptyMessage="No users available for this transaction type."
+                />
+              </div>
             </div>
+          )}
 
+          {currentStepKey === "company" && (
             <div className="mb-2">
-              <ButtonGroup
-                title="Company"
-                selected={form.companyId}
-                options={companies.map((company) => ({
-                  key: company.id,
-                  label: getCompanyLabel(company),
-                }))}
-                onSelect={(value) =>
-                  setForm((prev) => ({ ...prev, companyId: value }))
-                }
-                error={errors.companyId}
-                required
-              />
+              <SelectionPills items={selectedSummaryItems} />
+              <div className="mt-4">
+                <SelectionCardGrid
+                  title="Select Company"
+                  selected={form.companyId}
+                  options={companies.map((company, index) => ({
+                    key: company.id,
+                    label: company.name,
+                    subtitle: "Tap to select →",
+                    icon: getCompanyCardIcon(index),
+                    accentClassName: getCardTone(index),
+                  }))}
+                  onSelect={(value) => {
+                    setForm((prev) => ({ ...prev, companyId: value }));
+                    clearError("companyId");
+                    goToNextStep();
+                  }}
+                  error={errors.companyId}
+                  required
+                  columnsClassName="grid grid-cols-1 gap-3"
+                />
+              </div>
             </div>
+          )}
 
-            {
-              transactionType === "DEBIT" && (
-                <div className="mb-2">
+          {currentStepKey === "category" && (
+            <div className="mb-2">
+              <SelectionPills items={selectedSummaryItems} />
+              <div className="mt-4">
+                <SelectionCardGrid
+                  title="Select Category"
+                  selected={form.expenseTypeId}
+                  options={expenseTypes.map((option, index) => ({
+                    key: option.id,
+                    label: option.name,
+                    subtitle: "Tap to select →",
+                    icon: <FaListCheck size={22} />,
+                    accentClassName: getCardTone(index),
+                  }))}
+                  onSelect={(value) => {
+                    setForm((prev) => ({ ...prev, expenseTypeId: value }));
+                    clearError("expenseTypeId");
+                    goToNextStep();
+                  }}
+                  error={errors.expenseTypeId}
+                  required
+                  columnsClassName="grid grid-cols-1 gap-3"
+                />
+              </div>
+            </div>
+          )}
+
+          {currentStepKey === "details" && (
+            <>
+              <SelectionPills items={selectedSummaryItems} />
+
+              {transactionType === "DEBIT" && (
+                <div className="mb-2 mt-4">
                   <label className="rbac-label">Project</label>
                   <Combobox
                     value={selectedProject}
@@ -324,7 +515,6 @@ export default function PetiCashFormContent({
                     }}
                     nullable
                   >
-
                     <div className="relative">
                       <ComboboxInput
                         className="theme-input rbac-input w-full pr-10"
@@ -363,80 +553,94 @@ export default function PetiCashFormContent({
                     </div>
                   </Combobox>
                 </div>
-              )
-            }
+              )}
 
-            <label className="rbac-label">
-              Date <span className="text-red-600">*</span>
-              <CustomDatePicker
-                value={form.date}
-                onChange={(value) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    date: value || getTodayInputDate(),
-                  }))
-                }
-                className="mb-2"
-                placeholder="Select date"
-              />
-            </label>
-            {errors.date && (
-              <p className="mb-2 text-sm text-red-600">{errors.date}</p>
-            )}
+              <label className="rbac-label">
+                Date <span className="text-red-600">*</span>
+                <CustomDatePicker
+                  value={form.date}
+                  onChange={(value) => {
+                    setForm((prev) => ({
+                      ...prev,
+                      date: value || getTodayInputDate(),
+                    }));
+                    clearError("date");
+                  }}
+                  className="mb-2"
+                  placeholder="Select date"
+                />
+              </label>
+              {errors.date && (
+                <p className="mb-2 text-sm text-red-600">{errors.date}</p>
+              )}
 
-            <label className="rbac-label">
-              Amount <span className="text-red-600">*</span>
-              <input
-                className="rbac-input mb-2"
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="Amount"
-                value={form.amount}
-                onWheel={(event) => event.currentTarget.blur()}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, amount: event.target.value }))
-                }
-              />
-            </label>
-            {errors.amount && (
-              <p className="mb-2 text-sm text-red-600">{errors.amount}</p>
-            )}
+              <label className="rbac-label">
+                Amount <span className="text-red-600">*</span>
+                <input
+                  className="rbac-input mb-2"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Amount"
+                  value={form.amount}
+                  onWheel={(event) => event.currentTarget.blur()}
+                  onChange={(event) => {
+                    setForm((prev) => ({ ...prev, amount: event.target.value }));
+                    clearError("amount");
+                  }}
+                />
+              </label>
+              {errors.amount && (
+                <p className="mb-2 text-sm text-red-600">{errors.amount}</p>
+              )}
 
-            <label className="rbac-label">
-              Remarks
-              <textarea
-                className="rbac-input mb-2"
-                rows={4}
-                placeholder="Remarks"
-                value={form.remarks}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, remarks: event.target.value }))
-                }
-              />
-            </label>
+              <label className="rbac-label">
+                Remarks
+                <textarea
+                  className="rbac-input mb-2"
+                  rows={4}
+                  placeholder="Remarks"
+                  value={form.remarks}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, remarks: event.target.value }))
+                  }
+                />
+              </label>
 
-            {note && <p className="mb-2 text-sm text-red-600">{note}</p>}
+              {note && <p className="mb-2 text-sm text-red-600">{note}</p>}
 
-            <div className="flex gap-3">
-              <button className="rbac-button" type="submit">
-                {saving ? (
-                  <span className="flex items-center gap-2">
-                    <FaSpinner className="animate-spin" /> Saving...
-                  </span>
-                ) : (
-                  "Save"
-                )}
-              </button>
-              <Link href="/dashboard/peti-cash">
-                <button className="rbac-button rbac-button-secondary" type="button">
-                  Cancel
+              <div className="flex gap-3 pt-2">
+                <button className="rbac-button" type="button" onClick={handleSave}>
+                  {saving ? (
+                    <span className="flex items-center gap-2">
+                      <FaSpinner className="animate-spin" /> Saving...
+                    </span>
+                  ) : (
+                    "Save"
+                  )}
                 </button>
-              </Link>
-            </div>
-          </fieldset>
-        </form>
-      </div>
-    </section>
+                {backButton && onBack ? (
+                  <button
+                    className="rbac-button rbac-button-secondary"
+                    type="button"
+                    onClick={onBack}
+                  >
+                    Cancel
+                  </button>
+                ) : (
+                  <button
+                    className="rbac-button rbac-button-secondary"
+                    type="button"
+                    onClick={() => router.push("/dashboard/peti-cash")}
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </fieldset>
+      </form>
+    </PetiCashStepper>
   );
 }

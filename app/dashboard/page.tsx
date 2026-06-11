@@ -344,8 +344,6 @@ function OverviewContent() {
       const data = (await taskManagementApi.list({
         fromDate: today,
         includePendingOld: true,
-        page: 1,
-        pageSize: 10,
       })) as CrudListResponse<TodoRow>;
       const rows = Array.isArray(data?.data) ? data.data : [];
       setTodos(rows);
@@ -381,8 +379,6 @@ function OverviewContent() {
     try {
       const data = (await reportApi.list({
         date: adminDate,
-        page: 1,
-        pageSize: 50,
       })) as CrudListResponse<AdminReportRow>;
       setAdminReports(Array.isArray(data?.data) ? data.data : []);
     } catch (error) {

@@ -16,6 +16,7 @@ const parsePayload = (body) => {
   const givenToId = String(body.givenToId || "").trim();
   const companyId = String(body.companyId || "").trim();
   const projectId = String(body.projectId || "").trim();
+  const expenseTypeId = String(body.expenseTypeId || "").trim();
   const date = String(body.date || "").trim();
   const remarks = String(body.remarks || "").trim();
 
@@ -26,6 +27,7 @@ const parsePayload = (body) => {
     givenToId,
     companyId,
     projectId,
+    expenseTypeId,
     date,
     remarks,
   };
@@ -70,6 +72,8 @@ const serializePetiCash = (row) => ({
   projectId: row.projectId,
   projectName: row.project?.name || null,
   projectCity: row.project?.city || null,
+  expenseTypeId: row.expenseTypeId,
+  expenseTypeName: row.expenseType?.name || null,
   date: row.date,
   remarks: row.remarks || null,
   createdAt: row.createdAt,
@@ -115,6 +119,7 @@ export async function GET(req, { params }) {
       givenTo: { include: { role: true } },
       company: true,
       project: true,
+      expenseType: true,
     },
   });
 
@@ -174,7 +179,14 @@ export async function PUT(req, { params }) {
     return NextResponse.json({ error: "Company is required." }, { status: 400 });
   }
 
-  const [givenBy, givenTo, company, project] = await Promise.all([
+  if (payload.transactionType === "DEBIT" && !payload.expenseTypeId) {
+    return NextResponse.json(
+      { error: "Expense category is required." },
+      { status: 400 },
+    );
+  }
+
+  const [givenBy, givenTo, company, project, expenseType] = await Promise.all([
     prisma.user.findUnique({
       where: { id: payload.givenById },
       include: { role: true },
@@ -186,6 +198,9 @@ export async function PUT(req, { params }) {
     prisma.company.findUnique({ where: { id: payload.companyId } }),
     payload.projectId
       ? prisma.project.findUnique({ where: { id: payload.projectId } })
+      : Promise.resolve(null),
+    payload.expenseTypeId
+      ? prisma.expenseType.findUnique({ where: { id: payload.expenseTypeId } })
       : Promise.resolve(null),
   ]);
 
@@ -210,6 +225,13 @@ export async function PUT(req, { params }) {
     return NextResponse.json({ error: "Project not found." }, { status: 404 });
   }
 
+  if (payload.transactionType === "DEBIT" && !expenseType) {
+    return NextResponse.json(
+      { error: "Expense category not found." },
+      { status: 404 },
+    );
+  }
+
   try {
     const petiCash = await prisma.petiCash.update({
       where: { id },
@@ -220,6 +242,8 @@ export async function PUT(req, { params }) {
         givenToId: givenTo.id,
         companyId: company.id,
         projectId: project?.id || null,
+        expenseTypeId:
+          payload.transactionType === "DEBIT" ? expenseType.id : null,
         date: parsedDate,
         remarks: payload.remarks || null,
       },
@@ -228,6 +252,7 @@ export async function PUT(req, { params }) {
         givenTo: { include: { role: true } },
         company: true,
         project: true,
+        expenseType: true,
       },
     });
 

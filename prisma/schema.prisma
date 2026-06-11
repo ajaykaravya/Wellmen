@@ -156,6 +156,7 @@ model ExpenseType {
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
   financeTransactions FinanceTransaction[] @relation("FinanceTransactionExpenseType")
+  petiCashTransactions PetiCash[] @relation("PetiCashExpenseType")
 
   @@index([status])
 }
@@ -206,6 +207,7 @@ model PetiCash {
   givenToId     String?
   companyId     String?
   projectId     String?
+  expenseTypeId String?
   date          DateTime
   remarks       String?
   createdAt     DateTime                 @default(now())
@@ -214,6 +216,7 @@ model PetiCash {
   givenTo       User?                    @relation("PetiCashGivenTo", fields: [givenToId], references: [id], onDelete: SetNull)
   company       Company?                 @relation("PetiCashCompany", fields: [companyId], references: [id], onDelete: SetNull)
   project       Project?                 @relation("PetiCashProject", fields: [projectId], references: [id], onDelete: SetNull)
+  expenseType   ExpenseType?             @relation("PetiCashExpenseType", fields: [expenseTypeId], references: [id], onDelete: SetNull)
 
   @@index([transactionType])
   @@index([date])
@@ -221,6 +224,7 @@ model PetiCash {
   @@index([givenToId])
   @@index([companyId])
   @@index([projectId])
+  @@index([expenseTypeId])
 }
 
 model IncomeTransaction {
