@@ -365,10 +365,16 @@ export default function PetiCashFormContent({
       }
 
       toast.success(`Peti cash ${petiCashId ? "updated" : "created"} successfully.`);
-      if (onSaved) {
-        onSaved();
+      if (petiCashId) {
+        // Edit mode - navigate to cash-tracker
+        router.push("/dashboard/cash-tracker");
       } else {
-        router.push("/dashboard/peti-cash");
+        // Create mode - keep existing behavior
+        if (onSaved) {
+          onSaved();
+        } else {
+          router.push("/dashboard/peti-cash");
+        }
       }
     } catch (error) {
       console.error("Failed to save peti cash", error);
