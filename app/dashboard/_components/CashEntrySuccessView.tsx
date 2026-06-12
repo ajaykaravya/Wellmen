@@ -1,7 +1,7 @@
 "use client";
 
 import { FaArrowRightLong } from "react-icons/fa6";
-
+import { useRouter } from "next/navigation";
 
 type CashEntrySuccessDetail = {
   label: string;
@@ -13,7 +13,6 @@ type CashEntrySuccessViewProps = {
   subtitle?: string;
   details: CashEntrySuccessDetail[];
   onAddAnother: () => void;
-  onDashboard?: () => void;
 };
 
 export default function CashEntrySuccessView({
@@ -21,8 +20,10 @@ export default function CashEntrySuccessView({
   subtitle,
   details,
   onAddAnother,
-  onDashboard,
 }: CashEntrySuccessViewProps) {
+
+  const router = useRouter();
+
   return (
     <section className="rbac-section rbac-container">
       <div className="rbac-card grid gap-6">
@@ -65,7 +66,9 @@ export default function CashEntrySuccessView({
           <button
             type="button"
             className="rbac-button flex items-center gap-2 rbac-button-secondary"
-            onClick={() => onDashboard?.()}
+            onClick={() =>
+              router.push("/dashboard/cash-tracker?tab=dashboard")
+            }
           >
             Dashboard <FaArrowRightLong />
           </button>

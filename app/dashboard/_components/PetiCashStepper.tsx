@@ -14,6 +14,7 @@ type PetiCashStepperProps = {
   onBack?: () => void;
   onStepClick?: (stepIndex: number) => void;
   children: React.ReactNode;
+  petiCashId?: string;
 };
 
 export default function PetiCashStepper({
@@ -23,9 +24,10 @@ export default function PetiCashStepper({
   onBack,
   onStepClick,
   children,
+  petiCashId,
 }: PetiCashStepperProps) {
   return (
-    <section className="">
+    <section className={` ${petiCashId ? "p-4" : ""}`}>
       <div className="rbac-card overflow-hidden h-full">
         <div className="flex flex-col h-full justify-between">
           <div className="flex flex-col gap-2">
