@@ -236,9 +236,9 @@ export default function CashTrackerDashboard() {
                                         </div>
                                     </div>
 
-                                    <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                                    <div className="mt-3">
                                         {manager.companies.map((company) => (
-                                            <div key={`${manager.managerName}-${company.companyName}`} className="rbac-card">
+                                            <div key={`${manager.managerName}-${company.companyName}`} className="flex items-center justify-between">
                                                 <div className="text-xs uppercase tracking-wide text-slate-500">{company.companyCode}</div>
                                                 <div className={`mt-1 text-sm font-semibold ${company.total >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
                                                     {formatCurrency(company.total)}
