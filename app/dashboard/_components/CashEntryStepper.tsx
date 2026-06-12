@@ -14,6 +14,8 @@ type CashEntryStepperProps = {
   onBack?: () => void;
   onStepClick?: (stepIndex: number) => void;
   children: React.ReactNode;
+  incomeId?: string;
+  dailyExpenseId?: string;
 };
 
 export default function CashEntryStepper({
@@ -23,9 +25,11 @@ export default function CashEntryStepper({
   onBack,
   onStepClick,
   children,
+  incomeId,
+  dailyExpenseId,
 }: CashEntryStepperProps) {
   return (
-    <section className="">
+    <section className={` ${incomeId || dailyExpenseId ? "p-4" : ""}`}>
       <div className="rbac-card overflow-hidden h-full">
         <div className="flex flex-col h-full justify-between">
           <div className="flex flex-col gap-2">

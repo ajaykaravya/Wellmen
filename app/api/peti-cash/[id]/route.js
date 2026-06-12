@@ -94,9 +94,6 @@ const validateRolePair = (transactionType, givenBy, givenTo) => {
   if (givenBy.role?.name !== "Manager") {
     return "Given by must be Manager for Give Cash.";
   }
-  if (givenTo.role?.name !== "Employee") {
-    return "Given to must be Employee for Give Cash.";
-  }
   return null;
 };
 

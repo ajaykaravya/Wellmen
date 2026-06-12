@@ -394,6 +394,7 @@ export default function PetiCashFormContent({
       title={title}
       steps={steps}
       activeStep={currentStep}
+      petiCashId={petiCashId || undefined}
       onBack={
         currentStep > 0 || (backButton && onBack) ? handleStepperBack : undefined
       }

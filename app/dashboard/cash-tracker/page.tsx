@@ -60,15 +60,13 @@ export default function CashTrackerPage() {
     router.replace(query ? `?${query}` : "?", { scroll: false });
   };
 
-  const goToDashboard = () => setSelectedTab("dashboard");
-
   const renderContent = () => {
     if (selectedTab === "income") {
-      return <IncomeFormContent onGoDashboard={goToDashboard} />;
+      return <IncomeFormContent />;
     }
 
     if (selectedTab === "expense") {
-      return <DailyExpenseFormContent onGoDashboard={goToDashboard} />;
+      return <DailyExpenseFormContent />;
     }
 
     if (selectedTab === "cashPeti") {
