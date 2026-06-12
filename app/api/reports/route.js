@@ -80,13 +80,16 @@ export async function GET(req) {
   const date = searchParams.get("date");
   const fromDate = searchParams.get("fromDate");
   const toDate = searchParams.get("toDate");
-  const pageParam = Number(searchParams.get("page") || "1");
-  const pageSizeParam = Number(searchParams.get("pageSize") || "10");
-  const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+  const pageParam = searchParams.get("page");
+  const pageSizeParam = searchParams.get("pageSize");
+
+  const page =
+    pageParam && Number.isFinite(Number(pageParam)) ? Number(pageParam) : null;
+
   const pageSize =
-    Number.isFinite(pageSizeParam) && pageSizeParam > 0
-      ? Math.min(pageSizeParam, 100)
-      : 10;
+    pageSizeParam && Number.isFinite(Number(pageSizeParam))
+      ? Math.min(Number(pageSizeParam), 100)
+      : null;
 
   const where = {
     ...(isAdmin ? {} : { createdById: userId }),
@@ -152,8 +155,12 @@ export async function GET(req) {
         createdBy: { select: { firstName: true, lastName: true } },
       },
       orderBy: [{ reportDate: "desc" }, { createdAt: "desc" }],
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      ...(page && pageSize
+        ? {
+            skip: (page - 1) * pageSize,
+            take: pageSize,
+          }
+        : {}),
     }),
   ]);
 
@@ -162,7 +169,7 @@ export async function GET(req) {
     page,
     pageSize,
     total,
-    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    totalPages: page && pageSize ? Math.max(1, Math.ceil(total / pageSize)) : 1,
   });
 }
 

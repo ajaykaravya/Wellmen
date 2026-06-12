@@ -10,10 +10,7 @@ import {
   getUploadedFiles,
   serializeQuery,
 } from "@/lib/queryManagement";
-import {
-  buildQueryInclude,
-  isAdminRole,
-} from "./_shared";
+import { buildQueryInclude, isAdminRole } from "./_shared";
 import { saveQueryImages, saveQueryVideos } from "./_utils/upload";
 
 export async function GET(req) {
@@ -27,13 +24,16 @@ export async function GET(req) {
   const category = parseCategory(searchParams.get("category"));
   const status = parseStatus(searchParams.get("status"));
   const priority = parsePriority(searchParams.get("priority"));
-  const pageParam = Number(searchParams.get("page") || "1");
-  const pageSizeParam = Number(searchParams.get("pageSize") || "10");
-  const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+  const pageParam = searchParams.get("page");
+  const pageSizeParam = searchParams.get("pageSize");
+
+  const page =
+    pageParam && Number.isFinite(Number(pageParam)) ? Number(pageParam) : null;
+
   const pageSize =
-    Number.isFinite(pageSizeParam) && pageSizeParam > 0
-      ? Math.min(pageSizeParam, 100)
-      : 10;
+    pageSizeParam && Number.isFinite(Number(pageSizeParam))
+      ? Math.min(Number(pageSizeParam), 100)
+      : null;
 
   const where = isAdmin ? {} : { createdById: userId };
   if (q) {
@@ -51,9 +51,13 @@ export async function GET(req) {
     prisma.queryManagement.findMany({
       where,
       orderBy: { createdAt: "desc" },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
       include: buildQueryInclude,
+      ...(page && pageSize
+        ? {
+            skip: (page - 1) * pageSize,
+            take: pageSize,
+          }
+        : {}),
     }),
   ]);
 
@@ -62,7 +66,7 @@ export async function GET(req) {
     page,
     pageSize,
     total,
-    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    totalPages: page && pageSize ? Math.max(1, Math.ceil(total / pageSize)) : 1,
   });
 }
 
@@ -128,7 +132,9 @@ export async function POST(req) {
       },
     });
 
-    return NextResponse.json(serializeQuery(query, userId || ""), { status: 201 });
+    return NextResponse.json(serializeQuery(query, userId || ""), {
+      status: 201,
+    });
   } catch (error) {
     console.error("Failed to create query", error);
     return NextResponse.json(

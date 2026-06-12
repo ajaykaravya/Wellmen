@@ -167,7 +167,7 @@ export function QueryTableCard({
           {!loading &&
             rows.map((query) => (
               <div key={query.id} className="rbac-card p-4 sm:p-5">
-                <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-base font-semibold ">
                       {query.projectName || "Project"}

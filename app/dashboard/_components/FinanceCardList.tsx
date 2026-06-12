@@ -89,7 +89,7 @@ export function FinanceCardList<T extends FinanceCardListRow>({
   emptyLabel = "No records found.",
   showCount = true,
   addHref,
-  addLabel = "Add",
+  addLabel = "View all",
   collapsible = true,
   defaultCollapsed = true,
   amountBadgeClassName = "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200",
@@ -393,7 +393,6 @@ export function FinanceCardList<T extends FinanceCardListRow>({
                             <span
                               className={`inline-flex items-center gap-1 text-sm font-semibold ${getVariantClassName(variant)}`}
                             >
-                              {getVariantIcon(variant)}
                               {formatAmount(row.amount)}
                             </span>
                           )}
