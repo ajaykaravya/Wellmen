@@ -13,7 +13,7 @@ type CashEntrySuccessViewProps = {
   subtitle?: string;
   details: CashEntrySuccessDetail[];
   onAddAnother: () => void;
-  onDashboard: () => void;
+  onDashboard?: () => void;
 };
 
 export default function CashEntrySuccessView({
@@ -65,7 +65,7 @@ export default function CashEntrySuccessView({
           <button
             type="button"
             className="rbac-button flex items-center gap-2 rbac-button-secondary"
-            onClick={onDashboard}
+            onClick={() => onDashboard?.()}
           >
             Dashboard <FaArrowRightLong />
           </button>

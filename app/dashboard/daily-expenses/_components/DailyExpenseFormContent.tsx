@@ -62,7 +62,7 @@ type DailyExpenseFormState = {
 
 type DailyExpenseFormContentProps = {
   dailyExpenseId?: string;
-  onGoDashboard: () => void;
+  onGoDashboard?: () => void;
 };
 
 type DailyExpenseSuccessEntry = {

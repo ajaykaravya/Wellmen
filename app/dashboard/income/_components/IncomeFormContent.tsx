@@ -76,7 +76,7 @@ type IncomePayload = {
 
 type IncomeFormContentProps = {
   incomeId?: string;
-  onGoDashboard: () => void;
+  onGoDashboard?: () => void;
 };
 
 type IncomeSuccessEntry = {
