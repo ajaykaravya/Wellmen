@@ -137,6 +137,9 @@ const getActiveMenu = (pathname: string | null): MenuKey => {
   if (safePathname.startsWith("/dashboard/income-types")) return "incomeTypes";
   if (safePathname.startsWith("/dashboard/team")) return "team";
   if (safePathname.startsWith("/dashboard/cash-tracker")) return "cashTracker";
+  if (safePathname.startsWith("/dashboard/income")) return "cashTracker";
+  if (safePathname.startsWith("/dashboard/daily-expenses")) return "cashTracker";
+  if (safePathname.startsWith("/dashboard/peti-cash")) return "cashTracker";
   return "dashboard";
 };
 
