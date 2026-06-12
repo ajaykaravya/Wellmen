@@ -101,11 +101,6 @@ const getTypeClassName = (row: ReportRow) =>
     ? "bg-sky-100 text-sky-800 ring-1 ring-sky-200"
     : "bg-rose-100 text-rose-800 ring-1 ring-rose-200";
 
-const getBalanceClassName = (value: number) =>
-  value >= 0
-    ? "text-emerald-700 bg-emerald-50 ring-1 ring-emerald-200"
-    : "text-rose-700 bg-rose-50 ring-1 ring-rose-200";
-
 const isCompleteDateInput = (value: string) =>
   !value || /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(value.trim());
 
@@ -406,14 +401,14 @@ export default function EmployeeFinancialReportContent() {
         header: "Project",
         accessorKey: "projectName",
         cell: ({ row }) => (
-          <span className="theme-text-muted">{getProjectLabel(row.original)}</span>
+          <span className="rbac-muted">{getProjectLabel(row.original)}</span>
         ),
       },
       {
         header: "Company",
         accessorKey: "companyName",
         cell: ({ row }) => (
-          <span className="theme-text-muted">{getRowCompanyLabel(row.original)}</span>
+          <span className="rbac-muted">{getRowCompanyLabel(row.original)}</span>
         ),
       },
       {
@@ -431,7 +426,7 @@ export default function EmployeeFinancialReportContent() {
         accessorKey: "remarks",
         size: 260,
         cell: (info) => (
-          <span className="theme-text-muted">{String(info.getValue() || "-")}</span>
+          <span className="rbac-muted">{String(info.getValue() || "-")}</span>
         ),
       },
       {

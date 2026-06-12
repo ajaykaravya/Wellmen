@@ -388,7 +388,7 @@ function ReportingListContent() {
         ]
         : []),
       {
-        header: "Project Name",
+        header: "Project",
         accessorKey: "projectName",
         size: 200,
         cell: ({ row, getValue }) =>

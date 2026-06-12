@@ -286,14 +286,18 @@ function PetiCashListContent() {
     toDate,
   ].filter(Boolean);
 
-  const filteredUsers = useCallback(
-    (q: string) => {
-      const term = q.trim().toLowerCase();
-      if (!term) return users;
-      return users.filter((user) => getUserLabel(user).toLowerCase().includes(term));
-    },
-    [users],
-  );
+  const filterdGivenByUsers = useCallback(() => {
+    return users.filter(
+      (user) => user.role === "Admin" || user.role === "Manager"
+    );
+  }, [users]);
+
+
+  const filterdGivenToUsers = useCallback(() => {
+    return users.filter(
+      (user) => user.role !== "Admin"
+    );
+  }, [users]);
 
   const filteredProjects = useCallback(
     (q: string) => {
@@ -324,6 +328,13 @@ function PetiCashListContent() {
     setConfirmTarget(row);
     setConfirmOpen(true);
   }, []);
+
+  const renderProjectName = (name?: string | null, city?: string | null) => (
+    <div className="flex flex-col">
+      <span>{name || "-"}</span>
+      <span className="text-xs text-slate-500">{city || "-"}</span>
+    </div>
+  );
 
   const confirmDelete = useCallback(async () => {
     if (!confirmTarget) return;
@@ -407,13 +418,11 @@ function PetiCashListContent() {
       {
         header: "Project",
         accessorKey: "projectName",
-        cell: ({ row }) => (
-          <span className="rbac-muted">
-            {row.original.projectName
-              ? `${row.original.projectName}${row.original.projectCity ? ` (${row.original.projectCity})` : ""}`
-              : "-"}
-          </span>
-        ),
+        cell: ({ row, getValue }) =>
+          renderProjectName(
+            String(getValue() || "-"),
+            row.original.projectCity,
+          ),
       },
       {
         header: "Remarks",
@@ -505,20 +514,6 @@ function PetiCashListContent() {
                 onClick={openFilters}
               >
                 <FaFilter /> <span>Filters</span>
-              </button>
-              <button
-                className="rbac-button"
-                type="button"
-                onClick={() => router.push("/dashboard/peti-cash/new?mode=CREDIT")}
-              >
-                Add Cash
-              </button>
-              <button
-                className="rbac-button"
-                type="button"
-                onClick={() => router.push("/dashboard/peti-cash/new?mode=DEBIT")}
-              >
-                Give Cash
               </button>
             </div>
           </div>
@@ -769,7 +764,7 @@ function PetiCashListContent() {
                 <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
               </ComboboxButton>
               <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
-                {filteredUsers(draftGivenByQuery).map((user) => (
+                {filterdGivenByUsers().map((user) => (
                   <ComboboxOption
                     key={user.id}
                     value={user}
@@ -808,7 +803,7 @@ function PetiCashListContent() {
                 <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
               </ComboboxButton>
               <ComboboxOptions className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]">
-                {filteredUsers(draftGivenToQuery).map((user) => (
+                {filterdGivenToUsers().map((user) => (
                   <ComboboxOption
                     key={user.id}
                     value={user}

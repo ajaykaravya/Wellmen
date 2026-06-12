@@ -475,7 +475,7 @@ function ProjectListContent() {
               {!loading &&
                 visibleProjects.map((project) => (
                   <div key={project.id} className="rbac-card p-4">
-                    <div className="mb-2 flex items-center justify-between">
+                    <div className="flex items-center justify-between">
                       <div>
                         <h4 className="text-sm font-semibold">
                           {project.name}

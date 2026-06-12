@@ -45,12 +45,10 @@ type MenuKey =
   | "serviceCategories"
   | "reportingCategories"
   | "expenseTypes"
-  | "dailyExpenses"
-  | "petiCash"
   | "employeeFinancialReport"
-  | "income"
   | "incomeTypes"
-  | "transportReports";
+  | "transportReports"
+  | "cashTracker";
 
 type DashboardContextValue = {
   user: SessionUser | null;
@@ -98,12 +96,10 @@ const routeByMenu: Record<MenuKey, string> = {
   serviceCategories: "/dashboard/service-categories",
   reportingCategories: "/dashboard/reporting-categories",
   expenseTypes: "/dashboard/expense-types",
-  dailyExpenses: "/dashboard/daily-expenses",
-  petiCash: "/dashboard/peti-cash",
   employeeFinancialReport: "/dashboard/employee-financial-report",
   transportReports: "/dashboard/transport-reports",
-  income: "/dashboard/income",
   incomeTypes: "/dashboard/income-types",
+  cashTracker: "/dashboard/cash-tracker",
 };
 
 const getActiveMenu = (pathname: string | null): MenuKey => {
@@ -134,15 +130,13 @@ const getActiveMenu = (pathname: string | null): MenuKey => {
   if (safePathname.startsWith("/dashboard/permissions")) return "permissions";
   if (safePathname.startsWith("/dashboard/reports")) return "reports";
   if (safePathname.startsWith("/dashboard/expense-types")) return "expenseTypes";
-  if (safePathname.startsWith("/dashboard/daily-expenses")) return "dailyExpenses";
-  if (safePathname.startsWith("/dashboard/peti-cash")) return "petiCash";
   if (safePathname.startsWith("/dashboard/employee-financial-report"))
     return "employeeFinancialReport";
   if (safePathname.startsWith("/dashboard/transport-reports"))
     return "transportReports";
   if (safePathname.startsWith("/dashboard/income-types")) return "incomeTypes";
-  if (safePathname.startsWith("/dashboard/income")) return "income";
   if (safePathname.startsWith("/dashboard/team")) return "team";
+  if (safePathname.startsWith("/dashboard/cash-tracker")) return "cashTracker";
   return "dashboard";
 };
 
@@ -273,9 +267,7 @@ export default function DashboardShell({
     );
     if (isAdmin) {
       items.push({ key: "transport-management", label: "Transport Management" });
-      items.push({ key: "income", label: "Income" });
-      items.push({ key: "dailyExpenses", label: "Expense" });
-      items.push({ key: "petiCash", label: "Peti Cash" });
+      items.push({key: "cashTracker", label: "Cash Tracker"});
       items.push({
         key: "reportsMenu",
         label: "Reports",
