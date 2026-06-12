@@ -62,7 +62,6 @@ type DailyExpenseFormState = {
 
 type DailyExpenseFormContentProps = {
   dailyExpenseId?: string;
-  onGoDashboard?: () => void;
 };
 
 type DailyExpenseSuccessEntry = {
@@ -139,7 +138,6 @@ function getCardTone(index: number) {
 
 export default function DailyExpenseFormContent({
   dailyExpenseId,
-  onGoDashboard,
 }: DailyExpenseFormContentProps) {
   const router = useRouter();
   const [form, setForm] = useState<DailyExpenseFormState>(createInitialDailyExpenseForm());
@@ -218,8 +216,8 @@ export default function DailyExpenseFormContent({
                 : formatToDDMMYYYY(data.date),
             remark: data.remark || "",
           });
-          setProjectQuery(data.projectName ? getProjectLabel({ id: data.projectId || "", name: data.projectName, city: data.projectCity }) : "");
-          setExpenseTypeQuery(data.expenseTypeName || "");
+          setProjectQuery("");
+          setExpenseTypeQuery("");
         }
       } catch (error) {
         console.error("Failed to load daily expense data", error);
@@ -389,7 +387,6 @@ export default function DailyExpenseFormContent({
           { label: "Date", value: savedEntry.date },
         ]}
         onAddAnother={resetToNewEntry}
-        onDashboard={onGoDashboard}
       />
     );
   }
@@ -401,6 +398,7 @@ export default function DailyExpenseFormContent({
       activeStep={currentStep}
       onBack={currentStep > 0 ? () => setCurrentStep((prev) => prev - 1) : undefined}
       onStepClick={(stepIndex) => setCurrentStep(stepIndex)}
+      dailyExpenseId={dailyExpenseId || undefined}
     >
       <form className="rbac-form" onSubmit={(event) => event.preventDefault()}>
         <fieldset

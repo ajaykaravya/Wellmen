@@ -76,7 +76,6 @@ type IncomePayload = {
 
 type IncomeFormContentProps = {
   incomeId?: string;
-  onGoDashboard?: () => void;
 };
 
 type IncomeSuccessEntry = {
@@ -162,7 +161,6 @@ const createInitialIncomeForm = (): IncomeFormState => ({
 
 export default function IncomeFormContent({
   incomeId,
-  onGoDashboard,
 }: IncomeFormContentProps) {
   const router = useRouter();
   const [projects, setProjects] = useState<ProjectOption[]>([]);
@@ -227,16 +225,8 @@ export default function IncomeFormContent({
                 : formatToDDMMYYYY(data.date),
             remark: data.remark || "",
           });
-          setProjectQuery(
-            data.projectName
-              ? getProjectLabel({
-                id: data.projectId || "",
-                name: data.projectName,
-                city: data.projectCity,
-              })
-              : "",
-          );
-          setIncomeTypeQuery(data.incomeTypeName || "");
+          setProjectQuery("");
+          setIncomeTypeQuery("");
         }
       } catch (error) {
         console.error("Failed to load income data", error);
@@ -405,7 +395,6 @@ export default function IncomeFormContent({
           { label: "Date", value: savedEntry.date },
         ]}
         onAddAnother={resetToNewEntry}
-        onDashboard={onGoDashboard}
       />
     );
   }
@@ -417,6 +406,7 @@ export default function IncomeFormContent({
       activeStep={currentStep}
       onBack={currentStep > 0 ? () => setCurrentStep((prev) => prev - 1) : undefined}
       onStepClick={(stepIndex) => setCurrentStep(stepIndex)}
+      incomeId={incomeId || undefined}
     >
       <form className="rbac-form" onSubmit={(event) => event.preventDefault()}>
         <fieldset
