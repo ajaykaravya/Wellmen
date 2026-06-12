@@ -14,9 +14,9 @@ import DailyExpenseFormContent from "../daily-expenses/_components/DailyExpenseF
 import CashPetiLedger from "../_components/CashPetiLedger";
 import CashTrackerDashboard from "../_components/CashTrackerDashboard";
 
-type CashTrackerTab = "expense" | "income" | "cashPeti" | "dashboard";
+type CashTrackerTab = "dashboard" | "expense" | "income" | "cashPeti";
 
-const DEFAULT_TAB: CashTrackerTab = "expense";
+const DEFAULT_TAB: CashTrackerTab = "dashboard";
 
 function resolveTabFromQuery(value: string | null | undefined): CashTrackerTab {
   if (
@@ -36,10 +36,10 @@ const cashTrackerTabs: {
   label: string;
   Icon: ComponentType<{ className?: string; size?: number }>;
 }[] = [
+  { key: "dashboard", label: "Dashboard", Icon: FaChartBar },
   { key: "expense", label: "Expense", Icon: FaReceipt },
   { key: "income", label: "Income", Icon: FaMoneyBillWave },
   { key: "cashPeti", label: "Cash Peti", Icon: FaWallet },
-  { key: "dashboard", label: "Dashboard", Icon: FaChartBar },
 ];
 
 export default function CashTrackerPage() {
@@ -120,7 +120,7 @@ export default function CashTrackerPage() {
                 >
                   <Icon
                     size={20}
-                    className={isSelected ? "text-yellow-500" : ""}
+                    className={isSelected ? "text-white" : ""}
                   />
                   <span className="leading-none">{label}</span>
                   <span

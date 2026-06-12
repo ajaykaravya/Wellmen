@@ -76,7 +76,7 @@ type IncomePayload = {
 
 type IncomeFormContentProps = {
   incomeId?: string;
-  onGoDashboard?: () => void;
+  onGoDashboard: () => void;
 };
 
 type IncomeSuccessEntry = {
@@ -405,7 +405,7 @@ export default function IncomeFormContent({
           { label: "Date", value: savedEntry.date },
         ]}
         onAddAnother={resetToNewEntry}
-        onDashboard={onGoDashboard || (() => router.push("/dashboard"))}
+        onDashboard={onGoDashboard}
       />
     );
   }

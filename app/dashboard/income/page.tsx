@@ -454,11 +454,6 @@ function IncomeListContent() {
               >
                 <FaFilter /> <span>Filters</span>
               </button>
-              <Link href="/dashboard/income/new">
-                <button className="rbac-button" type="button">
-                  Add Income
-                </button>
-              </Link>
             </div>
           </div>
 

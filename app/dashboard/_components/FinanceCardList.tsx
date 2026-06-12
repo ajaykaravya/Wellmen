@@ -393,7 +393,6 @@ export function FinanceCardList<T extends FinanceCardListRow>({
                             <span
                               className={`inline-flex items-center gap-1 text-sm font-semibold ${getVariantClassName(variant)}`}
                             >
-                              {getVariantIcon(variant)}
                               {formatAmount(row.amount)}
                             </span>
                           )}

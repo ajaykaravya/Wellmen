@@ -30,6 +30,12 @@ type PetiCashRow = {
     expenseTypeName: string | null;
 };
 
+const formatCurrency = (value: number) =>
+    `₹${value.toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    })}`;
+
 function PetiCashSummary({ transaction }: { transaction: CashTransaction }) {
     const isDebit = transaction.transactionType === "DEBIT";
 
@@ -58,8 +64,7 @@ function PetiCashSummary({ transaction }: { transaction: CashTransaction }) {
                     }`}
             >
                 <span>
-                    {isDebit ? "-" : "+"}&#8377;
-                    {transaction.amount}
+                    {formatCurrency(transaction.amount)}
                 </span>
             </div>
         </div>
@@ -131,7 +136,7 @@ export default function CashPetiLedger() {
                                         : "text-gray-500"
                                     }`}
                             >
-                                &#8377; {value.balance}
+                                {formatCurrency(value.balance)}
                             </p>
                         </div>
                     ))}

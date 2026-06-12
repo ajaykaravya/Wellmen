@@ -537,11 +537,6 @@ function DailyExpenseListContent() {
               >
                 {exporting ? "Exporting..." : "Export Excel Sheet"}
               </button>
-              <Link href="/dashboard/daily-expenses/new">
-                <button className="rbac-button" type="button">
-                  Add Expense
-                </button>
-              </Link>
             </div>
           </div>
 

@@ -515,20 +515,6 @@ function PetiCashListContent() {
               >
                 <FaFilter /> <span>Filters</span>
               </button>
-              <button
-                className="rbac-button"
-                type="button"
-                onClick={() => router.push("/dashboard/peti-cash/new?mode=CREDIT")}
-              >
-                Add Cash
-              </button>
-              <button
-                className="rbac-button"
-                type="button"
-                onClick={() => router.push("/dashboard/peti-cash/new?mode=DEBIT")}
-              >
-                Give Cash
-              </button>
             </div>
           </div>
 

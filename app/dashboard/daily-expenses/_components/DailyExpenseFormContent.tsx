@@ -62,7 +62,7 @@ type DailyExpenseFormState = {
 
 type DailyExpenseFormContentProps = {
   dailyExpenseId?: string;
-  onGoDashboard?: () => void;
+  onGoDashboard: () => void;
 };
 
 type DailyExpenseSuccessEntry = {
@@ -389,7 +389,7 @@ export default function DailyExpenseFormContent({
           { label: "Date", value: savedEntry.date },
         ]}
         onAddAnother={resetToNewEntry}
-        onDashboard={onGoDashboard || (() => router.push("/dashboard"))}
+        onDashboard={onGoDashboard}
       />
     );
   }

@@ -54,10 +54,10 @@ export default function CashEntrySuccessView({
           ))}
         </div>
 
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between gap-5 items-center">
           <button
             type="button"
-            className="rbac-button"
+            className="rbac-button w-full"
             onClick={onAddAnother}
           >
             + Add Another
