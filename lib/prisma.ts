@@ -1,44 +1,27 @@
+import { config } from "dotenv"
 import { PrismaClient } from "@prisma/client"
-import { PrismaPg } from "@prisma/adapter-pg"
+import { PrismaMariaDb } from "@prisma/adapter-mariadb"
 
-type GlobalForPrisma = {
+config({ path: ".env" })
+
+const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient
 }
 
-const globalForPrisma = global as unknown as GlobalForPrisma
+function createPrisma() {
+  const databaseUrl = process.env.DATABASE_URL
 
-const connectionString = process.env.DATABASE_URL
-if (!connectionString) {
-  throw new Error("DATABASE_URL is not set")
-}
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL environment variable is required to initialize Prisma.")
+  }
 
-const adapter = new PrismaPg({ connectionString })
-
-const createClient = () =>
-  new PrismaClient({
-    adapter,
+  return new PrismaClient({
+    adapter: new PrismaMariaDb(databaseUrl),
+    log: ["error", "warn"],
   })
-
-const existing = globalForPrisma.prisma
-
-// In dev, if schema changed and the cached client predates a model addition,
-// recreate it so new delegates (e.g. dailyReport, queryManagement) exist.
-const cachedClientHasModel = (client: PrismaClient | undefined) => {
-  if (!client) return false
-  const delegates = client as unknown as Record<string, unknown>
-  return (
-    typeof delegates.dailyReport !== "undefined" &&
-    typeof delegates.queryManagement !== "undefined" &&
-    typeof delegates.deviceToken !== "undefined" &&
-    typeof delegates.expenseType !== "undefined" &&
-    typeof delegates.financeTransaction !== "undefined" &&
-    typeof delegates.incomeTransaction !== "undefined" &&
-    typeof delegates.transportConfig !== "undefined" &&
-    typeof delegates.company !== "undefined"
-  )
 }
 
-export const prisma = cachedClientHasModel(existing) ? existing : createClient()
+export const prisma = globalForPrisma.prisma ?? createPrisma()
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma

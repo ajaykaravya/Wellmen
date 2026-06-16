@@ -438,16 +438,6 @@ function TodoListContent() {
         ),
       },
       {
-        header: "Task Type",
-        accessorKey: "type",
-        size: 700,
-        cell: (info) => (
-          <span className="rbac-muted">
-            {formatTaskType(String(info.getValue() || ""))}
-          </span>
-        ),
-      },
-      {
         header: "Category",
         accessorKey: "categoryName",
         size: 700,

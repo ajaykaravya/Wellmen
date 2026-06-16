@@ -31,7 +31,7 @@ export async function GET(req) {
         AND: [
           { category: "REPORTING_WORK" },
           {
-            OR: [{ name: { contains: query, mode: "insensitive" } }],
+            OR: [{ name: { contains: query } }],
           },
         ],
       }

@@ -100,47 +100,47 @@ export async function GET(req) {
   const where = {};
   if (query) {
     where.OR = [
-      { remark: { contains: query, mode: "insensitive" } },
-      { expenseType: { name: { contains: query, mode: "insensitive" } } },
+      { remark: { contains: query } },
+      { expenseType: { name: { contains: query } } },
       {
         expenseBy: {
           is: {
-            fullName: { contains: query, mode: "insensitive" },
+            fullName: { contains: query },
           },
         },
       },
       {
         expenseBy: {
           is: {
-            firstName: { contains: query, mode: "insensitive" },
+            firstName: { contains: query },
           },
         },
       },
       {
         expenseBy: {
           is: {
-            lastName: { contains: query, mode: "insensitive" },
+            lastName: { contains: query },
           },
         },
       },
       {
         expenseCompany: {
           is: {
-            name: { contains: query, mode: "insensitive" },
+            name: { contains: query },
           },
         },
       },
       {
         project: {
           is: {
-            name: { contains: query, mode: "insensitive" },
+            name: { contains: query },
           },
         },
       },
       {
         project: {
           is: {
-            city: { contains: query, mode: "insensitive" },
+            city: { contains: query },
           },
         },
       },

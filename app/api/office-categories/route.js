@@ -27,7 +27,7 @@ export async function GET(req) {
 
   const where = { category: "OFFICE_WORK" };
   if (query) {
-    where.OR = [{ name: { contains: query, mode: "insensitive" } }];
+    where.OR = [{ name: { contains: query } }];
   }
 
   const [total, categories] = await Promise.all([

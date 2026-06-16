@@ -40,8 +40,8 @@ const buildListWhere = ({ searchParams, userId, isAdmin }) => {
   if (q) {
     andConditions.push({
       OR: [
-        { description: { contains: q, mode: "insensitive" } },
-        { category: { name: { contains: q, mode: "insensitive" } } },
+        { description: { contains: q } },
+        { category: { name: { contains: q } } },
       ],
     });
   }
@@ -69,7 +69,7 @@ const buildListWhere = ({ searchParams, userId, isAdmin }) => {
   if (category) {
     andConditions.push({
       category: {
-        name: { contains: category, mode: "insensitive" },
+        name: { contains: category },
       },
     });
   }

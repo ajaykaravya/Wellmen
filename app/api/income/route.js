@@ -99,14 +99,14 @@ export async function GET(req) {
   const where = { transactionType: "INCOME" };
   if (q) {
     where.OR = [
-      { remark: { contains: q, mode: "insensitive" } },
-      { incomeType: { name: { contains: q, mode: "insensitive" } } },
-      { project: { is: { name: { contains: q, mode: "insensitive" } } } },
-      { project: { is: { city: { contains: q, mode: "insensitive" } } } },
-      { incomeCompany: { is: { name: { contains: q, mode: "insensitive" } } } },
-      { receivedBy: { is: { fullName: { contains: q, mode: "insensitive" } } } },
-      { receivedBy: { is: { firstName: { contains: q, mode: "insensitive" } } } },
-      { receivedBy: { is: { lastName: { contains: q, mode: "insensitive" } } } },
+      { remark: { contains: q} },
+      { incomeType: { name: { contains: q} } },
+      { project: { is: { name: { contains: q} } } },
+      { project: { is: { city: { contains: q} } } },
+      { incomeCompany: { is: { name: { contains: q} } } },
+      { receivedBy: { is: { fullName: { contains: q} } } },
+      { receivedBy: { is: { firstName: { contains: q} } } },
+      { receivedBy: { is: { lastName: { contains: q} } } },
     ];
   }
 

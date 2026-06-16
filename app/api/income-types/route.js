@@ -29,7 +29,7 @@ export async function GET(req) {
 
   const where = {};
   if (query) {
-    where.name = { contains: query, mode: "insensitive" };
+    where.name = { contains: query };
   }
 
   if (status) {

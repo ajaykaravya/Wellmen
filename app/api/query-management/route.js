@@ -38,8 +38,8 @@ export async function GET(req) {
   const where = isAdmin ? {} : { createdById: userId };
   if (q) {
     where.OR = [
-      { description: { contains: q, mode: "insensitive" } },
-      { project: { name: { contains: q, mode: "insensitive" } } },
+      { description: { contains: q } },
+      { project: { name: { contains: q } } },
     ];
   }
   if (category) where.category = category;

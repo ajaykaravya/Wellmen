@@ -19,7 +19,7 @@ const buildSearchWhere = (query) => {
 
   return {
     OR: transportSearchFields.map((field) => ({
-      [field]: { contains: query, mode: "insensitive" },
+      [field]: { contains: query },
     })),
   };
 };
