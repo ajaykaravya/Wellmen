@@ -3,56 +3,56 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
 }
 
 model User {
-  id               String            @id @default(uuid())
-  email            String?           @unique
-  createdAt        DateTime          @default(now())
-  fullName         String
-  passwordHash     String
-  roleId           String
-  updatedAt        DateTime          @updatedAt
-  username         String?           @unique
-  firstName        String
-  lastName         String
-  mobileNumber     String            @unique
-  dailyReports     DailyReport[]     @relation("DailyReportCreator")
-  createdProjects  Project[]         @relation("ProjectCreator")
-  queryManagements QueryManagement[] @relation("QueryCreatedBy")
-  assignedTodos    Todo[]            @relation("TodoAssignee")
-  createdTodos     Todo[]            @relation("TodoCreator")
+  id                             String               @id @default(uuid()) @db.Char(36)
+  email                          String?              @unique
+  createdAt                      DateTime             @default(now())
+  fullName                       String
+  passwordHash                   String
+  roleId                         String               @db.Char(36)
+  updatedAt                      DateTime             @updatedAt
+  username                       String?              @unique
+  firstName                      String
+  lastName                       String
+  mobileNumber                   String               @unique
+  dailyReports                   DailyReport[]        @relation("DailyReportCreator")
+  createdProjects                Project[]            @relation("ProjectCreator")
+  queryManagements               QueryManagement[]    @relation("QueryCreatedBy")
+  assignedTodos                  Todo[]               @relation("TodoAssignee")
+  createdTodos                   Todo[]               @relation("TodoCreator")
   financeTransactionsAsExpenseBy FinanceTransaction[] @relation("FinanceTransactionExpenseBy")
-  petiCashGivenBy  PetiCash[]        @relation("PetiCashGivenBy")
-  petiCashGivenTo  PetiCash[]        @relation("PetiCashGivenTo")
-  incomeTransactionsAsReceivedBy IncomeTransaction[] @relation("IncomeTransactionReceivedBy")
-  transportLogsCreated TransportLog[] @relation("TransportLogCreator")
-  deviceTokens     DeviceToken[]
-  role             Role              @relation(fields: [roleId], references: [id])
+  petiCashGivenBy                PetiCash[]           @relation("PetiCashGivenBy")
+  petiCashGivenTo                PetiCash[]           @relation("PetiCashGivenTo")
+  incomeTransactionsAsReceivedBy IncomeTransaction[]  @relation("IncomeTransactionReceivedBy")
+  transportLogsCreated           TransportLog[]       @relation("TransportLogCreator")
+  deviceTokens                   DeviceToken[]
+  role                           Role                 @relation(fields: [roleId], references: [id])
 }
 
 model Todo {
-  id          String     @id @default(uuid())
-  description String?
-  comments    String?
-  startDate   DateTime
-  endDate     DateTime?
+  id            String     @id @default(uuid()) @db.Char(36)
+  description   String?
+  comments      String?
+  startDate     DateTime
+  endDate       DateTime?
   completedDate DateTime?
-  status      TodoStatus @default(TODO)
-  projectId   String?
-  assigneeId  String?
-  type        TaskType
-  priority    Priority
-  categoryId  String
-  subCategory String?
-  createdById String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  assignee    User?      @relation("TodoAssignee", fields: [assigneeId], references: [id])
-  category    Categories @relation(fields: [categoryId], references: [id])
-  createdBy   User?      @relation("TodoCreator", fields: [createdById], references: [id])
-  project     Project?   @relation(fields: [projectId], references: [id])
+  status        TodoStatus @default(TODO)
+  projectId     String?    @db.Char(36)
+  assigneeId    String?    @db.Char(36)
+  type          TaskType
+  priority      Priority
+  categoryId    String     @db.Char(36)
+  subCategory   String?
+  createdById   String?    @db.Char(36)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  assignee      User?      @relation("TodoAssignee", fields: [assigneeId], references: [id])
+  category      Categories @relation(fields: [categoryId], references: [id])
+  createdBy     User?      @relation("TodoCreator", fields: [createdById], references: [id])
+  project       Project?   @relation(fields: [projectId], references: [id])
 
   @@index([type])
   @@index([priority])
@@ -62,37 +62,37 @@ model Todo {
 }
 
 model Project {
-  id               String            @id @default(uuid())
-  name             String
-  address          String
-  city             String?
-  contactNumber    String
-  email            String?
-  startDate        DateTime
-  endDate          DateTime?
-  description      String?
-  status           ProjectStatus     @default(PENDING)
-  createdById      String?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  dailyReports     DailyReport[]
-  financeTransactions FinanceTransaction[] @relation("FinanceTransactionProject")
-  petiCashTransactions PetiCash[]        @relation("PetiCashProject")
-  incomeTransactions IncomeTransaction[] @relation("IncomeTransactionProject")
-  createdBy        User?             @relation("ProjectCreator", fields: [createdById], references: [id])
-  queryManagements QueryManagement[]
-  todos            Todo[]
+  id                   String               @id @default(uuid()) @db.Char(36)
+  name                 String
+  address              String
+  city                 String?
+  contactNumber        String
+  email                String?
+  startDate            DateTime
+  endDate              DateTime?
+  description          String?
+  status               ProjectStatus        @default(PENDING)
+  createdById          String?              @db.Char(36)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  dailyReports         DailyReport[]
+  financeTransactions  FinanceTransaction[] @relation("FinanceTransactionProject")
+  petiCashTransactions PetiCash[]           @relation("PetiCashProject")
+  incomeTransactions   IncomeTransaction[]  @relation("IncomeTransactionProject")
+  createdBy            User?                @relation("ProjectCreator", fields: [createdById], references: [id])
+  queryManagements     QueryManagement[]
+  todos                Todo[]
 }
 
 model DailyReport {
-  id          String      @id @default(uuid())
+  id          String      @id @default(uuid()) @db.Char(36)
   reportDate  DateTime
-  projectId   String
-  categoryId  String?
+  projectId   String      @db.Char(36)
+  categoryId  String?     @db.Char(36)
   description String
-  imageUrls   Json?
-  videoUrls   Json?
-  createdById String?
+  imageUrls   Json?       @db.Json
+  videoUrls   Json?       @db.Json
+  createdById String?     @db.Char(36)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   category    Categories? @relation(fields: [categoryId], references: [id])
@@ -105,32 +105,32 @@ model DailyReport {
 }
 
 model Role {
-  id              String           @id @default(uuid())
+  id              String           @id @default(uuid()) @db.Char(36)
   name            String           @unique
   rolePermissions RolePermission[]
   users           User[]
 }
 
 model Company {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  code      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                                  String               @id @default(uuid()) @db.Char(36)
+  name                                String               @unique
+  code                                String               @unique
+  createdAt                           DateTime             @default(now())
+  updatedAt                           DateTime             @updatedAt
   financeTransactionsAsExpenseCompany FinanceTransaction[] @relation("FinanceTransactionExpenseCompany")
-  petiCashTransactions PetiCash[] @relation("PetiCashCompany")
-  incomeTransactionsAsIncomeCompany IncomeTransaction[] @relation("IncomeTransactionIncomeCompany")
+  petiCashTransactions                PetiCash[]           @relation("PetiCashCompany")
+  incomeTransactionsAsIncomeCompany   IncomeTransaction[]  @relation("IncomeTransactionIncomeCompany")
 }
 
 model Permission {
-  id              String           @id @default(uuid())
+  id              String           @id @default(uuid()) @db.Char(36)
   name            String           @unique
   rolePermissions RolePermission[]
 }
 
 model RolePermission {
-  roleId       String
-  permissionId String
+  roleId       String     @db.Char(36)
+  permissionId String     @db.Char(36)
   permission   Permission @relation(fields: [permissionId], references: [id])
   role         Role       @relation(fields: [roleId], references: [id])
 
@@ -138,7 +138,7 @@ model RolePermission {
 }
 
 model Categories {
-  id        String        @id @default(uuid())
+  id        String        @id @default(uuid()) @db.Char(36)
   category  String
   name      String
   createdAt DateTime      @default(now())
@@ -150,45 +150,45 @@ model Categories {
 }
 
 model ExpenseType {
-  id            String           @id @default(uuid())
-  name          String           @unique
-  status        ExpenseTypeStatus @default(ACTIVE)
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  financeTransactions FinanceTransaction[] @relation("FinanceTransactionExpenseType")
-  petiCashTransactions PetiCash[] @relation("PetiCashExpenseType")
+  id                   String               @id @default(uuid()) @db.Char(36)
+  name                 String               @unique
+  status               ExpenseTypeStatus    @default(ACTIVE)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  financeTransactions  FinanceTransaction[] @relation("FinanceTransactionExpenseType")
+  petiCashTransactions PetiCash[]           @relation("PetiCashExpenseType")
 
   @@index([status])
 }
 
 model IncomeType {
-  id            String           @id @default(uuid())
-  name          String           @unique
-  status        ExpenseTypeStatus @default(ACTIVE)
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
+  id                 String              @id @default(uuid()) @db.Char(36)
+  name               String              @unique
+  status             ExpenseTypeStatus   @default(ACTIVE)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
   incomeTransactions IncomeTransaction[] @relation("IncomeTransactionIncomeType")
 
   @@index([status])
 }
 
 model FinanceTransaction {
-  id                        String         @id @default(uuid())
-  transactionType           TransactionType @default(EXPENSE)
-  amount                    Decimal        @db.Decimal(14, 2)
-  expenseTypeId             String?
-  expenseById               String?
-  expenseCompanyId          String?
-  projectId                 String?
-  paymentMode               CashPaymentMode?
-  date                      DateTime
-  remark                    String?
-  createdAt                 DateTime       @default(now())
-  updatedAt                 DateTime       @updatedAt
-  expenseType               ExpenseType?   @relation("FinanceTransactionExpenseType", fields: [expenseTypeId], references: [id], onDelete: SetNull)
-  expenseBy                 User?          @relation("FinanceTransactionExpenseBy", fields: [expenseById], references: [id], onDelete: SetNull)
-  expenseCompany            Company?       @relation("FinanceTransactionExpenseCompany", fields: [expenseCompanyId], references: [id], onDelete: SetNull)
-  project                   Project?       @relation("FinanceTransactionProject", fields: [projectId], references: [id], onDelete: SetNull)
+  id               String           @id @default(uuid()) @db.Char(36)
+  transactionType  TransactionType  @default(EXPENSE)
+  amount           Decimal          @db.Decimal(14, 2)
+  expenseTypeId    String?          @db.Char(36)
+  expenseById      String?          @db.Char(36)
+  expenseCompanyId String?          @db.Char(36)
+  projectId        String?          @db.Char(36)
+  paymentMode      CashPaymentMode?
+  date             DateTime
+  remark           String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  expenseType      ExpenseType?     @relation("FinanceTransactionExpenseType", fields: [expenseTypeId], references: [id], onDelete: SetNull)
+  expenseBy        User?            @relation("FinanceTransactionExpenseBy", fields: [expenseById], references: [id], onDelete: SetNull)
+  expenseCompany   Company?         @relation("FinanceTransactionExpenseCompany", fields: [expenseCompanyId], references: [id], onDelete: SetNull)
+  project          Project?         @relation("FinanceTransactionProject", fields: [projectId], references: [id], onDelete: SetNull)
 
   @@index([transactionType])
   @@index([date])
@@ -200,23 +200,23 @@ model FinanceTransaction {
 }
 
 model PetiCash {
-  id            String                   @id @default(uuid())
-  amount        Decimal                  @db.Decimal(14, 2)
+  id              String                  @id @default(uuid()) @db.Char(36)
+  amount          Decimal                 @db.Decimal(14, 2)
   transactionType PetiCashTransactionType
-  givenById     String?
-  givenToId     String?
-  companyId     String?
-  projectId     String?
-  expenseTypeId String?
-  date          DateTime
-  remarks       String?
-  createdAt     DateTime                 @default(now())
-  updatedAt     DateTime                 @updatedAt
-  givenBy       User?                    @relation("PetiCashGivenBy", fields: [givenById], references: [id], onDelete: SetNull)
-  givenTo       User?                    @relation("PetiCashGivenTo", fields: [givenToId], references: [id], onDelete: SetNull)
-  company       Company?                 @relation("PetiCashCompany", fields: [companyId], references: [id], onDelete: SetNull)
-  project       Project?                 @relation("PetiCashProject", fields: [projectId], references: [id], onDelete: SetNull)
-  expenseType   ExpenseType?             @relation("PetiCashExpenseType", fields: [expenseTypeId], references: [id], onDelete: SetNull)
+  givenById       String?                 @db.Char(36)
+  givenToId       String?                 @db.Char(36)
+  companyId       String?                 @db.Char(36)
+  projectId       String?                 @db.Char(36)
+  expenseTypeId   String?                 @db.Char(36)
+  date            DateTime
+  remarks         String?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  givenBy         User?                   @relation("PetiCashGivenBy", fields: [givenById], references: [id], onDelete: SetNull)
+  givenTo         User?                   @relation("PetiCashGivenTo", fields: [givenToId], references: [id], onDelete: SetNull)
+  company         Company?                @relation("PetiCashCompany", fields: [companyId], references: [id], onDelete: SetNull)
+  project         Project?                @relation("PetiCashProject", fields: [projectId], references: [id], onDelete: SetNull)
+  expenseType     ExpenseType?            @relation("PetiCashExpenseType", fields: [expenseTypeId], references: [id], onDelete: SetNull)
 
   @@index([transactionType])
   @@index([date])
@@ -228,22 +228,22 @@ model PetiCash {
 }
 
 model IncomeTransaction {
-  id              String          @id @default(uuid())
-  transactionType  TransactionType @default(INCOME)
-  amount          Decimal         @db.Decimal(14, 2)
-  incomeTypeId    String?
-  incomeCompanyId String?
-  receivedById    String?
-  projectId       String?
+  id              String           @id @default(uuid()) @db.Char(36)
+  transactionType TransactionType  @default(INCOME)
+  amount          Decimal          @db.Decimal(14, 2)
+  incomeTypeId    String?          @db.Char(36)
+  incomeCompanyId String?          @db.Char(36)
+  receivedById    String?          @db.Char(36)
+  projectId       String?          @db.Char(36)
   paymentMode     CashPaymentMode?
   date            DateTime
   remark          String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  incomeType      IncomeType?     @relation("IncomeTransactionIncomeType", fields: [incomeTypeId], references: [id], onDelete: SetNull)
-  incomeCompany   Company?        @relation("IncomeTransactionIncomeCompany", fields: [incomeCompanyId], references: [id], onDelete: SetNull)
-  receivedBy      User?           @relation("IncomeTransactionReceivedBy", fields: [receivedById], references: [id], onDelete: SetNull)
-  project         Project?        @relation("IncomeTransactionProject", fields: [projectId], references: [id], onDelete: SetNull)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  incomeType      IncomeType?      @relation("IncomeTransactionIncomeType", fields: [incomeTypeId], references: [id], onDelete: SetNull)
+  incomeCompany   Company?         @relation("IncomeTransactionIncomeCompany", fields: [incomeCompanyId], references: [id], onDelete: SetNull)
+  receivedBy      User?            @relation("IncomeTransactionReceivedBy", fields: [receivedById], references: [id], onDelete: SetNull)
+  project         Project?         @relation("IncomeTransactionProject", fields: [projectId], references: [id], onDelete: SetNull)
 
   @@index([transactionType])
   @@index([date])
@@ -255,7 +255,7 @@ model IncomeTransaction {
 }
 
 model TransportLog {
-  id                    String        @id @default(uuid())
+  id                    String        @id @default(uuid()) @db.Char(36)
   serialNo              Int
   transportType         TransportType
   date                  DateTime
@@ -305,20 +305,20 @@ model TransportLog {
 }
 
 model TransportConfig {
-  id           String              @id @default(uuid())
+  id            String              @id @default(uuid()) @db.Char(36)
   transportType TransportType
-  configType   TransportConfigType
-  configKey    String
-  configData   Json
-  floor        String?
-  loadType     String?
-  tripType     String?
-  minKm        Int?
-  maxKm        Int?
-  rate         Decimal             @default(0) @db.Decimal(14, 2)
-  isActive     Boolean             @default(true)
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
+  configType    TransportConfigType
+  configKey     String
+  configData    Json
+  floor         String?
+  loadType      String?
+  tripType      String?
+  minKm         Int?
+  maxKm         Int?
+  rate          Decimal             @default(0) @db.Decimal(14, 2)
+  isActive      Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
 
   @@unique([transportType, configType, configKey])
   @@index([transportType, configType])
@@ -326,14 +326,14 @@ model TransportConfig {
 }
 
 model QueryManagement {
-  id          String        @id @default(uuid())
-  projectId   String
+  id          String        @id @default(uuid()) @db.Char(36)
+  projectId   String        @db.Char(36)
   category    QueryCategory
   description String
   status      QueryStatus   @default(PENDING)
   priority    Priority
-  imageUrls   Json?
-  videoUrls   Json?
+  imageUrls   Json?         @db.Json
+  videoUrls   Json?         @db.Json
   createdById String?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -348,16 +348,16 @@ model QueryManagement {
 }
 
 model DeviceToken {
-  id         String   @id @default(uuid())
+  id         String    @id @default(uuid()) @db.Char(36)
   userId     String
-  token      String   @unique
+  token      String    @unique
   platform   String?
   deviceId   String?
-  isActive   Boolean  @default(true)
+  isActive   Boolean   @default(true)
   lastSeenAt DateTime?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([isActive])

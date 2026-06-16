@@ -165,16 +165,16 @@ export async function GET(req) {
 
   if (query) {
     where.OR = [
-      { remarks: { contains: query, mode: "insensitive" } },
-      { givenBy: { is: { fullName: { contains: query, mode: "insensitive" } } } },
-      { givenBy: { is: { firstName: { contains: query, mode: "insensitive" } } } },
-      { givenBy: { is: { lastName: { contains: query, mode: "insensitive" } } } },
-      { givenTo: { is: { fullName: { contains: query, mode: "insensitive" } } } },
-      { givenTo: { is: { firstName: { contains: query, mode: "insensitive" } } } },
-      { givenTo: { is: { lastName: { contains: query, mode: "insensitive" } } } },
-      { company: { is: { name: { contains: query, mode: "insensitive" } } } },
-      { project: { is: { name: { contains: query, mode: "insensitive" } } } },
-      { project: { is: { city: { contains: query, mode: "insensitive" } } } },
+      { remarks: { contains: query } },
+      { givenBy: { is: { fullName: { contains: query } } } },
+      { givenBy: { is: { firstName: { contains: query } } } },
+      { givenBy: { is: { lastName: { contains: query } } } },
+      { givenTo: { is: { fullName: { contains: query } } } },
+      { givenTo: { is: { firstName: { contains: query } } } },
+      { givenTo: { is: { lastName: { contains: query } } } },
+      { company: { is: { name: { contains: query } } } },
+      { project: { is: { name: { contains: query } } } },
+      { project: { is: { city: { contains: query } } } },
     ];
   }
 

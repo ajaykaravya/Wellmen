@@ -72,16 +72,16 @@ export async function GET(req) {
 
   if (q) {
     where.OR = [
-      { name: { contains: q, mode: "insensitive" } },
-      { description: { contains: q, mode: "insensitive" } },
-      { address: { contains: q, mode: "insensitive" } },
-      { email: { contains: q, mode: "insensitive" } },
-      { contactNumber: { contains: q, mode: "insensitive" } },
+      { name: { contains: q } },
+      { description: { contains: q } },
+      { address: { contains: q } },
+      { email: { contains: q } },
+      { contactNumber: { contains: q } },
     ];
   }
 
   if (city) {
-    where.city = { equals: city, mode: "insensitive" };
+    where.city = { equals: city };
   }
 
   if (status) {

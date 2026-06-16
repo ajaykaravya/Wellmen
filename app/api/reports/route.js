@@ -97,11 +97,11 @@ export async function GET(req) {
 
   if (q) {
     where.OR = [
-      { description: { contains: q, mode: "insensitive" } },
-      { project: { name: { contains: q, mode: "insensitive" } } },
-      { category: { name: { contains: q, mode: "insensitive" } } },
-      { createdBy: { firstName: { contains: q, mode: "insensitive" } } },
-      { createdBy: { lastName: { contains: q, mode: "insensitive" } } },
+      { description: { contains: q } },
+      { project: { name: { contains: q } } },
+      { category: { name: { contains: q } } },
+      { createdBy: { firstName: { contains: q } } },
+      { createdBy: { lastName: { contains: q } } },
     ];
   }
 

@@ -37,8 +37,8 @@ const cashTrackerTabs: {
   Icon: ComponentType<{ className?: string; size?: number }>;
 }[] = [
   { key: "dashboard", label: "Dashboard", Icon: FaChartBar },
-  { key: "expense", label: "Expense", Icon: FaReceipt },
-  { key: "income", label: "Income", Icon: FaMoneyBillWave },
+  { key: "income", label: "Incomes", Icon: FaMoneyBillWave },
+  { key: "expense", label: "Expenses", Icon: FaReceipt },
   { key: "cashPeti", label: "Cash Peti", Icon: FaWallet },
 ];
 
