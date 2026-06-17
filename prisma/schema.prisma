@@ -38,26 +38,27 @@ model Todo {
 }
 
 model Project {
-  id                   String               @id @default(uuid()) @db.Char(36)
-  name                 String
-  address              String
-  city                 String?
-  contactNumber        String
-  email                String?
-  startDate            DateTime
-  endDate              DateTime?
-  description          String?
-  status               ProjectStatus        @default(PENDING)
-  createdById          String?              @db.Char(36)
-  createdAt            DateTime             @default(now())
-  updatedAt            DateTime             @updatedAt
-  dailyReports         DailyReport[]
-  financeTransactions  FinanceTransaction[] @relation("FinanceTransactionProject")
-  incomeTransactions   IncomeTransaction[]  @relation("IncomeTransactionProject")
-  petiCashTransactions PetiCash[]           @relation("PetiCashProject")
-  User                 User?                @relation(fields: [createdById], references: [id])
-  queryManagements     QueryManagement[]
-  todos                Todo[]
+  id                     String                  @id @default(uuid()) @db.Char(36)
+  name                   String
+  address                String
+  city                   String?
+  contactNumber          String
+  email                  String?
+  startDate              DateTime
+  endDate                DateTime?
+  description            String?
+  status                 ProjectStatus           @default(PENDING)
+  createdById            String?                 @db.Char(36)
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  dailyReports           DailyReport[]
+  financeTransactions    FinanceTransaction[]    @relation("FinanceTransactionProject")
+  incomeTransactions     IncomeTransaction[]     @relation("IncomeTransactionProject")
+  petiCashTransactions   PetiCash[]              @relation("PetiCashProject")
+  User                   User?                   @relation(fields: [createdById], references: [id])
+  queryManagements       QueryManagement[]
+  todos                  Todo[]
+  projectFormSubmissions ProjectFormSubmission[]
 
   @@index([createdById], map: "Project_createdById_fkey")
 }
@@ -343,9 +344,32 @@ model DeviceToken {
 }
 
 model ProjectForm {
-  id     String  @id @default(uuid()) @db.Char(36)
-  name   String  @unique
-  status Boolean @default(false)
+  id       String  @id @default(uuid()) @db.Char(36)
+  name     String  @unique
+  isActive Boolean @default(true)
+
+  template Json?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  submissions ProjectFormSubmission[]
+}
+
+model ProjectFormSubmission {
+  id            String     @id @default(uuid()) @db.Char(36)
+  projectId     String     @db.Char(36)
+  projectFormId String     @db.Char(36)
+  status        FormStatus @default(PENDING)
+  formData      Json?
+  submittedAt   DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectForm ProjectForm @relation(fields: [projectFormId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, projectFormId])
 }
 
 model User {
@@ -451,4 +475,9 @@ enum TransportConfigType {
   COURIER_WEIGHT_RATE
   COURIER_COVER_RATE
   CNG_TRIP_SLAB
+}
+
+enum FormStatus {
+  PENDING
+  COMPLETED
 }

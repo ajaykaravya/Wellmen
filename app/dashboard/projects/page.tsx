@@ -155,7 +155,7 @@ function ProjectListContent() {
   }, [router])
 
   const handleProjectForm = useCallback((row:ProjectRow) => {
-    router.push(`/dashboard/projects/form?projectName=${row.name}`)
+    router.push(`/dashboard/projects/forms?projectId=${row.id}`)
   }, [])
 
   const handleView = useCallback(async (row: ProjectRow) => {

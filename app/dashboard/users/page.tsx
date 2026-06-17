@@ -337,49 +337,51 @@ function UsersContent() {
                 </div>
               )}
               {!loading &&
-                users.map((user) => (
-                  <div key={user.id} className="rbac-card p-4">
+                users.map((listUser) => (
+                  <div key={listUser.id} className="rbac-card p-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <h4 className="text-sm font-semibold">
-                          {user.firstName} {user.lastName}
+                          {listUser.firstName} {listUser.lastName}
                         </h4>
 
                       </div>
-                      <div className="flex">
-                        <button
-                          className="rbac-link"
-                          type="button"
-                          onClick={() => handleEditUser(user)}
-                        >
-                          <FaEdit size={18} />
-                        </button>
-                        <button
-                          style={{ padding: "2px" }}
-                          className="rbac-link danger"
-                          type="button"
-                          onClick={() => handleDeleteUser(user)}
-                        >
-                          <FaTrash size={18} />
-                        </button>
-                      </div>
+                      {listUser.id !== user?.id && (
+                        <div className="flex">
+                          <button
+                            className="rbac-link"
+                            type="button"
+                            onClick={() => handleEditUser(listUser)}
+                          >
+                            <FaEdit size={18} />
+                          </button>
+                          <button
+                            style={{ padding: "2px" }}
+                            className="rbac-link danger"
+                            type="button"
+                            onClick={() => handleDeleteUser(listUser)}
+                          >
+                            <FaTrash size={18} />
+                          </button>
+                        </div>
+                      )}
                     </div>
                     <div className="grid gap-1 text-sm">
                       {
-                        user.mobileNumber && (
+                        listUser.mobileNumber && (
                           <p className="flex items-center gap-1">
-                            <FaMobileRetro /> {user.mobileNumber}
+                            <FaMobileRetro /> {listUser.mobileNumber}
                           </p>
                         )
                       }
-                      {user.email && (
+                      {listUser.email && (
                         <p className="flex items-center gap-1">
-                          <MdEmail /> {user.email}
+                          <MdEmail /> {listUser.email}
                         </p>
                       )}
-                      {user.role && (
+                      {listUser.role && (
                         <p>
-                          <strong>Role:</strong> {user.role || "-"}
+                          <strong>Role:</strong> {listUser.role || "-"}
                         </p>
                       )}
                     </div>
