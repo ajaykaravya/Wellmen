@@ -22,6 +22,7 @@ import {
   FaEye
 } from "react-icons/fa";
 import { IoIosClose } from "react-icons/io";
+import { IoDocumentTextOutline } from "react-icons/io5";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle, Listbox } from "@headlessui/react";
@@ -153,6 +154,10 @@ function ProjectListContent() {
     router.push(`/dashboard/projects/${row.id}`)
   }, [router])
 
+  const handleProjectForm = useCallback((row:ProjectRow) => {
+    router.push(`/dashboard/projects/form?projectName=${row.name}`)
+  }, [])
+
   const handleView = useCallback(async (row: ProjectRow) => {
     setViewOpen(true);
     setViewLoading(true);
@@ -275,6 +280,9 @@ function ProjectListContent() {
               onClick={() => handleDeleteProject(row.original)}
             >
               <FaTrash />
+            </button>
+            <button className="rbac-link" type="button" onClick={() => handleProjectForm(row.original)}>
+              <IoDocumentTextOutline />
             </button>
           </div>
         ),
@@ -503,6 +511,9 @@ function ProjectListContent() {
                           onClick={() => handleDeleteProject(project)}
                         >
                           <FaTrash size={18} />
+                        </button>
+                        <button className="rbac-link" type="button" onClick={() => handleProjectForm(project)}>
+                          <IoDocumentTextOutline  size={18}/>
                         </button>
                       </div>
                     </div>
