@@ -6,32 +6,6 @@ datasource db {
   provider = "mysql"
 }
 
-model User {
-  id                             String               @id @default(uuid()) @db.Char(36)
-  email                          String?              @unique
-  createdAt                      DateTime             @default(now())
-  fullName                       String
-  passwordHash                   String
-  roleId                         String               @db.Char(36)
-  updatedAt                      DateTime             @updatedAt
-  username                       String?              @unique
-  firstName                      String
-  lastName                       String
-  mobileNumber                   String               @unique
-  dailyReports                   DailyReport[]        @relation("DailyReportCreator")
-  createdProjects                Project[]            @relation("ProjectCreator")
-  queryManagements               QueryManagement[]    @relation("QueryCreatedBy")
-  assignedTodos                  Todo[]               @relation("TodoAssignee")
-  createdTodos                   Todo[]               @relation("TodoCreator")
-  financeTransactionsAsExpenseBy FinanceTransaction[] @relation("FinanceTransactionExpenseBy")
-  petiCashGivenBy                PetiCash[]           @relation("PetiCashGivenBy")
-  petiCashGivenTo                PetiCash[]           @relation("PetiCashGivenTo")
-  incomeTransactionsAsReceivedBy IncomeTransaction[]  @relation("IncomeTransactionReceivedBy")
-  transportLogsCreated           TransportLog[]       @relation("TransportLogCreator")
-  deviceTokens                   DeviceToken[]
-  role                           Role                 @relation(fields: [roleId], references: [id])
-}
-
 model Todo {
   id            String     @id @default(uuid()) @db.Char(36)
   description   String?
@@ -49,9 +23,9 @@ model Todo {
   createdById   String?    @db.Char(36)
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
-  assignee      User?      @relation("TodoAssignee", fields: [assigneeId], references: [id])
+  assignee      User?      @relation("Todo_assigneeIdToUser", fields: [assigneeId], references: [id])
   category      Categories @relation(fields: [categoryId], references: [id])
-  createdBy     User?      @relation("TodoCreator", fields: [createdById], references: [id])
+  createdBy     User?      @relation("Todo_createdByIdToUser", fields: [createdById], references: [id])
   project       Project?   @relation(fields: [projectId], references: [id])
 
   @@index([type])
@@ -59,6 +33,8 @@ model Todo {
   @@index([categoryId])
   @@index([projectId])
   @@index([completedDate])
+  @@index([assigneeId], map: "Todo_assigneeId_fkey")
+  @@index([createdById], map: "Todo_createdById_fkey")
 }
 
 model Project {
@@ -77,11 +53,13 @@ model Project {
   updatedAt            DateTime             @updatedAt
   dailyReports         DailyReport[]
   financeTransactions  FinanceTransaction[] @relation("FinanceTransactionProject")
-  petiCashTransactions PetiCash[]           @relation("PetiCashProject")
   incomeTransactions   IncomeTransaction[]  @relation("IncomeTransactionProject")
-  createdBy            User?                @relation("ProjectCreator", fields: [createdById], references: [id])
+  petiCashTransactions PetiCash[]           @relation("PetiCashProject")
+  User                 User?                @relation(fields: [createdById], references: [id])
   queryManagements     QueryManagement[]
   todos                Todo[]
+
+  @@index([createdById], map: "Project_createdById_fkey")
 }
 
 model DailyReport {
@@ -90,13 +68,13 @@ model DailyReport {
   projectId   String      @db.Char(36)
   categoryId  String?     @db.Char(36)
   description String
-  imageUrls   Json?       @db.Json
-  videoUrls   Json?       @db.Json
+  imageUrls   Json?
+  videoUrls   Json?
   createdById String?     @db.Char(36)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   category    Categories? @relation(fields: [categoryId], references: [id])
-  createdBy   User?       @relation("DailyReportCreator", fields: [createdById], references: [id])
+  createdBy   User?       @relation(fields: [createdById], references: [id])
   project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([createdById, reportDate])
@@ -108,7 +86,7 @@ model Role {
   id              String           @id @default(uuid()) @db.Char(36)
   name            String           @unique
   rolePermissions RolePermission[]
-  users           User[]
+  User            User[]
 }
 
 model Company {
@@ -118,8 +96,8 @@ model Company {
   createdAt                           DateTime             @default(now())
   updatedAt                           DateTime             @updatedAt
   financeTransactionsAsExpenseCompany FinanceTransaction[] @relation("FinanceTransactionExpenseCompany")
-  petiCashTransactions                PetiCash[]           @relation("PetiCashCompany")
   incomeTransactionsAsIncomeCompany   IncomeTransaction[]  @relation("IncomeTransactionIncomeCompany")
+  petiCashTransactions                PetiCash[]           @relation("PetiCashCompany")
 }
 
 model Permission {
@@ -135,6 +113,7 @@ model RolePermission {
   role         Role       @relation(fields: [roleId], references: [id])
 
   @@id([roleId, permissionId])
+  @@index([permissionId], map: "RolePermission_permissionId_fkey")
 }
 
 model Categories {
@@ -185,10 +164,10 @@ model FinanceTransaction {
   remark           String?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
-  expenseType      ExpenseType?     @relation("FinanceTransactionExpenseType", fields: [expenseTypeId], references: [id], onDelete: SetNull)
-  expenseBy        User?            @relation("FinanceTransactionExpenseBy", fields: [expenseById], references: [id], onDelete: SetNull)
-  expenseCompany   Company?         @relation("FinanceTransactionExpenseCompany", fields: [expenseCompanyId], references: [id], onDelete: SetNull)
-  project          Project?         @relation("FinanceTransactionProject", fields: [projectId], references: [id], onDelete: SetNull)
+  expenseBy        User?            @relation(fields: [expenseById], references: [id])
+  expenseCompany   Company?         @relation("FinanceTransactionExpenseCompany", fields: [expenseCompanyId], references: [id])
+  expenseType      ExpenseType?     @relation("FinanceTransactionExpenseType", fields: [expenseTypeId], references: [id])
+  project          Project?         @relation("FinanceTransactionProject", fields: [projectId], references: [id])
 
   @@index([transactionType])
   @@index([date])
@@ -212,11 +191,11 @@ model PetiCash {
   remarks         String?
   createdAt       DateTime                @default(now())
   updatedAt       DateTime                @updatedAt
-  givenBy         User?                   @relation("PetiCashGivenBy", fields: [givenById], references: [id], onDelete: SetNull)
-  givenTo         User?                   @relation("PetiCashGivenTo", fields: [givenToId], references: [id], onDelete: SetNull)
-  company         Company?                @relation("PetiCashCompany", fields: [companyId], references: [id], onDelete: SetNull)
-  project         Project?                @relation("PetiCashProject", fields: [projectId], references: [id], onDelete: SetNull)
-  expenseType     ExpenseType?            @relation("PetiCashExpenseType", fields: [expenseTypeId], references: [id], onDelete: SetNull)
+  company         Company?                @relation("PetiCashCompany", fields: [companyId], references: [id])
+  expenseType     ExpenseType?            @relation("PetiCashExpenseType", fields: [expenseTypeId], references: [id])
+  givenBy         User?                   @relation("PetiCash_givenByIdToUser", fields: [givenById], references: [id])
+  givenTo         User?                   @relation("PetiCash_givenToIdToUser", fields: [givenToId], references: [id])
+  project         Project?                @relation("PetiCashProject", fields: [projectId], references: [id])
 
   @@index([transactionType])
   @@index([date])
@@ -240,10 +219,10 @@ model IncomeTransaction {
   remark          String?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
-  incomeType      IncomeType?      @relation("IncomeTransactionIncomeType", fields: [incomeTypeId], references: [id], onDelete: SetNull)
-  incomeCompany   Company?         @relation("IncomeTransactionIncomeCompany", fields: [incomeCompanyId], references: [id], onDelete: SetNull)
-  receivedBy      User?            @relation("IncomeTransactionReceivedBy", fields: [receivedById], references: [id], onDelete: SetNull)
-  project         Project?         @relation("IncomeTransactionProject", fields: [projectId], references: [id], onDelete: SetNull)
+  incomeCompany   Company?         @relation("IncomeTransactionIncomeCompany", fields: [incomeCompanyId], references: [id])
+  incomeType      IncomeType?      @relation("IncomeTransactionIncomeType", fields: [incomeTypeId], references: [id])
+  project         Project?         @relation("IncomeTransactionProject", fields: [projectId], references: [id])
+  receivedBy      User?            @relation(fields: [receivedById], references: [id])
 
   @@index([transactionType])
   @@index([date])
@@ -268,33 +247,33 @@ model TransportLog {
   kmEnd                 Int           @default(0)
   totalKm               Int           @default(0)
   loadType              String?
-  driverWages           Decimal       @default(0) @db.Decimal(14, 2)
-  otherExpenses         Decimal       @default(0) @db.Decimal(14, 2)
-  floorRent             Decimal       @default(0) @db.Decimal(14, 2)
-  returnMaterialFreight Decimal       @default(0) @db.Decimal(14, 2)
+  driverWages           Decimal       @default(0.00) @db.Decimal(14, 2)
+  otherExpenses         Decimal       @default(0.00) @db.Decimal(14, 2)
+  floorRent             Decimal       @default(0.00) @db.Decimal(14, 2)
+  returnMaterialFreight Decimal       @default(0.00) @db.Decimal(14, 2)
   fromLocation          String?
   toLocation            String?
   mobileNumber          String?
   noOfCovers            Int           @default(0)
-  totalWeight           Decimal       @default(0) @db.Decimal(14, 2)
-  weightCharge          Decimal       @default(0) @db.Decimal(14, 2)
-  coverCharge           Decimal       @default(0) @db.Decimal(14, 2)
+  totalWeight           Decimal       @default(0.00) @db.Decimal(14, 2)
+  weightCharge          Decimal       @default(0.00) @db.Decimal(14, 2)
+  coverCharge           Decimal       @default(0.00) @db.Decimal(14, 2)
   vehicleNumber         String?
-  baseAmount            Decimal       @default(0) @db.Decimal(14, 2)
-  gstAmount             Decimal       @default(0) @db.Decimal(14, 2)
+  baseAmount            Decimal       @default(0.00) @db.Decimal(14, 2)
+  gstAmount             Decimal       @default(0.00) @db.Decimal(14, 2)
   tripType              String?
-  tripCharge            Decimal       @default(0) @db.Decimal(14, 2)
+  tripCharge            Decimal       @default(0.00) @db.Decimal(14, 2)
   vehicleType           String?
-  loadingCharges        Decimal       @default(0) @db.Decimal(14, 2)
-  returnMaterialCharges Decimal       @default(0) @db.Decimal(14, 2)
-  transportCharges      Decimal       @default(0) @db.Decimal(14, 2)
+  loadingCharges        Decimal       @default(0.00) @db.Decimal(14, 2)
+  returnMaterialCharges Decimal       @default(0.00) @db.Decimal(14, 2)
+  transportCharges      Decimal       @default(0.00) @db.Decimal(14, 2)
   paymentMode           String?
   status                String?
   remark                String?
   createdById           String?
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
-  createdBy             User?         @relation("TransportLogCreator", fields: [createdById], references: [id])
+  createdBy             User?         @relation(fields: [createdById], references: [id])
 
   @@unique([transportType, serialNo])
   @@index([transportType])
@@ -315,7 +294,7 @@ model TransportConfig {
   tripType      String?
   minKm         Int?
   maxKm         Int?
-  rate          Decimal             @default(0) @db.Decimal(14, 2)
+  rate          Decimal             @default(0.00) @db.Decimal(14, 2)
   isActive      Boolean             @default(true)
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
@@ -332,12 +311,12 @@ model QueryManagement {
   description String
   status      QueryStatus   @default(PENDING)
   priority    Priority
-  imageUrls   Json?         @db.Json
-  videoUrls   Json?         @db.Json
+  imageUrls   Json?
+  videoUrls   Json?
   createdById String?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
-  createdBy   User?         @relation("QueryCreatedBy", fields: [createdById], references: [id])
+  createdBy   User?         @relation(fields: [createdById], references: [id])
   project     Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
@@ -357,10 +336,44 @@ model DeviceToken {
   lastSeenAt DateTime?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  User       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([isActive])
+}
+
+model ProjectForm {
+  id     String  @id @default(uuid()) @db.Char(36)
+  name   String  @unique
+  status Boolean @default(false)
+}
+
+model User {
+  id                                String               @id @default(uuid()) @db.Char(36)
+  email                             String?              @unique
+  createdAt                         DateTime             @default(now())
+  fullName                          String
+  passwordHash                      String
+  roleId                            String               @db.Char(36)
+  updatedAt                         DateTime
+  username                          String?              @unique
+  firstName                         String
+  lastName                          String
+  mobileNumber                      String               @unique
+  DailyReport                       DailyReport[]
+  DeviceToken                       DeviceToken[]
+  FinanceTransaction                FinanceTransaction[]
+  IncomeTransaction                 IncomeTransaction[]
+  PetiCash_PetiCash_givenByIdToUser PetiCash[]           @relation("PetiCash_givenByIdToUser")
+  PetiCash_PetiCash_givenToIdToUser PetiCash[]           @relation("PetiCash_givenToIdToUser")
+  Project                           Project[]
+  QueryManagement                   QueryManagement[]
+  assignedTodos                     Todo[]               @relation("Todo_assigneeIdToUser")
+  createdTodos                      Todo[]               @relation("Todo_createdByIdToUser")
+  TransportLog                      TransportLog[]
+  role                              Role                 @relation(fields: [roleId], references: [id])
+
+  @@index([roleId], map: "User_roleId_fkey")
 }
 
 enum TodoStatus {
