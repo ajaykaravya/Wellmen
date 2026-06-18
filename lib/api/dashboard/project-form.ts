@@ -2,8 +2,10 @@ import { createCrudApi } from "./resource";
 
 export type ProjectFormItem = {
   id: string;
+  formId: string;
   name: string;
-  status:boolean
+  status: "PENDING" | "COMPLETED";
+  formData: Record<string, any>
 };
 
 export const projectFormApi = createCrudApi<

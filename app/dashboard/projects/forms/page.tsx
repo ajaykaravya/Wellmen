@@ -10,11 +10,14 @@ import {
     FaEdit,
     FaSpinner,
 } from "react-icons/fa";
+import { useRouter } from "next/navigation";
 
 type ProjectFormRow = {
     id: string;
+    formId: string;
     name: string;
-    status: boolean
+    status: "PENDING" | "COMPLETED";
+    formData: Record<string, any>
 };
 
 function ProjectFormList() {
@@ -22,15 +25,37 @@ function ProjectFormList() {
 
     const [projectForms, setProjectForms] = useState<ProjectFormRow[]>([]);
     const [loading, setLoading] = useState(false);
+    const [projectName, setProjectName] = useState("")
+    const router = useRouter()
+    const projectId = searchParams.get("projectId") || "";
 
-    const projectName = searchParams.get("projectName") || "";
+    const loadProject = useCallback(async () => {
+        if (!projectId) return;
 
+        try {
+            const res = await fetch(`/api/projects/${projectId}`);
+
+            const data = await res.json();
+
+            setProjectName(data.name);
+
+        } catch (error) {
+            console.error("Failed to load project", error);
+        }
+
+    }, [projectId]);
+
+    useEffect(() => {
+        loadProject();
+    }, [loadProject]);
 
     const loadProjectForms = useCallback(async () => {
         setLoading(true);
 
         try {
-            const data = await projectFormApi.list();
+            const data = await projectFormApi.list({
+                projectId
+            });
 
             setProjectForms(
                 Array.isArray(data?.data)
@@ -46,6 +71,9 @@ function ProjectFormList() {
 
     }, []);
 
+    const handleEdit = useCallback((row: ProjectFormRow) => {
+        router.push(`/dashboard/projects/forms/${row.id}`)
+    }, [])
 
     useEffect(() => {
         loadProjectForms();
@@ -64,15 +92,15 @@ function ProjectFormList() {
                 header: "Status",
                 accessorKey: "status",
                 cell: (info) => (
-                    <span className="rbac-muted">{String(info.getValue() === false ? "Pending" : "Completed")}</span>
+                    <span className="rbac-muted">{String(info.getValue() === "PENDING" ? "Pending" : "Completed")}</span>
                 ),
             },
             {
                 header: "Action",
                 id: "action",
-                cell: (row) => (
+                cell: ({ row }) => (
                     <div className="rbac-inline-actions justify-end flex gap-4">
-                        <button className="rbac-link" type="button">
+                        <button onClick={() => handleEdit(row.original)} className="rbac-link" type="button">
                             <FaEdit />
                         </button>
                     </div>
@@ -185,12 +213,12 @@ function ProjectFormList() {
                                             {projectForm.name}
                                         </h4>
                                         <p className="text-xs text-slate-500">
-                                            {projectForm.status === false ? "Pending" : "Completed"}
+                                            {projectForm.status === "PENDING" ? "Pending" : "Completed"}
                                         </p>
                                     </div>
                                     <div>
                                         <button className="rbac-link" type="button">
-                                            <FaEdit size={18} />
+                                            <FaEdit onClick={() => handleEdit(projectForm)} size={18} />
                                         </button>
                                     </div>
                                 </div>

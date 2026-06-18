@@ -7,16 +7,50 @@ export async function GET(req) {
   if (!gate.ok) return gate.res;
 
   try {
-    const projectForms = await prisma.projectForm.findMany({
+    const { searchParams } = new URL(req.url);
+
+    const projectId = searchParams.get("projectId");
+
+    if (!projectId) {
+      return NextResponse.json(
+        {
+          error: "projectId is required",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    const projectForms = await prisma.projectFormSubmission.findMany({
+      where: {
+        projectId,
+      },
+
+      include: {
+        projectForm: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+
       orderBy: {
-        name: "asc",
+        createdAt: "asc",
       },
     });
 
-    const data = projectForms.map((projectForm) => ({
-      id: projectForm.id,
-      name: projectForm.name,
-      status: projectForm.status,
+    const data = projectForms.map((submission) => ({
+      id: submission.id,
+
+      formId: submission.projectForm.id,
+
+      name: submission.projectForm.name,
+
+      status: submission.status,
+
+      formData: submission.formData,
     }));
 
     return NextResponse.json({
