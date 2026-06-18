@@ -231,6 +231,21 @@ export async function POST(req) {
     },
   });
 
+  const forms = await prisma.projectForm.findMany({
+    select: {
+      id: true,
+    },
+  });
+
+  await prisma.projectFormSubmission.createMany({
+    data: forms.map((form) => ({
+      projectId: project.id,
+      projectFormId: form.id,
+      status: "PENDING",
+      formData: {},
+    })),
+  });
+
   return NextResponse.json(
     {
       id: project.id,
