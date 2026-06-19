@@ -1,5 +1,3 @@
-// lib/formTemplates/clientMotCheckList.ts
-
 export const CLIENT_MOT_CHECK_LIST = {
   id: "client-mot-check-list",
   name: "Client MOT Check List",

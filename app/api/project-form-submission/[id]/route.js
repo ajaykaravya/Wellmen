@@ -60,3 +60,25 @@ export async function GET(req, { params }) {
     );
   }
 }
+
+export async function PUT(req, { params }) {
+  const { id } = await params;
+
+  const body = await req.json();
+
+  const submission = await prisma.projectFormSubmission.update({
+    where: {
+      id,
+    },
+
+    data: {
+      formData: body.formData,
+
+      status: "COMPLETED",
+    },
+  });
+
+  return NextResponse.json({
+    data: submission,
+  });
+}

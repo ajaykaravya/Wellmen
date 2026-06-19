@@ -1,62 +1,95 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import DashboardShell from "@/app/dashboard/_components/DashboardShell";
 import FormRenderer from "../../form-components/FormRenderer";
+import { useRouter } from "next/navigation";
 
 export default function ProjectFormPage() {
+  const params = useParams();
+  const router = useRouter();
 
-    const params = useParams();
-    const submissionId = params.submissionId as string;
-    const [data, setData] = useState<any>(null);
+  const submissionId = params.submissionId as string;
 
-    useEffect(() => {
-        async function load() {
-            const res = await fetch(
-                `/api/project-form-submission/${submissionId}`
-            );
-            const result = await res.json();
-            setData(result.data);
-        }
-        if (submissionId) {
-            load();
-        }
-    }, [submissionId]);
+  const [data, setData] = useState<any>(null);
 
-    if (!data) {
-        return (
-            <DashboardShell>
-                Loading...
-            </DashboardShell>
-        );
+  const [formData, setFormData] = useState<any>({});
+
+  const loadSubmission = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/project-form-submission/${submissionId}`);
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch submission");
+      }
+
+      const result = await res.json();
+
+      setData(result.data);
+
+      // existing saved JSON
+      setFormData(result.data?.formData || {});
+    } catch (error) {
+      console.error("Submission fetch error:", error);
     }
+  }, [submissionId]);
 
-    return (
-        <DashboardShell>
-            <section className="rbac-section rbac-container">
-                <div className="rbac-card">
-                    <h2>
-                        {data.project.name}
-                    </h2>
-                    <h3>
-                        {data.projectForm.name}
-                    </h3>
-                    <FormRenderer
+  useEffect(() => {
+    if (submissionId) {
+      loadSubmission();
+    }
+  }, [submissionId, loadSubmission]);
 
-                        template={
-                            data.projectForm.template
-                        }
+  if (!data) {
+    return <DashboardShell>Loading...</DashboardShell>;
+  }
 
+  const handleSubmit = async () => {
+    try {
+      const res = await fetch(`/api/project-form-submission/${submissionId}`, {
+        method: "PUT",
 
-                        formData={
-                            data.formData
-                        }
+        headers: {
+          "Content-Type": "application/json",
+        },
 
-                    />
-                </div>
-            </section>
-        </DashboardShell>
+        body: JSON.stringify({
+          formData,
+        }),
+      });
 
-    );
+      if (res.ok) {
+        // Navigate back to project forms list
+        router.push(`/dashboard/projects/forms?projectId=${data.project.id}`);
+      }
+    } catch (error) {
+      console.error("Submit error:", error);
+    }
+  };
+
+  const hadnleBack = () => {
+    router.push(`/dashboard/projects/forms?projectId=${data.project.id}`);
+  }
+
+  return (
+    <DashboardShell>
+      <section className="rbac-section rbac-container">
+        <div className="rbac-card">
+          <div className="flex gap-4 mb-2">
+            <h2>Project: {data.project.name}</h2>
+            <h3>Form: {data.projectForm.name}</h3>
+          </div>
+
+          <FormRenderer
+            template={data.projectForm.template}
+            formData={formData}
+            setFormData={setFormData}
+            onSubmit={handleSubmit}
+            onBack={hadnleBack}
+          />
+        </div>
+      </section>
+    </DashboardShell>
+  );
 }

@@ -1,26 +1,22 @@
 "use client";
 
-import HeaderSection from "./HeaderSection";
-import ChecklistSection from "./ChecklistSection";
-import ContactSection from "./ContactSection";
-import MatrixSection from "./MatrixSection";
-import ElectricSection from "./ElectricSection";
-import SizeMatrixRenderer from "./SizeMatrixRenderer";
-import CompleteSiteSection from "./CompleteSiteSection";
+import HeaderView from "./HeaderView";
+import ChecklistView from "./ChecklistView";
+import ContactView from "./ContactView";
+import MatrixView from "./MatrixView";
+import ElectricView from "./ElectricView";
+import SizeMatrixView from "./SizeMatrixView";
+import CompleteSiteView from "./CompleteSiteView";
 
 type Props = {
   template: any;
   formData?: any;
-  setFormData: any;
-  onSubmit: any;
   onBack: () => void;
 };
 
-export default function FormRenderer({
+export default function ViewRenderer({
   template,
   formData,
-  setFormData,
-  onSubmit,
   onBack
 }: Props) {
   if (!template?.sections) {
@@ -28,14 +24,13 @@ export default function FormRenderer({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {template.sections.map((section: any) => {
         switch (section.type) {
           case "header":
             return (
-              <HeaderSection
+              <HeaderView
                 formData={formData}
-                setFormData={setFormData}
                 key={section.title}
                 section={section}
               />
@@ -43,19 +38,17 @@ export default function FormRenderer({
 
           case "checklist":
             return (
-              <ChecklistSection
+              <ChecklistView
                 formData={formData}
-                setFormData={setFormData}
-                key={section.key}
+                key={section.key || section.title}
                 section={section}
               />
             );
 
           case "contacts":
             return (
-              <ContactSection
+              <ContactView
                 formData={formData}
-                setFormData={setFormData}
                 key={section.key}
                 section={section}
               />
@@ -63,9 +56,8 @@ export default function FormRenderer({
 
           case "matrix":
             return (
-              <MatrixSection
+              <MatrixView
                 formData={formData}
-                setFormData={setFormData}
                 key={section.key}
                 section={section}
               />
@@ -73,9 +65,8 @@ export default function FormRenderer({
 
           case "electric":
             return (
-              <ElectricSection
+              <ElectricView
                 formData={formData}
-                setFormData={setFormData}
                 key={section.key}
                 section={section}
               />
@@ -83,29 +74,18 @@ export default function FormRenderer({
 
           case "sizeMatrix":
             return (
-              <SizeMatrixRenderer
+              <SizeMatrixView
                 formData={formData}
-                setFormData={setFormData}
                 key={section.key}
                 section={section}
               />
             );
 
           case "completeSiteMatrix":
-            return (
-              <CompleteSiteSection
-                formData={formData}
-                setFormData={setFormData}
-                key={section.key}
-                section={section}
-              />
-            );
-
           case "completeSiteSize":
             return (
-              <CompleteSiteSection
+              <CompleteSiteView
                 formData={formData}
-                setFormData={setFormData}
                 key={section.key}
                 section={section}
               />
@@ -115,12 +95,9 @@ export default function FormRenderer({
             return null;
         }
       })}
-      <div className="flex justify-end mt-6 gap-3">
+      <div className="flex justify-end mt-10 print:hidden">
         <button type="button" onClick={onBack} className="rbac-button rbac-button-secondary">
-          Cancel
-        </button>
-        <button type="button" onClick={onSubmit} className="rbac-button">
-          Submit Form
+          Back to List
         </button>
       </div>
     </div>
