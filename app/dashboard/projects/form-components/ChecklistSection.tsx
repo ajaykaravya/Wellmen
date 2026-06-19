@@ -34,6 +34,7 @@ export default function ChecklistSection({
                 <td className="px-5 py-4">
                   <StatusRadio
                     name={row.key}
+                    idPrefix={`desktop_${row.key}`}
                     value={formData?.[row.key]}
                     onChange={(val: string) => {
                       setFormData((prev: any) => ({
@@ -74,7 +75,8 @@ export default function ChecklistSection({
               {row.label}
             </div>
             <StatusRadio
-              name={row.key}
+              name={`${row.key}_mobile`}
+              idPrefix={`mobile_${row.key}`}
               value={formData?.[row.key]}
               onChange={(val: string) => {
                 setFormData((prev: any) => ({
@@ -104,18 +106,24 @@ export default function ChecklistSection({
 
 function StatusRadio({
   name,
+  idPrefix,
   value,
   onChange,
 }: {
   name: string;
+  idPrefix: string;
   value: string;
   onChange: any;
 }) {
   return (
     <div className="flex gap-6">
-      <label className="flex items-center gap-2 cursor-pointer text-sm text-green-600 ">
+      <label
+        htmlFor={`${idPrefix}_ok`}
+        className="flex items-center gap-2 cursor-pointer text-sm text-green-600 "
+      >
         <input
           type="radio"
+          id={`${idPrefix}_ok`}
           name={name}
           value="OK"
           className="accent-green-600 w-4 h-4 "
@@ -124,9 +132,13 @@ function StatusRadio({
         />
         OK
       </label>
-      <label className="flex items-center gap-2 cursor-pointer text-red-600 ">
+      <label
+        htmlFor={`${idPrefix}_not_ok`}
+        className="flex items-center gap-2 cursor-pointer text-red-600 "
+      >
         <input
           type="radio"
+          id={`${idPrefix}_not_ok`}
           name={name}
           value="NOT_OK"
           className="accent-red-600 w-4 h-4 "
@@ -138,3 +150,4 @@ function StatusRadio({
     </div>
   );
 }
+

@@ -21,6 +21,7 @@ import {
   FaFilter,
   FaEye,
 } from "react-icons/fa";
+import { IoDocumentTextOutline } from "react-icons/io5";
 import { IoIosClose } from "react-icons/io";
 import {
   Dialog,
@@ -118,6 +119,10 @@ function ProjectListContent() {
 
   const handleEditProject = useCallback((row: ProjectRow) => {
     router.push(`/dashboard/hospitals/${row.id}`);
+  }, [router]);
+
+  const handleForms = useCallback((row: ProjectRow) => {
+    router.push(`/dashboard/projects/forms?projectId=${row.id}`);
   }, [router]);
 
   const openFilters = useCallback(() => {
@@ -259,6 +264,14 @@ function ProjectListContent() {
               onClick={() => handleDeleteProject(row.original)}
             >
               <FaTrash />
+            </button>
+            <button
+              className="rbac-link"
+              type="button"
+              onClick={() => handleForms(row.original)}
+              title="Forms"
+            >
+              <IoDocumentTextOutline />
             </button>
           </div>
         ),
@@ -431,6 +444,15 @@ function ProjectListContent() {
                           onClick={() => handleDeleteProject(project)}
                         >
                           <FaTrash size={18} />
+                        </button>
+                        <button
+                          style={{ padding: '2px' }}
+                          className="rbac-link"
+                          type="button"
+                          onClick={() => handleForms(project)}
+                          title="Forms"
+                        >
+                          <IoDocumentTextOutline size={18} />
                         </button>
                       </div>
                     </div>

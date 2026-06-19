@@ -8,6 +8,7 @@ import { ColumnDef, getCoreRowModel } from "@tanstack/table-core";
 import { flexRender, useReactTable } from "@tanstack/react-table";
 import {
     FaEdit,
+    FaEye,
     FaSpinner,
 } from "react-icons/fa";
 import { useRouter } from "next/navigation";
@@ -75,6 +76,10 @@ function ProjectFormList() {
         router.push(`/dashboard/projects/forms/${row.id}`)
     }, [])
 
+    const handleView = useCallback((row: ProjectFormRow) => {
+        router.push(`/dashboard/projects/forms/${row.id}/view`)
+    }, [])
+
     const handleBack = useCallback(() => {
         router.push(`/dashboard/projects`)
     }, [])
@@ -104,7 +109,10 @@ function ProjectFormList() {
                 id: "action",
                 cell: ({ row }) => (
                     <div className="rbac-inline-actions justify-end flex gap-4">
-                        <button onClick={() => handleEdit(row.original)} className="rbac-link" type="button">
+                        <button onClick={() => handleView(row.original)} className="rbac-link" title="View" type="button">
+                            <FaEye />
+                        </button>
+                        <button onClick={() => handleEdit(row.original)} className="rbac-link" title="Edit" type="button">
                             <FaEdit />
                         </button>
                     </div>
@@ -223,7 +231,10 @@ function ProjectFormList() {
                                             {projectForm.status === "PENDING" ? "Pending" : "Completed"}
                                         </p>
                                     </div>
-                                    <div>
+                                    <div className="flex gap-4">
+                                        <button className="rbac-link" type="button">
+                                            <FaEye onClick={() => handleView(projectForm)} size={18} />
+                                        </button>
                                         <button className="rbac-link" type="button">
                                             <FaEdit onClick={() => handleEdit(projectForm)} size={18} />
                                         </button>
