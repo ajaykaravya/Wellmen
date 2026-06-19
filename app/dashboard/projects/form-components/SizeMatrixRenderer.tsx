@@ -1,6 +1,14 @@
 "use client";
 
-export default function SizeMatrixRenderer({ section }: { section: any }) {
+export default function SizeMatrixRenderer({
+  section,
+  formData,
+  setFormData,
+}: {
+  section: any;
+  formData: any;
+  setFormData: any;
+}) {
   return (
     <div className="w-full overflow-x-auto">
       <table className="min-w-[900px] w-full border-collapse border">
@@ -56,17 +64,45 @@ export default function SizeMatrixRenderer({ section }: { section: any }) {
 
               {section.columns.map((col: any) =>
                 col.children ? (
-                  col.children.map((child: any) => (
-                    <td
-                      key={`${row.key}-${col.key}-${child.key}`}
-                      className="border p-2"
-                    >
-                      <input className="rbac-input w-full min-w-[80px]" />
-                    </td>
-                  ))
+                  col.children.map((child: any) => {
+                    const name = `${row.key}_${col.key}_${child.key}`;
+                    return (
+                      <td
+                        key={`${row.key}-${col.key}-${child.key}`}
+                        className="border p-2"
+                      >
+                        <input
+                          className="rbac-input w-full min-w-[80px]"
+                          name={name}
+                          value={formData?.[name] || ""}
+                          onChange={(e) => {
+                            setFormData((prev: any) => ({
+                              ...prev,
+                              [name]: e.target.value,
+                            }));
+                          }}
+                        />
+                      </td>
+                    );
+                  })
                 ) : (
                   <td key={`${row.key}-${col.key}`} className="border p-2">
-                    <input className="rbac-input w-full min-w-[100px]" />
+                    {(() => {
+                      const name = `${row.key}_${col.key}`;
+                      return (
+                        <input
+                          className="rbac-input w-full min-w-[100px]"
+                          name={name}
+                          value={formData?.[name] || ""}
+                          onChange={(e) => {
+                            setFormData((prev: any) => ({
+                              ...prev,
+                              [name]: e.target.value,
+                            }));
+                          }}
+                        />
+                      );
+                    })()}
                   </td>
                 ),
               )}

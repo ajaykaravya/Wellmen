@@ -13,6 +13,7 @@ type Props = {
   formData?: any;
   setFormData: any;
   onSubmit: any;
+  onBack: () => void;
 };
 
 export default function FormRenderer({
@@ -20,6 +21,7 @@ export default function FormRenderer({
   formData,
   setFormData,
   onSubmit,
+  onBack
 }: Props) {
   if (!template?.sections) {
     return <div>No form template found</div>;
@@ -40,31 +42,83 @@ export default function FormRenderer({
             );
 
           case "checklist":
-            return <ChecklistSection key={section.key} section={section} />;
+            return (
+              <ChecklistSection
+                formData={formData}
+                setFormData={setFormData}
+                key={section.key}
+                section={section}
+              />
+            );
 
           case "contacts":
-            return <ContactSection key={section.key} section={section} />;
+            return (
+              <ContactSection
+                formData={formData}
+                setFormData={setFormData}
+                key={section.key}
+                section={section}
+              />
+            );
 
           case "matrix":
-            return <MatrixSection key={section.key} section={section} />;
+            return (
+              <MatrixSection
+                formData={formData}
+                setFormData={setFormData}
+                key={section.key}
+                section={section}
+              />
+            );
 
           case "electric":
-            return <ElectricSection key={section.key} section={section} />;
+            return (
+              <ElectricSection
+                formData={formData}
+                setFormData={setFormData}
+                key={section.key}
+                section={section}
+              />
+            );
 
           case "sizeMatrix":
-            return <SizeMatrixRenderer key={section.key} section={section} />;
+            return (
+              <SizeMatrixRenderer
+                formData={formData}
+                setFormData={setFormData}
+                key={section.key}
+                section={section}
+              />
+            );
 
           case "completeSiteMatrix":
-            return <CompleteSiteSection key={section.key} section={section} />;
+            return (
+              <CompleteSiteSection
+                formData={formData}
+                setFormData={setFormData}
+                key={section.key}
+                section={section}
+              />
+            );
 
           case "completeSiteSize":
-            return <CompleteSiteSection key={section.key} section={section} />;
+            return (
+              <CompleteSiteSection
+                formData={formData}
+                setFormData={setFormData}
+                key={section.key}
+                section={section}
+              />
+            );
 
           default:
             return null;
         }
       })}
-      <div className="flex justify-end mt-6">
+      <div className="flex justify-end mt-6 gap-3">
+        <button type="button" onClick={onBack} className="rbac-button rbac-button-secondary">
+          Cancel
+        </button>
         <button type="button" onClick={onSubmit} className="rbac-button">
           Submit Form
         </button>

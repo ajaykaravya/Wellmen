@@ -75,6 +75,10 @@ function ProjectFormList() {
         router.push(`/dashboard/projects/forms/${row.id}`)
     }, [])
 
+    const handleBack = useCallback(() => {
+        router.push(`/dashboard/projects`)
+    }, [])
+
     useEffect(() => {
         loadProjectForms();
     }, [loadProjectForms]);
@@ -120,8 +124,11 @@ function ProjectFormList() {
     return (
         <section className="rbac-section rbac-container">
             <div className="rbac-card">
-                <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center justify-between gap-3">
                     <h3 className="rbac-title-lg">{projectName}</h3>
+                    <button type="button" onClick={handleBack} className="rbac-button rbac-button-secondary">
+                        Back
+                    </button>
                 </div>
                 <div className="mt-4">
                     <div className="hidden md:block overflow-x-auto">

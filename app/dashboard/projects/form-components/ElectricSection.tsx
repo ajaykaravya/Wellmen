@@ -1,6 +1,14 @@
 "use client";
 
-export default function ElectricSection({ section }: { section: any }) {
+export default function ElectricSection({
+  section,
+  formData,
+  setFormData,
+}: {
+  section: any;
+  formData: any;
+  setFormData: any;
+}) {
   return (
     <div className="rbac-card">
       {/* Header */}
@@ -29,34 +37,50 @@ export default function ElectricSection({ section }: { section: any }) {
           </thead>
 
           <tbody>
-            {section.rows.map((row: any, index: number) => (
-              <tr
-                key={row.key}
-                className="border-t border-gray-200 dark:border-gray-700 dark:hover:bg-gray-800 transition "
-              >
-                <td className="px-5 py-4 text-sm">
-                  <div className="flex items-center gap-3">
-                    {row.label}
-                  </div>
-                </td>
+            {section.rows.map((row: any, index: number) => {
+              const subZeroKey = `${row.key}_sub_zero_remark`;
+              const touchPanelKey = `${row.key}_touch_panel_remark`;
+              return (
+                <tr
+                  key={row.key}
+                  className="border-t border-gray-200 dark:border-gray-700 dark:hover:bg-gray-800 transition "
+                >
+                  <td className="px-5 py-4 text-sm">
+                    <div className="flex items-center gap-3">{row.label}</div>
+                  </td>
 
-                <td className="px-5 py-4">
-                  <input
-                    className="rbac-input focus:ring-2 focus:ring-blue-500 "
-                    placeholder="Enter remark"
-                    name={`${row.key}_sub_zero_remark`}
-                  />
-                </td>
+                  <td className="px-5 py-4">
+                    <input
+                      className="rbac-input focus:ring-2 focus:ring-blue-500 "
+                      placeholder="Enter remark"
+                      name={subZeroKey}
+                      value={formData?.[subZeroKey] || ""}
+                      onChange={(e) => {
+                        setFormData((prev: any) => ({
+                          ...prev,
+                          [subZeroKey]: e.target.value,
+                        }));
+                      }}
+                    />
+                  </td>
 
-                <td className="px-5 py-4">
-                  <input
-                    className="rbac-input focus:ring-2 focus:ring-blue-500 "
-                    placeholder="Enter remark"
-                    name={`${row.key}_touch_panel_remark`}
-                  />
-                </td>
-              </tr>
-            ))}
+                  <td className="px-5 py-4">
+                    <input
+                      className="rbac-input focus:ring-2 focus:ring-blue-500 "
+                      placeholder="Enter remark"
+                      name={touchPanelKey}
+                      value={formData?.[touchPanelKey] || ""}
+                      onChange={(e) => {
+                        setFormData((prev: any) => ({
+                          ...prev,
+                          [touchPanelKey]: e.target.value,
+                        }));
+                      }}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -64,46 +88,64 @@ export default function ElectricSection({ section }: { section: any }) {
       {/* Mobile Card View */}
 
       <div className="md:hidden space-y-4 ">
-        {section.rows.map((row: any, index: number) => (
-          <div
-            key={row.key}
-            className="border rounded-xl p-4 space-y-4 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 "
-          >
-            {/* Title */}
+        {section.rows.map((row: any, index: number) => {
+          const subZeroKey = `${row.key}_sub_zero_remark`;
+          const touchPanelKey = `${row.key}_touch_panel_remark`;
+          return (
+            <div
+              key={row.key}
+              className="border rounded-xl p-4 space-y-4 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 "
+            >
+              {/* Title */}
 
-            <div className="flex items-center gap-3 text-sm font-medium ">
-              {row.label}
+              <div className="flex items-center gap-3 text-sm font-medium ">
+                {row.label}
+              </div>
+
+              {/* Sub Zero */}
+
+              <div>
+                <label className="block text-xs mb-1 text-gray-500 ">
+                  Sub Zero Panel Board Remark
+                </label>
+
+                <input
+                  className="rbac-input focus:ring-2 focus:ring-blue-500 "
+                  placeholder="Enter remark"
+                  name={subZeroKey}
+                  value={formData?.[subZeroKey] || ""}
+                  onChange={(e) => {
+                    setFormData((prev: any) => ({
+                      ...prev,
+                      [subZeroKey]: e.target.value,
+                    }));
+                  }}
+                />
+              </div>
+
+              {/* Touch Panel */}
+
+              <div>
+                <label className="block text-xs mb-1 text-gray-500 ">
+                  Touch Panel Board Remark
+                </label>
+
+                <input
+                  className="rbac-input focus:ring-2 focus:ring-blue-500 "
+                  placeholder="Enter remark"
+                  name={touchPanelKey}
+                  value={formData?.[touchPanelKey] || ""}
+                  onChange={(e) => {
+                    setFormData((prev: any) => ({
+                      ...prev,
+                      [touchPanelKey]: e.target.value,
+                    }));
+                  }}
+                />
+              </div>
             </div>
-
-            {/* Sub Zero */}
-
-            <div>
-              <label className="block text-xs mb-1 text-gray-500 ">
-                Sub Zero Panel Board Remark
-              </label>
-
-              <input
-                className="rbac-input focus:ring-2 focus:ring-blue-500 "
-                placeholder="Enter remark"
-                name={`${row.key}_sub_zero_remark`}
-              />
-            </div>
-
-            {/* Touch Panel */}
-
-            <div>
-              <label className="block text-xs mb-1 text-gray-500 ">
-                Touch Panel Board Remark
-              </label>
-
-              <input
-                className="rbac-input focus:ring-2 focus:ring-blue-500 "
-                placeholder="Enter remark"
-                name={`${row.key}_touch_panel_remark`}
-              />
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

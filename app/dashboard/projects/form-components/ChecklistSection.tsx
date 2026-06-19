@@ -1,6 +1,14 @@
 "use client";
 
-export default function ChecklistSection({ section }: { section: any }) {
+export default function ChecklistSection({
+  section,
+  formData,
+  setFormData,
+}: {
+  section: any;
+  formData: any;
+  setFormData: any;
+}) {
   return (
     <div className="rbac-card">
       <div className="flex items-center justify-between mb-5">
@@ -21,19 +29,32 @@ export default function ChecklistSection({ section }: { section: any }) {
           </thead>
           <tbody>
             {section.rows.map((row: any, index: number) => (
-              <tr
-                key={row.key}
-                className="border-t dark:hover:bg-gray-800"
-              >
+              <tr key={row.key} className="border-t dark:hover:bg-gray-800">
                 <td className="px-5 py-4">{row.label}</td>
                 <td className="px-5 py-4">
-                  <StatusRadio name={row.key} />
+                  <StatusRadio
+                    name={row.key}
+                    value={formData?.[row.key]}
+                    onChange={(val: string) => {
+                      setFormData((prev: any) => ({
+                        ...prev,
+                        [row.key]: val,
+                      }));
+                    }}
+                  />
                 </td>
                 <td className="px-5 py-4">
                   <input
                     className="rbac-input"
                     placeholder="Add remark..."
                     name={`${row.key}_remark`}
+                    value={formData?.[`${row.key}_remark`] || ""}
+                    onChange={(e) => {
+                      setFormData((prev: any) => ({
+                        ...prev,
+                        [`${row.key}_remark`]: e.target.value,
+                      }));
+                    }}
                   />
                 </td>
               </tr>
@@ -52,11 +73,27 @@ export default function ChecklistSection({ section }: { section: any }) {
             <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
               {row.label}
             </div>
-            <StatusRadio name={row.key} />
+            <StatusRadio
+              name={row.key}
+              value={formData?.[row.key]}
+              onChange={(val: string) => {
+                setFormData((prev: any) => ({
+                  ...prev,
+                  [row.key]: val,
+                }));
+              }}
+            />
             <input
               className="rbac-input"
               placeholder="Add remark..."
               name={`${row.key}_remark`}
+              value={formData?.[`${row.key}_remark`] || ""}
+              onChange={(e) => {
+                setFormData((prev: any) => ({
+                  ...prev,
+                  [`${row.key}_remark`]: e.target.value,
+                }));
+              }}
             />
           </div>
         ))}
@@ -65,7 +102,15 @@ export default function ChecklistSection({ section }: { section: any }) {
   );
 }
 
-function StatusRadio({ name }: { name: string }) {
+function StatusRadio({
+  name,
+  value,
+  onChange,
+}: {
+  name: string;
+  value: string;
+  onChange: any;
+}) {
   return (
     <div className="flex gap-6">
       <label className="flex items-center gap-2 cursor-pointer text-sm text-green-600 ">
@@ -74,6 +119,8 @@ function StatusRadio({ name }: { name: string }) {
           name={name}
           value="OK"
           className="accent-green-600 w-4 h-4 "
+          checked={value === "OK"}
+          onChange={(e) => onChange(e.target.value)}
         />
         OK
       </label>
@@ -83,6 +130,8 @@ function StatusRadio({ name }: { name: string }) {
           name={name}
           value="NOT_OK"
           className="accent-red-600 w-4 h-4 "
+          checked={value === "NOT_OK"}
+          onChange={(e) => onChange(e.target.value)}
         />
         NOT OK
       </label>

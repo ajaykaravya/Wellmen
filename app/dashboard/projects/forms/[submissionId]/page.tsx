@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 
 export default function ProjectFormPage() {
   const params = useParams();
+  const router = useRouter();
 
   const submissionId = params.submissionId as string;
 
@@ -45,20 +46,31 @@ export default function ProjectFormPage() {
   }
 
   const handleSubmit = async () => {
-    const res = await fetch(`/api/project-form-submission/${submissionId}`, {
-      method: "PUT",
+    try {
+      const res = await fetch(`/api/project-form-submission/${submissionId}`, {
+        method: "PUT",
 
-      headers: {
-        "Content-Type": "application/json",
-      },
+        headers: {
+          "Content-Type": "application/json",
+        },
 
-      body: JSON.stringify({
-        formData,
-      }),
-    });
+        body: JSON.stringify({
+          formData,
+        }),
+      });
 
-    const result = await res.json();
+      if (res.ok) {
+        // Navigate back to project forms list
+        router.push(`/dashboard/projects/forms?projectId=${data.project.id}`);
+      }
+    } catch (error) {
+      console.error("Submit error:", error);
+    }
   };
+
+  const hadnleBack = () => {
+    router.push(`/dashboard/projects/forms?projectId=${data.project.id}`);
+  }
 
   return (
     <DashboardShell>
@@ -74,6 +86,7 @@ export default function ProjectFormPage() {
             formData={formData}
             setFormData={setFormData}
             onSubmit={handleSubmit}
+            onBack={hadnleBack}
           />
         </div>
       </section>
