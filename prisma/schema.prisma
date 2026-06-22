@@ -379,7 +379,7 @@ model User {
   fullName                          String
   passwordHash                      String
   roleId                            String               @db.Char(36)
-  updatedAt                         DateTime
+  updatedAt                         DateTime             @updatedAt
   username                          String?              @unique
   firstName                         String
   lastName                          String
