@@ -338,6 +338,7 @@ function OverviewContent() {
     reportVideoIndex !== null ? reportVideoUrls[reportVideoIndex] : null;
 
   const loadTodos = useCallback(async () => {
+    if (!user) return;
     setLoading(true);
     try {
       const today = getTodayInputDate();
@@ -355,10 +356,11 @@ function OverviewContent() {
   }, []);
 
   useEffect(() => {
-    loadTodos();
-  }, [loadTodos]);
+    if (user) loadTodos();
+  }, [loadTodos, user]);
 
   const loadQuery = useCallback(async () => {
+    if (!user) return;
     try {
       const data = (await queryManagementApi.list()) as CrudListResponse<QueryRow>;
       const rows = Array.isArray(data?.data) ? data.data : [];
@@ -369,11 +371,11 @@ function OverviewContent() {
   }, []);
 
   useEffect(() => {
-    loadQuery();
-  }, [loadQuery]);
+    if (user) loadQuery();
+  }, [loadQuery, user]);
 
   const loadAdminReports = useCallback(async () => {
-    if (!isAdmin) return;
+    if (!user || !isAdmin) return;
 
     setAdminLoading(true);
     try {
@@ -393,7 +395,7 @@ function OverviewContent() {
   }, [loadAdminReports]);
 
   const loadUserReports = useCallback(async () => {
-    if (isAdmin) return;
+    if (!user || isAdmin) return;
 
     setUserReportsLoading(true);
     try {
@@ -416,7 +418,7 @@ function OverviewContent() {
   }, [loadUserReports]);
 
   const loadIncomeEntries = useCallback(async () => {
-    if (!isAdmin) return;
+    if (!user || !isAdmin) return;
 
     setIncomeLoading(true);
     try {
@@ -436,7 +438,7 @@ function OverviewContent() {
 
 
   const getTotalIncome = useCallback(async () => {
-    if (!isAdmin) return;
+    if (!user || !isAdmin) return;
     setTotalIncomeLoading(true);
     try {
       const response = (await incomeApi.list()) as CrudListResponse<{
@@ -462,7 +464,7 @@ function OverviewContent() {
   }, [getTotalIncome]);
 
   const getTotalBalance = useCallback(async () => {
-    if (!isAdmin) return;
+    if (!user || !isAdmin) return;
     setBalanceLoading(true);
     try {
       let currentPage = 1;
@@ -504,7 +506,7 @@ function OverviewContent() {
   }, [getTotalBalance]);
 
   const loadExpenseEntries = useCallback(async () => {
-    if (!isAdmin) return;
+    if (!user || !isAdmin) return;
 
     setExpenseLoading(true);
     try {
@@ -523,7 +525,7 @@ function OverviewContent() {
   }, [expenseDate, isAdmin]);
 
   const loadPetiCashEntries = useCallback(async () => {
-    if (!isAdmin) return;
+    if (!user || !isAdmin) return;
 
     setPetiCashLoading(true);
     try {

@@ -478,7 +478,7 @@ export default function DashboardShell({
               </button>
             </div>
           </div>
-          <div className="">{loading ? <Loading /> : children}</div>
+          <div className="">{loading ? <Loading /> : (user ? children : null)}</div>
         </section>
       </main>
     </DashboardContext.Provider>
