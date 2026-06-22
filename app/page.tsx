@@ -25,6 +25,17 @@ export default function LoginPage() {
   const [setupLoading, setSetupLoading] = useState(false);
 
   useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const res = await fetch("/api/auth/session");
+        if (res.ok) {
+          router.replace("/dashboard");
+        }
+      } catch (error) {
+        console.error("Failed to check session", error);
+      }
+    };
+
     const loadBootstrap = async () => {
       try {
         const res = await fetch("/api/auth/bootstrap");
@@ -36,8 +47,9 @@ export default function LoginPage() {
       }
     };
 
+    checkSession();
     loadBootstrap();
-  }, []);
+  }, [router]);
 
   const isMobileValid = (mobileNumber: string) => /^\d{10}$/.test(mobileNumber);
   const isPasswordValid = (password: string) => /^\d{4}$/.test(password);
@@ -83,7 +95,7 @@ export default function LoginPage() {
       }
 
       clearCachedSession();
-      router.push("/dashboard");
+      router.replace("/dashboard");
     } catch (error) {
       console.error("Login failed", error);
       setNote("Login failed. Try again.");
