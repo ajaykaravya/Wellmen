@@ -1,5 +1,6 @@
 import { config } from "dotenv"
 import { PrismaClient } from "@prisma/client"
+import { PrismaMariaDb } from "@prisma/adapter-mariadb"
 
 config({ path: ".env" })
 
@@ -30,6 +31,7 @@ function createPrisma() {
   }
 
   return new PrismaClient({
+    adapter: new PrismaMariaDb(databaseUrl),
     log: ["error", "warn"],
   })
 }
