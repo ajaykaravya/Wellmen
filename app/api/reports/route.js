@@ -308,7 +308,7 @@ export async function POST(req) {
       const activeTokens = await prisma.deviceToken.findMany({
         where: {
           isActive: true,
-          user: {
+          User: {
             role: {
               name: {
                 in: ["Admin", "Manager"],
