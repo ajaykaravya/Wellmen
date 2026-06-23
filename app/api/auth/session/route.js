@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { getAuthContext } from "@/lib/auth";
+import { getAuthorizationContext } from "@/lib/auth";
 
 export async function GET(req) {
-  const auth = await getAuthContext(req);
+  const auth = await getAuthorizationContext(req);
   if (!auth) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
