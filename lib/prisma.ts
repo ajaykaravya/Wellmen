@@ -30,8 +30,14 @@ function createPrisma() {
     throw new Error("DATABASE_URL environment variable is required to initialize Prisma.")
   }
 
+  const tunedUrl = new URL(databaseUrl)
+  tunedUrl.searchParams.set("connectionLimit", "1")
+  tunedUrl.searchParams.set("minimumIdle", "0")
+  tunedUrl.searchParams.set("acquireTimeout", "5000")
+  tunedUrl.searchParams.set("idleTimeout", "300")
+
   return new PrismaClient({
-    adapter: new PrismaMariaDb(databaseUrl),
+    adapter: new PrismaMariaDb(tunedUrl.toString()),
     log: ["error", "warn"],
   })
 }

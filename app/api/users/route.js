@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
-import { requireAnyPermission, requireRole } from "@/lib/rbac";
+import { requireRole } from "@/lib/rbac";
 import { ensureDefaults } from "@/lib/seed";
 
 export async function GET(req) {
