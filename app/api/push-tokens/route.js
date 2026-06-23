@@ -35,7 +35,7 @@ export async function POST(req) {
       token,
       platform: platform || null,
       deviceId: deviceId || null,
-      user: { connect: { id: gate.auth.user.id } },
+      User: { connect: { id: gate.auth.user.id } },
       isActive: true,
       lastSeenAt: new Date(),
     },

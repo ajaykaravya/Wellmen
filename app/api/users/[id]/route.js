@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { hashPassword } from "@/lib/auth";
-import { requireAnyPermission, requireAuth } from "@/lib/rbac";
+import { hashPassword, getAuthorizationContext } from "@/lib/auth";
+import { requireAnyPermission } from "@/lib/rbac";
 
 const resolveId = async (params) => String((await params)?.id || "").trim();
 
@@ -14,10 +14,11 @@ export async function GET(req, { params }) {
     );
   }
 
-  const authGate = await requireAuth(req);
-  if (!authGate.ok) return authGate.res;
+  const auth = await getAuthorizationContext(req);
+  if (!auth) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
 
-  const { auth } = authGate;
   const canViewAll = auth.permissions.includes("view_users");
   if (!canViewAll && auth.user.id !== id) {
     return NextResponse.json({ error: "Forbidden." }, { status: 403 });
@@ -53,10 +54,11 @@ export async function PUT(req, { params }) {
     );
   }
 
-  const authGate = await requireAuth(req);
-  if (!authGate.ok) return authGate.res;
+  const auth = await getAuthorizationContext(req);
+  if (!auth) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
 
-  const { auth } = authGate;
   const canEditAll =
     auth.permissions.includes("edit_user") ||
     auth.permissions.includes("manage_employees");

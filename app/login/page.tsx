@@ -25,30 +25,23 @@ export default function LoginPage() {
   const [setupLoading, setSetupLoading] = useState(false);
 
   useEffect(() => {
-    const checkSession = async () => {
+    const loadStatus = async () => {
       try {
-        const res = await fetch("/api/auth/session");
-        if (res.ok) {
-          router.replace("/dashboard");
-        }
-      } catch (error) {
-        console.error("Failed to check session", error);
-      }
-    };
-
-    const loadBootstrap = async () => {
-      try {
-        const res = await fetch("/api/auth/bootstrap");
+        const res = await fetch("/api/auth/status");
         if (!res.ok) return;
         const data = await res.json();
+        if (data.authenticated) {
+          router.replace("/dashboard");
+          return;
+        }
+
         setNeedsSetup(Boolean(data.needsSetup));
       } catch (error) {
-        console.error("Failed to check bootstrap", error);
+        console.error("Failed to check auth status", error);
       }
     };
 
-    checkSession();
-    loadBootstrap();
+    loadStatus();
   }, [router]);
 
   const isMobileValid = (mobileNumber: string) => /^\d{10}$/.test(mobileNumber);
