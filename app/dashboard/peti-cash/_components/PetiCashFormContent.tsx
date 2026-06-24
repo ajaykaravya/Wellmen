@@ -31,8 +31,13 @@ import {
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
 import {
   FaBuilding,
+  FaBolt,
+  FaFileInvoiceDollar,
   FaHospital,
+  FaMobileAlt,
+  FaMoneyBillWave,
   FaSpinner,
+  FaUniversity,
   FaWrench,
 } from "react-icons/fa";
 import { FaListCheck } from "react-icons/fa6";
@@ -53,6 +58,8 @@ type PetiCashFormState = {
   companyId: string;
   projectId: string;
   expenseTypeId: string;
+  isAdvance: boolean;
+  paymentMode: PaymentMode | "";
   date: string;
   remarks: string;
 };
@@ -65,6 +72,10 @@ type PetiCashPayload = PetiCashFormState & {
   projectName?: string | null;
   projectCity?: string | null;
   expenseTypeName?: string | null;
+  dailyExpense?: {
+    id: string;
+    paymentMode?: PaymentMode | null;
+  } | null;
 };
 
 type PetiCashFormContentProps = {
@@ -79,6 +90,24 @@ const isAdmin = (role?: string | null) => role === "Admin";
 const isManager = (role?: string | null) => role === "Manager";
 const isEmployee = (role?: string | null) => role !== "Admin" && role !== "Manager";
 
+type PaymentMode = "CASH" | "BANK" | "CHEQUE" | "UPI" | "NEFT_RTGS";
+
+const paymentModeOptions: Array<{ key: PaymentMode; label: string }> = [
+  { key: "CASH", label: "Cash" },
+  { key: "BANK", label: "Bank" },
+  { key: "CHEQUE", label: "Cheque" },
+  { key: "UPI", label: "UPI" },
+  { key: "NEFT_RTGS", label: "NEFT/RTGS" },
+];
+
+const paymentModeIcons: Record<PaymentMode, React.ReactNode> = {
+  CASH: <FaMoneyBillWave size={22} />,
+  BANK: <FaUniversity size={22} />,
+  CHEQUE: <FaFileInvoiceDollar size={22} />,
+  UPI: <FaMobileAlt size={22} />,
+  NEFT_RTGS: <FaBolt size={22} />,
+};
+
 const getProjectLabel = (project: ProjectOption) =>
   project.city ? `${project.name} (${project.city})` : project.name;
 
@@ -87,18 +116,20 @@ function getUserDisplayName(user: UserOption) {
 }
 
 function getPetiCashSteps(transactionType: TransactionType): PetiCashStep[] {
-  const baseSteps: PetiCashStep[] = [
-    { key: "givenBy", label: "Given By" },
-    { key: "givenTo", label: "Given To" },
-    { key: "company", label: "Company" },
-  ];
+  const steps: PetiCashStep[] = [{ key: "givenBy", label: "Given By" }];
 
-  if (transactionType === "DEBIT") {
-    baseSteps.push({ key: "category", label: "Category" });
+  if (transactionType === "CREDIT") {
+    steps.push({ key: "givenTo", label: "Given To" });
   }
 
-  baseSteps.push({ key: "details", label: "Details" });
-  return baseSteps;
+  steps.push({ key: "company", label: "Company" });
+
+  if (transactionType === "DEBIT") {
+    steps.push({ key: "category", label: "Category" });
+  }
+
+  steps.push({ key: "details", label: "Details" });
+  return steps;
 }
 
 function getCompanyCardIcon(index: number) {
@@ -147,6 +178,8 @@ export default function PetiCashFormContent({
     companyId: "",
     projectId: "",
     expenseTypeId: "",
+    isAdvance: true,
+    paymentMode: "",
     date: getTodayInputDate(),
     remarks: "",
   });
@@ -168,11 +201,6 @@ export default function PetiCashFormContent({
   };
 
   useEffect(() => {
-    setTransactionType(defaultTransactionType);
-    setCurrentStep(0);
-  }, [defaultTransactionType]);
-
-  useEffect(() => {
     const loadData = async () => {
       try {
         const [users, companies, projects, expenseTypes, petiCash] = await Promise.all([
@@ -190,6 +218,10 @@ export default function PetiCashFormContent({
 
         if (petiCash) {
           const data = petiCash as PetiCashPayload;
+          const isAdvance =
+            typeof data.isAdvance === "boolean"
+              ? data.isAdvance
+              : !data.dailyExpense;
           setTransactionType(data.transactionType);
           setForm({
             amount: String(data.amount ?? ""),
@@ -198,6 +230,10 @@ export default function PetiCashFormContent({
             companyId: data.companyId || "",
             projectId: data.projectId || "",
             expenseTypeId: data.expenseTypeId || "",
+            isAdvance,
+            paymentMode:
+              data.dailyExpense?.paymentMode ||
+              (isAdvance ? "" : "CASH"),
             date:
               formatToDDMMYYYY(data.date) === "-"
                 ? getTodayInputDate()
@@ -247,22 +283,10 @@ export default function PetiCashFormContent({
     return users.filter((user) => isManager(user.role));
   }, [transactionType, users]);
 
-  const givenToUsers = useMemo(() => {
-    if (transactionType === "CREDIT") {
-      return users.filter((user) => isManager(user.role));
-    }
-    return users.filter((user) => isEmployee(user.role));
-  }, [transactionType, users]);
-
   const selectedGivenByLabel = useMemo(() => {
     const user = users.find((item) => item.id === form.givenById);
     return user ? getUserDisplayName(user) : "";
   }, [form.givenById, users]);
-
-  const selectedGivenToLabel = useMemo(() => {
-    const user = users.find((item) => item.id === form.givenToId);
-    return user ? getUserDisplayName(user) : "";
-  }, [form.givenToId, users]);
 
   const selectedCompanyLabel = useMemo(
     () => companies.find((company) => company.id === form.companyId)?.name || "",
@@ -274,21 +298,92 @@ export default function PetiCashFormContent({
     [expenseTypes, form.expenseTypeId],
   );
 
+  const selectedExpenseType = useMemo(
+    () => expenseTypes.find((option) => option.id === form.expenseTypeId) || null,
+    [expenseTypes, form.expenseTypeId],
+  );
+
+  const selectedExpenseTypeUsers = useMemo(() => {
+    if (transactionType !== "DEBIT") return [];
+    const allowedIds = new Set((selectedExpenseType?.users || []).map((user) => user.id));
+    if (allowedIds.size === 0) return [];
+    return users.filter((user) => allowedIds.has(user.id));
+  }, [selectedExpenseType, transactionType, users]);
+
+  const defaultGivenToUsers = useMemo(() => {
+    if (transactionType === "CREDIT") {
+      return users.filter((user) => isManager(user.role));
+    }
+    return users.filter((user) => isEmployee(user.role));
+  }, [transactionType, users]);
+
+  const availableGivenToUsers = useMemo(() => {
+    if (transactionType !== "DEBIT") {
+      return defaultGivenToUsers;
+    }
+    return form.isAdvance ? defaultGivenToUsers : selectedExpenseTypeUsers;
+  }, [defaultGivenToUsers, form.isAdvance, selectedExpenseTypeUsers, transactionType]);
+
+  const resolvedGivenToId = useMemo(() => {
+    if (transactionType !== "DEBIT") {
+      return form.givenToId;
+    }
+    return availableGivenToUsers.some((user) => user.id === form.givenToId)
+      ? form.givenToId
+      : "";
+  }, [availableGivenToUsers, form.givenToId, transactionType]);
+
+  const selectedGivenToLabel = useMemo(() => {
+    const currentUsers =
+      transactionType === "DEBIT"
+        ? availableGivenToUsers
+        : users.filter((user) => isManager(user.role));
+    const selectedId =
+      transactionType === "DEBIT" ? resolvedGivenToId : form.givenToId;
+    const user = currentUsers.find((item) => item.id === selectedId);
+    return user ? getUserDisplayName(user) : "";
+  }, [availableGivenToUsers, form.givenToId, resolvedGivenToId, transactionType, users]);
+
+  const resolvedPaymentMode = useMemo(
+    () => (form.isAdvance ? "" : form.paymentMode || "CASH"),
+    [form.isAdvance, form.paymentMode],
+  );
+
+  const selectedPaymentModeLabel = useMemo(
+    () =>
+      paymentModeOptions.find((option) => option.key === resolvedPaymentMode)?.label ||
+      "",
+    [resolvedPaymentMode],
+  );
+
   const selectedSummaryItems = useMemo(() => {
     const givenByIndex = steps.findIndex((step) => step.key === "givenBy");
     const givenToIndex = steps.findIndex((step) => step.key === "givenTo");
     const companyIndex = steps.findIndex((step) => step.key === "company");
     const categoryIndex = steps.findIndex((step) => step.key === "category");
+    const detailsIndex = steps.findIndex((step) => step.key === "details");
+    const showRecipientSummary =
+      givenToIndex >= 0
+        ? currentStep > givenToIndex
+        : transactionType === "DEBIT" && currentStep >= detailsIndex;
+    const showPaymentModeSummary =
+      transactionType === "DEBIT" &&
+      !form.isAdvance &&
+      currentStep >= detailsIndex &&
+      Boolean(selectedPaymentModeLabel);
 
     return [
       currentStep > givenByIndex && selectedGivenByLabel
         ? { label: selectedGivenByLabel, tone: "brand" as const }
         : null,
-      currentStep > givenToIndex && selectedGivenToLabel
+      showRecipientSummary && selectedGivenToLabel
         ? { label: selectedGivenToLabel, tone: "success" as const }
         : null,
       currentStep > companyIndex && selectedCompanyLabel
         ? { label: selectedCompanyLabel, tone: "warning" as const }
+        : null,
+      showPaymentModeSummary
+        ? { label: selectedPaymentModeLabel, tone: "brand" as const }
         : null,
       categoryIndex >= 0 &&
       currentStep > categoryIndex &&
@@ -305,6 +400,9 @@ export default function PetiCashFormContent({
     selectedExpenseTypeLabel,
     selectedGivenByLabel,
     selectedGivenToLabel,
+    form.isAdvance,
+    selectedPaymentModeLabel,
+    transactionType,
     steps,
   ]);
 
@@ -333,10 +431,15 @@ export default function PetiCashFormContent({
     }
     if (!form.date.trim()) newErrors.date = "Date is required.";
     if (!form.givenById) newErrors.givenById = "Given by is required.";
-    if (!form.givenToId) newErrors.givenToId = "Given to is required.";
     if (!form.companyId) newErrors.companyId = "Company is required.";
     if (transactionType === "DEBIT" && !form.expenseTypeId) {
       newErrors.expenseTypeId = "Expense category is required.";
+    }
+    if (transactionType === "DEBIT" && !resolvedGivenToId) {
+      newErrors.givenToId = "Given to is required.";
+    }
+    if (transactionType === "DEBIT" && !form.isAdvance && !resolvedPaymentMode) {
+      newErrors.paymentMode = "Payment mode is required.";
     }
 
     setErrors(newErrors);
@@ -350,10 +453,13 @@ export default function PetiCashFormContent({
         transactionType,
         amount: form.amount,
         givenById: form.givenById,
-        givenToId: form.givenToId,
+        givenToId: transactionType === "DEBIT" ? resolvedGivenToId : form.givenToId,
         companyId: form.companyId,
         projectId: form.projectId,
         expenseTypeId: transactionType === "DEBIT" ? form.expenseTypeId : "",
+        isAdvance: transactionType === "DEBIT" ? form.isAdvance : true,
+        paymentMode:
+          transactionType === "DEBIT" && !form.isAdvance ? resolvedPaymentMode : "",
         date: form.date,
         remarks: form.remarks,
       };
@@ -435,8 +541,8 @@ export default function PetiCashFormContent({
               <div className="mt-4">
                 <UserSelectionCardGrid
                   title="Given To"
-                  selected={form.givenToId}
-                  users={givenToUsers}
+                  selected={resolvedGivenToId}
+                  users={defaultGivenToUsers}
                   onSelect={(value) => {
                     setForm((prev) => ({ ...prev, givenToId: value }));
                     clearError("givenToId");
@@ -509,57 +615,121 @@ export default function PetiCashFormContent({
               <SelectionPills items={selectedSummaryItems} />
 
               {transactionType === "DEBIT" && (
-                <div className="mb-2 mt-4">
-                  <label className="rbac-label">Project</label>
-                  <Combobox
-                    value={selectedProject}
-                    onChange={(project: ProjectOption | null) => {
-                      setForm((prev) => ({
-                        ...prev,
-                        projectId: project?.id || "",
-                      }));
-                      setProjectQuery("");
-                    }}
-                    nullable
-                  >
-                    <div className="relative">
-                      <ComboboxInput
-                        className="theme-input rbac-input w-full pr-10"
-                        placeholder="Search project"
-                        displayValue={(project: ProjectOption | null) =>
-                          project ? getProjectLabel(project) : projectQuery
-                        }
-                        onChange={(event) => {
-                          setProjectQuery(event.target.value);
-                          setForm((prev) => ({ ...prev, projectId: "" }));
+                <>
+                  <div className="mb-3 mt-4 flex items-center gap-3 rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] px-4 py-3">
+                    <input
+                      id="isAdvance"
+                      type="checkbox"
+                      checked={form.isAdvance}
+                      onChange={(event) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          isAdvance: event.target.checked,
+                          paymentMode: event.target.checked ? "" : prev.paymentMode || "CASH",
+                        }))
+                      }
+                      className="h-4 w-4 rounded border-[color:var(--theme-border)] text-[color:var(--theme-primary)]"
+                    />
+                    <label htmlFor="isAdvance" className="text-sm font-medium">
+                      Is Advance
+                    </label>
+                  </div>
+
+                  <div className="mb-2">
+                    <UserSelectionCardGrid
+                      title="Given To"
+                      selected={resolvedGivenToId}
+                      users={availableGivenToUsers}
+                      onSelect={(value) => {
+                        setForm((prev) => ({ ...prev, givenToId: value }));
+                        clearError("givenToId");
+                      }}
+                      error={errors.givenToId}
+                      required
+                      emptyMessage={
+                        form.isAdvance
+                          ? "No users available for this transaction type."
+                          : "No users assigned to this expense category."
+                      }
+                    />
+                  </div>
+
+                  {!form.isAdvance && (
+                    <div className="mb-2">
+                      <SelectionCardGrid
+                        title="Payment Mode"
+                        selected={resolvedPaymentMode || null}
+                        options={paymentModeOptions.map((option) => ({
+                          key: option.key,
+                          label: option.label,
+                          icon: paymentModeIcons[option.key],
+                        }))}
+                        onSelect={(value) => {
+                          setForm((prev) => ({
+                            ...prev,
+                            paymentMode: value as PaymentMode,
+                          }));
+                          clearError("paymentMode");
                         }}
+                        error={errors.paymentMode}
+                        required
+                        columnsClassName="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
                       />
-                      <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
-                        <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
-                      </ComboboxButton>
-                      <ComboboxOptions
-                        modal={false}
-                        className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]"
-                      >
-                        {filteredProjects.length === 0 ? (
-                          <div className="px-3 py-2 text-sm text-[color:var(--theme-text-muted)]">
-                            No projects found
-                          </div>
-                        ) : (
-                          filteredProjects.map((project) => (
-                            <ComboboxOption
-                              key={project.id}
-                              value={project}
-                              className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
-                            >
-                              <span>{getProjectLabel(project)}</span>
-                            </ComboboxOption>
-                          ))
-                        )}
-                      </ComboboxOptions>
                     </div>
-                  </Combobox>
-                </div>
+                  )}
+
+                  <div className="mb-2 mt-4">
+                    <label className="rbac-label">Project</label>
+                    <Combobox
+                      value={selectedProject}
+                      onChange={(project: ProjectOption | null) => {
+                        setForm((prev) => ({
+                          ...prev,
+                          projectId: project?.id || "",
+                        }));
+                        setProjectQuery("");
+                      }}
+                      nullable
+                    >
+                      <div className="relative">
+                        <ComboboxInput
+                          className="theme-input rbac-input w-full pr-10"
+                          placeholder="Search project"
+                          displayValue={(project: ProjectOption | null) =>
+                            project ? getProjectLabel(project) : projectQuery
+                          }
+                          onChange={(event) => {
+                            setProjectQuery(event.target.value);
+                            setForm((prev) => ({ ...prev, projectId: "" }));
+                          }}
+                        />
+                        <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--theme-text-muted)]">
+                          <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
+                        </ComboboxButton>
+                        <ComboboxOptions
+                          modal={false}
+                          className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] p-1 shadow-lg text-[color:var(--theme-text)]"
+                        >
+                          {filteredProjects.length === 0 ? (
+                            <div className="px-3 py-2 text-sm text-[color:var(--theme-text-muted)]">
+                              No projects found
+                            </div>
+                          ) : (
+                            filteredProjects.map((project) => (
+                              <ComboboxOption
+                                key={project.id}
+                                value={project}
+                                className="cursor-pointer rounded-lg px-3 py-2 text-sm data-[focus]:bg-[var(--theme-surface-2)] data-[selected]:bg-[var(--theme-surface-2)]"
+                              >
+                                <span>{getProjectLabel(project)}</span>
+                              </ComboboxOption>
+                            ))
+                          )}
+                        </ComboboxOptions>
+                      </div>
+                    </Combobox>
+                  </div>
+                </>
               )}
 
               <label className="rbac-label">
