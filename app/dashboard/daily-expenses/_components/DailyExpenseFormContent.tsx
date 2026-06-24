@@ -13,10 +13,8 @@ import {
   FaWrench,
 } from "react-icons/fa";
 import { FaListCheck } from "react-icons/fa6";
-import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import Loading from "../../../components/Loading";
-import Link from "next/link";
 import CustomDatePicker from "../../../components/CustomDatePicker";
 import CashEntryStepper from "../../_components/CashEntryStepper";
 import CashEntrySuccessView from "../../_components/CashEntrySuccessView";
@@ -139,7 +137,6 @@ function getCardTone(index: number) {
 export default function DailyExpenseFormContent({
   dailyExpenseId,
 }: DailyExpenseFormContentProps) {
-  const router = useRouter();
   const [form, setForm] = useState<DailyExpenseFormState>(createInitialDailyExpenseForm());
 
   const clearError = (field: keyof DailyExpenseFormState) => {
@@ -268,6 +265,18 @@ export default function DailyExpenseFormContent({
     [expenseTypes, form.expenseTypeId],
   );
 
+  const selectedExpenseType = useMemo(
+    () => expenseTypes.find((option) => option.id === form.expenseTypeId) || null,
+    [expenseTypes, form.expenseTypeId],
+  );
+
+  const allowedExpenseByUsers = useMemo(() => {
+    if (!selectedExpenseType) return [];
+    const allowedIds = new Set((selectedExpenseType.users || []).map((user) => user.id));
+    if (allowedIds.size === 0) return [];
+    return users.filter((user) => allowedIds.has(user.id));
+  }, [selectedExpenseType, users]);
+
   const selectedSummaryItems = useMemo(
     () =>
       [
@@ -284,13 +293,10 @@ export default function DailyExpenseFormContent({
     [currentStep, selectedCompany, selectedExpenseTypeLabel, selectedPaymentModeLabel],
   );
 
-  const selectedExpenseByLabel = useMemo(
-    () => {
-      const user = users.find((item) => item.id === form.expenseById);
-      return user ? `${user.firstName} ${user.lastName}`.trim() : "";
-    },
-    [form.expenseById, users],
-  );
+  const selectedExpenseById =
+    allowedExpenseByUsers.some((user) => user.id === form.expenseById)
+      ? form.expenseById
+      : "";
 
   const resetToNewEntry = () => {
     setForm(createInitialDailyExpenseForm());
@@ -315,7 +321,7 @@ export default function DailyExpenseFormContent({
       newErrors.expenseTypeId = "Expense type is required.";
     }
     if (!form.projectId) newErrors.projectId = "Project is required.";
-    if (!form.expenseById) newErrors.expenseById = "Expense by is required.";
+    if (!selectedExpenseById) newErrors.expenseById = "Expense by is required.";
     if (!form.amount.trim() || Number(form.amount) <= 0) {
       newErrors.amount = "Amount is required.";
     }
@@ -331,7 +337,7 @@ export default function DailyExpenseFormContent({
         amount: form.amount,
         projectId: form.projectId,
         expenseTypeId: form.expenseTypeId,
-        expenseById: form.expenseById,
+        expenseById: selectedExpenseById,
         expenseCompanyId: form.expenseCompanyId,
         paymentMode: form.paymentMode,
         date: form.date,
@@ -555,15 +561,19 @@ export default function DailyExpenseFormContent({
               <div className="mb-2">
                 <UserCardGroup
                   title="Expense By"
-                  selected={form.expenseById}
-                  users={users}
+                  selected={selectedExpenseById}
+                  users={allowedExpenseByUsers}
                   onSelect={(value) => {
                     setForm((prev) => ({ ...prev, expenseById: value }));
                     clearError("expenseById");
                   }}
                   error={errors.expenseById}
                   required
-                  emptyMessage="No users available to select."
+                  emptyMessage={
+                    selectedExpenseType && selectedExpenseType.users?.length === 0
+                      ? "No users are assigned to this category."
+                      : "No users available to select."
+                  }
                 />
               </div>
 

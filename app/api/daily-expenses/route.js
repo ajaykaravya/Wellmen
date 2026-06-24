@@ -55,6 +55,7 @@ const serializeDailyExpense = (row) => ({
   id: row.id,
   transactionType: row.transactionType,
   amount: Number(row.amount),
+  petiCashId: row.petiCashId || null,
   projectId: row.projectId,
   projectName: row.project?.name || null,
   projectCity: row.project?.city || null,

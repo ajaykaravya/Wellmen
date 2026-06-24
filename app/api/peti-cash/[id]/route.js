@@ -2,100 +2,19 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
-
-const TRANSACTION_TYPES = ["CREDIT", "DEBIT"];
+import {
+  PETI_CASH_INCLUDE,
+  isValidPaymentMode,
+  isValidTransactionType,
+  parseDate,
+  parsePetiCashPayload,
+  serializePetiCash,
+  syncLinkedDailyExpense,
+  validatePetiCashParticipants,
+} from "../_shared";
 
 const resolveId = async (params) => String((await params)?.id || "").trim();
 
-const parsePayload = (body) => {
-  const amountRaw = String(body.amount || "").trim();
-  const transactionType = String(body.transactionType || "")
-    .trim()
-    .toUpperCase();
-  const givenById = String(body.givenById || "").trim();
-  const givenToId = String(body.givenToId || "").trim();
-  const companyId = String(body.companyId || "").trim();
-  const projectId = String(body.projectId || "").trim();
-  const expenseTypeId = String(body.expenseTypeId || "").trim();
-  const date = String(body.date || "").trim();
-  const remarks = String(body.remarks || "").trim();
-
-  return {
-    amountRaw,
-    transactionType,
-    givenById,
-    givenToId,
-    companyId,
-    projectId,
-    expenseTypeId,
-    date,
-    remarks,
-  };
-};
-
-const isValidTransactionType = (value) => TRANSACTION_TYPES.includes(value);
-
-const parseDate = (value) => {
-  if (!value) return null;
-
-  const ddmmyyyy = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (ddmmyyyy) {
-    const [, day, month, year] = ddmmyyyy;
-    const date = new Date(
-      Number(year),
-      Number(month) - 1,
-      Number(day),
-      12,
-      0,
-      0,
-    );
-    return Number.isNaN(date.getTime()) ? null : date;
-  }
-
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-};
-
-const serializePetiCash = (row) => ({
-  id: row.id,
-  transactionType: row.transactionType,
-  amount: Number(row.amount),
-  givenById: row.givenById,
-  givenByName: row.givenBy?.fullName || null,
-  givenByRole: row.givenBy?.role?.name || null,
-  givenToId: row.givenToId,
-  givenToName: row.givenTo?.fullName || null,
-  givenToRole: row.givenTo?.role?.name || null,
-  companyId: row.companyId,
-  companyName: row.company?.name || null,
-  companyCode: row.company?.code || null,
-  projectId: row.projectId,
-  projectName: row.project?.name || null,
-  projectCity: row.project?.city || null,
-  expenseTypeId: row.expenseTypeId,
-  expenseTypeName: row.expenseType?.name || null,
-  date: row.date,
-  remarks: row.remarks || null,
-  createdAt: row.createdAt,
-  updatedAt: row.updatedAt,
-});
-
-const validateRolePair = (transactionType, givenBy, givenTo) => {
-  if (transactionType === "CREDIT") {
-    if (givenBy.role?.name !== "Admin") {
-      return "Given by must be Admin for Add Cash.";
-    }
-    if (givenTo.role?.name !== "Manager") {
-      return "Given to must be Manager for Add Cash.";
-    }
-    return null;
-  }
-
-  if (givenBy.role?.name !== "Manager") {
-    return "Given by must be Manager for Give Cash.";
-  }
-  return null;
-};
 
 export async function GET(req, { params }) {
   const gate = await requireRole(req, ["Admin", "Manager"]);
@@ -111,13 +30,7 @@ export async function GET(req, { params }) {
 
   const petiCash = await prisma.petiCash.findUnique({
     where: { id },
-    include: {
-      givenBy: { include: { role: true } },
-      givenTo: { include: { role: true } },
-      company: true,
-      project: true,
-      expenseType: true,
-    },
+    include: PETI_CASH_INCLUDE,
   });
 
   if (!petiCash) {
@@ -139,13 +52,16 @@ export async function PUT(req, { params }) {
     );
   }
 
-  const existing = await prisma.petiCash.findUnique({ where: { id } });
+  const existing = await prisma.petiCash.findUnique({
+    where: { id },
+    include: PETI_CASH_INCLUDE,
+  });
   if (!existing) {
     return NextResponse.json({ error: "Peti cash not found." }, { status: 404 });
   }
 
   const body = await req.json();
-  const payload = parsePayload(body);
+  const payload = parsePetiCashPayload(body);
 
   const amount = Number(payload.amountRaw);
   if (!Number.isFinite(amount) || amount <= 0) {
@@ -183,6 +99,21 @@ export async function PUT(req, { params }) {
     );
   }
 
+  if (payload.transactionType === "DEBIT" && !payload.isAdvance) {
+    if (!payload.paymentMode) {
+      return NextResponse.json(
+        { error: "Payment mode is required." },
+        { status: 400 },
+      );
+    }
+    if (!isValidPaymentMode(payload.paymentMode)) {
+      return NextResponse.json(
+        { error: "Invalid payment mode." },
+        { status: 400 },
+      );
+    }
+  }
+
   const [givenBy, givenTo, company, project, expenseType] = await Promise.all([
     prisma.user.findUnique({
       where: { id: payload.givenById },
@@ -197,7 +128,16 @@ export async function PUT(req, { params }) {
       ? prisma.project.findUnique({ where: { id: payload.projectId } })
       : Promise.resolve(null),
     payload.expenseTypeId
-      ? prisma.expenseType.findUnique({ where: { id: payload.expenseTypeId } })
+      ? prisma.expenseType.findUnique({
+          where: { id: payload.expenseTypeId },
+          include: {
+            expenseTypeUsers: {
+              include: {
+                user: true,
+              },
+            },
+          },
+        })
       : Promise.resolve(null),
   ]);
 
@@ -209,7 +149,13 @@ export async function PUT(req, { params }) {
     return NextResponse.json({ error: "Given to user not found." }, { status: 404 });
   }
 
-  const roleError = validateRolePair(payload.transactionType, givenBy, givenTo);
+  const roleError = validatePetiCashParticipants({
+    transactionType: payload.transactionType,
+    isAdvance: payload.isAdvance,
+    givenBy,
+    givenTo,
+    expenseType,
+  });
   if (roleError) {
     return NextResponse.json({ error: roleError }, { status: 400 });
   }
@@ -230,27 +176,49 @@ export async function PUT(req, { params }) {
   }
 
   try {
-    const petiCash = await prisma.petiCash.update({
-      where: { id },
-      data: {
-        amount: new Prisma.Decimal(amount),
+    const petiCash = await prisma.$transaction(async (tx) => {
+      await syncLinkedDailyExpense({
+        tx,
+        petiCashId: id,
+        existingDailyExpense: existing.dailyExpense || null,
         transactionType: payload.transactionType,
-        givenById: givenBy.id,
+        isAdvance:
+          payload.transactionType === "DEBIT" ? payload.isAdvance : true,
+        amount: new Prisma.Decimal(amount),
         givenToId: givenTo.id,
         companyId: company.id,
         projectId: project?.id || null,
-        expenseTypeId:
-          payload.transactionType === "DEBIT" ? expenseType.id : null,
+        expenseTypeId: payload.transactionType === "DEBIT" ? expenseType.id : null,
+        paymentMode:
+          payload.transactionType === "DEBIT" && !payload.isAdvance
+            ? payload.paymentMode
+            : null,
         date: parsedDate,
         remarks: payload.remarks || null,
-      },
-      include: {
-        givenBy: { include: { role: true } },
-        givenTo: { include: { role: true } },
-        company: true,
-        project: true,
-        expenseType: true,
-      },
+      });
+
+      const updated = await tx.petiCash.update({
+        where: { id },
+        data: {
+          amount: new Prisma.Decimal(amount),
+          transactionType: payload.transactionType,
+          isAdvance:
+            payload.transactionType === "DEBIT" ? payload.isAdvance : true,
+          givenById: givenBy.id,
+          givenToId: givenTo.id,
+          companyId: company.id,
+          projectId: project?.id || null,
+          expenseTypeId:
+            payload.transactionType === "DEBIT" ? expenseType.id : null,
+          date: parsedDate,
+          remarks: payload.remarks || null,
+        },
+      });
+
+      return tx.petiCash.findUnique({
+        where: { id: updated.id },
+        include: PETI_CASH_INCLUDE,
+      });
     });
 
     return NextResponse.json(serializePetiCash(petiCash));

@@ -4,13 +4,37 @@ import { requireRole } from "@/lib/rbac";
 
 const STATUSES = ["ACTIVE", "INACTIVE"];
 
+const normalizeUserIds = (value) => {
+  const values = Array.isArray(value) ? value : value ? [value] : [];
+  return [...new Set(values.map((item) => String(item || "").trim()).filter(Boolean))];
+};
+
 const parsePayload = (body) => {
   const name = String(body.name || "").trim();
   const status = String(body.status || "").trim().toUpperCase();
-  return { name, status };
+  const userIds = normalizeUserIds(body.userIds ?? body.userId);
+  return { name, status, userIds };
 };
 
 const isValidStatus = (status) => STATUSES.includes(status);
+
+const serializeExpenseType = (expenseType) => ({
+  id: expenseType.id,
+  name: expenseType.name,
+  status: expenseType.status,
+  userIds: expenseType.expenseTypeUsers?.map((item) => item.userId) || [],
+  users:
+    expenseType.expenseTypeUsers?.map((item) =>
+      item.user
+        ? {
+            id: item.user.id,
+            firstName: item.user.firstName,
+            lastName: item.user.lastName,
+          }
+        : null,
+    ).filter(Boolean) || [],
+  createdAt: expenseType.createdAt,
+});
 
 export async function GET(req) {
   const gate = await requireRole(req, ["Admin", "Manager"]);
@@ -46,6 +70,13 @@ export async function GET(req) {
     prisma.expenseType.count({ where }),
     prisma.expenseType.findMany({
       where,
+      include: {
+        expenseTypeUsers: {
+          include: {
+            user: true,
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -53,12 +84,7 @@ export async function GET(req) {
   ]);
 
   return NextResponse.json({
-    data: expenseTypes.map((expenseType) => ({
-      id: expenseType.id,
-      name: expenseType.name,
-      status: expenseType.status,
-      createdAt: expenseType.createdAt,
-    })),
+    data: expenseTypes.map(serializeExpenseType),
     page,
     pageSize,
     total,
@@ -82,24 +108,44 @@ export async function POST(req) {
       { status: 400 },
     );
   }
+  if (payload.userIds.length === 0) {
+    return NextResponse.json(
+      { error: "At least one user is required." },
+      { status: 400 },
+    );
+  }
+
+  const users = await prisma.user.findMany({
+    where: {
+      id: { in: payload.userIds },
+    },
+    select: { id: true },
+  });
+  if (users.length !== payload.userIds.length) {
+    return NextResponse.json({ error: "User not found." }, { status: 400 });
+  }
 
   try {
     const expenseType = await prisma.expenseType.create({
       data: {
         name: payload.name,
         status: payload.status,
+        expenseTypeUsers: {
+          create: payload.userIds.map((userId) => ({
+            user: { connect: { id: userId } },
+          })),
+        },
+      },
+      include: {
+        expenseTypeUsers: {
+          include: {
+            user: true,
+          },
+        },
       },
     });
 
-    return NextResponse.json(
-      {
-        id: expenseType.id,
-        name: expenseType.name,
-        status: expenseType.status,
-        createdAt: expenseType.createdAt,
-      },
-      { status: 201 },
-    );
+    return NextResponse.json(serializeExpenseType(expenseType), { status: 201 });
   } catch (error) {
     if (error?.code === "P2002") {
       return NextResponse.json(
