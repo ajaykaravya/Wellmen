@@ -563,7 +563,10 @@ export default function IncomeFormContent({
                   selected={form.receivedById}
                   users={users}
                   onSelect={(value) => {
-                    setForm((prev) => ({ ...prev, receivedById: value }));
+                    const receivedById = Array.isArray(value)
+                      ? value[0] || ""
+                      : value;
+                    setForm((prev) => ({ ...prev, receivedById }));
                     clearError("receivedById");
                   }}
                   error={errors.receivedById}

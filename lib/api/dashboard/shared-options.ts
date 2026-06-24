@@ -32,6 +32,11 @@ export type ExpenseTypeOption = {
   id: string;
   name: string;
   status: "ACTIVE" | "INACTIVE";
+  users?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  }[];
 };
 
 export type RoleOption = {
@@ -79,4 +84,3 @@ export async function loadCategoryOptions(path: string) {
   const data = await requestJson<unknown>({ path });
   return normalizeArrayResponse<CategoryOption>(data);
 }
-

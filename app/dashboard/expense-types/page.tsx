@@ -25,7 +25,20 @@ type ExpenseTypeRow = {
   id: string;
   name: string;
   status: "ACTIVE" | "INACTIVE";
+  users?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  }[];
 };
+
+function getUsersDisplayName(users?: ExpenseTypeRow["users"]) {
+  if (!users || users.length === 0) return "Unassigned";
+  return users
+    .map((user) => [user.firstName, user.lastName].filter(Boolean).join(" ").trim())
+    .filter(Boolean)
+    .join(", ");
+}
 
 function ExpenseTypeListContent() {
   const router = useRouter();
@@ -128,6 +141,13 @@ function ExpenseTypeListContent() {
 
           return <span className="rbac-muted">{formatted}</span>;
         },
+      },
+      {
+        header: "Users",
+        id: "user",
+        cell: ({ row }) => (
+          <span className="rbac-muted">{getUsersDisplayName(row.original.users)}</span>
+        ),
       },
       {
         header: "Action",
@@ -318,11 +338,18 @@ function ExpenseTypeListContent() {
                         <span className="mt-2 inline-flex items-center text-xs font-medium tracking-wide text-[color:var(--theme-text-muted)]">
                           {statusLabel(expenseType.status)}
                         </span>
+                        <p className="mt-1 text-xs text-[color:var(--theme-text-muted)]">
+                          {getUsersDisplayName(expenseType.users)}
+                        </p>
                       </div>
                       <div className="flex">
-                          <button onClick={()=> handleEditExpenseType(expenseType)} className="rbac-link" type="button">
-                            <FaEdit size={18} />
-                          </button>
+                        <button
+                          onClick={() => handleEditExpenseType(expenseType)}
+                          className="rbac-link"
+                          type="button"
+                        >
+                          <FaEdit size={18} />
+                        </button>
                         <button
                           style={{ padding: "2px" }}
                           className="rbac-link danger"

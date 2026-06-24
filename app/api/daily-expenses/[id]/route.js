@@ -57,6 +57,7 @@ const serializeDailyExpense = (row) => ({
   id: row.id,
   transactionType: row.transactionType,
   amount: Number(row.amount),
+  petiCashId: row.petiCashId || null,
   projectId: row.projectId,
   projectName: row.project?.name || null,
   projectCity: row.project?.city || null,
@@ -218,26 +219,60 @@ export async function PUT(req, { params }) {
     );
   }
 
+  const linkedPetiCash = existing.petiCashId
+    ? await prisma.petiCash.findUnique({
+        where: { id: existing.petiCashId },
+      })
+    : null;
+
+  if (existing.petiCashId && !linkedPetiCash) {
+    return NextResponse.json(
+      { error: "Linked peti cash not found." },
+      { status: 404 },
+    );
+  }
+
   try {
-    const dailyExpense = await prisma.financeTransaction.update({
-      where: { id },
-      data: {
-        transactionType: "EXPENSE",
-        amount: new Prisma.Decimal(amount),
-        projectId: project.id,
-        expenseTypeId: expenseType.id,
-        expenseById: expenseBy.id,
-        expenseCompanyId: expenseCompany.id,
-        paymentMode: payload.paymentMode,
-        date: parsedDate,
-        remark: payload.remark || null,
-      },
-      include: {
-        project: true,
-        expenseType: true,
-        expenseBy: true,
-        expenseCompany: true,
-      },
+    const dailyExpense = await prisma.$transaction(async (tx) => {
+      const updatedDailyExpense = await tx.financeTransaction.update({
+        where: { id },
+        data: {
+          transactionType: "EXPENSE",
+          amount: new Prisma.Decimal(amount),
+          projectId: project.id,
+          expenseTypeId: expenseType.id,
+          expenseById: expenseBy.id,
+          expenseCompanyId: expenseCompany.id,
+          paymentMode: payload.paymentMode,
+          date: parsedDate,
+          remark: payload.remark || null,
+        },
+        include: {
+          project: true,
+          expenseType: true,
+          expenseBy: true,
+          expenseCompany: true,
+        },
+      });
+
+      if (linkedPetiCash) {
+        await tx.petiCash.update({
+          where: { id: linkedPetiCash.id },
+          data: {
+            amount: new Prisma.Decimal(amount),
+            transactionType: "DEBIT",
+            isAdvance: false,
+            givenToId: expenseBy.id,
+            companyId: expenseCompany.id,
+            projectId: project.id,
+            expenseTypeId: expenseType.id,
+            date: parsedDate,
+            remarks: payload.remark || null,
+          },
+        });
+      }
+
+      return updatedDailyExpense;
     });
 
     return NextResponse.json(serializeDailyExpense(dailyExpense));
@@ -268,6 +303,17 @@ export async function DELETE(req, { params }) {
       { error: "Daily expense not found." },
       { status: 404 },
     );
+  }
+
+  if (existing.petiCashId) {
+    const linkedPetiCash = await prisma.petiCash.findUnique({
+      where: { id: existing.petiCashId },
+    });
+
+    if (linkedPetiCash) {
+      await prisma.petiCash.delete({ where: { id: linkedPetiCash.id } });
+      return NextResponse.json({ ok: true });
+    }
   }
 
   await prisma.financeTransaction.delete({ where: { id } });

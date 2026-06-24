@@ -7,12 +7,18 @@ import { toast } from "react-toastify";
 import Loading from "../../../components/Loading";
 import Link from "next/link";
 import { expenseTypesApi } from "@/lib/api/dashboard/expense-types";
+import { UserCardGroup } from "../../_components/UserCardGroup";
+import {
+  loadUserOptions,
+  type UserOption,
+} from "@/lib/api/dashboard/shared-options";
 
 type ExpenseTypeStatus = "ACTIVE" | "INACTIVE";
 
 type ExpenseTypeFormState = {
   name: string;
   status: ExpenseTypeStatus;
+  userIds: string[];
 };
 
 type ExpenseTypeFormContentProps = {
@@ -28,9 +34,11 @@ export default function ExpenseTypeFormContent({
   expenseTypeId,
 }: ExpenseTypeFormContentProps) {
   const router = useRouter();
+  const [users, setUsers] = useState<UserOption[]>([]);
   const [form, setForm] = useState<ExpenseTypeFormState>({
     name: "",
     status: "ACTIVE",
+    userIds: [],
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -41,16 +49,28 @@ export default function ExpenseTypeFormContent({
 
   useEffect(() => {
     const loadData = async () => {
-      if (!expenseTypeId) {
-        setLoading(false);
-        return;
-      }
-
       try {
-        const data = await expenseTypesApi.get(expenseTypeId);
+        const [users, data] = await Promise.all([
+          loadUserOptions(),
+          expenseTypeId
+            ? expenseTypesApi.get(expenseTypeId)
+            : Promise.resolve(null),
+        ]);
+
+        setUsers(users);
+
+        if (!data) {
+          return;
+        }
+
         setForm({
           name: data.name || "",
           status: data.status === "INACTIVE" ? "INACTIVE" : "ACTIVE",
+          userIds: Array.isArray(data.userIds)
+            ? data.userIds
+            : Array.isArray(data.users)
+              ? data.users.map((user) => user.id)
+              : [],
         });
       } catch (error) {
         console.error("Failed to load expense type", error);
@@ -70,6 +90,7 @@ export default function ExpenseTypeFormContent({
     const newErrors: Partial<Record<keyof ExpenseTypeFormState, string>> = {};
     if (!form.name.trim()) newErrors.name = "Name is required.";
     if (!form.status) newErrors.status = "Status is required.";
+    if (!form.userIds.length) newErrors.userIds = "At least one user is required.";
 
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) {
@@ -81,6 +102,7 @@ export default function ExpenseTypeFormContent({
       const payload = {
         name: form.name.trim(),
         status: form.status,
+        userIds: form.userIds,
       };
 
       if (expenseTypeId) {
@@ -162,6 +184,24 @@ export default function ExpenseTypeFormContent({
             {errors.status && (
               <p className="text-sm text-red-600 mb-2">{errors.status}</p>
             )}
+
+            <div className="mb-4">
+              <UserCardGroup
+                title="Select Users"
+                selected={form.userIds}
+                users={users}
+                onSelect={(value) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    userIds: Array.isArray(value) ? value : [value],
+                  }))
+                }
+                error={errors.userIds}
+                required
+                multiple
+                emptyMessage="No users available to select."
+              />
+            </div>
           </fieldset>
 
           {note && <p className="text-sm text-red-600 mb-4">{note}</p>}

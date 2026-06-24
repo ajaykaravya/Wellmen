@@ -7,6 +7,13 @@ export async function GET(req) {
   if (!gate.ok) return gate.res;
 
   const expenseTypes = await prisma.expenseType.findMany({
+    include: {
+      expenseTypeUsers: {
+        include: {
+          user: true,
+        },
+      },
+    },
     orderBy: [{ name: "asc" }],
   });
 
@@ -15,6 +22,18 @@ export async function GET(req) {
       id: expenseType.id,
       name: expenseType.name,
       status: expenseType.status,
+      users:
+        expenseType.expenseTypeUsers
+          ?.map((item) =>
+            item.user
+              ? {
+                  id: item.user.id,
+                  firstName: item.user.firstName,
+                  lastName: item.user.lastName,
+                }
+              : null,
+          )
+          .filter(Boolean) || [],
     })),
   );
 }

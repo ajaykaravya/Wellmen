@@ -135,6 +135,7 @@ model ExpenseType {
   status               ExpenseTypeStatus    @default(ACTIVE)
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
+  expenseTypeUsers     ExpenseTypeUser[]
   financeTransactions  FinanceTransaction[] @relation("FinanceTransactionExpenseType")
   petiCashTransactions PetiCash[]           @relation("PetiCashExpenseType")
 
@@ -156,6 +157,7 @@ model FinanceTransaction {
   id               String           @id @default(uuid()) @db.Char(36)
   transactionType  TransactionType  @default(EXPENSE)
   amount           Decimal          @db.Decimal(14, 2)
+  petiCashId       String?          @unique @db.Char(36)
   expenseTypeId    String?          @db.Char(36)
   expenseById      String?          @db.Char(36)
   expenseCompanyId String?          @db.Char(36)
@@ -168,6 +170,7 @@ model FinanceTransaction {
   expenseBy        User?            @relation(fields: [expenseById], references: [id])
   expenseCompany   Company?         @relation("FinanceTransactionExpenseCompany", fields: [expenseCompanyId], references: [id])
   expenseType      ExpenseType?     @relation("FinanceTransactionExpenseType", fields: [expenseTypeId], references: [id])
+  petiCash         PetiCash?        @relation("PetiCashDailyExpense", fields: [petiCashId], references: [id], onDelete: Cascade)
   project          Project?         @relation("FinanceTransactionProject", fields: [projectId], references: [id])
 
   @@index([transactionType])
@@ -176,6 +179,7 @@ model FinanceTransaction {
   @@index([expenseById])
   @@index([expenseCompanyId])
   @@index([projectId])
+  @@index([petiCashId])
   @@index([paymentMode])
 }
 
@@ -183,6 +187,7 @@ model PetiCash {
   id              String                  @id @default(uuid()) @db.Char(36)
   amount          Decimal                 @db.Decimal(14, 2)
   transactionType PetiCashTransactionType
+  isAdvance       Boolean?                 @default(true)
   givenById       String?                 @db.Char(36)
   givenToId       String?                 @db.Char(36)
   companyId       String?                 @db.Char(36)
@@ -196,6 +201,7 @@ model PetiCash {
   expenseType     ExpenseType?            @relation("PetiCashExpenseType", fields: [expenseTypeId], references: [id])
   givenBy         User?                   @relation("PetiCash_givenByIdToUser", fields: [givenById], references: [id])
   givenTo         User?                   @relation("PetiCash_givenToIdToUser", fields: [givenToId], references: [id])
+  dailyExpense    FinanceTransaction?     @relation("PetiCashDailyExpense")
   project         Project?                @relation("PetiCashProject", fields: [projectId], references: [id])
 
   @@index([transactionType])
@@ -390,6 +396,7 @@ model User {
   IncomeTransaction                 IncomeTransaction[]
   PetiCash_PetiCash_givenByIdToUser PetiCash[]           @relation("PetiCash_givenByIdToUser")
   PetiCash_PetiCash_givenToIdToUser PetiCash[]           @relation("PetiCash_givenToIdToUser")
+  expenseTypeUsers                  ExpenseTypeUser[]
   Project                           Project[]
   QueryManagement                   QueryManagement[]
   assignedTodos                     Todo[]               @relation("Todo_assigneeIdToUser")
@@ -398,6 +405,16 @@ model User {
   role                              Role                 @relation(fields: [roleId], references: [id])
 
   @@index([roleId], map: "User_roleId_fkey")
+}
+
+model ExpenseTypeUser {
+  expenseTypeId String      @db.Char(36)
+  userId        String      @db.Char(36)
+  expenseType   ExpenseType @relation(fields: [expenseTypeId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([expenseTypeId, userId])
+  @@index([userId], map: "ExpenseTypeUser_userId_fkey")
 }
 
 enum TodoStatus {
