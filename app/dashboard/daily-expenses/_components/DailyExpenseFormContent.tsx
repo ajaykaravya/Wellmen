@@ -564,7 +564,10 @@ export default function DailyExpenseFormContent({
                   selected={selectedExpenseById}
                   users={allowedExpenseByUsers}
                   onSelect={(value) => {
-                    setForm((prev) => ({ ...prev, expenseById: value }));
+                    const expenseById = Array.isArray(value)
+                      ? value[0] || ""
+                      : value;
+                    setForm((prev) => ({ ...prev, expenseById }));
                     clearError("expenseById");
                   }}
                   error={errors.expenseById}

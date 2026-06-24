@@ -138,6 +138,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAdmin } = useDashboardContext();
+  const initialTaskType = resolveTaskTypeFromQuery(searchParams?.get("type") || null);
   const [users, setUsers] = useState<UserOption[]>([]);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
@@ -158,7 +159,7 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
     projectId: "",
     categoryId: "",
     assigneeId: "",
-    taskType: "",
+    taskType: initialTaskType || "",
     subCategory: "",
   });
 
@@ -214,17 +215,6 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
 
     loadData();
   }, [isAdmin, todoId]);
-
-  useEffect(() => {
-    if (todoId || form.taskType) return;
-    const initialType = resolveTaskTypeFromQuery(searchParams?.get("type") || null);
-    if (initialType) {
-      setForm((prev) => ({
-        ...prev,
-        taskType: initialType,
-      }));
-    }
-  }, [searchParams, form.taskType, todoId]);
 
   const selectedTaskType = form.taskType || null;
 
@@ -553,12 +543,15 @@ export default function TodoFormContent({ todoId }: TodoFormContentProps) {
                       title="Select User"
                       selected={form.assigneeId}
                       users={users}
-                      onSelect={(value) =>
+                      onSelect={(value) => {
+                        const assigneeId = Array.isArray(value)
+                          ? value[0] || ""
+                          : value;
                         setForm((prev) => ({
                           ...prev,
-                          assigneeId: value,
-                        }))
-                      }
+                          assigneeId,
+                        }));
+                      }}
                       error={errors.assigneeId}
                       required
                       emptyMessage="No users available to assign."

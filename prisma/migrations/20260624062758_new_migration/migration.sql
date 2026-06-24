@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE `PetiCash` MODIFY `isAdvance` BOOLEAN NULL DEFAULT true;
+ALTER TABLE `PetiCash` ADD COLUMN `isAdvance` BOOLEAN NULL DEFAULT true;
