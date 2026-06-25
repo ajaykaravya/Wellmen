@@ -11,6 +11,7 @@ import SelectionCardGrid from "../../_components/SelectionCardGrid";
 import SelectionPills from "../../_components/SelectionPills";
 import { formatToDDMMYYYY, getTodayInputDate } from "@/lib/dateUtils";
 import { petiCashApi } from "@/lib/api/dashboard/peti-cash";
+import { loadEmployeeFinancialReport } from "@/lib/api/dashboard/employee-financial-report";
 import {
   loadCompanyOptions,
   loadExpenseTypeOptions,
@@ -169,6 +170,13 @@ export default function PetiCashFormContent({
   const [saving, setSaving] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [note, setNote] = useState<string | null>(null);
+  const [selectedGivenToBalance, setSelectedGivenToBalance] = useState<{
+    userId: string;
+    balance: number;
+  } | null>(null);
+  const [selectedGivenToBalanceLoading, setSelectedGivenToBalanceLoading] =
+    useState(false);
+  const [selectedGivenToBalanceError, setSelectedGivenToBalanceError] = useState("");
   const [errors, setErrors] = useState<Partial<Record<keyof PetiCashFormState, string>>>({});
   const [transactionType, setTransactionType] = useState<TransactionType>(defaultTransactionType);
   const [form, setForm] = useState<PetiCashFormState>({
@@ -344,6 +352,48 @@ export default function PetiCashFormContent({
     return user ? getUserDisplayName(user) : "";
   }, [availableGivenToUsers, form.givenToId, resolvedGivenToId, transactionType, users]);
 
+  useEffect(() => {
+    if (!resolvedGivenToId) return;
+
+    const controller = new AbortController();
+
+    const loadBalance = async () => {
+      setSelectedGivenToBalanceLoading(true);
+      setSelectedGivenToBalanceError("");
+      setSelectedGivenToBalance(null);
+
+      try {
+        const report = (await loadEmployeeFinancialReport(
+          {
+            userId: resolvedGivenToId,
+          },
+          controller.signal,
+        )) as { summary?: { balance?: number } };
+
+        if (controller.signal.aborted) return;
+
+        setSelectedGivenToBalance({
+          userId: resolvedGivenToId,
+          balance: Number(report?.summary?.balance ?? 0),
+        });
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        console.error("Failed to load selected user balance", error);
+        setSelectedGivenToBalanceError("0");
+      } finally {
+        if (!controller.signal.aborted) {
+          setSelectedGivenToBalanceLoading(false);
+        }
+      }
+    };
+
+    loadBalance();
+
+    return () => {
+      controller.abort();
+    };
+  }, [resolvedGivenToId]);
+
   const resolvedPaymentMode = useMemo(
     () => (form.isAdvance ? "" : form.paymentMode || "CASH"),
     [form.isAdvance, form.paymentMode],
@@ -355,6 +405,59 @@ export default function PetiCashFormContent({
       "",
     [resolvedPaymentMode],
   );
+
+  const selectedUserBalanceDisplay = useMemo(() => {
+    const balance =
+      selectedGivenToBalance?.userId === resolvedGivenToId
+        ? selectedGivenToBalance.balance
+        : null;
+
+    if (selectedGivenToBalanceLoading) {
+      return "Loading...";
+    }
+
+    if (selectedGivenToBalanceError) {
+      return selectedGivenToBalanceError;
+    }
+
+    if (balance === null) {
+      return "";
+    }
+
+    return `₹${balance.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  }, [
+    resolvedGivenToId,
+    selectedGivenToBalance,
+    selectedGivenToBalanceError,
+    selectedGivenToBalanceLoading,
+  ]);
+
+  const renderSelectedUserBalance = () => {
+    if (!resolvedGivenToId) return null;
+
+    return (
+      <div className="mt-3 rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)] px-4 py-3">
+        <p className="text-xs font-medium uppercase tracking-wide text-[color:var(--theme-text-muted)]">
+          Current Balance
+        </p>
+        <div className="mt-1 text-sm font-semibold text-[color:var(--theme-text)]">
+          {selectedGivenToBalanceLoading ? (
+            <span className="inline-flex items-center gap-2">
+              <FaSpinner className="h-4 w-4 animate-spin" />
+              Loading current balance...
+            </span>
+          ) : selectedGivenToBalanceError ? (
+            <span className="text-red-600">{selectedGivenToBalanceError}</span>
+          ) : (
+            selectedUserBalanceDisplay
+          )}
+        </div>
+      </div>
+    );
+  };
 
   const selectedSummaryItems = useMemo(() => {
     const givenByIndex = steps.findIndex((step) => step.key === "givenBy");
@@ -552,6 +655,7 @@ export default function PetiCashFormContent({
                   required
                   emptyMessage="No users available for this transaction type."
                 />
+                {renderSelectedUserBalance()}
               </div>
             </div>
           )}
@@ -652,6 +756,7 @@ export default function PetiCashFormContent({
                           : "No users assigned to this expense category."
                       }
                     />
+                    {renderSelectedUserBalance()}
                   </div>
 
                   {!form.isAdvance && (
