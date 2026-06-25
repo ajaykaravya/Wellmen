@@ -6,9 +6,10 @@ export async function loadEmployeeFinancialReport(query?: {
   companyId?: string;
   userId?: string;
   employeeId?: string;
-}) {
+}, signal?: AbortSignal) {
   return requestJson<unknown>({
     path: "/api/employee-financial-report",
     query,
+    signal,
   });
 }
