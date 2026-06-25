@@ -6,6 +6,7 @@ import DashboardShell from "@/app/dashboard/_components/DashboardShell";
 import ViewRenderer from "../../../view-components/ViewRenderer";
 import jsPDF from "jspdf";
 import * as htmlToImage from "html-to-image";
+import Loading from "@/app/components/Loading";
 
 export default function ViewSubmissionPage() {
   const params = useParams();
@@ -59,15 +60,15 @@ export default function ViewSubmissionPage() {
           return true;
         },
       });
-      
+
       const pdf = new jsPDF("p", "mm", "a4");
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      
+
       const img = new Image();
       img.src = dataUrl;
       await new Promise((resolve) => (img.onload = resolve));
-      
+
       const imgHeight = (img.height * pdfWidth) / img.width;
       let heightLeft = imgHeight;
       let position = 0;
@@ -83,7 +84,7 @@ export default function ViewSubmissionPage() {
         pdf.addImage(dataUrl, "PNG", 0, position, pdfWidth, imgHeight);
         heightLeft -= pageHeight;
       }
-      
+
       pdf.save(`${data.projectForm.name}_${data.project.name}.pdf`);
     } catch (error) {
       console.error("PDF generation error:", error);
@@ -91,7 +92,13 @@ export default function ViewSubmissionPage() {
   };
 
   if (loading) {
-    return <DashboardShell>Loading...</DashboardShell>;
+    return (
+      <DashboardShell>
+        <div className="min-h-80 flex items-center justify-center">
+          <Loading />
+        </div>
+      </DashboardShell>
+    );
   }
 
   if (!data) {
@@ -108,7 +115,10 @@ export default function ViewSubmissionPage() {
                 {data.projectForm.name}
               </h1>
               <p className="text-sm text-gray-500 mt-1">
-                Project: <span className="font-semibold text-gray-700 dark:text-gray-300">{data.project.name}</span>
+                Project:{" "}
+                <span className="font-semibold text-gray-700 dark:text-gray-300">
+                  {data.project.name}
+                </span>
               </p>
             </div>
             <div className="flex gap-3 print:hidden">
@@ -119,7 +129,9 @@ export default function ViewSubmissionPage() {
                 Save as PDF
               </button>
               <button
-                onClick={() => router.push(`/dashboard/projects/forms/${submissionId}`)}
+                onClick={() =>
+                  router.push(`/dashboard/projects/forms/${submissionId}`)
+                }
                 className="rbac-button"
               >
                 Edit Submission

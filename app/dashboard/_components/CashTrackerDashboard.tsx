@@ -133,7 +133,7 @@ export default function CashTrackerDashboard() {
                 companies: Array.from(manager.companies.values()).sort((a, b) => b.total - a.total),
             }))
             .sort((a, b) => b.total - a.total);
-    }, [petiCashEntries]);
+    }, [petiCashAllEntries]);
 
     const loadIncomeEntries = useCallback(async () => {
         if (!isAdmin) return;
