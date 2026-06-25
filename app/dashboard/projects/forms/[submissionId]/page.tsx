@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import DashboardShell from "@/app/dashboard/_components/DashboardShell";
 import FormRenderer from "../../form-components/FormRenderer";
 import { useRouter } from "next/navigation";
+import Loading from "@/app/components/Loading";
 
 export default function ProjectFormPage() {
   const params = useParams();
@@ -42,7 +43,13 @@ export default function ProjectFormPage() {
   }, [submissionId, loadSubmission]);
 
   if (!data) {
-    return <DashboardShell>Loading...</DashboardShell>;
+    return (
+      <DashboardShell>
+        <div className="min-h-80 flex items-center justify-center">
+          <Loading />
+        </div>
+      </DashboardShell>
+    );
   }
 
   const handleSubmit = async () => {
@@ -70,7 +77,7 @@ export default function ProjectFormPage() {
 
   const hadnleBack = () => {
     router.push(`/dashboard/projects/forms?projectId=${data.project.id}`);
-  }
+  };
 
   return (
     <DashboardShell>
