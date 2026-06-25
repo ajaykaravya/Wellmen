@@ -64,10 +64,8 @@ type ReportResponse = {
   summary: ReportSummary;
 };
 
-type CompanyResponse = {
-  id: string;
-  name: string;
-  code?: string | null;
+type EmployeeFinancialReportContentProps = {
+  initialUserId?: string;
 };
 
 const formatAmount = (value: number) =>
@@ -125,7 +123,9 @@ const moneyCell = (value: number, tone: "credit" | "debit" | "balance") => {
   return <span className={`font-semibold ${toneClass}`}>₹{formatAmount(value)}</span>;
 };
 
-export default function EmployeeFinancialReportContent() {
+export default function EmployeeFinancialReportContent({
+  initialUserId = "",
+}: EmployeeFinancialReportContentProps) {
   const [users, setUsers] = useState<ReportUserOption[]>([]);
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [rows, setRows] = useState<ReportRow[]>([]);
@@ -135,13 +135,12 @@ export default function EmployeeFinancialReportContent() {
     balance: 0,
   });
   const [loading, setLoading] = useState(false);
-  const [total, setTotal] = useState(0);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [appliedUserId, setAppliedUserId] = useState("");
+  const [appliedUserId, setAppliedUserId] = useState(initialUserId);
   const [appliedCompanyId, setAppliedCompanyId] = useState("");
   const [appliedFromDate, setAppliedFromDate] = useState("");
   const [appliedToDate, setAppliedToDate] = useState("");
-  const [draftUserId, setDraftUserId] = useState("");
+  const [draftUserId, setDraftUserId] = useState(initialUserId);
   const [draftCompanyId, setDraftCompanyId] = useState("");
   const [draftFromDate, setDraftFromDate] = useState("");
   const [draftToDate, setDraftToDate] = useState("");
@@ -171,7 +170,6 @@ export default function EmployeeFinancialReportContent() {
           balance: 0,
         },
       );
-      setTotal(typeof data.total === "number" ? data.total : 0);
     } catch (error) {
       console.error("Failed to load employee financial report", error);
       toast.error(
@@ -375,7 +373,7 @@ export default function EmployeeFinancialReportContent() {
         header: "Category",
         accessorKey: "referenceLabel",
         size: 220,
-        cell: ({ row, getValue }) => (
+        cell: ({ getValue }) => (
           <div className="flex flex-col">
             <span className="font-medium theme-text">
               {String(getValue() || "-")}

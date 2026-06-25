@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   flexRender,
@@ -23,7 +23,7 @@ import {
   FaEdit,
   FaTrash,
   FaSpinner,
-  FaFilter
+  FaFilter,
 } from "react-icons/fa";
 import { FaMobileRetro } from "react-icons/fa6";
 import { MdEmail } from "react-icons/md";
@@ -31,6 +31,7 @@ import Link from "next/link";
 import useDebounce from "@/app/hooks/useDebounce";
 import { Listbox } from "@headlessui/react";
 import { FaCheck, FaChevronDown } from "react-icons/fa";
+import { TbReportMoney } from "react-icons/tb";
 
 type UserRow = {
   id: string;
@@ -84,7 +85,7 @@ function UsersContent() {
 
   const appliedFilters = [query.trim(), roleFilter].filter(Boolean);
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     if (!isAdmin) return;
     setLoading(true);
     try {
@@ -101,11 +102,11 @@ function UsersContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [debouncedQuery, isAdmin, pageIndex, pageSize, roleFilter]);
 
   useEffect(() => {
     loadUsers();
-  }, [isAdmin, pageIndex, pageSize, debouncedQuery, roleFilter]);
+  }, [loadUsers]);
 
   useEffect(() => {
     const loadRoles = async () => {
@@ -121,14 +122,24 @@ function UsersContent() {
     loadRoles();
   }, []);
 
-  const handleEditUser = (row: UserRow) => {
-    router.push(`/dashboard/users/${row.id}`);
-  };
+  const handleEditUser = useCallback(
+    (row: UserRow) => {
+      router.push(`/dashboard/users/${row.id}`);
+    },
+    [router],
+  );
 
-  const handleDeleteUser = async (row: UserRow) => {
+  const handleDeleteUser = useCallback((row: UserRow) => {
     setConfirmTarget(row);
     setConfirmOpen(true);
-  };
+  }, []);
+
+  const handleViewFinancialReport = useCallback(
+    (row: UserRow) => {
+      router.push(`/dashboard/employee-financial-report?userId=${row.id}`);
+    },
+    [router],
+  );
 
   const confirmDeleteUser = async () => {
     if (!confirmTarget) return;
@@ -139,7 +150,9 @@ function UsersContent() {
       toast.success("User deleted successfully.");
     } catch (error) {
       console.error("Failed to delete user", error);
-      toast.error(error instanceof Error ? error.message : "Failed to delete user.");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete user.",
+      );
     } finally {
       setDeleting(false);
       setConfirmOpen(false);
@@ -206,13 +219,24 @@ function UsersContent() {
                 >
                   <FaTrash />
                 </button>
+                {row.original.role !== "Admin" &&
+                  row.original.role !== "Manager" && (
+                    <button
+                      className="rbac-link"
+                      type="button"
+                      onClick={() => handleViewFinancialReport(row.original)}
+                      title="View financial report"
+                    >
+                      <TbReportMoney size={16} />
+                    </button>
+                  )}
               </>
             )}
           </div>
         ),
       },
     ],
-    [handleEditUser, handleDeleteUser],
+    [handleDeleteUser, handleEditUser, handleViewFinancialReport, user?.id],
   );
 
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
@@ -271,9 +295,9 @@ function UsersContent() {
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
+                                header.column.columnDef.header,
+                                header.getContext(),
+                              )}
                         </th>
                       ))}
                     </tr>
@@ -344,7 +368,6 @@ function UsersContent() {
                         <h4 className="text-sm font-semibold">
                           {listUser.firstName} {listUser.lastName}
                         </h4>
-
                       </div>
                       {listUser.id !== user?.id && (
                         <div className="flex">
@@ -356,24 +379,34 @@ function UsersContent() {
                             <FaEdit size={18} />
                           </button>
                           <button
-                            style={{ padding: "2px" }}
                             className="rbac-link danger"
                             type="button"
                             onClick={() => handleDeleteUser(listUser)}
                           >
                             <FaTrash size={18} />
                           </button>
+                          {listUser.role !== "Admin" &&
+                            listUser.role !== "Manager" && (
+                              <button
+                                className="rbac-link"
+                                type="button"
+                                onClick={() =>
+                                  handleViewFinancialReport(listUser)
+                                }
+                                title="View financial report"
+                              >
+                                <TbReportMoney size={22} />
+                              </button>
+                            )}
                         </div>
                       )}
                     </div>
                     <div className="grid gap-1 text-sm">
-                      {
-                        listUser.mobileNumber && (
-                          <p className="flex items-center gap-1">
-                            <FaMobileRetro /> {listUser.mobileNumber}
-                          </p>
-                        )
-                      }
+                      {listUser.mobileNumber && (
+                        <p className="flex items-center gap-1">
+                          <FaMobileRetro /> {listUser.mobileNumber}
+                        </p>
+                      )}
                       {listUser.email && (
                         <p className="flex items-center gap-1">
                           <MdEmail /> {listUser.email}
@@ -466,9 +499,7 @@ function UsersContent() {
         <Listbox value={draftRoleFilter} onChange={setDraftRoleFilter}>
           <div className="relative">
             <Listbox.Button className="rbac-input-filter flex w-full items-center justify-between text-left">
-              <span>
-                {draftRoleFilter || "Select Role"}
-              </span>
+              <span>{draftRoleFilter || "Select Role"}</span>
 
               <FaChevronDown className="text-xs text-slate-500" />
             </Listbox.Button>
@@ -477,7 +508,8 @@ function UsersContent() {
               <Listbox.Option
                 value=""
                 className={({ active }) =>
-                  `cursor-pointer px-4 py-2 text-sm ${active ? "rbac-option-active" : ""
+                  `cursor-pointer px-4 py-2 text-sm ${
+                    active ? "rbac-option-active" : ""
                   }`
                 }
               >
@@ -493,8 +525,7 @@ function UsersContent() {
                   key={role.id}
                   value={role.name}
                   className={({ active }) =>
-                    `cursor-pointer px-4 py-2 text-sm ${active ? "" : ""
-                    }`
+                    `cursor-pointer px-4 py-2 text-sm ${active ? "" : ""}`
                   }
                 >
                   {({ selected }) => (
