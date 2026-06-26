@@ -11,7 +11,13 @@ import AppliedFilterSummary from "../../../components/AppliedFilterSummary";
 import CustomDatePicker from "../../../components/CustomDatePicker";
 import { FinanceCardList } from "../../_components/FinanceCardList";
 import { formatToDDMMYYYY } from "@/lib/dateUtils";
-import { Combobox, ComboboxButton, ComboboxInput, ComboboxOption, ComboboxOptions } from "@headlessui/react";
+import {
+  Combobox,
+  ComboboxButton,
+  ComboboxInput,
+  ComboboxOption,
+  ComboboxOptions,
+} from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
 import { loadCompanyOptions } from "@/lib/api/dashboard/shared-options";
 import { loadEmployeeFinancialReport } from "@/lib/api/dashboard/employee-financial-report";
@@ -115,12 +121,14 @@ const moneyCell = (value: number, tone: "credit" | "debit" | "balance") => {
     tone === "credit"
       ? "text-emerald-700"
       : tone === "debit"
-        ? "text-rose-700"
-        : value >= 0
-          ? "text-emerald-700"
-          : "text-rose-700";
+      ? "text-rose-700"
+      : value >= 0
+      ? "text-emerald-700"
+      : "text-rose-700";
 
-  return <span className={`font-semibold ${toneClass}`}>₹{formatAmount(value)}</span>;
+  return (
+    <span className={`font-semibold ${toneClass}`}>₹{formatAmount(value)}</span>
+  );
 };
 
 export default function EmployeeFinancialReportContent({
@@ -149,7 +157,10 @@ export default function EmployeeFinancialReportContent({
   const [exporting, setExporting] = useState(false);
 
   const loadReport = useCallback(async () => {
-    if (!isCompleteDateInput(appliedFromDate) || !isCompleteDateInput(appliedToDate)) {
+    if (
+      !isCompleteDateInput(appliedFromDate) ||
+      !isCompleteDateInput(appliedToDate)
+    ) {
       return;
     }
 
@@ -205,11 +216,20 @@ export default function EmployeeFinancialReportContent({
     setDraftFromDate(appliedFromDate);
     setDraftToDate(appliedToDate);
     const selectedUser = users.find((user) => user.id === appliedUserId);
-    const selectedCompany = companies.find((company) => company.id === appliedCompanyId);
-    setDraftUserQuery(selectedUser ? getUserLabel(selectedUser) : "");
-    setDraftCompanyQuery(selectedCompany ? getCompanyLabel(selectedCompany) : "");
+    const selectedCompany = companies.find(
+      (company) => company.id === appliedCompanyId,
+    );
+    setDraftUserQuery("");
+    setDraftCompanyQuery("");
     setFilterOpen(true);
-  }, [appliedCompanyId, appliedFromDate, appliedToDate, appliedUserId, users, companies]);
+  }, [
+    appliedCompanyId,
+    appliedFromDate,
+    appliedToDate,
+    appliedUserId,
+    users,
+    companies,
+  ]);
 
   const closeFilters = useCallback(() => {
     setFilterOpen(false);
@@ -221,7 +241,10 @@ export default function EmployeeFinancialReportContent({
       return;
     }
 
-    if (!isCompleteDateInput(draftFromDate) || !isCompleteDateInput(draftToDate)) {
+    if (
+      !isCompleteDateInput(draftFromDate) ||
+      !isCompleteDateInput(draftToDate)
+    ) {
       toast.error("Please enter complete dates.");
       return;
     }
@@ -237,7 +260,9 @@ export default function EmployeeFinancialReportContent({
     (q: string) => {
       const term = q.trim().toLowerCase();
       if (!term) return users;
-      return users.filter((user) => getUserLabel(user).toLowerCase().includes(term));
+      return users.filter((user) =>
+        getUserLabel(user).toLowerCase().includes(term),
+      );
     },
     [users],
   );
@@ -246,7 +271,9 @@ export default function EmployeeFinancialReportContent({
     (q: string) => {
       const term = q.trim().toLowerCase();
       if (!term) return companies;
-      return companies.filter((company) => getCompanyLabel(company).toLowerCase().includes(term));
+      return companies.filter((company) =>
+        getCompanyLabel(company).toLowerCase().includes(term),
+      );
     },
     [companies],
   );
@@ -333,17 +360,27 @@ export default function EmployeeFinancialReportContent({
     () =>
       [
         users.find((user) => user.id === appliedUserId)
-          ? `User: ${getUserLabel(users.find((user) => user.id === appliedUserId) || null)}`
+          ? `User: ${getUserLabel(
+              users.find((user) => user.id === appliedUserId) || null,
+            )}`
           : "",
         companies.find((company) => company.id === appliedCompanyId)
           ? `Company: ${getCompanyLabel(
-            companies.find((company) => company.id === appliedCompanyId) || null,
-          )}`
+              companies.find((company) => company.id === appliedCompanyId) ||
+                null,
+            )}`
           : "",
         appliedFromDate ? `From: ${appliedFromDate}` : "",
         appliedToDate ? `To: ${appliedToDate}` : "",
       ].filter(Boolean),
-    [appliedCompanyId, appliedFromDate, appliedToDate, appliedUserId, companies, users],
+    [
+      appliedCompanyId,
+      appliedFromDate,
+      appliedToDate,
+      appliedUserId,
+      companies,
+      users,
+    ],
   );
 
   const columns = useMemo<ColumnDef<ReportRow>[]>(
@@ -362,7 +399,9 @@ export default function EmployeeFinancialReportContent({
         cell: ({ row }) => (
           <div className="flex flex-col gap-1">
             <span
-              className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-semibold ${getTypeClassName(row.original)}`}
+              className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-semibold ${getTypeClassName(
+                row.original,
+              )}`}
             >
               {row.original.typeLabel}
             </span>
@@ -468,10 +507,7 @@ export default function EmployeeFinancialReportContent({
           </div>
         </div>
 
-        <AppliedFilterSummary
-          items={appliedFilters}
-          onClear={clearFilters}
-        />
+        <AppliedFilterSummary items={appliedFilters} onClear={clearFilters} />
 
         <div className="mt-5 grid gap-3 grid-cols-3">
           <div className="rounded-xl border border-white/10 bg-[color:var(--theme-surface-2)] p-4">
@@ -494,9 +530,7 @@ export default function EmployeeFinancialReportContent({
             <div className="text-xs uppercase tracking-wide theme-text-muted">
               Balance
             </div>
-            <div
-              className="mt-2 text-xs font-semibold"
-            >
+            <div className="mt-2 text-xs font-semibold">
               ₹{formatAmount(summary.balance)}
             </div>
           </div>
@@ -516,9 +550,9 @@ export default function EmployeeFinancialReportContent({
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
                     </th>
                   ))}
                 </tr>

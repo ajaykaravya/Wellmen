@@ -177,7 +177,7 @@ function ReportingListContent() {
   const openFilters = useCallback(() => {
     setDraftQuery(query);
     setDraftProjectFilter(projectFilter);
-    setDraftProjectQuery(projectFilter ? getProjectLabel(projectFilter) : "");
+    setDraftProjectQuery("");
     setDraftEmployeeFilter(employeeFilter);
     setDraftFromDate(fromDate);
     setDraftToDate(toDate);

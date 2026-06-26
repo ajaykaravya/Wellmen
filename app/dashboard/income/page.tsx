@@ -146,17 +146,13 @@ function IncomeListContent() {
   const openFilters = useCallback(() => {
     setDraftQuery(query);
     setDraftProjectFilter(projectFilter);
-    setDraftProjectQuery(projectFilter ? getProjectLabel(projectFilter) : "");
+    setDraftProjectQuery("");
     setDraftIncomeTypeFilter(incomeTypeFilter);
-    setDraftIncomeTypeQuery(
-      incomeTypeFilter ? getIncomeTypeLabel(incomeTypeFilter) : "",
-    );
+    setDraftIncomeTypeQuery("");
     setDraftIncomeCompanyFilter(incomeCompanyFilter);
-    setDraftIncomeCompanyQuery(
-      incomeCompanyFilter ? getCompanyLabel(incomeCompanyFilter) : "",
-    );
+    setDraftIncomeCompanyQuery("");
     setDraftReceivedByFilter(receivedByFilter);
-    setDraftReceivedByQuery(receivedByFilter ? getUserLabel(receivedByFilter) : "");
+    setDraftReceivedByQuery("");
     setDraftFromDate(fromDate);
     setDraftToDate(toDate);
     setDraftPaymentModeFilter(paymentModeFilter);

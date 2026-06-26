@@ -249,8 +249,8 @@ function PetiCashListContent() {
     setDraftCompanyFilter(companyFilter);
     setDraftGivenByQuery(givenByFilter ? getUserLabel(givenByFilter) : "");
     setDraftGivenToQuery(givenToFilter ? getUserLabel(givenToFilter) : "");
-    setDraftProjectQuery(projectFilter ? getProjectLabel(projectFilter) : "");
-    setDraftCompanyQuery(companyFilter ? getCompanyLabel(companyFilter) : "");
+    setDraftProjectQuery("");
+    setDraftCompanyQuery("");
     setDraftFromDate(fromDate);
     setDraftToDate(toDate);
     setFilterOpen(true);
