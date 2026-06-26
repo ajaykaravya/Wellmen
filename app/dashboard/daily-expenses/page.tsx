@@ -97,8 +97,12 @@ function DailyExpenseListContent() {
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [expenseTypeFilter, setExpenseTypeFilter] =
     useState<ExpenseTypeOption | null>(null);
-  const [projectFilter, setProjectFilter] = useState<ProjectOption | null>(null);
-  const [expenseByFilter, setExpenseByFilter] = useState<UserOption | null>(null);
+  const [projectFilter, setProjectFilter] = useState<ProjectOption | null>(
+    null,
+  );
+  const [expenseByFilter, setExpenseByFilter] = useState<UserOption | null>(
+    null,
+  );
   const [expenseCompanyFilter, setExpenseCompanyFilter] =
     useState<CompanyOption | null>(null);
   const [fromDate, setFromDate] = useState("");
@@ -108,7 +112,8 @@ function DailyExpenseListContent() {
   const [draftExpenseTypeFilter, setDraftExpenseTypeFilter] =
     useState<ExpenseTypeOption | null>(null);
   const [draftExpenseTypeQuery, setDraftExpenseTypeQuery] = useState("");
-  const [draftProjectFilter, setDraftProjectFilter] = useState<ProjectOption | null>(null);
+  const [draftProjectFilter, setDraftProjectFilter] =
+    useState<ProjectOption | null>(null);
   const [draftProjectQuery, setDraftProjectQuery] = useState("");
   const [draftExpenseByFilter, setDraftExpenseByFilter] =
     useState<UserOption | null>(null);
@@ -131,15 +136,13 @@ function DailyExpenseListContent() {
     setDraftFromDate(fromDate);
     setDraftToDate(toDate);
     setDraftProjectFilter(projectFilter);
-    setDraftProjectQuery(projectFilter ? getProjectLabel(projectFilter) : "");
+    setDraftProjectQuery("");
     setDraftExpenseTypeFilter(expenseTypeFilter);
-    setDraftExpenseTypeQuery(expenseTypeFilter ? getExpenseTypeLabel(expenseTypeFilter) : "");
+    setDraftExpenseTypeQuery("");
     setDraftExpenseByFilter(expenseByFilter);
-    setDraftExpenseByQuery(expenseByFilter ? getUserLabel(expenseByFilter) : "");
+    setDraftExpenseByQuery("");
     setDraftExpenseCompanyFilter(expenseCompanyFilter);
-    setDraftExpenseCompanyQuery(
-      expenseCompanyFilter ? getCompanyLabel(expenseCompanyFilter) : "",
-    );
+    setDraftExpenseCompanyQuery("");
     setFilterOpen(true);
   }, [
     expenseByFilter,
@@ -196,7 +199,9 @@ function DailyExpenseListContent() {
         ]);
 
         setProjects(projects);
-        setExpenseTypes(expenseTypes.filter((item) => item.status === "ACTIVE"));
+        setExpenseTypes(
+          expenseTypes.filter((item) => item.status === "ACTIVE"),
+        );
         setUsers(users);
         setCompanies(companies);
       } catch (error) {
@@ -218,7 +223,9 @@ function DailyExpenseListContent() {
   const filteredExpenseByUsers = useMemo(() => {
     const query = draftExpenseByQuery.trim().toLowerCase();
     if (!query) return users;
-    return users.filter((user) => getUserLabel(user).toLowerCase().includes(query));
+    return users.filter((user) =>
+      getUserLabel(user).toLowerCase().includes(query),
+    );
   }, [draftExpenseByQuery, users]);
 
   const filteredExpenseCompanies = useMemo(() => {
@@ -248,7 +255,9 @@ function DailyExpenseListContent() {
     } catch (error) {
       console.error("Failed to load daily expenses", error);
       toast.error(
-        error instanceof Error ? error.message : "Failed to load daily expenses.",
+        error instanceof Error
+          ? error.message
+          : "Failed to load daily expenses.",
       );
     } finally {
       setLoading(false);
@@ -306,7 +315,9 @@ function DailyExpenseListContent() {
     } catch (error) {
       console.error("Failed to delete transaction", error);
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete daily expense.",
+        error instanceof Error
+          ? error.message
+          : "Failed to delete daily expense.",
       );
     } finally {
       setDeleting(false);
@@ -373,7 +384,9 @@ function DailyExpenseListContent() {
           Number(row.amount || 0),
           row.expenseTypeName || "-",
           row.projectName
-            ? `${row.projectName}${row.projectCity ? ` (${row.projectCity})` : ""}`
+            ? `${row.projectName}${
+                row.projectCity ? ` (${row.projectCity})` : ""
+              }`
             : "-",
           row.expenseByName || "-",
           getRowCompanyLabel(row) || "-",
@@ -421,7 +434,9 @@ function DailyExpenseListContent() {
         accessorKey: "date",
         cell: ({ row }) => (
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rbac-muted">{formatToDDMMYYYY(row.original.date)}</span>
+            <span className="rbac-muted">
+              {formatToDDMMYYYY(row.original.date)}
+            </span>
           </div>
         ),
       },
@@ -574,15 +589,16 @@ function DailyExpenseListContent() {
                         <th
                           key={header.id}
                           style={{ width: header.getSize() }}
-                          className={`text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200 ${header.id === "action" ? "text-right" : "text-left"
-                            }`}
+                          className={`text-xs font-semibold uppercase px-4 py-3 border-b border-slate-200 ${
+                            header.id === "action" ? "text-right" : "text-left"
+                          }`}
                         >
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
+                                header.column.columnDef.header,
+                                header.getContext(),
+                              )}
                         </th>
                       ))}
                     </tr>
