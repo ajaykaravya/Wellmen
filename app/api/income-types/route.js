@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { findIdsByColumnContains, buildInFilter } from "@/lib/mysql-search";
 import { requireRole } from "@/lib/rbac";
 
 const STATUSES = ["ACTIVE", "INACTIVE"];
@@ -29,7 +30,8 @@ export async function GET(req) {
 
   const where = {};
   if (query) {
-    where.name = { contains: query };
+    const matchingIds = await findIdsByColumnContains("IncomeType", "name", query);
+    Object.assign(where, buildInFilter("id", matchingIds));
   }
 
   if (status) {

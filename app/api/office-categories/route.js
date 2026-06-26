@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
 import { getAuthContext } from "@/lib/auth";
+import { buildInFilter, findIdsByColumnContains } from "@/lib/mysql-search";
 
 const parsePayload = (body) => {
   const name = String(body.name || "").trim();
@@ -25,10 +26,14 @@ export async function GET(req) {
       ? Math.min(pageSizeParam, 100)
       : 10;
 
-  const where = { category: "OFFICE_WORK" };
-  if (query) {
-    where.OR = [{ name: { contains: query } }];
-  }
+  const where = query
+    ? buildInFilter(
+        "id",
+        await findIdsByColumnContains("Categories", "name", query, {
+          category: "OFFICE_WORK",
+        }),
+      )
+    : { category: "OFFICE_WORK" };
 
   const [total, categories] = await Promise.all([
     prisma.categories?.count({ where }),

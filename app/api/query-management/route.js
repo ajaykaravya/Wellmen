@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/rbac";
+import { buildInFilter, findIdsByMultiTableSearch } from "@/lib/mysql-search";
 import {
   parsePayload,
   parseCategory,
@@ -37,10 +38,28 @@ export async function GET(req) {
 
   const where = isAdmin ? {} : { createdById: userId };
   if (q) {
-    where.OR = [
-      { description: { contains: q } },
-      { project: { name: { contains: q } } },
-    ];
+    Object.assign(
+      where,
+      buildInFilter(
+        "id",
+        await findIdsByMultiTableSearch({
+          rootTable: "QueryManagement",
+          query: q,
+          joins: [
+            {
+              alias: "project",
+              table: "Project",
+              left: { alias: "root", column: "projectId" },
+              right: { column: "id" },
+            },
+          ],
+          orSearch: [
+            { alias: "root", column: "description" },
+            { alias: "project", column: "name" },
+          ],
+        }),
+      ),
+    );
   }
   if (category) where.category = category;
   if (status) where.status = status;
