@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
+import { buildInFilter, findIdsByMultiTableSearch } from "@/lib/mysql-search";
 import {
   PETI_CASH_INCLUDE,
   isValidPaymentMode,
@@ -79,18 +80,54 @@ export async function GET(req) {
   const where = {};
 
   if (query) {
-    where.OR = [
-      { remarks: { contains: query } },
-      { givenBy: { is: { fullName: { contains: query } } } },
-      { givenBy: { is: { firstName: { contains: query } } } },
-      { givenBy: { is: { lastName: { contains: query } } } },
-      { givenTo: { is: { fullName: { contains: query } } } },
-      { givenTo: { is: { firstName: { contains: query } } } },
-      { givenTo: { is: { lastName: { contains: query } } } },
-      { company: { is: { name: { contains: query } } } },
-      { project: { is: { name: { contains: query } } } },
-      { project: { is: { city: { contains: query } } } },
-    ];
+    Object.assign(
+      where,
+      buildInFilter(
+        "id",
+        await findIdsByMultiTableSearch({
+          rootTable: "PetiCash",
+          query,
+          joins: [
+            {
+              alias: "givenBy",
+              table: "User",
+              left: { alias: "root", column: "givenById" },
+              right: { column: "id" },
+            },
+            {
+              alias: "givenTo",
+              table: "User",
+              left: { alias: "root", column: "givenToId" },
+              right: { column: "id" },
+            },
+            {
+              alias: "company",
+              table: "Company",
+              left: { alias: "root", column: "companyId" },
+              right: { column: "id" },
+            },
+            {
+              alias: "project",
+              table: "Project",
+              left: { alias: "root", column: "projectId" },
+              right: { column: "id" },
+            },
+          ],
+          orSearch: [
+            { alias: "root", column: "remarks" },
+            { alias: "givenBy", column: "fullName" },
+            { alias: "givenBy", column: "firstName" },
+            { alias: "givenBy", column: "lastName" },
+            { alias: "givenTo", column: "fullName" },
+            { alias: "givenTo", column: "firstName" },
+            { alias: "givenTo", column: "lastName" },
+            { alias: "company", column: "name" },
+            { alias: "project", column: "name" },
+            { alias: "project", column: "city" },
+          ],
+        }),
+      ),
+    );
   }
 
   if (transactionType) {

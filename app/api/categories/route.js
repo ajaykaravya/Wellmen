@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
 import { getAuthContext } from "@/lib/auth";
+import { buildInFilter, findIdsByColumnContains } from "@/lib/mysql-search";
 
 const parsePayload = (body) => {
   const category = String(body.category || "").trim();
@@ -28,14 +29,13 @@ export async function GET(req) {
 
   let where = { category: "PROJECT_WORK" };
   if (query) {
-    where = {
-      AND: [
-        { category: "PROJECT_WORK" },
-        {
-          OR: [{ name: { contains: query } }],
-        },
-      ],
-    };
+    const matchingIds = await findIdsByColumnContains(
+      "Categories",
+      "name",
+      query,
+      { category: "PROJECT_WORK" },
+    );
+    where = { ...buildInFilter("id", matchingIds) };
   }
 
   const [total, categories] = await Promise.all([

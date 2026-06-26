@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
 import { requireRole } from "@/lib/rbac";
 import { ensureDefaults } from "@/lib/seed";
+import { buildInFilter, findIdsByAnyColumnContains } from "@/lib/mysql-search";
 
 export async function GET(req) {
   const gate = await requireRole(req, ["Admin", "Manager"]);
@@ -24,11 +25,17 @@ export async function GET(req) {
   };
 
   if (q) {
-    where.OR = [
-      { firstName: { contains: q } },
-      { lastName: { contains: q } },
-      { mobileNumber: { contains: q } },
-    ];
+    Object.assign(
+      where,
+      buildInFilter(
+        "id",
+        await findIdsByAnyColumnContains(
+          "User",
+          ["firstName", "lastName", "mobileNumber"],
+          q,
+        ),
+      ),
+    );
   }
 
   if (roleName) {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
+import { buildInFilter, findIdsByAnyColumnContains } from "@/lib/mysql-search";
 
 const parseStatus = (value) => {
   const normalized = String(value || "").toUpperCase();
@@ -71,13 +72,17 @@ export async function GET(req) {
   const where = {};
 
   if (q) {
-    where.OR = [
-      { name: { contains: q } },
-      { description: { contains: q } },
-      { address: { contains: q } },
-      { email: { contains: q } },
-      { contactNumber: { contains: q } },
-    ];
+    Object.assign(
+      where,
+      buildInFilter(
+        "id",
+        await findIdsByAnyColumnContains(
+          "Project",
+          ["name", "description", "address", "email", "contactNumber"],
+          q,
+        ),
+      ),
+    );
   }
 
   if (city) {

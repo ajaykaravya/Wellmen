@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/rbac";
+import { buildInFilter, findIdsByMultiTableSearch } from "@/lib/mysql-search";
 import { saveReportImages, saveReportVideos } from "./_utils/upload";
 import { firestore } from "@/lib/firebase-admin";
 import { sendPushToTokens } from "@/lib/pushNotifications";
@@ -96,13 +97,43 @@ export async function GET(req) {
   };
 
   if (q) {
-    where.OR = [
-      { description: { contains: q } },
-      { project: { name: { contains: q } } },
-      { category: { name: { contains: q } } },
-      { createdBy: { firstName: { contains: q } } },
-      { createdBy: { lastName: { contains: q } } },
-    ];
+    Object.assign(
+      where,
+      buildInFilter(
+        "id",
+        await findIdsByMultiTableSearch({
+          rootTable: "DailyReport",
+          query: q,
+          joins: [
+            {
+              alias: "project",
+              table: "Project",
+              left: { alias: "root", column: "projectId" },
+              right: { column: "id" },
+            },
+            {
+              alias: "category",
+              table: "Categories",
+              left: { alias: "root", column: "categoryId" },
+              right: { column: "id" },
+            },
+            {
+              alias: "createdBy",
+              table: "User",
+              left: { alias: "root", column: "createdById" },
+              right: { column: "id" },
+            },
+          ],
+          orSearch: [
+            { alias: "root", column: "description" },
+            { alias: "project", column: "name" },
+            { alias: "category", column: "name" },
+            { alias: "createdBy", column: "firstName" },
+            { alias: "createdBy", column: "lastName" },
+          ],
+        }),
+      ),
+    );
   }
 
   if (projectId) {
