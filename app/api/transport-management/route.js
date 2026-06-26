@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
+import { buildInFilter, findIdsByAnyColumnContains } from "@/lib/mysql-search";
 import {
   buildTransportRecord,
   serializeTransportLog,
@@ -14,14 +15,13 @@ const parseDate = (value) => {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 
-const buildSearchWhere = (query) => {
+const buildSearchWhere = async (query) => {
   if (!query) return null;
 
-  return {
-    OR: transportSearchFields.map((field) => ({
-      [field]: { contains: query },
-    })),
-  };
+  return buildInFilter(
+    "id",
+    await findIdsByAnyColumnContains("TransportLog", transportSearchFields, query),
+  );
 };
 
 const buildDateWhere = (fromDate, toDate) => {
@@ -74,7 +74,7 @@ export async function GET(req) {
 
     const where = {};
     if (q) {
-      Object.assign(where, buildSearchWhere(q));
+      Object.assign(where, await buildSearchWhere(q));
     }
     if (transportType) {
       if (!isTransportType(transportType)) {

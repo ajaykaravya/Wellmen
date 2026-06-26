@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
+import { buildInFilter, findIdsByMultiTableSearch } from "@/lib/mysql-search";
 
 const PAYMENT_MODES = ["CASH", "BANK", "CHEQUE", "UPI", "NEFT_RTGS"];
 
@@ -98,16 +99,53 @@ export async function GET(req) {
 
   const where = { transactionType: "INCOME" };
   if (q) {
-    where.OR = [
-      { remark: { contains: q} },
-      { incomeType: { name: { contains: q} } },
-      { project: { is: { name: { contains: q} } } },
-      { project: { is: { city: { contains: q} } } },
-      { incomeCompany: { is: { name: { contains: q} } } },
-      { receivedBy: { is: { fullName: { contains: q} } } },
-      { receivedBy: { is: { firstName: { contains: q} } } },
-      { receivedBy: { is: { lastName: { contains: q} } } },
-    ];
+    Object.assign(
+      where,
+      buildInFilter(
+        "id",
+        await findIdsByMultiTableSearch({
+          rootTable: "IncomeTransaction",
+          query: q,
+          equals: { transactionType: "INCOME" },
+          joins: [
+            {
+              alias: "incomeType",
+              table: "IncomeType",
+              left: { alias: "root", column: "incomeTypeId" },
+              right: { column: "id" },
+            },
+            {
+              alias: "project",
+              table: "Project",
+              left: { alias: "root", column: "projectId" },
+              right: { column: "id" },
+            },
+            {
+              alias: "incomeCompany",
+              table: "Company",
+              left: { alias: "root", column: "incomeCompanyId" },
+              right: { column: "id" },
+            },
+            {
+              alias: "receivedBy",
+              table: "User",
+              left: { alias: "root", column: "receivedById" },
+              right: { column: "id" },
+            },
+          ],
+          orSearch: [
+            { alias: "root", column: "remark" },
+            { alias: "incomeType", column: "name" },
+            { alias: "project", column: "name" },
+            { alias: "project", column: "city" },
+            { alias: "incomeCompany", column: "name" },
+            { alias: "receivedBy", column: "fullName" },
+            { alias: "receivedBy", column: "firstName" },
+            { alias: "receivedBy", column: "lastName" },
+          ],
+        }),
+      ),
+    );
   }
 
   if (projectId) where.projectId = projectId;

@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/rbac";
 import {
+  buildInFilter,
+  findIdsByColumnContains,
+  findIdsByMultiTableSearch,
+} from "@/lib/mysql-search";
+import {
   ensureEndDateIsValid,
   isAdminRole,
   parseDate,
@@ -12,7 +17,7 @@ import {
   validateCategoryForType,
 } from "./_shared";
 
-const buildListWhere = ({ searchParams, userId, isAdmin }) => {
+const buildListWhere = async ({ searchParams, userId, isAdmin }) => {
   const q = String(searchParams.get("q") || "").trim();
   const status = parseStatus(searchParams.get("status"));
   const date = searchParams.get("date");
@@ -38,12 +43,27 @@ const buildListWhere = ({ searchParams, userId, isAdmin }) => {
   }
 
   if (q) {
-    andConditions.push({
-      OR: [
-        { description: { contains: q } },
-        { category: { name: { contains: q } } },
-      ],
-    });
+    andConditions.push(
+      buildInFilter(
+        "id",
+        await findIdsByMultiTableSearch({
+          rootTable: "Todo",
+          query: q,
+          joins: [
+            {
+              alias: "category",
+              table: "Categories",
+              left: { alias: "root", column: "categoryId" },
+              right: { column: "id" },
+            },
+          ],
+          orSearch: [
+            { alias: "root", column: "description" },
+            { alias: "category", column: "name" },
+          ],
+        }),
+      ),
+    );
   }
 
   if (status) {
@@ -67,11 +87,12 @@ const buildListWhere = ({ searchParams, userId, isAdmin }) => {
   }
 
   if (category) {
-    andConditions.push({
-      category: {
-        name: { contains: category },
-      },
-    });
+    andConditions.push(
+      buildInFilter(
+        "categoryId",
+        await findIdsByColumnContains("Categories", "name", category),
+      ),
+    );
   }
 
   const parsedFromDate = parseDate(fromDate);
@@ -170,7 +191,7 @@ export async function GET(req) {
       ? Math.min(Number(pageSizeParam), 100)
       : null;
 
-  const listWhere = buildListWhere({ searchParams, userId, isAdmin });
+  const listWhere = await buildListWhere({ searchParams, userId, isAdmin });
   if (listWhere.error) return listWhere.error;
 
   const where = listWhere.where;

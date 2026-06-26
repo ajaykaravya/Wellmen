@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
+import { buildInFilter, findIdsByMultiTableSearch } from "@/lib/mysql-search";
 
 const PAYMENT_MODES = ["CASH", "BANK", "CHEQUE", "UPI", "NEFT_RTGS"];
 
@@ -100,52 +101,53 @@ export async function GET(req) {
 
   const where = {};
   if (query) {
-    where.OR = [
-      { remark: { contains: query } },
-      { expenseType: { name: { contains: query } } },
-      {
-        expenseBy: {
-          is: {
-            fullName: { contains: query },
-          },
-        },
-      },
-      {
-        expenseBy: {
-          is: {
-            firstName: { contains: query },
-          },
-        },
-      },
-      {
-        expenseBy: {
-          is: {
-            lastName: { contains: query },
-          },
-        },
-      },
-      {
-        expenseCompany: {
-          is: {
-            name: { contains: query },
-          },
-        },
-      },
-      {
-        project: {
-          is: {
-            name: { contains: query },
-          },
-        },
-      },
-      {
-        project: {
-          is: {
-            city: { contains: query },
-          },
-        },
-      },
-    ];
+    Object.assign(
+      where,
+      buildInFilter(
+        "id",
+        await findIdsByMultiTableSearch({
+          rootTable: "FinanceTransaction",
+          query,
+          equals: { transactionType: "EXPENSE" },
+          joins: [
+            {
+              alias: "expenseType",
+              table: "ExpenseType",
+              left: { alias: "root", column: "expenseTypeId" },
+              right: { column: "id" },
+            },
+            {
+              alias: "expenseBy",
+              table: "User",
+              left: { alias: "root", column: "expenseById" },
+              right: { column: "id" },
+            },
+            {
+              alias: "expenseCompany",
+              table: "Company",
+              left: { alias: "root", column: "expenseCompanyId" },
+              right: { column: "id" },
+            },
+            {
+              alias: "project",
+              table: "Project",
+              left: { alias: "root", column: "projectId" },
+              right: { column: "id" },
+            },
+          ],
+          orSearch: [
+            { alias: "root", column: "remark" },
+            { alias: "expenseType", column: "name" },
+            { alias: "expenseBy", column: "fullName" },
+            { alias: "expenseBy", column: "firstName" },
+            { alias: "expenseBy", column: "lastName" },
+            { alias: "expenseCompany", column: "name" },
+            { alias: "project", column: "name" },
+            { alias: "project", column: "city" },
+          ],
+        }),
+      ),
+    );
   }
   where.transactionType = "EXPENSE";
   if (projectId) {
