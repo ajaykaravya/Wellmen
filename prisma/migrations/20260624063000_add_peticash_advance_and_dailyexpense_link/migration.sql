@@ -1,3 +1,6 @@
+ALTER TABLE `PetiCash`
+  ADD COLUMN `isAdvance` BOOLEAN NOT NULL DEFAULT true;
+
 ALTER TABLE `FinanceTransaction`
   ADD COLUMN `petiCashId` CHAR(36) NULL;
 
