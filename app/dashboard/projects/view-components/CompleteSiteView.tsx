@@ -10,20 +10,20 @@ export default function CompleteSiteView({
   return (
     <div className="rbac-card">
       <h3 className="rbac-title-lg mb-5">{section.title}</h3>
-      <div className="overflow-x-auto rounded-xl border border-gray-200">
+      <div className="overflow-x-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)]">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-50 dark:bg-gray-800 text-gray-600 uppercase text-xs font-bold">
+            <tr className="bg-[var(--theme-surface-2)] text-[color:var(--theme-text-muted)] uppercase text-xs font-bold">
               <th className="px-4 py-3 text-left">Description</th>
               {section.columns?.map((col: any) => (
                 <th key={col.key} className="px-4 py-3 text-center border-l">{col.label}</th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-[color:var(--theme-border)]">
             {section.rows?.map((row: any) => (
-              <tr key={row.key} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-200">{row.label}</td>
+              <tr key={row.key} className="hover:bg-[var(--theme-surface-2)]">
+                <td className="px-4 py-3 font-medium text-[color:var(--theme-text)]">{row.label}</td>
                 {section.columns?.map((col: any) => {
                   let key = "";
                   if (col.key === "size") {
@@ -32,15 +32,15 @@ export default function CompleteSiteView({
                     const w = formData?.[`${row.key}_size_W` ] || "-";
                     const h = formData?.[`${row.key}_size_H` ] || "-";
                     return (
-                      <td key={col.key} className="px-4 py-3 text-center border-l text-gray-900 dark:text-gray-100">
+                      <td key={col.key} className="px-4 py-3 text-center border-l text-[color:var(--theme-text)]">
                         {l} x {w} x {h}
                       </td>
                     );
                   } else {
                     key = `${row.key}_${col.key}`;
                     return (
-                      <td key={col.key} className="px-4 py-3 text-center border-l text-gray-900 dark:text-gray-100">
-                         {formData?.[key] || <span className="text-gray-300">-</span>}
+                      <td key={col.key} className="px-4 py-3 text-center border-l text-[color:var(--theme-text)]">
+                         {formData?.[key] || <span className="text-[color:var(--theme-text-muted)]">-</span>}
                       </td>
                     );
                   }

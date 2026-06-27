@@ -14,10 +14,6 @@ export default function ContactSection({
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <h3 className="rbac-title-lg">{section.title}</h3>
-
-        <span className="text-xs px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
-          {section.rows.length} Contacts
-        </span>
       </div>
 
       {/* Desktop View */}
@@ -25,7 +21,7 @@ export default function ContactSection({
       <div className="hidden md:block overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-gray-50 dark:bg-gray-900 text-sm">
+            <tr className="bg-[var(--theme-surface-2)] text-[color:var(--theme-text-muted)] text-sm">
               <th className="px-5 py-4 text-left">Department</th>
 
               <th className="px-5 py-4 text-left">Name</th>

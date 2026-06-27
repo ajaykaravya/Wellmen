@@ -25,7 +25,7 @@ export default function ElectricSection({
       <div className="hidden md:block overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 ">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-gray-50 dark:bg-gray-900 text-sm ">
+            <tr className="bg-[var(--theme-surface-2)] text-[color:var(--theme-text-muted)] text-sm ">
               <th className="px-5 py-4 text-left">Description</th>
 
               <th className="px-5 py-4 text-left">
