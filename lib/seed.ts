@@ -5,6 +5,7 @@ import { MOT_MEASUREMENT_SHEET } from "./formTemplates/motMeasurementSheet"
 import { MOT_ELECTRIC_LINE } from "./formTemplates/motElectricLine"
 import { MOT_ACCESSORIES_CUT_OUT_MEASURMENT_REPORT } from "./formTemplates/motAndAccessoriesCutOutMeasurementReport"
 import { COMPLETE_SITE_CHECKING_REPORT } from "./formTemplates/completeSiteCheckingReport"
+import { SUPPLY_DUCT_CHECKING } from "./formTemplates/supplyDuctChecking"
 
 export const DEFAULT_PERMISSIONS = [
   "create_user",
@@ -73,6 +74,10 @@ export const DEFAULT_PROJECT_FORMS = [
   {
     name: "MOT Electrical Line",
     template: MOT_ELECTRIC_LINE,
+  },
+  {
+    name: "Supply Duct Checking",
+    template: SUPPLY_DUCT_CHECKING,
   },
 ]
 
