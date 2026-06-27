@@ -114,9 +114,9 @@ export default function ViewSubmissionPage() {
               <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {data.projectForm.name}
               </h1>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm mt-1">
                 Project:{" "}
-                <span className="font-semibold text-gray-700 dark:text-gray-300">
+                <span className="font-semibold">
                   {data.project.name}
                 </span>
               </p>
