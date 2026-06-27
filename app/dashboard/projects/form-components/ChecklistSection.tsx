@@ -13,15 +13,12 @@ export default function ChecklistSection({
     <div className="rbac-card">
       <div className="flex items-center justify-between mb-5">
         <h3 className="rbac-title-lg">{section.title}</h3>
-        <span className="text-xs  px-3  py-1  rounded-full bg-gray-100 dark:bg-gray-800">
-          {section.rows.length} Items
-        </span>
       </div>
       {/* Desktop Table */}
       <div className="hidden md:block overflow-hidden rounded-xl border">
         <table className="w-full">
           <thead>
-            <tr className="bg-gray-50 dark:bg-gray-900 text-sm">
+            <tr className="bg-[var(--theme-surface-2)] text-[color:var(--theme-text-muted)] text-sm">
               <th className="px-5 py-4 text-left">Description</th>
               <th className="px-5 py-4 text-left">Status</th>
               <th className="px-5 py-4 text-left">Remark</th>
