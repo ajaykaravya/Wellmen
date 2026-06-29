@@ -1,7 +1,4 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
-require("ts-node/register/transpile-only");
-
-const { ensureDefaults } = require("../lib/seed.ts");
+import { ensureDefaults } from "@/lib/seed";
 
 async function main() {
   try {
@@ -10,7 +7,7 @@ async function main() {
   } catch (error) {
     console.error("Failed to seed default data.");
     console.error(error);
-    process.exitCode = 1;
+    process.exit(1);
   }
 }
 
