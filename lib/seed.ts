@@ -6,6 +6,10 @@ import { MOT_ELECTRIC_LINE } from "./formTemplates/motElectricLine"
 import { MOT_ACCESSORIES_CUT_OUT_MEASURMENT_REPORT } from "./formTemplates/motAndAccessoriesCutOutMeasurementReport"
 import { COMPLETE_SITE_CHECKING_REPORT } from "./formTemplates/completeSiteCheckingReport"
 import { SUPPLY_DUCT_CHECKING } from "./formTemplates/supplyDuctChecking"
+import { RETURN_DUCT_CHECKING } from "./formTemplates/returnDuctChecking"
+import { AHU_CHECKLIST_REPORT } from "./formTemplates/ahuChecklistReport"
+import { COMPOSER_CHECKLIST_REPORT } from "./formTemplates/composerChecklistReport"
+import { PLENUM_BOX_CHECKLIST_REPORT } from "./formTemplates/plenumBoxChecklistReport"
 
 export const DEFAULT_PERMISSIONS = [
   "create_user",
@@ -79,6 +83,22 @@ export const DEFAULT_PROJECT_FORMS = [
     name: "Supply Duct Checking",
     template: SUPPLY_DUCT_CHECKING,
   },
+  {
+    name: "Return Duct Checking",
+    template: RETURN_DUCT_CHECKING,
+  },
+  {
+    name: "AHU Checklist Report",
+    template: AHU_CHECKLIST_REPORT
+  },
+  {
+    name: "Compressor Checklist Report",
+    template: COMPOSER_CHECKLIST_REPORT
+  },
+  {
+    name: "Plenum Box Checklist Report",
+    template: PLENUM_BOX_CHECKLIST_REPORT
+  }
 ]
 
 let defaultsPromise: Promise<void> | null = null

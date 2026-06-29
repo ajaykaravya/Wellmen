@@ -31,7 +31,7 @@ export default function ChecklistView({
                       <span className="px-3 py-1 rounded-full text-xs font-bold bg-[var(--theme-success-bg)] text-[var(--theme-success-text)]">OK</span>
                     )}
                     {status === "NOT_OK" && (
-                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-[var(--theme-danger-bg)] text-[var(--theme-danger-text)]">NOT OK</span>
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-[var(--theme-danger-bg)] text-[var(--theme-danger-text)]">Not Ok</span>
                     )}
                     {!status && <span className="text-[color:var(--theme-text-muted)]">-</span>}
                   </td>

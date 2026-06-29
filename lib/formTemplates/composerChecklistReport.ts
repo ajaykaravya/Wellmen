@@ -53,8 +53,24 @@ export const COMPOSER_CHECKLIST_REPORT = {
                 },
                 {
                     key: "compressor-oil-level-checked",
-                    label: "VFD set & airflow balancing planned",
+                    label: "Compressor oil level checked (if applicable)",
                 },
+                {
+                    key: "ahu-cooling-coil-connection-with-expansion-valve-and-dryer-checked",
+                    label: "AHU cooling coil connection with expansion valve and dryer checked"
+                },
+                {
+                    key: "motor-and-blower-fan-position-balancing-and-direction-checked",
+                    label: "Motor and blower fan position, balancing and direction checked"
+                },
+                {
+                    key: "elctrical-connection-of-compressor-checked",
+                    label: "Elctrical connection of compressor checked"
+                },
+                {
+                    key: "ved-damper-setting-and-airflow-balancing-completed",
+                    lable: "Ved / damper setting and airflow balancing completed"
+                }
             ],
         },
     ]
