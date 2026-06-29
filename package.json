@@ -7,7 +7,7 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "seed:defaults": "node scripts/seed-defaults.cjs",
+    "seed:defaults": "tsx scripts/seed-defaults.ts",
     "export": "next export",
     "cap:assets:android": "npx @capacitor/assets generate --android --assetPath public/images --splashBackgroundColor '#ffffff' --splashBackgroundColorDark '#ffffff' --logoSplashScale 0.28",
     "cap:sync": "npx cap sync android && sed -i 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' android/app/capacitor.build.gradle",
@@ -67,6 +67,7 @@
     "prisma": "^7.8.0",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
+    "tsx": "^4.22.4",
     "typescript": "^5.9.3"
   }
 }

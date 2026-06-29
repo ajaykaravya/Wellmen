@@ -142,9 +142,8 @@ function StatusRadio({
           checked={value === "NOT_OK"}
           onChange={(e) => onChange(e.target.value)}
         />
-        NOT OK
+        Not Ok
       </label>
     </div>
   );
 }
-
