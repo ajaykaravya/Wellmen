@@ -83,7 +83,7 @@ export default function ProjectFormPage() {
     <DashboardShell>
       <section className="rbac-section rbac-container">
         <div className="rbac-card">
-          <div className="flex gap-4 mb-2">
+          <div className="flex flex-wrap gap-4 mb-2">
             <h2>Project: {data.project.name}</h2>
             <h3>Form: {data.projectForm.name}</h3>
           </div>
