@@ -107,7 +107,6 @@ export default function DirectWhiteTab({
           ? "Income source is required."
           : "Expense type is required.";
     }
-    if (!projectId) nextErrors.projectId = "Project is required.";
     if (!amount.trim() || Number(amount) <= 0) {
       nextErrors.amount = "Amount is required.";
     }
@@ -175,7 +174,7 @@ export default function DirectWhiteTab({
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <FieldLabel>Company</FieldLabel>
+              <FieldLabel required>Company</FieldLabel>
               <SelectInput
                 value={companyId}
                 onChange={setCompanyId}
@@ -201,7 +200,7 @@ export default function DirectWhiteTab({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <FieldLabel>Payment Mode</FieldLabel>
+              <FieldLabel required>Payment Mode</FieldLabel>
               <SelectInput
                 value={paymentMode}
                 onChange={(value) => setPaymentMode(value as PaymentMode)}
@@ -228,7 +227,7 @@ export default function DirectWhiteTab({
           </div>
 
           <div>
-            <FieldLabel>
+            <FieldLabel required>
               {txKind === "INCOME" ? "Income Source" : "Expense Type"}
             </FieldLabel>
             <SelectInput
@@ -243,7 +242,7 @@ export default function DirectWhiteTab({
           </div>
 
           <div>
-            <FieldLabel>
+            <FieldLabel required>
               {txKind === "INCOME" ? "Received By" : "Expense By"}
             </FieldLabel>
             <SelectInput
@@ -259,7 +258,7 @@ export default function DirectWhiteTab({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <FieldLabel>Amount</FieldLabel>
+              <FieldLabel required>Amount</FieldLabel>
               <TextInput
                 value={amount}
                 onChange={setAmount}
@@ -270,13 +269,13 @@ export default function DirectWhiteTab({
               />
             </div>
             <div>
-              <FieldLabel>Date</FieldLabel>
+              <FieldLabel required>Date</FieldLabel>
               <DateField value={date} onChange={setDate} error={errors.date} />
             </div>
           </div>
 
           <div>
-            <FieldLabel>Project</FieldLabel>
+            <FieldLabel optional>Project</FieldLabel>
             <SelectInput
               value={projectId}
               onChange={setProjectId}
@@ -285,7 +284,6 @@ export default function DirectWhiteTab({
                 label: item.city ? `${item.name} (${item.city})` : item.name,
               }))}
               placeholder="Select project"
-              error={errors.projectId}
             />
           </div>
 

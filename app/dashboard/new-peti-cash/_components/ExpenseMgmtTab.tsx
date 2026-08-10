@@ -279,6 +279,9 @@ export default function ExpenseMgmtTab({
       <div>
         <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
           Category
+          <span className="ml-0.5 text-rose-600" title="Required">
+            *
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -405,7 +408,7 @@ export default function ExpenseMgmtTab({
           </div>
 
           <div>
-            <FieldLabel>Company</FieldLabel>
+            <FieldLabel required>Company</FieldLabel>
             <SelectInput
               value={companyId}
               onChange={setCompanyId}
@@ -418,7 +421,7 @@ export default function ExpenseMgmtTab({
           </div>
 
           <div>
-            <FieldLabel>Given By (Manager)</FieldLabel>
+            <FieldLabel required>Given By (Manager)</FieldLabel>
             <SelectInput
               value={resolvedGivenById}
               onChange={setGivenByOverride}
@@ -431,7 +434,7 @@ export default function ExpenseMgmtTab({
           </div>
 
           <div>
-            <FieldLabel>Expense Type</FieldLabel>
+            <FieldLabel required>Expense Type</FieldLabel>
             <SelectInput
               value={expenseTypeId}
               onChange={setExpenseTypeId}
@@ -466,7 +469,7 @@ export default function ExpenseMgmtTab({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <FieldLabel>Amount</FieldLabel>
+              <FieldLabel required>Amount</FieldLabel>
               <TextInput
                 value={amount}
                 onChange={setAmount}
@@ -477,7 +480,7 @@ export default function ExpenseMgmtTab({
               />
             </div>
             <div>
-              <FieldLabel>Date</FieldLabel>
+              <FieldLabel required>Date</FieldLabel>
               <DateField value={date} onChange={setDate} error={errors.date} />
             </div>
           </div>

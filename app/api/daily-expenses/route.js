@@ -235,17 +235,12 @@ export async function POST(req) {
     return NextResponse.json({ error: "Date is required." }, { status: 400 });
   }
 
-  if (!payload.projectId) {
-    return NextResponse.json(
-      { error: "Project is required." },
-      { status: 400 },
-    );
-  }
-
-  const project = await prisma.project.findUnique({
-    where: { id: payload.projectId },
-  });
-  if (!project) {
+  const project = payload.projectId
+    ? await prisma.project.findUnique({
+        where: { id: payload.projectId },
+      })
+    : null;
+  if (payload.projectId && !project) {
     return NextResponse.json({ error: "Project not found." }, { status: 404 });
   }
 
@@ -314,7 +309,7 @@ export async function POST(req) {
       data: {
         transactionType: "EXPENSE",
         amount: new Prisma.Decimal(amount),
-        projectId: project.id,
+        projectId: project?.id || null,
         expenseTypeId,
         expenseById: expenseBy.id,
         expenseCompanyId: expenseCompany.id,

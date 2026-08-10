@@ -7,13 +7,20 @@ import CustomDatePicker from "../../../components/CustomDatePicker";
 export function FieldLabel({
   children,
   optional,
+  required,
 }: {
   children: ReactNode;
   optional?: boolean;
+  required?: boolean;
 }) {
   return (
     <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-slate-500">
       {children}
+      {required ? (
+        <span className="ml-0.5 text-rose-600" title="Required">
+          *
+        </span>
+      ) : null}
       {optional ? (
         <span className="ml-1 font-medium normal-case tracking-normal text-slate-400">
           (optional)

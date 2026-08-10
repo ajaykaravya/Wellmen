@@ -229,10 +229,6 @@ export async function POST(req) {
     return NextResponse.json({ error: "Category is required." }, { status: 400 });
   }
 
-  if (!payload.projectId) {
-    return NextResponse.json({ error: "Project is required." }, { status: 400 });
-  }
-
   if (!payload.incomeCompanyId) {
     return NextResponse.json(
       { error: "Income company is required." },
@@ -255,10 +251,12 @@ export async function POST(req) {
   }
 
   const [project, incomeType, incomeCompany, receivedBy] = await Promise.all([
-    prisma.project.findUnique({
-      where: { id: payload.projectId },
-      select: { id: true },
-    }),
+    payload.projectId
+      ? prisma.project.findUnique({
+          where: { id: payload.projectId },
+          select: { id: true },
+        })
+      : Promise.resolve(null),
     prisma.incomeType.findUnique({
       where: { id: payload.incomeTypeId },
       select: { id: true },
@@ -273,7 +271,7 @@ export async function POST(req) {
     }),
   ]);
 
-  if (!project) {
+  if (payload.projectId && !project) {
     return NextResponse.json({ error: "Project not found." }, { status: 404 });
   }
 
@@ -303,7 +301,7 @@ export async function POST(req) {
       data: {
         transactionType: "INCOME",
         amount: new Prisma.Decimal(amount),
-        projectId: project.id,
+        projectId: project?.id || null,
         incomeTypeId: incomeType.id,
         incomeCompanyId: incomeCompany.id,
         receivedById: receivedBy.id,

@@ -123,7 +123,6 @@ export default function CashVoucherTab({
           ? "Income source is required."
           : "Expense type is required.";
     }
-    if (!projectId) nextErrors.projectId = "Project is required.";
     if (!amount.trim() || Number(amount) <= 0) {
       nextErrors.amount = "Amount is required.";
     }
@@ -218,7 +217,7 @@ export default function CashVoucherTab({
       <FormCard title="Cash Voucher" subtitle="Cash voucher entry">
         <div className="space-y-3">
           <div>
-            <FieldLabel>Entity</FieldLabel>
+            <FieldLabel required>Entity</FieldLabel>
             <SelectInput
               value={companyId}
               onChange={setCompanyId}
@@ -231,7 +230,7 @@ export default function CashVoucherTab({
           </div>
 
           <div>
-            <FieldLabel>Cash Custodian</FieldLabel>
+            <FieldLabel required>Cash Custodian</FieldLabel>
             <SelectInput
               value={custodianId}
               onChange={setCustodianId}
@@ -249,7 +248,7 @@ export default function CashVoucherTab({
           </div>
 
           <div>
-            <FieldLabel>
+            <FieldLabel required>
               {txKind === "INCOME" ? "Income Source" : "Expense Type"}
             </FieldLabel>
             <SelectInput
@@ -265,7 +264,7 @@ export default function CashVoucherTab({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <FieldLabel>Amount</FieldLabel>
+              <FieldLabel required>Amount</FieldLabel>
               <TextInput
                 value={amount}
                 onChange={setAmount}
@@ -276,13 +275,13 @@ export default function CashVoucherTab({
               />
             </div>
             <div>
-              <FieldLabel>Date</FieldLabel>
+              <FieldLabel required>Date</FieldLabel>
               <DateField value={date} onChange={setDate} error={errors.date} />
             </div>
           </div>
 
           <div>
-            <FieldLabel>Project</FieldLabel>
+            <FieldLabel optional>Project</FieldLabel>
             <SelectInput
               value={projectId}
               onChange={setProjectId}
@@ -291,7 +290,6 @@ export default function CashVoucherTab({
                 label: item.city ? `${item.name} (${item.city})` : item.name,
               }))}
               placeholder="Select project"
-              error={errors.projectId}
             />
           </div>
 
