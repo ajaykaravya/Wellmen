@@ -88,8 +88,18 @@ export default function ProjectFormPage() {
             <h3>Form: {data.projectForm.name}</h3>
           </div>
 
+          {/* Shown here rather than captured on each form, since every
+              document already belongs to a specific project. */}
+          {data.project.address ? (
+            <p className="mb-4 text-xs text-slate-500">
+              {data.project.address}
+              {data.project.city ? `, ${data.project.city}` : ""}
+            </p>
+          ) : null}
+
           <FormRenderer
             template={data.projectForm.template}
+            projectId={data.project.id}
             formData={formData}
             setFormData={setFormData}
             onSubmit={handleSubmit}

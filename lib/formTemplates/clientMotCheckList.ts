@@ -9,21 +9,6 @@ export const CLIENT_MOT_CHECK_LIST = {
 
       fields: [
         {
-          key: "hospitalName",
-          label: "Hospital Name",
-          fieldType: "text",
-        },
-        {
-          key: "address",
-          label: "Address",
-          fieldType: "text",
-        },
-        {
-          key: "sheetNo",
-          label: "Sheet No",
-          fieldType: "text",
-        },
-        {
           key: "date",
           label: "Date",
           fieldType: "date",

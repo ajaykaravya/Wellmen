@@ -25,6 +25,38 @@ const getExt = (file) => {
   return "";
 };
 
+// AutoCAD files have no reliable MIME type - browsers send
+// application/octet-stream or an empty string - so drawings are validated by
+// extension rather than by file.type.
+const DRAWING_EXTENSIONS = {
+  ".pdf": "PDF",
+  ".ppt": "PPT",
+  ".pptx": "PPT",
+  ".jpg": "IMAGE",
+  ".jpeg": "IMAGE",
+  ".png": "IMAGE",
+  ".dwg": "AUTOCAD",
+  ".dxf": "AUTOCAD",
+};
+
+export const getDrawingFileType = (fileName) =>
+  DRAWING_EXTENSIONS[path.extname(String(fileName || "")).toLowerCase()] || null;
+
+export const ALLOWED_DRAWING_EXTENSIONS = Object.keys(DRAWING_EXTENSIONS);
+
+// Documents attached to a project form (e.g. validation and calibration
+// certificates). Validated by extension for the same reason as drawings.
+const DOCUMENT_EXTENSIONS = {
+  ".pdf": "PDF",
+  ".doc": "DOC",
+  ".docx": "DOC",
+};
+
+export const getDocumentFileType = (fileName) =>
+  DOCUMENT_EXTENSIONS[path.extname(String(fileName || "")).toLowerCase()] || null;
+
+export const ALLOWED_DOCUMENT_EXTENSIONS = Object.keys(DOCUMENT_EXTENSIONS);
+
 const ensureUploadDir = async (scope) => {
   const uploadDir = path.join(process.cwd(), "public", "uploads", scope);
   await mkdir(uploadDir, { recursive: true });
@@ -36,7 +68,7 @@ const getPublicUrl = (scope, name) => `/uploads/${scope}/${name}`;
 const getSupabasePublicUrl = (projectId, kind, name) => {
   // Use the correct Supabase Storage URL format
   // Path: {projectId}/{kind}/{name}
-  const baseUrl = process.env.SUPABASE_PROJECT_URL.replace(
+  const baseUrl = String(process.env.SUPABASE_PROJECT_URL || "").replace(
     /\/rest\/v1\/?$/,
     "",
   );
@@ -57,16 +89,38 @@ async function saveOne(file, { type, projectId, kind }) {
   if (kind === "video" && !fileType.startsWith("video/")) {
     throw new Error("Only video files are allowed for videos.");
   }
+  if (kind === "drawing" && !getDrawingFileType(file.name)) {
+    throw new Error(
+      `Unsupported drawing file. Allowed types: ${ALLOWED_DRAWING_EXTENSIONS.join(", ")}.`,
+    );
+  }
+  if (kind === "document" && !getDocumentFileType(file.name)) {
+    throw new Error(
+      `Unsupported document file. Allowed types: ${ALLOWED_DOCUMENT_EXTENSIONS.join(", ")}.`,
+    );
+  }
 
   const ext = getExt(file);
   const baseName = sanitizeName(path.basename(file.name || "file", ext));
   const fileName = `${type}-${Date.now()}-${randomUUID()}-${baseName || kind}${ext}`;
 
+  const saveLocally = async (bytes) => {
+    const scope = `${projectId}/${kind}`;
+    const uploadDir = await ensureUploadDir(scope);
+    await writeFile(path.join(uploadDir, fileName), Buffer.from(bytes));
+    return getPublicUrl(scope, fileName);
+  };
+
   try {
-    // Try to upload to Supabase first
     const bytes = await file.arrayBuffer();
+
+    // Supabase is optional - without credentials, go straight to local disk.
+    if (!supabase) {
+      return saveLocally(bytes);
+    }
+
     const uploadPath = `${projectId}/${kind}/${fileName}`;
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from("wellmen")
       .upload(uploadPath, bytes, {
         contentType: file.type,
@@ -78,15 +132,9 @@ async function saveOne(file, { type, projectId, kind }) {
         "Supabase upload failed, falling back to local storage:",
         error.message,
       );
-      // Fallback to local storage
-      const scope = `${projectId}/${kind}`;
-      const uploadDir = await ensureUploadDir(scope);
-      const filePath = path.join(uploadDir, fileName);
-      await writeFile(filePath, Buffer.from(bytes));
-      return getPublicUrl(scope, fileName);
+      return saveLocally(bytes);
     }
 
-    // Return Supabase public URL
     return getSupabasePublicUrl(projectId, kind, fileName);
   } catch (error) {
     console.error("Upload failed:", error);

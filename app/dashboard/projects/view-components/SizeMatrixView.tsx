@@ -14,7 +14,9 @@ export default function SizeMatrixView({
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-[var(--theme-surface-2)] text-[color:var(--theme-text-muted)] uppercase text-xs font-bold">
-              <th className="px-4 py-3 text-left border-b">Description</th>
+              <th className="px-4 py-3 text-left border-b">
+                {section.descriptionLabel || "Description"}
+              </th>
               {section.columns?.map((col: any) => (
                 <th key={col.key} className="px-4 py-3 text-center border-b border-l" colSpan={col.children ? col.children.length : 1}>
                   {col.label}

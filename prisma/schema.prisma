@@ -59,6 +59,7 @@ model Project {
   queryManagements       QueryManagement[]
   todos                  Todo[]
   projectFormSubmissions ProjectFormSubmission[]
+  drawings               ProjectDrawing[]
 
   @@index([createdById], map: "Project_createdById_fkey")
 }
@@ -187,7 +188,7 @@ model PetiCash {
   id              String                  @id @default(uuid()) @db.Char(36)
   amount          Decimal                 @db.Decimal(14, 2)
   transactionType PetiCashTransactionType
-  isAdvance       Boolean?                 @default(true)
+  isAdvance       Boolean?                @default(true)
   givenById       String?                 @db.Char(36)
   givenToId       String?                 @db.Char(36)
   companyId       String?                 @db.Char(36)
@@ -350,9 +351,10 @@ model DeviceToken {
 }
 
 model ProjectForm {
-  id       String  @id @default(uuid()) @db.Char(36)
-  name     String  @unique
-  isActive Boolean @default(true)
+  id        String  @id @default(uuid()) @db.Char(36)
+  name      String  @unique
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(999)
 
   template Json?
 
@@ -402,6 +404,7 @@ model User {
   assignedTodos                     Todo[]               @relation("Todo_assigneeIdToUser")
   createdTodos                      Todo[]               @relation("Todo_createdByIdToUser")
   TransportLog                      TransportLog[]
+  projectDrawings                   ProjectDrawing[]
   role                              Role                 @relation(fields: [roleId], references: [id])
 
   @@index([roleId], map: "User_roleId_fkey")
@@ -415,6 +418,42 @@ model ExpenseTypeUser {
 
   @@id([expenseTypeId, userId])
   @@index([userId], map: "ExpenseTypeUser_userId_fkey")
+}
+
+model DrawingCategory {
+  id        String   @id @default(uuid()) @db.Char(36)
+  name      String   @unique
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  drawings ProjectDrawing[]
+
+  @@index([isActive])
+  @@index([sortOrder])
+}
+
+model ProjectDrawing {
+  id                String          @id @default(uuid()) @db.Char(36)
+  projectId         String          @db.Char(36)
+  drawingCategoryId String          @db.Char(36)
+  fileType          DrawingFileType
+  fileUrl           String          @db.Text
+  fileName          String
+  fileSize          Int?
+  uploadedById      String?         @db.Char(36)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  project         Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  drawingCategory DrawingCategory @relation(fields: [drawingCategoryId], references: [id])
+  uploadedBy      User?           @relation(fields: [uploadedById], references: [id])
+
+  @@index([projectId])
+  @@index([drawingCategoryId])
+  @@index([fileType])
+  @@index([uploadedById], map: "ProjectDrawing_uploadedById_fkey")
 }
 
 enum TodoStatus {
@@ -497,4 +536,11 @@ enum TransportConfigType {
 enum FormStatus {
   PENDING
   COMPLETED
+}
+
+enum DrawingFileType {
+  PDF
+  PPT
+  IMAGE
+  AUTOCAD
 }

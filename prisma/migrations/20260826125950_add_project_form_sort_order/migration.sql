@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `ProjectForm` ADD COLUMN `sortOrder` INTEGER NOT NULL DEFAULT 999;

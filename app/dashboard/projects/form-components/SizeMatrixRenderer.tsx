@@ -10,12 +10,15 @@ export default function SizeMatrixRenderer({
   setFormData: any;
 }) {
   return (
-    <div className="w-full overflow-x-auto">
-      <table className="min-w-[900px] w-full border-collapse border">
+    <div className="rbac-card">
+      <h3 className="rbac-title-lg mb-4">{section.title}</h3>
+
+      <div className="w-full overflow-x-auto">
+        <table className="min-w-[900px] w-full border-collapse border">
         <thead>
           <tr>
             <th rowSpan={2} className="border p-2 text-sm whitespace-nowrap">
-              Description
+              {section.descriptionLabel || "Description"}
             </th>
 
             {section.columns.map((col: any) =>
@@ -108,8 +111,9 @@ export default function SizeMatrixRenderer({
               )}
             </tr>
           ))}
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

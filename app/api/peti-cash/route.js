@@ -226,7 +226,13 @@ export async function POST(req) {
     return NextResponse.json({ error: "Company is required." }, { status: 400 });
   }
 
-  if (payload.transactionType === "DEBIT" && !payload.expenseTypeId) {
+  // Advances are handed over before any expense exists, so they carry no
+  // expense category.
+  if (
+    payload.transactionType === "DEBIT" &&
+    !payload.isAdvance &&
+    !payload.expenseTypeId
+  ) {
     return NextResponse.json(
       { error: "Expense category is required." },
       { status: 400 },
@@ -302,7 +308,11 @@ export async function POST(req) {
     return NextResponse.json({ error: "Project not found." }, { status: 404 });
   }
 
-  if (payload.transactionType === "DEBIT" && !expenseType) {
+  if (
+    payload.transactionType === "DEBIT" &&
+    !payload.isAdvance &&
+    !expenseType
+  ) {
     return NextResponse.json(
       { error: "Expense category not found." },
       { status: 404 },
@@ -322,7 +332,9 @@ export async function POST(req) {
           companyId: company.id,
           projectId: project?.id || null,
           expenseTypeId:
-            payload.transactionType === "DEBIT" ? expenseType.id : null,
+            payload.transactionType === "DEBIT"
+              ? expenseType?.id || null
+              : null,
           date: parsedDate,
           remarks: payload.remarks || null,
         },
@@ -338,7 +350,8 @@ export async function POST(req) {
         givenToId: givenTo.id,
         companyId: company.id,
         projectId: project?.id || null,
-        expenseTypeId: payload.transactionType === "DEBIT" ? expenseType.id : null,
+        expenseTypeId:
+          payload.transactionType === "DEBIT" ? expenseType?.id || null : null,
         paymentMode:
           payload.transactionType === "DEBIT" && !payload.isAdvance
             ? payload.paymentMode

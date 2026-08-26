@@ -67,7 +67,6 @@ export default function ExpenseMgmtTab({
   const [selectedUserId, setSelectedUserId] = useState("");
   const [entryMode, setEntryMode] = useState<EntryMode>("CLAIM");
   const [expenseTypeId, setExpenseTypeId] = useState("");
-  const [assigneeId, setAssigneeId] = useState("");
   const [companyId, setCompanyId] = useState("");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(getTodayInputDate());
@@ -93,37 +92,35 @@ export default function ExpenseMgmtTab({
     if (!companyId && companies[0]) setCompanyId(companies[0].id);
   }, [companies, companyId]);
 
+  // Track the expense type that is actually saved and validated. The API checks
+  // "given to" against expenseTypeId, so keying the user list off the category
+  // pill instead would offer users the server then rejects.
   const selectedCategory = useMemo(
-    () => expenseTypes.find((item) => item.id === categoryId) || null,
-    [expenseTypes, categoryId],
+    () => expenseTypes.find((item) => item.id === expenseTypeId) || null,
+    [expenseTypes, expenseTypeId],
   );
 
   const categoryUsers = useMemo(() => {
-    // Claims must use users assigned to the expense type.
-    // Advances must go to non-admin/non-manager employees.
+    // Claims may only go to users assigned to the expense type — anyone else is
+    // rejected server-side. Advances may go to any non-admin/non-manager user.
     if (entryMode === "CLAIM") {
-      const assigned = selectedCategory?.users || [];
-      if (assigned.length > 0) {
-        return assigned.map((item) => ({
-          id: item.id,
-          firstName: item.firstName,
-          lastName: item.lastName,
-          role: null,
-        })) as UserOption[];
-      }
+      return (selectedCategory?.users || []).map((item) => ({
+        id: item.id,
+        firstName: item.firstName,
+        lastName: item.lastName,
+        role: null,
+      })) as UserOption[];
     }
 
     return users.filter((item) => !isPrivilegedUser(item.role));
   }, [selectedCategory, users, entryMode]);
 
   useEffect(() => {
-    if (!selectedUserId && categoryUsers[0]) {
-      setSelectedUserId(categoryUsers[0].id);
-    } else if (
-      selectedUserId &&
-      categoryUsers.length > 0 &&
-      !categoryUsers.some((item) => item.id === selectedUserId)
-    ) {
+    if (categoryUsers.length === 0) {
+      if (selectedUserId) setSelectedUserId("");
+      return;
+    }
+    if (!categoryUsers.some((item) => item.id === selectedUserId)) {
       setSelectedUserId(categoryUsers[0].id);
     }
   }, [categoryUsers, selectedUserId]);
@@ -131,16 +128,6 @@ export default function ExpenseMgmtTab({
   useEffect(() => {
     setExpenseTypeId(categoryId);
   }, [categoryId]);
-
-  useEffect(() => {
-    const assignees =
-      expenseTypes.find((item) => item.id === expenseTypeId)?.users || [];
-    if (assignees[0]) {
-      setAssigneeId(assignees[0].id);
-    } else {
-      setAssigneeId(selectedUserId);
-    }
-  }, [expenseTypeId, expenseTypes, selectedUserId]);
 
   const selectedUser = useMemo(
     () => categoryUsers.find((item) => item.id === selectedUserId) || null,
@@ -156,9 +143,6 @@ export default function ExpenseMgmtTab({
     }
     return managers[0]?.id || "";
   }, [managers, sessionUser]);
-
-  const [givenByOverride, setGivenByOverride] = useState("");
-  const resolvedGivenById = givenByOverride || givenById;
 
   const loadBalanceAndLedger = async (userId: string) => {
     if (!userId) {
@@ -211,13 +195,15 @@ export default function ExpenseMgmtTab({
   }, [selectedUserId]);
 
   const handleSave = async () => {
+    const isAdvance = entryMode === "ADVANCE";
+
     const nextErrors: Record<string, string> = {};
     if (!categoryId) nextErrors.categoryId = "Category is required.";
     if (!selectedUserId) nextErrors.selectedUserId = "User is required.";
-    if (!expenseTypeId) nextErrors.expenseTypeId = "Expense type is required.";
-    if (!companyId) nextErrors.companyId = "Company is required.";
-    if (!resolvedGivenById) {
-      nextErrors.givenById = "Manager (given by) is required.";
+    // An advance is money handed over before any expense exists, so it carries
+    // no expense type and no bill.
+    if (!isAdvance && !expenseTypeId) {
+      nextErrors.expenseTypeId = "Expense type is required.";
     }
     if (!amount.trim() || Number(amount) <= 0) {
       nextErrors.amount = "Amount is required.";
@@ -226,19 +212,31 @@ export default function ExpenseMgmtTab({
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    const isAdvance = entryMode === "ADVANCE";
-    const remark = buildRemark({ remarks, billNo });
+    // Company and given-by are derived rather than entered, so a missing value
+    // means nothing is configured — report it instead of flagging a field.
+    if (!companyId) {
+      toast.error("No company is configured. Add a company first.");
+      return;
+    }
+    if (!givenById) {
+      toast.error("No manager is available to record this entry against.");
+      return;
+    }
+
+    const remark = isAdvance
+      ? buildRemark({ remarks })
+      : buildRemark({ remarks, billNo });
 
     try {
       setSaving(true);
       await petiCashApi.create({
         transactionType: "DEBIT",
         amount,
-        givenById: resolvedGivenById,
+        givenById,
         givenToId: selectedUserId,
         companyId,
         projectId: "",
-        expenseTypeId,
+        expenseTypeId: isAdvance ? "" : expenseTypeId,
         isAdvance,
         paymentMode: isAdvance ? "" : "CASH",
         date,
@@ -337,6 +335,16 @@ export default function ExpenseMgmtTab({
           );
         })}
       </div>
+      {entryMode === "CLAIM" && categoryUsers.length === 0 ? (
+        <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-3 text-xs text-slate-600">
+          No users are assigned to{" "}
+          <span className="font-semibold">
+            {selectedCategory?.name || "this expense type"}
+          </span>
+          . Assign users to it before recording a claim.
+        </p>
+      ) : null}
+
       {errors.selectedUserId ? (
         <p className="text-xs text-rose-600">{errors.selectedUserId}</p>
       ) : null}
@@ -384,7 +392,11 @@ export default function ExpenseMgmtTab({
             <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-slate-200">
               <button
                 type="button"
-                onClick={() => setEntryMode("ADVANCE")}
+                onClick={() => {
+                  setEntryMode("ADVANCE");
+                  setBillNo("");
+                  setPhotoName("");
+                }}
                 className={`py-2.5 text-sm font-semibold transition-colors ${
                   entryMode === "ADVANCE"
                     ? "bg-slate-800 text-white"
@@ -407,65 +419,20 @@ export default function ExpenseMgmtTab({
             </div>
           </div>
 
-          <div>
-            <FieldLabel required>Company</FieldLabel>
-            <SelectInput
-              value={companyId}
-              onChange={setCompanyId}
-              options={companies.map((item) => ({
-                value: item.id,
-                label: item.name,
-              }))}
-              error={errors.companyId}
-            />
-          </div>
-
-          <div>
-            <FieldLabel required>Given By (Manager)</FieldLabel>
-            <SelectInput
-              value={resolvedGivenById}
-              onChange={setGivenByOverride}
-              options={managers.map((item) => ({
-                value: item.id,
-                label: getUserDisplayName(item),
-              }))}
-              error={errors.givenById}
-            />
-          </div>
-
-          <div>
-            <FieldLabel required>Expense Type</FieldLabel>
-            <SelectInput
-              value={expenseTypeId}
-              onChange={setExpenseTypeId}
-              options={expenseTypes.map((item) => ({
-                value: item.id,
-                label: item.name,
-              }))}
-              error={errors.expenseTypeId}
-            />
-          </div>
-
-          {(expenseTypes.find((item) => item.id === expenseTypeId)?.users || [])
-            .length > 0 ? (
+          {entryMode === "ADVANCE" ? null : (
             <div>
-              <FieldLabel>Assignee Detail</FieldLabel>
+              <FieldLabel required>Expense Type</FieldLabel>
               <SelectInput
-                value={assigneeId}
-                onChange={(value) => {
-                  setAssigneeId(value);
-                  setSelectedUserId(value);
-                }}
-                options={(
-                  expenseTypes.find((item) => item.id === expenseTypeId)?.users ||
-                  []
-                ).map((item) => ({
+                value={expenseTypeId}
+                onChange={setExpenseTypeId}
+                options={expenseTypes.map((item) => ({
                   value: item.id,
-                  label: `${item.firstName} ${item.lastName}`.trim(),
+                  label: item.name,
                 }))}
+                error={errors.expenseTypeId}
               />
             </div>
-          ) : null}
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -494,24 +461,22 @@ export default function ExpenseMgmtTab({
             />
           </div>
 
-          <div>
-            <FieldLabel optional>Bill Attachment</FieldLabel>
-            <div className="grid grid-cols-2 gap-3">
-              <TextInput
-                value={billNo}
-                onChange={setBillNo}
-                placeholder="Bill / Invoice No."
-              />
-              <AttachPhotoButton
-                fileName={photoName}
-                onFile={(file) => setPhotoName(file?.name || "")}
-              />
+          {entryMode === "ADVANCE" ? null : (
+            <div>
+              <FieldLabel optional>Bill Attachment</FieldLabel>
+              <div className="grid grid-cols-2 gap-3">
+                <TextInput
+                  value={billNo}
+                  onChange={setBillNo}
+                  placeholder="Bill / Invoice No."
+                />
+                <AttachPhotoButton
+                  fileName={photoName}
+                  onFile={(file) => setPhotoName(file?.name || "")}
+                />
+              </div>
             </div>
-          </div>
-
-          {errors.givenById ? (
-            <p className="text-xs text-rose-600">{errors.givenById}</p>
-          ) : null}
+          )}
 
           <SaveEntryButton saving={saving} onClick={handleSave} />
         </div>

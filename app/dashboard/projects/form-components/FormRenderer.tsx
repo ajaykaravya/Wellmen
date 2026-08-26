@@ -7,6 +7,7 @@ import MatrixSection from "./MatrixSection";
 import ElectricSection from "./ElectricSection";
 import SizeMatrixRenderer from "./SizeMatrixRenderer";
 import CompleteSiteSection from "./CompleteSiteSection";
+import FileUploadSection from "./FileUploadSection";
 
 type Props = {
   template: any;
@@ -14,6 +15,7 @@ type Props = {
   setFormData: any;
   onSubmit: any;
   onBack: () => void;
+  projectId?: string;
 };
 
 export default function FormRenderer({
@@ -21,7 +23,8 @@ export default function FormRenderer({
   formData,
   setFormData,
   onSubmit,
-  onBack
+  onBack,
+  projectId
 }: Props) {
   if (!template?.sections) {
     return <div>No form template found</div>;
@@ -86,6 +89,17 @@ export default function FormRenderer({
               <SizeMatrixRenderer
                 formData={formData}
                 setFormData={setFormData}
+                key={section.key}
+                section={section}
+              />
+            );
+
+          case "fileUpload":
+            return (
+              <FileUploadSection
+                formData={formData}
+                setFormData={setFormData}
+                projectId={projectId}
                 key={section.key}
                 section={section}
               />

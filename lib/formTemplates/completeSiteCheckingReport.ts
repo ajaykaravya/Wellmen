@@ -12,19 +12,6 @@ export const COMPLETE_SITE_CHECKING_REPORT = {
             title: "Project Details",
 
             fields: [
-
-                {
-                    key: "projectName",
-                    label: "Project Name",
-                    fieldType: "text"
-                },
-
-                {
-                    key: "hospitalName",
-                    label: "Hospital Name",
-                    fieldType: "text"
-                },
-
                 {
                     key: "area",
                     label: "Area (OT / ICU)",

@@ -237,6 +237,7 @@ export async function POST(req) {
   });
 
   const forms = await prisma.projectForm.findMany({
+    where: { isActive: true },
     select: {
       id: true,
     },

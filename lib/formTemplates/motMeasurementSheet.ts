@@ -1,6 +1,6 @@
 export const MOT_MEASUREMENT_SHEET = {
     id: "mot-measurement-sheet",
-    name: "MOT Measurement Sheet",
+    name: "MOT Selection Sheet",
 
     sections: [
         {
@@ -9,13 +9,43 @@ export const MOT_MEASUREMENT_SHEET = {
 
             fields: [
                 {
-                    key: "hospitalName",
-                    label: "Hospital Name",
+                    key: "siteCode",
+                    label: "Site Code (Added by SG Office)",
                     fieldType: "text",
                 },
                 {
-                    key: "address",
-                    label: "Address",
+                    key: "roomSize",
+                    label: "Room Size",
+                    fieldType: "text",
+                },
+                {
+                    key: "floorToSlabHeight",
+                    label: "Floor to Slab Height",
+                    fieldType: "text",
+                },
+                {
+                    key: "floorToBeamBottomHeight",
+                    label: "Floor to Beam Bottom Height",
+                    fieldType: "text",
+                },
+                {
+                    key: "falseCeilingHeightRequired",
+                    label: "False Ceiling Height (Required)",
+                    fieldType: "text",
+                },
+                {
+                    key: "falseCeilingHeightActual",
+                    label: "False Ceiling Height (Actual)",
+                    fieldType: "text",
+                },
+                {
+                    key: "ahuLocation",
+                    label: "AHU Location",
+                    fieldType: "text",
+                },
+                {
+                    key: "ductEntryInOt",
+                    label: "Duct Entry in OT",
                     fieldType: "text",
                 },
             ],
@@ -44,7 +74,7 @@ export const MOT_MEASUREMENT_SHEET = {
                     key: "remark",
                     label: "Remark",
                     fieldType: "text"
-                }
+                },
             ],
             groups: [
                 {
@@ -61,12 +91,12 @@ export const MOT_MEASUREMENT_SHEET = {
                         },
                         {
                             key: "pcgi",
-                            label: "PCGI"
+                            label: "PCGI PUF"
                         },
                         {
                             key: "ppgi",
-                            label: "PPGI"
-                        }
+                            label: "PPGI PUF"
+                        },
                     ]
                 },
                 {
@@ -75,17 +105,25 @@ export const MOT_MEASUREMENT_SHEET = {
                     rows: [
                         {
                             key: "hpl_acp_puf",
-                            label: "HPL ACP PUF"
+                            label: "HPL-ACP PUF"
                         },
                         {
                             key: "hpl",
                             label: "HPL"
-                        }
+                        },
+                        {
+                            key: "pcgi_puf",
+                            label: "PCGI PUF"
+                        },
+                        {
+                            key: "ppgi_puf",
+                            label: "PPGI PUF"
+                        },
                     ]
                 },
                 {
                     key: "flooring_jeoflor",
-                    label: "Flooring Jeoflor",
+                    label: "Flooring",
                     rows: [
                         {
                             key: "premium_plus",
@@ -93,17 +131,25 @@ export const MOT_MEASUREMENT_SHEET = {
                         },
                         {
                             key: "tendy",
-                            label: "Tendy +"
+                            label: "Tendy + Jeoflor"
                         },
                         {
                             key: "electro",
-                            label: "Electro +"
-                        }
+                            label: "Electro + Jeoflor"
+                        },
+                        {
+                            key: "somoplan_tarket",
+                            label: "Somoplan - Tarket"
+                        },
+                        {
+                            key: "torosp_tarket",
+                            label: "Torosp - Tarket"
+                        },
                     ]
                 },
                 {
                     key: "sliding_door",
-                    label: "Sliding Door",
+                    label: "Sliding Door (HPL)",
                     rows: [
                         {
                             key: "automatic",
@@ -112,7 +158,7 @@ export const MOT_MEASUREMENT_SHEET = {
                         {
                             key: "manual",
                             label: "Manual"
-                        }
+                        },
                     ]
                 },
                 {
@@ -124,9 +170,13 @@ export const MOT_MEASUREMENT_SHEET = {
                             label: "HPL"
                         },
                         {
+                            key: "pcgi",
+                            label: "PCGI"
+                        },
+                        {
                             key: "ppgi",
                             label: "PPGI"
-                        }
+                        },
                     ]
                 },
                 {
@@ -138,9 +188,13 @@ export const MOT_MEASUREMENT_SHEET = {
                             label: "HPL"
                         },
                         {
+                            key: "pcgi",
+                            label: "PCGI"
+                        },
+                        {
                             key: "ppgi",
                             label: "PPGI"
-                        }
+                        },
                     ]
                 },
                 {
@@ -158,7 +212,7 @@ export const MOT_MEASUREMENT_SHEET = {
                         {
                             key: "fix_arm",
                             label: "Fix Arm"
-                        }
+                        },
                     ]
                 },
                 {
@@ -167,8 +221,8 @@ export const MOT_MEASUREMENT_SHEET = {
                     rows: [
                         {
                             key: "writing_board",
-                            label: "Writing Board",
-                        }
+                            label: "Writing Board"
+                        },
                     ]
                 },
                 {
@@ -176,9 +230,13 @@ export const MOT_MEASUREMENT_SHEET = {
                     label: "X-Ray View Box",
                     rows: [
                         {
-                            key: "x_ray_view_box",
-                            label: "X-Ray View Box",
-                        }
+                            key: "double_film",
+                            label: "Double Film"
+                        },
+                        {
+                            key: "triple_film",
+                            label: "Triple Film"
+                        },
                     ]
                 },
                 {
@@ -187,75 +245,85 @@ export const MOT_MEASUREMENT_SHEET = {
                     rows: [
                         {
                             key: "remote_base",
-                            label: "Remote Base",
+                            label: "Remote Base"
                         },
                         {
                             key: "simple",
-                            label: "Simple",
-                        }
+                            label: "Simple"
+                        },
+                        {
+                            key: "touch_panel_base",
+                            label: "Touch Panel Base"
+                        },
                     ]
                 },
                 {
-                    "key": "air_handling_unit",
-                    "label": "Air Handling Unit",
-                    "selection": {
-                        "enabled": true,
-                        "type": "multiple",
-                        "options": [
-                            {
-                                "key": "1200_cm",
-                                "label": "1200 CM"
-                            },
-                            {
-                                "key": "1500_cm",
-                                "label": "1500 CM"
-                            },
-                            {
-                                "key": "2000_cm",
-                                "label": "2000 CM"
-                            },
-                            {
-                                "key": "2500_cm",
-                                "label": "2500 CM"
-                            },
-                            {
-                                "key": "3000_cm",
-                                "label": "3000 CM"
-                            },
-                            {
-                                "key": "3500_cm",
-                                "label": "3500 CM"
-                            },
-                            {
-                                "key": "4000_cm",
-                                "label": "4000 CM"
-                            }
-                        ]
-                    }
+                    key: "air_handling_unit",
+                    label: "Air Handling Unit",
+                    rows: [
+                        {
+                            key: "cfm_1200",
+                            label: "1200 CFM"
+                        },
+                        {
+                            key: "cfm_1500",
+                            label: "1500 CFM"
+                        },
+                        {
+                            key: "cfm_2000",
+                            label: "2000 CFM"
+                        },
+                        {
+                            key: "cfm_2500",
+                            label: "2500 CFM"
+                        },
+                        {
+                            key: "cfm_3000",
+                            label: "3000 CFM"
+                        },
+                        {
+                            key: "cfm_3500",
+                            label: "3500 CFM"
+                        },
+                        {
+                            key: "cfm_4000",
+                            label: "4000 CFM"
+                        },
+                        {
+                            key: "cfm_6000",
+                            label: "6000 CFM"
+                        },
+                        {
+                            key: "cfm_11000",
+                            label: "11000 CFM"
+                        },
+                    ]
                 },
                 {
-                    "key": "outdoor_unit",
-                    "label": "Outdoor Unit",
-
-                    "selection": {
-                        "enabled": true,
-                        "type": "multiple",
-
-                        "options": [
-                            {
-                                "key": "3_tr",
-                                "label": "3 TR"
-                            },
-                            {
-                                "key": "5.5_tr",
-                                "label": "5.5 TR"
-                            },
-                            {
-                                "key": "8.5_tr",
-                                "label": "8.5 TR"
-                            }
-                        ]
-                    }
+                    key: "outdoor_unit",
+                    label: "Outdoor Unit",
+                    rows: [
+                        {
+                            key: "tr_2",
+                            label: "2 TR."
+                        },
+                        {
+                            key: "tr_3",
+                            label: "3 TR."
+                        },
+                        {
+                            key: "tr_5_5",
+                            label: "5.5 TR."
+                        },
+                        {
+                            key: "tr_8_5",
+                            label: "8.5 TR."
+                        },
+                        {
+                            key: "tr_11",
+                            label: "11 TR."
+                        },
+                    ]
                 },
                 {
                     key: "aluminium_coving",
@@ -268,7 +336,7 @@ export const MOT_MEASUREMENT_SHEET = {
                         {
                             key: "outer",
                             label: "Outer"
-                        }
+                        },
                     ]
                 },
                 {
@@ -278,7 +346,7 @@ export const MOT_MEASUREMENT_SHEET = {
                         {
                             key: "iner",
                             label: "Iner"
-                        }
+                        },
                     ]
                 },
                 {
@@ -292,7 +360,47 @@ export const MOT_MEASUREMENT_SHEET = {
                         {
                             key: "g.i",
                             label: "G.I"
-                        }
+                        },
+                        {
+                            key: "aluminium",
+                            label: "Aluminium"
+                        },
+                    ]
+                },
+                {
+                    key: "g_i_ducting",
+                    label: "G.I. Ducting",
+                    rows: [
+                        {
+                            key: "excel_class_o_13mm",
+                            label: "13mm Excel Class O Insulation"
+                        },
+                        {
+                            key: "nitriade_13mm",
+                            label: "13mm Nitriade Insulation"
+                        },
+                        {
+                            key: "insulation_19mm",
+                            label: "19mm Insulation"
+                        },
+                        {
+                            key: "nitriade_19mm",
+                            label: "19mm Nitriade Insulation"
+                        },
+                    ]
+                },
+                {
+                    key: "aluminium_ducting",
+                    label: "Aluminium Ducting",
+                    rows: [
+                        {
+                            key: "nitriade_13mm",
+                            label: "13mm Nitriade Insulation"
+                        },
+                        {
+                            key: "nitriade_19mm",
+                            label: "19mm Nitriade Insulation"
+                        },
                     ]
                 },
                 {
@@ -301,8 +409,8 @@ export const MOT_MEASUREMENT_SHEET = {
                     rows: [
                         {
                             key: "rain_canvas_lag_coating",
-                            label: "Rain Canvas Lag Coating",
-                        }
+                            label: "Rain Canvas Lag Coating"
+                        },
                     ]
                 },
                 {
@@ -316,7 +424,7 @@ export const MOT_MEASUREMENT_SHEET = {
                         {
                             key: "aluminium",
                             label: "Aluminium"
-                        }
+                        },
                     ]
                 },
                 {
@@ -324,19 +432,23 @@ export const MOT_MEASUREMENT_SHEET = {
                     label: "Pheripheral Light",
                     rows: [
                         {
-                            key: "pheripheral_light",
-                            label: "Pheripheral Light",
-                        }
+                            key: "size_300x600",
+                            label: "300X600"
+                        },
+                        {
+                            key: "size_600x600",
+                            label: "600X600"
+                        },
                     ]
                 },
                 {
                     key: "storage_cabinet",
-                    label: "Storage cabinet",
+                    label: "Storage Cabinet",
                     rows: [
                         {
-                            key: "storage_cabinet",
-                            label: "Storage cabinet",
-                        }
+                            key: "aluminium",
+                            label: "Aluminium"
+                        },
                     ]
                 },
                 {
@@ -344,9 +456,39 @@ export const MOT_MEASUREMENT_SHEET = {
                     label: "Glass Painting With Digital Images",
                     rows: [
                         {
-                            key: "glass_painting_with_digital_images",
-                            label: "Glass Painting With Digital Images",
-                        }
+                            key: "with_light_frame",
+                            label: "With Light Frame"
+                        },
+                        {
+                            key: "without_light_frame",
+                            label: "Without Light Frame"
+                        },
+                    ]
+                },
+                {
+                    key: "surgeon_panel",
+                    label: "Surgeon Panel",
+                    rows: [
+                        {
+                            key: "touch_7_1",
+                            label: "Touch (7.1\")"
+                        },
+                        {
+                            key: "touch_10_1",
+                            label: "Touch (10.1\")"
+                        },
+                        {
+                            key: "sub_zero_7_1",
+                            label: "Sub Zero (7.1\")"
+                        },
+                        {
+                            key: "sub_zero_10_1",
+                            label: "Sub Zero (10.1\")"
+                        },
+                        {
+                            key: "membrane",
+                            label: "Membrane"
+                        },
                     ]
                 },
                 {
@@ -354,9 +496,17 @@ export const MOT_MEASUREMENT_SHEET = {
                     label: "Electrical Panel",
                     rows: [
                         {
-                            key: "electrical_panel",
-                            label: "Electrical Panel",
-                        }
+                            key: "touch_panel",
+                            label: "Touch Panel"
+                        },
+                        {
+                            key: "surgeon_panel",
+                            label: "Surgeon Panel"
+                        },
+                        {
+                            key: "sub_zero_panel",
+                            label: "Sub Zero Panel"
+                        },
                     ]
                 },
                 {
@@ -364,9 +514,25 @@ export const MOT_MEASUREMENT_SHEET = {
                     label: "VFD For Electrical Panel",
                     rows: [
                         {
-                            key: "v_f_d_for_electrical_panel",
-                            label: "VFD For Electrical Panel",
-                        }
+                            key: "hp_3",
+                            label: "3 HP"
+                        },
+                        {
+                            key: "hp_5",
+                            label: "5 HP"
+                        },
+                        {
+                            key: "hp_7_50",
+                            label: "7.50 HP"
+                        },
+                        {
+                            key: "hp_10",
+                            label: "10 HP"
+                        },
+                        {
+                            key: "hp_25",
+                            label: "25 HP"
+                        },
                     ]
                 },
                 {
@@ -380,7 +546,7 @@ export const MOT_MEASUREMENT_SHEET = {
                         {
                             key: "box_type",
                             label: "Box Type"
-                        }
+                        },
                     ]
                 },
                 {
@@ -402,22 +568,26 @@ export const MOT_MEASUREMENT_SHEET = {
                             label: "Aluminium"
                         },
                         {
+                            key: "hpl",
+                            label: "HPL"
+                        },
+                        {
                             key: "acp",
                             label: "ACP"
-                        }
+                        },
                     ]
                 },
                 {
                     key: "d_p_guage",
-                    label: "D.P Guage",
+                    label: "D.P. Gauge",
                     rows: [
                         {
                             key: "d_p_guage",
-                            label: "D.P Guage",
+                            label: "D.P. Gauge"
                         },
                     ]
                 },
             ]
         }
-    ],
-} 
+    ]
+}

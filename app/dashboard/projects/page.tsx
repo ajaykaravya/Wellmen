@@ -19,7 +19,8 @@ import {
   FaTrash,
   FaSpinner,
   FaFilter,
-  FaEye
+  FaEye,
+  FaDraftingCompass
 } from "react-icons/fa";
 import { IoIosClose } from "react-icons/io";
 import { IoDocumentTextOutline } from "react-icons/io5";
@@ -158,6 +159,10 @@ function ProjectListContent() {
     router.push(`/dashboard/projects/forms?projectId=${row.id}`)
   }, [])
 
+  const handleProjectDrawings = useCallback((row: ProjectRow) => {
+    router.push(`/dashboard/projects/${row.id}/drawings`)
+  }, [router])
+
   const handleView = useCallback(async (row: ProjectRow) => {
     setViewOpen(true);
     setViewLoading(true);
@@ -284,11 +289,19 @@ function ProjectListContent() {
             <button className="rbac-link" type="button" onClick={() => handleProjectForm(row.original)}>
               <IoDocumentTextOutline />
             </button>
+            <button
+              className="rbac-link"
+              type="button"
+              title="Drawings"
+              onClick={() => handleProjectDrawings(row.original)}
+            >
+              <FaDraftingCompass />
+            </button>
           </div>
         ),
       },
     ],
-    [handleDeleteProject, handleEditProject, handleView],
+    [handleDeleteProject, handleEditProject, handleView, handleProjectDrawings],
   );
 
   const visibleProjects = useMemo(
@@ -514,6 +527,14 @@ function ProjectListContent() {
                         </button>
                         <button className="rbac-link" type="button" onClick={() => handleProjectForm(project)}>
                           <IoDocumentTextOutline  size={18}/>
+                        </button>
+                        <button
+                          className="rbac-link"
+                          type="button"
+                          title="Drawings"
+                          onClick={() => handleProjectDrawings(project)}
+                        >
+                          <FaDraftingCompass size={18} />
                         </button>
                       </div>
                     </div>

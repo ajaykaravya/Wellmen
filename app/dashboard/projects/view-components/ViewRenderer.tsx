@@ -6,6 +6,7 @@ import ContactView from "./ContactView";
 import MatrixView from "./MatrixView";
 import ElectricView from "./ElectricView";
 import SizeMatrixView from "./SizeMatrixView";
+import FileUploadView from "./FileUploadView";
 import CompleteSiteView from "./CompleteSiteView";
 
 type Props = {
@@ -80,6 +81,23 @@ export default function ViewRenderer({
                 section={section}
               />
             );
+
+          case "fileUpload":
+
+            return (
+
+              <FileUploadView
+
+                key={section.key}
+
+                section={section}
+
+                formData={formData}
+
+              />
+
+            );
+
 
           case "completeSiteMatrix":
           case "completeSiteSize":

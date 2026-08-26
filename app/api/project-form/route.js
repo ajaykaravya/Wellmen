@@ -36,9 +36,13 @@ export async function GET(req) {
         },
       },
 
-      orderBy: {
-        createdAt: "asc",
-      },
+      // Ordered by the form's own sortOrder so every project lists its
+      // documents identically, regardless of when each submission row was
+      // created.
+      orderBy: [
+        { projectForm: { sortOrder: "asc" } },
+        { projectForm: { name: "asc" } },
+      ],
     });
 
     const data = projectForms.map((submission) => ({
