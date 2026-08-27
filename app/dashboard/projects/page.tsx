@@ -22,11 +22,10 @@ import {
   FaEye,
   FaDraftingCompass
 } from "react-icons/fa";
-import { IoIosClose } from "react-icons/io";
 import { IoDocumentTextOutline } from "react-icons/io5";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Dialog, DialogBackdrop, DialogPanel, DialogTitle, Listbox } from "@headlessui/react";
+import { Listbox } from "@headlessui/react";
 import { FaCheck, FaChevronDown } from "react-icons/fa";
 
 type ProjectStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "ON_HOLD";
@@ -67,9 +66,6 @@ function ProjectListContent() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<ProjectRow | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [viewOpen, setViewOpen] = useState(false);
-  const [viewData, setViewData] = useState<ProjectRow | null>(null);
-  const [viewLoading, setViewLoading] = useState(false);
 
   const loadProjects = useCallback(async () => {
     setLoading(true);
@@ -163,29 +159,9 @@ function ProjectListContent() {
     router.push(`/dashboard/projects/${row.id}/drawings`)
   }, [router])
 
-  const handleView = useCallback(async (row: ProjectRow) => {
-    setViewOpen(true);
-    setViewLoading(true);
-    setViewData(null);
-
-    try {
-      const data = await projectsApi.get(row.id);
-      setViewData(data as ProjectRow);
-    } catch (error) {
-      console.error("Failed to load project details", error);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to load project details.",
-      );
-      setViewOpen(false);
-    } finally {
-      setViewLoading(false);
-    }
-  }, []);
-
-  const closeView = useCallback(() => {
-    setViewOpen(false);
-    setViewData(null);
-  }, []);
+  const handleView = useCallback((row: ProjectRow) => {
+    router.push(`/dashboard/projects/${row.id}/view`)
+  }, [router]);
 
   const confirmDeleteProject = useCallback(async () => {
     if (!confirmTarget) return;
@@ -742,82 +718,6 @@ function ProjectListContent() {
         />
       </ListingFilterDialog>
 
-      {viewOpen && (
-        <Dialog
-          open={viewOpen}
-          onClose={closeView}
-          className="relative z-100"
-        >
-          <DialogBackdrop
-            className="theme-modal-overlay fixed inset-0 z-100 bg-black/60 backdrop-blur-sm transition-opacity"
-            aria-hidden="true"
-          />
-
-          <div className="fixed inset-0 z-101 flex items-center justify-center p-4">
-            <DialogPanel className="theme-modal-surface relative z-102 w-full max-w-4xl rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-auto">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <DialogTitle className="text-lg font-semibold">
-                    Project details
-                  </DialogTitle>
-                  <p className="mt-1 text-sm">
-                    View full project information.
-                  </p>
-                </div>
-                <button type="button" onClick={closeView}>
-                  <IoIosClose size={30} />
-                </button>
-              </div>
-
-              {viewLoading && (
-                <div className="flex items-center justify-center py-4">
-                  <FaSpinner className="animate-spin mr-2" size={16} />
-                </div>
-              )}
-
-              {!viewLoading && viewData && (
-                <div className="mt-4 grid gap-4">
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <p className="text-sm">
-                      <strong>Project Name:</strong> {viewData.name}
-                    </p>
-                    <p className="text-sm">
-                      <strong>City:</strong> {viewData.city || "-"}
-                    </p>
-                    <p className="text-sm">
-                      <strong>Contact Number:</strong> {viewData.contactNumber || "-"}
-                    </p>
-                    <p className="text-sm">
-                      <strong>Email:</strong> {viewData.email || "-"}
-                    </p>
-                    <p className="text-sm">
-                      <strong>Start Date:</strong> {formatToDDMMYYYY(viewData.startDate)}
-                    </p>
-                    <p className="text-sm">
-                      <strong>End Date:</strong> {formatToDDMMYYYY(viewData.endDate)}
-                    </p>
-                    <p className="text-sm">
-                      <strong>Status:</strong> {statusLabel(viewData.status)}
-                    </p>
-                  </div>
-
-                  {viewData.address && (
-                    <p className="text-sm whitespace-pre-wrap">
-                      <strong>Address:</strong> {viewData.address}
-                    </p>
-                  )}
-
-                  {viewData.description && (
-                    <p className="text-sm whitespace-pre-wrap">
-                      <strong>Description:</strong> {viewData.description}
-                    </p>
-                  )}
-                </div>
-              )}
-            </DialogPanel>
-          </div>
-        </Dialog>
-      )}
     </>
   );
 }
