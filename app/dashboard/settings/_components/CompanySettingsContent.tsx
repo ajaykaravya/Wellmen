@@ -18,6 +18,7 @@ type Draft = {
   contactNumber: string;
   email: string;
   address: string;
+  isPrimary: boolean;
 };
 
 const toDraft = (company: CompanyDetails): Draft => ({
@@ -27,6 +28,7 @@ const toDraft = (company: CompanyDetails): Draft => ({
   contactNumber: company.contactNumber || "",
   email: company.email || "",
   address: company.address || "",
+  isPrimary: Boolean(company.isPrimary),
 });
 
 export default function CompanySettingsContent() {
@@ -67,7 +69,7 @@ export default function CompanySettingsContent() {
     if (selected) setDraft(toDraft(selected));
   }, [selected]);
 
-  const setField = (key: keyof Draft, value: string) => {
+  const setField = (key: keyof Draft, value: string | boolean) => {
     setDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
   };
 
@@ -86,7 +88,15 @@ export default function CompanySettingsContent() {
       const updated = result?.data;
       if (updated) {
         setCompanies((prev) =>
-          prev.map((item) => (item.id === updated.id ? updated : item)),
+          prev.map((item) =>
+            item.id === updated.id
+              ? updated
+              : // Marking one primary clears the others server-side; mirror that
+                // here so the list does not show two primaries until reload.
+                updated.isPrimary
+                ? { ...item, isPrimary: false }
+                : item,
+          ),
         );
       }
       toast.success("Company details saved.");
@@ -160,6 +170,7 @@ export default function CompanySettingsContent() {
                 }`}
               >
                 {company.name}
+                {company.isPrimary ? " ★" : ""}
               </button>
             ))}
           </div>
@@ -286,6 +297,24 @@ export default function CompanySettingsContent() {
                 />
               </div>
             </div>
+
+            <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={draft.isPrimary}
+                onChange={(e) => setField("isPrimary", e.target.checked)}
+              />
+              <span>
+                <span className="block text-sm font-semibold text-slate-800">
+                  Set as primary company
+                </span>
+                <span className="block text-xs text-slate-500">
+                  The primary company&apos;s details are printed as a footer on
+                  every page of exported PDFs. Only one company can be primary.
+                </span>
+              </span>
+            </label>
 
             <div className="flex justify-end">
               <button

@@ -7,6 +7,10 @@ import ViewRenderer from "../../../view-components/ViewRenderer";
 import jsPDF from "jspdf";
 import * as htmlToImage from "html-to-image";
 import Loading from "@/app/components/Loading";
+import {
+  loadPrimaryCompany,
+  type CompanyDetails,
+} from "@/lib/api/dashboard/companies";
 
 export default function ViewSubmissionPage() {
   const params = useParams();
@@ -16,6 +20,9 @@ export default function ViewSubmissionPage() {
 
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [primaryCompany, setPrimaryCompany] = useState<CompanyDetails | null>(
+    null,
+  );
 
   const loadSubmission = useCallback(async () => {
     setLoading(true);
@@ -39,12 +46,115 @@ export default function ViewSubmissionPage() {
     }
   }, [submissionId, loadSubmission]);
 
+  useEffect(() => {
+    // Printed as a footer on every PDF page; absence is not an error.
+    loadPrimaryCompany()
+      .then(setPrimaryCompany)
+      .catch((error) => console.error("Failed to load primary company", error));
+  }, []);
+
   const handleBack = () => {
     if (data?.project?.id) {
       router.push(`/dashboard/projects/forms?projectId=${data.project.id}`);
     } else {
       router.back();
     }
+  };
+
+  // Loads an image as a data URL so jsPDF can embed it. Returns null rather
+  // than throwing, so a missing logo never blocks the export.
+  const toDataUrl = async (url: string) => {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) return null;
+      const blob = await response.blob();
+      return await new Promise<string | null>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      return null;
+    }
+  };
+
+  const drawFooterOnEveryPage = async (
+    pdf: InstanceType<typeof jsPDF>,
+    pdfWidth: number,
+    pageHeight: number,
+  ) => {
+    const company = primaryCompany;
+    // jspdf 4 declares getNumberOfPages() on the instance, but the obsolete
+    // @types/jspdf@1 stub in devDependencies shadows it, so narrow the cast
+    // here rather than reach into pdf.internal.
+    const pageCount = (
+      pdf as unknown as { getNumberOfPages(): number }
+    ).getNumberOfPages();
+
+    const line1 = company?.name || "";
+    const line2 = [company?.address].filter(Boolean).join("");
+    const line3 = [
+      company?.contactPerson ? `Contact: ${company.contactPerson}` : "",
+      company?.contactNumber,
+      company?.email,
+    ]
+      .filter(Boolean)
+      .join("  |  ");
+
+    const logoData =
+      company?.logoUrl ? await toDataUrl(company.logoUrl) : null;
+
+    const marginX = 10;
+    const baseY = pageHeight - 16;
+
+    for (let page = 1; page <= pageCount; page += 1) {
+      pdf.setPage(page);
+
+      pdf.setDrawColor(200);
+      pdf.setLineWidth(0.2);
+      pdf.line(marginX, baseY - 4, pdfWidth - marginX, baseY - 4);
+
+      let textX = marginX;
+      if (logoData) {
+        try {
+          pdf.addImage(logoData, "PNG", marginX, baseY - 2, 10, 10);
+          textX = marginX + 13;
+        } catch {
+          // An unsupported image simply means a text-only footer.
+        }
+      }
+
+      if (line1) {
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(8);
+        pdf.setTextColor(60);
+        pdf.text(line1, textX, baseY);
+      }
+
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(7);
+      pdf.setTextColor(110);
+
+      const maxWidth = pdfWidth - textX - marginX - 20;
+      if (line2) {
+        pdf.text(pdf.splitTextToSize(line2, maxWidth)[0] || "", textX, baseY + 3.5);
+      }
+      if (line3) {
+        pdf.text(pdf.splitTextToSize(line3, maxWidth)[0] || "", textX, baseY + 7);
+      }
+
+      pdf.setFontSize(7);
+      pdf.setTextColor(140);
+      pdf.text(
+        `Page ${page} of ${pageCount}`,
+        pdfWidth - marginX,
+        baseY + 7,
+        { align: "right" },
+      );
+    }
+
+    pdf.setTextColor(0);
   };
 
   const handleSavePDF = async () => {
@@ -84,6 +194,8 @@ export default function ViewSubmissionPage() {
         pdf.addImage(dataUrl, "PNG", 0, position, pdfWidth, imgHeight);
         heightLeft -= pageHeight;
       }
+
+      await drawFooterOnEveryPage(pdf, pdfWidth, pageHeight);
 
       pdf.save(`${data.project.name} - ${data.projectForm.name}.pdf`);
     } catch (error) {

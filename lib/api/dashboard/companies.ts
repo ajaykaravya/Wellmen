@@ -9,6 +9,7 @@ export type CompanyDetails = {
   email: string | null;
   address: string | null;
   logoUrl: string | null;
+  isPrimary: boolean;
   updatedAt?: string;
 };
 
@@ -17,6 +18,13 @@ export async function loadCompanies() {
     path: "/api/companies",
   });
   return data?.data || [];
+}
+
+export async function loadPrimaryCompany() {
+  const data = await requestJson<{ data: CompanyDetails | null }>({
+    path: "/api/companies/primary",
+  });
+  return data?.data || null;
 }
 
 export async function updateCompany(

@@ -100,11 +100,14 @@ model Company {
   email                               String?
   address                             String?              @db.Text
   logoUrl                             String?              @db.Text
+  isPrimary                           Boolean              @default(false)
   createdAt                           DateTime             @default(now())
   updatedAt                           DateTime             @updatedAt
   financeTransactionsAsExpenseCompany FinanceTransaction[] @relation("FinanceTransactionExpenseCompany")
   incomeTransactionsAsIncomeCompany   IncomeTransaction[]  @relation("IncomeTransactionIncomeCompany")
   petiCashTransactions                PetiCash[]           @relation("PetiCashCompany")
+
+  @@index([isPrimary])
 }
 
 model Permission {

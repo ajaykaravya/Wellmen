@@ -49,8 +49,19 @@ export async function PUT(req, { params }) {
     return trimmed === "" ? null : trimmed;
   };
 
+  const makePrimary = body.isPrimary === true;
+
   try {
-    const company = await prisma.company.update({
+    const company = await prisma.$transaction(async (tx) => {
+      // Exactly one company can be primary, so clear the flag elsewhere first.
+      if (makePrimary) {
+        await tx.company.updateMany({
+          where: { id: { not: id }, isPrimary: true },
+          data: { isPrimary: false },
+        });
+      }
+
+      return tx.company.update({
       where: { id },
       data: {
         name,
@@ -64,7 +75,9 @@ export async function PUT(req, { params }) {
         ...(body.logoUrl === undefined
           ? {}
           : { logoUrl: blankToNull(body.logoUrl) }),
+        ...(body.isPrimary === undefined ? {} : { isPrimary: makePrimary }),
       },
+      });
     });
 
     return NextResponse.json({ data: serializeCompany(company) });

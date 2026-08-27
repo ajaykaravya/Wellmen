@@ -11,6 +11,7 @@ export const serializeCompany = (company) => ({
   email: company.email,
   address: company.address,
   logoUrl: company.logoUrl,
+  isPrimary: company.isPrimary,
   updatedAt: company.updatedAt,
 });
 
