@@ -85,7 +85,7 @@ export default function ViewSubmissionPage() {
         heightLeft -= pageHeight;
       }
 
-      pdf.save(`${data.projectForm.name}_${data.project.name}.pdf`);
+      pdf.save(`${data.project.name} - ${data.projectForm.name}.pdf`);
     } catch (error) {
       console.error("PDF generation error:", error);
     }
@@ -105,21 +105,67 @@ export default function ViewSubmissionPage() {
     return <DashboardShell>Submission not found.</DashboardShell>;
   }
 
+  const projectAddress = [data.project.address, data.project.city]
+    .filter(Boolean)
+    .join(", ");
+
+  const printedOn = new Date().toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+
   return (
     <DashboardShell>
       <section className="rbac-section rbac-container">
         <div className="rbac-card" ref={contentRef}>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-b">
-            <div>
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6 pb-6 border-b">
+            <div className="min-w-0">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {data.projectForm.name}
               </h1>
-              <p className="text-sm mt-1">
-                Project:{" "}
-                <span className="font-semibold">
-                  {data.project.name}
-                </span>
-              </p>
+
+              {/* Project details are printed with the document so a shared or
+                  filed PDF identifies the hospital on its own. */}
+              <dl className="mt-3 grid grid-cols-1 gap-x-8 gap-y-1 text-sm sm:grid-cols-2">
+                <div className="flex gap-2">
+                  <dt className="shrink-0 text-gray-500">Hospital:</dt>
+                  <dd className="font-semibold">{data.project.name}</dd>
+                </div>
+
+                {projectAddress ? (
+                  <div className="flex gap-2">
+                    <dt className="shrink-0 text-gray-500">Address:</dt>
+                    <dd>{projectAddress}</dd>
+                  </div>
+                ) : null}
+
+                {data.project.contactNumber ? (
+                  <div className="flex gap-2">
+                    <dt className="shrink-0 text-gray-500">Contact:</dt>
+                    <dd>{data.project.contactNumber}</dd>
+                  </div>
+                ) : null}
+
+                {data.project.email ? (
+                  <div className="flex gap-2">
+                    <dt className="shrink-0 text-gray-500">Email:</dt>
+                    <dd>{data.project.email}</dd>
+                  </div>
+                ) : null}
+
+                <div className="flex gap-2">
+                  <dt className="shrink-0 text-gray-500">Status:</dt>
+                  <dd>
+                    {data.status === "COMPLETED" ? "Completed" : "Pending"}
+                  </dd>
+                </div>
+
+                <div className="flex gap-2">
+                  <dt className="shrink-0 text-gray-500">Printed:</dt>
+                  <dd>{printedOn}</dd>
+                </div>
+              </dl>
             </div>
             <div className="flex gap-3 print:hidden">
               <button

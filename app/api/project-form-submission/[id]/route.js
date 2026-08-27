@@ -16,10 +16,16 @@ export async function GET(req, { params }) {
       },
 
       include: {
+        // Project details are shown in the document header and PDF export, so
+        // the reader can tell which hospital a printed sheet belongs to.
         project: {
           select: {
             id: true,
             name: true,
+            address: true,
+            city: true,
+            contactNumber: true,
+            email: true,
           },
         },
 

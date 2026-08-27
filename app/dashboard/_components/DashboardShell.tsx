@@ -49,7 +49,8 @@ type MenuKey =
   | "incomeTypes"
   | "transportReports"
   | "cashTracker"
-  | "newPetiCash";
+  | "newPetiCash"
+  | "settings";
 
 type DashboardContextValue = {
   user: SessionUser | null;
@@ -102,10 +103,12 @@ const routeByMenu: Record<MenuKey, string> = {
   incomeTypes: "/dashboard/income-types",
   cashTracker: "/dashboard/cash-tracker",
   newPetiCash: "/dashboard/new-peti-cash",
+  settings: "/dashboard/settings",
 };
 
 const getActiveMenu = (pathname: string | null): MenuKey => {
   const safePathname = pathname || "";
+  if (safePathname.startsWith("/dashboard/settings")) return "settings";
   if (safePathname.startsWith("/dashboard/users")) return "users";
   if (safePathname.startsWith("/dashboard/office-categories"))
     return "officeCategories";
@@ -301,6 +304,7 @@ export default function DashboardShell({
       items.push({ key: "projects", label: "Projects" });
       items.push({ key: "hospitals", label: "Hospitals" });
       items.push({ key: "users", label: "Users" });
+      items.push({ key: "settings", label: "Settings" });
     }
     return items;
   }, [isAdmin]);
