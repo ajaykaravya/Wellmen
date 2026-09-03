@@ -1,12 +1,29 @@
 "use client";
 
+import {
+  getElectricSubZeroValue,
+  getElectricTouchPanelValue,
+  resolveSectionKey,
+} from "@/lib/sectionFormKeys";
+import { isElectricRowFilled, isFilled } from "@/lib/formViewUtils";
+
 export default function ElectricView({
   section,
   formData,
+  templateSections = [],
 }: {
   section: any;
   formData: any;
+  templateSections?: any[];
 }) {
+  const sectionKey = resolveSectionKey(section);
+  const filledRows =
+    section.rows?.filter((row: any) =>
+      isElectricRowFilled(formData, sectionKey, row.key, templateSections),
+    ) ?? [];
+
+  if (filledRows.length === 0) return null;
+
   return (
     <div className="rbac-card">
       <h3 className="rbac-title-lg mb-5">{section.title}</h3>
@@ -20,14 +37,28 @@ export default function ElectricView({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {section.rows?.map((row: any) => {
-              const subZero = formData?.[`${row.key}_sub_zero_remark`];
-              const touchPanel = formData?.[`${row.key}_touch_panel_remark`];
+            {filledRows.map((row: any) => {
+              const subZero = getElectricSubZeroValue(
+                formData,
+                sectionKey,
+                row.key,
+                templateSections,
+              );
+              const touchPanel = getElectricTouchPanelValue(
+                formData,
+                sectionKey,
+                row.key,
+                templateSections,
+              );
               return (
-                <tr key={row.key} className="">
+                <tr key={`${sectionKey}-${row.key}`} className="">
                   <td className="px-6 py-4 font-medium">{row.label}</td>
-                  <td className="px-6 py-4">{subZero || <span className="">-</span>}</td>
-                  <td className="px-6 py-4">{touchPanel || <span className="">-</span>}</td>
+                  <td className="px-6 py-4">
+                    {isFilled(subZero) ? String(subZero) : null}
+                  </td>
+                  <td className="px-6 py-4">
+                    {isFilled(touchPanel) ? String(touchPanel) : null}
+                  </td>
                 </tr>
               );
             })}

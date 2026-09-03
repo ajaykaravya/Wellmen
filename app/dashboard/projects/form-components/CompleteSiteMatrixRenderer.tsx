@@ -1,5 +1,7 @@
 "use client";
 
+import { resolveSectionKey, sectionRowColKey } from "@/lib/sectionFormKeys";
+
 export default function CompleteSiteMatrixRenderer({
   section,
   formData,
@@ -9,6 +11,8 @@ export default function CompleteSiteMatrixRenderer({
   formData: any;
   setFormData: any;
 }) {
+  const sectionKey = resolveSectionKey(section);
+
   return (
     <table className="w-full border">
       <thead>
@@ -25,11 +29,11 @@ export default function CompleteSiteMatrixRenderer({
 
       <tbody>
         {section.rows.map((row: any) => (
-          <tr key={row.key}>
+          <tr key={`${sectionKey}-${row.key}`}>
             <td className="border p-2">{row.label}</td>
 
             {section.columns.map((col: any) => {
-              const name = `${row.key}_${col.key}`;
+              const name = sectionRowColKey(sectionKey, row.key, col.key);
               return (
                 <td key={col.key} className="border p-2">
                   <input

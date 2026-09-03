@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  electricSubZeroKey,
+  electricTouchPanelKey,
+  resolveSectionKey,
+} from "@/lib/sectionFormKeys";
+
 export default function ElectricSection({
   section,
   formData,
@@ -9,9 +15,10 @@ export default function ElectricSection({
   formData: any;
   setFormData: any;
 }) {
+  const sectionKey = resolveSectionKey(section);
+
   return (
     <div className="rbac-card">
-      {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <h3 className="rbac-title-lg">{section.title}</h3>
 
@@ -20,29 +27,25 @@ export default function ElectricSection({
         </span>
       </div>
 
-      {/* Desktop Table */}
-
       <div className="hidden md:block overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 ">
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-[var(--theme-surface-2)] text-[color:var(--theme-text-muted)] text-sm ">
               <th className="px-5 py-4 text-left">Description</th>
-
               <th className="px-5 py-4 text-left">
                 Sub Zero Panel Board Remark
               </th>
-
               <th className="px-5 py-4 text-left">Touch Panel Board Remark</th>
             </tr>
           </thead>
 
           <tbody>
-            {section.rows.map((row: any, index: number) => {
-              const subZeroKey = `${row.key}_sub_zero_remark`;
-              const touchPanelKey = `${row.key}_touch_panel_remark`;
+            {section.rows.map((row: any) => {
+              const subZeroKey = electricSubZeroKey(sectionKey, row.key);
+              const touchPanelKey = electricTouchPanelKey(sectionKey, row.key);
               return (
                 <tr
-                  key={row.key}
+                  key={`${sectionKey}-${row.key}`}
                   className="border-t border-gray-200 dark:border-gray-700 dark:hover:bg-gray-800 transition "
                 >
                   <td className="px-5 py-4 text-sm">
@@ -85,24 +88,18 @@ export default function ElectricSection({
         </table>
       </div>
 
-      {/* Mobile Card View */}
-
       <div className="md:hidden space-y-4 ">
-        {section.rows.map((row: any, index: number) => {
-          const subZeroKey = `${row.key}_sub_zero_remark`;
-          const touchPanelKey = `${row.key}_touch_panel_remark`;
+        {section.rows.map((row: any) => {
+          const subZeroKey = electricSubZeroKey(sectionKey, row.key);
+          const touchPanelKey = electricTouchPanelKey(sectionKey, row.key);
           return (
             <div
-              key={row.key}
+              key={`${sectionKey}-${row.key}`}
               className="border rounded-xl p-4 space-y-4 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 "
             >
-              {/* Title */}
-
               <div className="flex items-center gap-3 text-sm font-medium ">
                 {row.label}
               </div>
-
-              {/* Sub Zero */}
 
               <div>
                 <label className="block text-xs mb-1 text-gray-500 ">
@@ -122,8 +119,6 @@ export default function ElectricSection({
                   }}
                 />
               </div>
-
-              {/* Touch Panel */}
 
               <div>
                 <label className="block text-xs mb-1 text-gray-500 ">

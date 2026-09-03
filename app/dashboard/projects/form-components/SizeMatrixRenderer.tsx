@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  resolveSectionKey,
+  sectionRowColChildKey,
+  sectionRowColKey,
+} from "@/lib/sectionFormKeys";
+
 export default function SizeMatrixRenderer({
   section,
   formData,
@@ -9,6 +15,8 @@ export default function SizeMatrixRenderer({
   formData: any;
   setFormData: any;
 }) {
+  const sectionKey = resolveSectionKey(section);
+
   return (
     <div className="rbac-card">
       <h3 className="rbac-title-lg mb-4">{section.title}</h3>
@@ -60,7 +68,7 @@ export default function SizeMatrixRenderer({
 
         <tbody>
           {section.rows.map((row: any) => (
-            <tr key={row.key}>
+            <tr key={`${sectionKey}-${row.key}`}>
               <td className="border p-2 text-sm whitespace-nowrap">
                 {row.label}
               </td>
@@ -68,10 +76,15 @@ export default function SizeMatrixRenderer({
               {section.columns.map((col: any) =>
                 col.children ? (
                   col.children.map((child: any) => {
-                    const name = `${row.key}_${col.key}_${child.key}`;
+                    const name = sectionRowColChildKey(
+                      sectionKey,
+                      row.key,
+                      col.key,
+                      child.key,
+                    );
                     return (
                       <td
-                        key={`${row.key}-${col.key}-${child.key}`}
+                        key={`${sectionKey}-${row.key}-${col.key}-${child.key}`}
                         className="border p-2"
                       >
                         <input
@@ -89,9 +102,9 @@ export default function SizeMatrixRenderer({
                     );
                   })
                 ) : (
-                  <td key={`${row.key}-${col.key}`} className="border p-2">
+                  <td key={`${sectionKey}-${row.key}-${col.key}`} className="border p-2">
                     {(() => {
-                      const name = `${row.key}_${col.key}`;
+                      const name = sectionRowColKey(sectionKey, row.key, col.key);
                       return (
                         <input
                           className="rbac-input w-full min-w-[100px]"

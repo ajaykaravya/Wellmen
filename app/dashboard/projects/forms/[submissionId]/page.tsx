@@ -6,6 +6,7 @@ import DashboardShell from "@/app/dashboard/_components/DashboardShell";
 import FormRenderer from "../../form-components/FormRenderer";
 import { useRouter } from "next/navigation";
 import Loading from "@/app/components/Loading";
+import { migrateFormData } from "@/lib/sectionFormKeys";
 
 export default function ProjectFormPage() {
   const params = useParams();
@@ -29,8 +30,12 @@ export default function ProjectFormPage() {
 
       setData(result.data);
 
-      // existing saved JSON
-      setFormData(result.data?.formData || {});
+      setFormData(
+        migrateFormData(
+          result.data?.formData || {},
+          result.data?.projectForm?.template || {},
+        ),
+      );
     } catch (error) {
       console.error("Submission fetch error:", error);
     }
@@ -54,6 +59,11 @@ export default function ProjectFormPage() {
 
   const handleSubmit = async () => {
     try {
+      const migratedFormData = migrateFormData(
+        formData,
+        data.projectForm.template,
+      );
+
       const res = await fetch(`/api/project-form-submission/${submissionId}`, {
         method: "PUT",
 
@@ -62,7 +72,7 @@ export default function ProjectFormPage() {
         },
 
         body: JSON.stringify({
-          formData,
+          formData: migratedFormData,
         }),
       });
 

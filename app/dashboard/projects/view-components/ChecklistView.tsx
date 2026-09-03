@@ -1,12 +1,32 @@
 "use client";
 
+import {
+  getChecklistRemarkValue,
+  getChecklistStatusValue,
+  resolveSectionKey,
+} from "@/lib/sectionFormKeys";
+import {
+  isChecklistRowFilled,
+  isFilled,
+} from "@/lib/formViewUtils";
+
 export default function ChecklistView({
   section,
   formData,
+  templateSections = [],
 }: {
   section: any;
   formData: any;
+  templateSections?: any[];
 }) {
+  const sectionKey = resolveSectionKey(section);
+  const filledRows =
+    section.rows?.filter((row: any) =>
+      isChecklistRowFilled(formData, sectionKey, row.key, templateSections),
+    ) ?? [];
+
+  if (filledRows.length === 0) return null;
+
   return (
     <div className="rbac-card">
       <h3 className="rbac-title-lg mb-5">{section.title}</h3>
@@ -20,11 +40,21 @@ export default function ChecklistView({
             </tr>
           </thead>
           <tbody className="divide-y divide-[color:var(--theme-border)]">
-            {section.rows?.map((row: any) => {
-              const status = formData?.[row.key];
-              const remark = formData?.[`${row.key}_remark`];
+            {filledRows.map((row: any) => {
+              const status = getChecklistStatusValue(
+                formData,
+                sectionKey,
+                row.key,
+                templateSections,
+              );
+              const remark = getChecklistRemarkValue(
+                formData,
+                sectionKey,
+                row.key,
+                templateSections,
+              );
               return (
-                <tr key={row.key} className="hover:bg-[var(--theme-surface-2)]">
+                <tr key={`${sectionKey}-${row.key}`} className="hover:bg-[var(--theme-surface-2)]">
                   <td className="px-6 py-4 text-[color:var(--theme-text)]">{row.label}</td>
                   <td className="px-6 py-4 text-center">
                     {status === "OK" && (
@@ -33,10 +63,9 @@ export default function ChecklistView({
                     {status === "NOT_OK" && (
                       <span className="px-3 py-1 rounded-full text-xs font-bold bg-[var(--theme-danger-bg)] text-[var(--theme-danger-text)]">Not Ok</span>
                     )}
-                    {!status && <span className="text-[color:var(--theme-text-muted)]">-</span>}
                   </td>
                   <td className="px-6 py-4 text-[color:var(--theme-text-muted)] italic">
-                    {remark || <span className="text-[color:var(--theme-text-muted)]">-</span>}
+                    {isFilled(remark) ? String(remark) : null}
                   </td>
                 </tr>
               );

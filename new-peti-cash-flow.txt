@@ -1,0 +1,946 @@
+Content is user-generated and unverified.
+
+
+13
+Learn how to customize
+import React, { useState, useEffect, useMemo } from "react";
+import {
+  Plus, Trash2, IndianRupee, TrendingUp, TrendingDown, Receipt, Wallet,
+  Sunrise, Sunset, Paperclip, X, Image as ImageIcon, Users
+} from "lucide-react";
+
+const DIRECT_COMPANIES = ["Wellman Group", "Wellman Healthcare Services"];
+const BANK_RESOURCES = ["ICICI Bank"];
+const PAYMENT_MODES = ["NEFT/RTGS", "UPI"];
+
+const CASH_ENTITIES = ["Wellman Group", "Wellman Healthcare Services", "Wellman Healthcare Infra"];
+const CUSTODIANS = ["Chirag", "Sadam", "Kuldeep", "Dipak Bhai", "Jagmal"];
+
+const INCOME_SOURCES = ["Self", "Scrap Selling", "Cash", "Other", "Service"];
+
+const EXPENSE_CATEGORIES = [
+  "Material Purchase", "Site Labour", "Subcontractor Payment", "Transportation/Freight",
+  "Equipment Rental", "Installation & Commissioning", "Office Rent", "Staff Salary",
+  "Fuel & Vehicle Maintenance", "Utilities", "Travel & Site Visit", "Office Supplies",
+  "Bank Charges / Loan Interest", "Professional Fees", "Miscellaneous / Petty Cash (Peti)",
+  "Site Advance / Imprest",
+];
+
+const TRADE_CONTRACTORS = {
+  "Flooring": ["Moin Khan"],
+  "Ducting": ["Rakesh", "Suraj"],
+  "MOT (Panel Fabrication)": ["Shivram", "Rajubhai"],
+  "MGPS Piping": ["Arbaz"],
+  "Electrical Panel Work": ["Yogesh"],
+  "AHU Installation": ["Ramesh Bhai"],
+  "Service": ["Mahesh"],
+};
+const TRADES = Object.keys(TRADE_CONTRACTORS);
+
+// --- Expense Management Module config ---
+const EXPENSE_MGMT_CATEGORIES = {
+  "Site Expense": ["Sadam", "Amar"],
+  "Transportation Management": ["Yasin", "Mohsin"],
+  "Sub Labour Contractor Agency": ["Rakesh - Duct", "Moin - Flooring", "Yogesh - Electric Panel", "Arbaz - MGPS"],
+  "Salary & Cash Advance": ["Harshad", "Mayur Bhai", "Amar Bhai", "Rohit", "Kamlesh", "Mukeshbhai"],
+};
+const EXPENSE_MGMT_CATEGORY_NAMES = Object.keys(EXPENSE_MGMT_CATEGORIES);
+const DAY_TYPES = [
+  { label: "Half Day", rate: 130 },
+  { label: "Full Day", rate: 260 },
+];
+const TRANSPORT_MODES = ["Bus / CNG Fare", "Rickshaw / Local Freight"];
+const LABOUR_CONTRACTORS = [
+  { name: "Moin Khan - Flooring", rateNote: "₹18/sq.ft (Labour + Transport)" },
+  { name: "Rakesh - Ducting", rateNote: "₹42/sq.ft + Transport" },
+  { name: "Yogesh Bhai - Electric Panel", rateNote: "₹42,000/panel (Fixed)" },
+];
+
+const STORAGE_KEY = "wellman-expense-track-data";
+const BILL_PHOTO_PREFIX = "wellman-bill-photo:";
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
+const inr = (n) =>
+  new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n || 0);
+
+function compressImage(file, maxDim = 900, quality = 0.6) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read file"));
+    reader.onload = () => {
+      const img = new window.Image();
+      img.onerror = () => reject(new Error("Could not load image"));
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height && width > maxDim) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else if (height > maxDim) {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Reusable bill attachment field
+function BillAttachment({ billNumber, setBillNumber, billPhoto, setBillPhoto, busy, setBusy }) {
+  const handleSelect = async (file) => {
+    if (!file) return;
+    setBusy(true);
+    try {
+      const dataUrl = await compressImage(file);
+      setBillPhoto(dataUrl);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div>
+      <label className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+        Bill Attachment <span className="normal-case text-slate-400">(optional)</span>
+      </label>
+      <div className="mt-1 grid grid-cols-2 gap-3">
+        <input
+          type="text"
+          value={billNumber}
+          onChange={(ev) => setBillNumber(ev.target.value)}
+          placeholder="Bill / Invoice No."
+          className="border border-stone-300 rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-700 focus:border-teal-700"
+        />
+        <label className="flex items-center justify-center gap-2 border border-dashed border-stone-300 rounded-sm px-3 py-2 text-sm text-slate-500 cursor-pointer hover:border-teal-700 hover:text-teal-700 transition-colors">
+          <Paperclip size={14} />
+          {busy ? "Processing…" : "Attach Photo"}
+          <input type="file" accept="image/*" capture="environment" onChange={(ev) => handleSelect(ev.target.files?.[0])} className="hidden" />
+        </label>
+      </div>
+      {billPhoto && (
+        <div className="mt-2 flex items-center gap-2 field-enter">
+          <img src={billPhoto} alt="Bill preview" className="h-14 w-14 object-cover rounded-sm border border-stone-200" />
+          <button type="button" onClick={() => setBillPhoto(null)} className="flex items-center gap-1 text-xs text-rose-700 hover:underline">
+            <X size={12} /> Remove
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function ExpenseTrackModule() {
+  const [entries, setEntries] = useState([]);
+  const [siteEntries, setSiteEntries] = useState([]);
+  const [cashStartingBalance, setCashStartingBalance] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+
+  const [activeModule, setActiveModule] = useState("Cash Voucher"); // "Cash Voucher" | "Direct Expense (White)" | "Expense Management"
+
+  const [company, setCompany] = useState(DIRECT_COMPANIES[0]);
+  const [bankResource, setBankResource] = useState(BANK_RESOURCES[0]);
+  const [paymentMode, setPaymentMode] = useState(PAYMENT_MODES[0]);
+  const [vendor, setVendor] = useState("");
+
+  const [entity, setEntity] = useState(CASH_ENTITIES[0]);
+  const [custodian, setCustodian] = useState(CUSTODIANS[0]);
+
+  const [transactionType, setTransactionType] = useState("Expense");
+  const [incomeSource, setIncomeSource] = useState(INCOME_SOURCES[0]);
+
+  const [category, setCategory] = useState(EXPENSE_CATEGORIES[0]);
+  const [trade, setTrade] = useState(TRADES[0]);
+  const [contractor, setContractor] = useState(TRADE_CONTRACTORS[TRADES[0]][0]);
+
+  const [amount, setAmount] = useState("");
+  const [date, setDate] = useState(todayISO());
+  const [projectRef, setProjectRef] = useState("");
+  const [remarks, setRemarks] = useState("");
+  const [billNumber, setBillNumber] = useState("");
+  const [billPhoto, setBillPhoto] = useState(null);
+  const [billPhotoBusy, setBillPhotoBusy] = useState(false);
+  const [viewingBill, setViewingBill] = useState(null);
+  const [error, setError] = useState("");
+
+  const [filterPayment, setFilterPayment] = useState("All");
+  const [filterEntity, setFilterEntity] = useState("All");
+
+  // --- Expense Management module state ---
+  const [expCategory, setExpCategory] = useState(EXPENSE_MGMT_CATEGORY_NAMES[0]);
+  const [sitePerson, setSitePerson] = useState(EXPENSE_MGMT_CATEGORIES[EXPENSE_MGMT_CATEGORY_NAMES[0]][0]);
+
+  const [siteEntryType, setSiteEntryType] = useState("Advance"); // "Advance" | "Claim"
+  const [expenseType, setExpenseType] = useState("Daily Wage"); // "Daily Wage" | "Transportation" | "Labour Contractor"
+  const [dayType, setDayType] = useState(DAY_TYPES[0].label);
+  const [transportMode, setTransportMode] = useState(TRANSPORT_MODES[0]);
+  const [contractorRef, setContractorRef] = useState(LABOUR_CONTRACTORS[0].name);
+  const [siteAmount, setSiteAmount] = useState("");
+  const [siteDate, setSiteDate] = useState(todayISO());
+  const [siteRemarks, setSiteRemarks] = useState("");
+  const [siteBillNumber, setSiteBillNumber] = useState("");
+  const [siteBillPhoto, setSiteBillPhoto] = useState(null);
+  const [siteBillBusy, setSiteBillBusy] = useState(false);
+  const [siteError, setSiteError] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await window.storage.get(STORAGE_KEY);
+        if (res && res.value) {
+          const parsed = JSON.parse(res.value);
+          setEntries(parsed.entries || []);
+          setSiteEntries(parsed.siteEntries || []);
+          setCashStartingBalance(parsed.cashStartingBalance || 0);
+        }
+      } catch (e) {
+        // no saved data yet
+      } finally {
+        setLoaded(true);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    const list = TRADE_CONTRACTORS[trade] || [];
+    if (!list.includes(contractor)) setContractor(list[0] || "");
+  }, [trade]);
+
+  useEffect(() => {
+    const list = EXPENSE_MGMT_CATEGORIES[expCategory] || [];
+    if (!list.includes(sitePerson)) setSitePerson(list[0] || "");
+  }, [expCategory]);
+
+  const persist = async (overrides = {}) => {
+    const next = {
+      entries: overrides.entries !== undefined ? overrides.entries : entries,
+      siteEntries: overrides.siteEntries !== undefined ? overrides.siteEntries : siteEntries,
+      cashStartingBalance: overrides.cashStartingBalance !== undefined ? overrides.cashStartingBalance : cashStartingBalance,
+    };
+    if (overrides.entries !== undefined) setEntries(overrides.entries);
+    if (overrides.siteEntries !== undefined) setSiteEntries(overrides.siteEntries);
+    if (overrides.cashStartingBalance !== undefined) setCashStartingBalance(overrides.cashStartingBalance);
+    try {
+      await window.storage.set(STORAGE_KEY, JSON.stringify(next));
+    } catch (e) {
+      console.error("Storage error:", e);
+    }
+  };
+
+  const isDirect = activeModule === "Direct Expense (White)";
+  const isSiteModule = activeModule === "Expense Management";
+  const isSubcontractor = category === "Subcontractor Payment";
+
+  const handleSave = async () => {
+    const amt = parseFloat(amount);
+    if (!amt || amt <= 0) { setError("Enter a valid amount"); return; }
+    if (!date) { setError("Select a date"); return; }
+    const id = Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+    const entry = {
+      id,
+      paymentCategory: activeModule,
+      entity: isDirect ? company : entity,
+      bankResource: isDirect ? bankResource : null,
+      paymentMode: isDirect ? paymentMode : null,
+      vendor: isDirect ? vendor.trim() : null,
+      custodian: isDirect ? null : custodian,
+      transactionType,
+      incomeSource: transactionType === "Income" ? incomeSource : null,
+      category: transactionType === "Expense" ? category : null,
+      trade: transactionType === "Expense" && isSubcontractor ? trade : null,
+      contractor: transactionType === "Expense" && isSubcontractor ? contractor : null,
+      amount: amt,
+      date,
+      projectRef: projectRef.trim(),
+      remarks: remarks.trim(),
+      billNumber: billNumber.trim(),
+      hasBillPhoto: !!billPhoto,
+    };
+    if (billPhoto) {
+      try { await window.storage.set(BILL_PHOTO_PREFIX + id, billPhoto); } catch (e) { console.error(e); }
+    }
+    await persist({ entries: [entry, ...entries] });
+    setAmount(""); setProjectRef(""); setRemarks(""); setVendor("");
+    setBillNumber(""); setBillPhoto(null); setError("");
+  };
+
+  const handleViewBill = async (e) => {
+    setViewingBill({ billNumber: e.billNumber, dataUrl: null, loading: e.hasBillPhoto });
+    if (e.hasBillPhoto) {
+      try {
+        const res = await window.storage.get(BILL_PHOTO_PREFIX + e.id);
+        setViewingBill({ billNumber: e.billNumber, dataUrl: res?.value || null, loading: false });
+      } catch (err) {
+        setViewingBill({ billNumber: e.billNumber, dataUrl: null, loading: false });
+      }
+    }
+  };
+
+  const handleDelete = (id) => {
+    persist({ entries: entries.filter((e) => e.id !== id) });
+    window.storage.delete(BILL_PHOTO_PREFIX + id).catch(() => {});
+  };
+
+  const allEntities = [...new Set([...DIRECT_COMPANIES, ...CASH_ENTITIES])];
+
+  const visibleEntries = useMemo(() => {
+    return entries.filter((e) => {
+      if (filterPayment !== "All" && e.paymentCategory !== filterPayment) return false;
+      if (filterEntity !== "All" && e.entity !== filterEntity) return false;
+      return true;
+    });
+  }, [entries, filterPayment, filterEntity]);
+
+  const totals = useMemo(() => {
+    return visibleEntries.reduce((acc, e) => {
+      if (e.transactionType === "Income") acc.income += e.amount; else acc.expense += e.amount;
+      return acc;
+    }, { income: 0, expense: 0 });
+  }, [visibleEntries]);
+
+  const cashDaily = useMemo(() => {
+    const cashEntries = entries.filter((e) => e.paymentCategory === "Cash Voucher");
+    const byDate = {};
+    cashEntries.forEach((e) => {
+      if (!byDate[e.date]) byDate[e.date] = { income: 0, expense: 0 };
+      if (e.transactionType === "Income") byDate[e.date].income += e.amount;
+      else byDate[e.date].expense += e.amount;
+    });
+    const dates = Object.keys(byDate).sort();
+    let runningOpen = cashStartingBalance;
+    const rows = dates.map((d) => {
+      const open = runningOpen;
+      const close = open + byDate[d].income - byDate[d].expense;
+      runningOpen = close;
+      return { date: d, open, income: byDate[d].income, expense: byDate[d].expense, close };
+    });
+    return rows.reverse();
+  }, [entries, cashStartingBalance]);
+  const todayRow = cashDaily.find((r) => r.date === todayISO());
+  const latestRow = cashDaily[0];
+
+  // --- Site Advance helpers ---
+  const personEntries = useMemo(
+    () => siteEntries.filter((e) => e.person === sitePerson).sort((a, b) => (a.date < b.date ? 1 : -1)),
+    [siteEntries, sitePerson]
+  );
+  const personTotals = useMemo(() => {
+    return personEntries.reduce((acc, e) => {
+      if (e.entryType === "Advance") acc.advance += e.amount; else acc.claimed += e.amount;
+      return acc;
+    }, { advance: 0, claimed: 0 });
+  }, [personEntries]);
+  const personBalance = personTotals.advance - personTotals.claimed;
+
+  const handleSaveSite = async () => {
+    const amt = parseFloat(siteAmount);
+    if (!amt || amt <= 0) { setSiteError("Enter a valid amount"); return; }
+    if (!siteDate) { setSiteError("Select a date"); return; }
+    const id = Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+    const entry = {
+      id,
+      person: sitePerson,
+      entryType: siteEntryType,
+      expenseType: siteEntryType === "Claim" ? expenseType : null,
+      dayType: siteEntryType === "Claim" && expenseType === "Daily Wage" ? dayType : null,
+      transportMode: siteEntryType === "Claim" && expenseType === "Transportation" ? transportMode : null,
+      contractorRef: siteEntryType === "Claim" && expenseType === "Labour Contractor" ? contractorRef : null,
+      amount: amt,
+      date: siteDate,
+      remarks: siteRemarks.trim(),
+      billNumber: siteBillNumber.trim(),
+      hasBillPhoto: !!siteBillPhoto,
+    };
+    if (siteBillPhoto) {
+      try { await window.storage.set(BILL_PHOTO_PREFIX + id, siteBillPhoto); } catch (e) { console.error(e); }
+    }
+    await persist({ siteEntries: [entry, ...siteEntries] });
+    setSiteAmount(""); setSiteRemarks(""); setSiteBillNumber(""); setSiteBillPhoto(null); setSiteError("");
+  };
+
+  const handleDeleteSite = (id) => {
+    persist({ siteEntries: siteEntries.filter((e) => e.id !== id) });
+    window.storage.delete(BILL_PHOTO_PREFIX + id).catch(() => {});
+  };
+
+  return (
+    <div className="min-h-screen bg-stone-50 text-slate-800 font-sans">
+      <style>{`
+        .perforation { background-image: radial-gradient(circle, #d6d3d1 1.5px, transparent 1.5px); background-size: 10px 2px; background-repeat: repeat-x; height: 2px; }
+        .field-enter { animation: fieldIn 180ms ease-out; }
+        @keyframes fieldIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
+
+      <div className="max-w-xl mx-auto px-4 py-8">
+        <p className="text-xs font-semibold tracking-widest text-teal-700 uppercase mb-2">Wellman Group · Expense Track</p>
+        <div className="grid grid-cols-3 border border-stone-300 rounded-sm overflow-hidden mb-6 text-xs">
+          <button type="button" onClick={() => setActiveModule("Cash Voucher")}
+            className={`py-2.5 font-semibold transition-colors ${activeModule === "Cash Voucher" ? "bg-amber-600 text-white" : "bg-white text-slate-600"}`}>
+            Cash Voucher
+          </button>
+          <button type="button" onClick={() => setActiveModule("Direct Expense (White)")}
+            className={`py-2.5 font-semibold transition-colors ${isDirect ? "bg-slate-800 text-white" : "bg-white text-slate-600"}`}>
+            Direct (White)
+          </button>
+          <button type="button" onClick={() => setActiveModule("Expense Management")}
+            className={`py-2.5 font-semibold transition-colors ${isSiteModule ? "bg-teal-700 text-white" : "bg-white text-slate-600"}`}>
+            Expense Mgmt
+          </button>
+        </div>
+
+        {/* ============ EXPENSE MANAGEMENT MODULE ============ */}
+        {isSiteModule && (
+          <div>
+            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase mb-2">Category</p>
+            <div className="flex gap-2 overflow-x-auto pb-1 mb-3">
+              {EXPENSE_MGMT_CATEGORY_NAMES.map((c) => (
+                <button key={c} onClick={() => setExpCategory(c)}
+                  className={`whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                    expCategory === c ? "bg-slate-800 border-slate-800 text-white" : "bg-white border-stone-300 text-slate-600"
+                  }`}>
+                  {c}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {(EXPENSE_MGMT_CATEGORIES[expCategory] || []).map((p) => (
+                <button key={p} onClick={() => setSitePerson(p)}
+                  className={`flex items-center justify-center gap-2 py-2.5 rounded-sm text-sm font-semibold border transition-colors ${
+                    sitePerson === p ? "bg-teal-700 text-white border-teal-700" : "bg-white text-slate-600 border-stone-300"
+                  }`}>
+                  <Users size={14} /> {p}
+                </button>
+              ))}
+            </div>
+
+            <>
+                {/* Balance card */}
+                <div className="bg-slate-800 text-white rounded-sm p-4 mb-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Wallet size={16} />
+                      <h2 className="text-xs font-semibold tracking-widest uppercase">{sitePerson} - Balance</h2>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-white/10 rounded-sm p-2.5">
+                      <span className="text-[10px] tracking-wide uppercase text-slate-300">Advance</span>
+                      <p className="font-mono text-sm font-semibold mt-1">{inr(personTotals.advance)}</p>
+                    </div>
+                    <div className="bg-white/10 rounded-sm p-2.5">
+                      <span className="text-[10px] tracking-wide uppercase text-slate-300">Claimed</span>
+                      <p className="font-mono text-sm font-semibold mt-1">{inr(personTotals.claimed)}</p>
+                    </div>
+                    <div className="bg-amber-600 rounded-sm p-2.5">
+                      <span className="text-[10px] tracking-wide uppercase text-white/80">Remaining</span>
+                      <p className="font-mono text-sm font-semibold mt-1">{inr(personBalance)}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Entry form */}
+                <div className="bg-white border border-stone-200 rounded-sm shadow-sm">
+                  <div className="px-5 pt-5 pb-4">
+                    <h1 className="text-xl font-bold tracking-tight text-slate-900">Expense Management Entry</h1>
+                    <p className="text-xs text-slate-500 mt-1">{expCategory} · {sitePerson}</p>
+                  </div>
+                  <div className="perforation mx-5" />
+                  <div className="px-5 py-5 space-y-4">
+                    <div>
+                      <label className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Entry Type</label>
+                      <div className="mt-1 grid grid-cols-2 border border-stone-300 rounded-sm overflow-hidden">
+                        <button type="button" onClick={() => setSiteEntryType("Advance")}
+                          className={`py-2 text-sm font-medium transition-colors ${siteEntryType === "Advance" ? "bg-emerald-700 text-white" : "bg-white text-slate-600"}`}>
+                          Advance Given
+                        </button>
+                        <button type="button" onClick={() => setSiteEntryType("Claim")}
+                          className={`py-2 text-sm font-medium transition-colors ${siteEntryType === "Claim" ? "bg-rose-700 text-white" : "bg-white text-slate-600"}`}>
+                          Expense Claim
+                        </button>
+                      </div>
+                    </div>
+
+                    {siteEntryType === "Claim" && (
+                      <div className="field-enter space-y-4">
+                        <div>
+                          <label className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Expense Type</label>
+                          <select value={expenseType} onChange={(ev) => setExpenseType(ev.target.value)}
+                            className="mt-1 w-full border border-stone-300 rounded-sm px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-700 focus:border-teal-700">
+                            <option>Daily Wage</option>
+                            <option>Transportation</option>
+                            <option>Labour Contractor</option>
+                          </select>
+                        </div>
+
+                        {expenseType === "Daily Wage" && (
+                          <div className="grid grid-cols-2 border border-stone-300 rounded-sm overflow-hidden field-enter">
+                            {DAY_TYPES.map((d) => (
+                              <button key={d.label} type="button" onClick={() => setDayType(d.label)}
+                                className={`py-2 text-xs font-medium transition-colors ${dayType === d.label ? "bg-teal-700 text-white" : "bg-white text-slate-600"}`}>
+                                {d.label} (₹{d.rate} ref)
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {expenseType === "Transportation" && (
+                          <select value={transportMode} onChange={(ev) => setTransportMode(ev.target.value)}
+                            className="w-full border border-stone-300 rounded-sm px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-700 focus:border-teal-700 field-enter">
+                            {TRANSPORT_MODES.map((m) => (<option key={m} value={m}>{m}</option>))}
+                          </select>
+                        )}
+                        {expenseType === "Labour Contractor" && (
+                          <select value={contractorRef} onChange={(ev) => setContractorRef(ev.target.value)}
+                            className="w-full border border-stone-300 rounded-sm px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-700 focus:border-teal-700 field-enter">
+                            {LABOUR_CONTRACTORS.map((c) => (<option key={c.name} value={c.name}>{c.name} — {c.rateNote}</option>))}
+                          </select>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Amount</label>
+                        <div className="mt-1 flex items-center border border-stone-300 rounded-sm overflow-hidden focus-within:ring-2 focus-within:ring-teal-700">
+                          <span className="px-2 text-slate-400"><IndianRupee size={14} /></span>
+                          <input type="number" min="0" step="0.01" value={siteAmount} onChange={(ev) => setSiteAmount(ev.target.value)}
+                            placeholder="0" className="w-full py-2 pr-3 text-sm font-mono focus:outline-none" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Date</label>
+                        <input type="date" value={siteDate} onChange={(ev) => setSiteDate(ev.target.value)}
+                          className="mt-1 w-full border border-stone-300 rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-700 focus:border-teal-700" />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Remarks</label>
+                      <input type="text" value={siteRemarks} onChange={(ev) => setSiteRemarks(ev.target.value)} placeholder="Short note"
+                        className="mt-1 w-full border border-stone-300 rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-700 focus:border-teal-700" />
+                    </div>
+
+                    {siteEntryType === "Claim" && (
+                      <BillAttachment
+                        billNumber={siteBillNumber} setBillNumber={setSiteBillNumber}
+                        billPhoto={siteBillPhoto} setBillPhoto={setSiteBillPhoto}
+                        busy={siteBillBusy} setBusy={setSiteBillBusy}
+                      />
+                    )}
+
+                    {siteError && <p className="text-xs text-rose-700">{siteError}</p>}
+
+                    <button type="button" onClick={handleSaveSite}
+                      className="w-full flex items-center justify-center gap-2 bg-teal-700 hover:bg-teal-800 active:scale-[0.99] transition-all text-white py-2.5 rounded-sm text-sm font-semibold">
+                      <Plus size={16} /> Save Entry
+                    </button>
+                  </div>
+                </div>
+
+                {/* Person ledger */}
+                <div className="mt-6">
+                  <h2 className="text-xs font-semibold tracking-widest text-slate-500 uppercase mb-2">{sitePerson} — Ledger</h2>
+                  {personEntries.length === 0 ? (
+                    <div className="bg-white border border-dashed border-stone-300 rounded-sm p-6 text-center">
+                      <p className="text-sm text-slate-400">No entries yet.</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto bg-white border border-stone-200 rounded-sm">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="bg-stone-100 text-[10px] font-semibold tracking-wide text-slate-500 uppercase">
+                            <th className="text-left px-3 py-2">Date</th>
+                            <th className="text-left px-3 py-2">Type</th>
+                            <th className="text-left px-3 py-2">Detail</th>
+                            <th className="text-right px-3 py-2">Amount</th>
+                            <th className="px-3 py-2">Bill</th>
+                            <th className="px-3 py-2"></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {personEntries.map((e, i) => (
+                            <tr key={e.id} className={i % 2 ? "bg-stone-50" : "bg-white"}>
+                              <td className="px-3 py-2 whitespace-nowrap text-slate-600">{e.date}</td>
+                              <td className="px-3 py-2">
+                                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                                  e.entryType === "Advance" ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
+                                }`}>{e.entryType === "Advance" ? "Advance" : "Claim"}</span>
+                              </td>
+                              <td className="px-3 py-2 text-slate-600">
+                                {e.entryType === "Advance" ? (e.remarks || "—") :
+                                  e.expenseType === "Daily Wage" ? `Daily Wage (${e.dayType})` :
+                                  e.expenseType === "Transportation" ? e.transportMode :
+                                  e.expenseType === "Labour Contractor" ? e.contractorRef : e.expenseType}
+                              </td>
+                              <td className="px-3 py-2 text-right font-mono text-slate-900">{inr(e.amount)}</td>
+                              <td className="px-3 py-2 text-center">
+                                {(e.billNumber || e.hasBillPhoto) ? (
+                                  <button onClick={() => handleViewBill(e)} className="text-teal-700 hover:text-teal-900">
+                                    <Paperclip size={14} />
+                                  </button>
+                                ) : <span className="text-stone-200">—</span>}
+                              </td>
+                              <td className="px-3 py-2 text-right">
+                                <button onClick={() => handleDeleteSite(e.id)} className="text-slate-300 hover:text-rose-700">
+                                  <Trash2 size={14} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </>
+          </div>
+        )}
+
+        {/* ============ CASH VOUCHER / DIRECT EXPENSE MODULES ============ */}
+        {!isSiteModule && (
+          <>
+            {!isDirect && loaded && (
+              <div className="bg-slate-800 text-white rounded-sm p-4 mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <Wallet size={16} />
+                  <h2 className="text-xs font-semibold tracking-widest uppercase">Daily Cash Silak</h2>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white/10 rounded-sm p-3">
+                    <div className="flex items-center gap-1 text-slate-300">
+                      <Sunrise size={12} /><span className="text-[10px] tracking-wide uppercase">Opening (Aaje Savar)</span>
+                    </div>
+                    <p className="font-mono text-lg font-semibold mt-1">{inr(todayRow ? todayRow.open : latestRow ? latestRow.close : cashStartingBalance)}</p>
+                  </div>
+                  <div className="bg-white/10 rounded-sm p-3">
+                    <div className="flex items-center gap-1 text-slate-300">
+                      <Sunset size={12} /><span className="text-[10px] tracking-wide uppercase">Closing (Aaje Sanj) = Kale Savar</span>
+                    </div>
+                    <p className="font-mono text-lg font-semibold mt-1">{inr(todayRow ? todayRow.close : latestRow ? latestRow.close : cashStartingBalance)}</p>
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                  <label className="text-[10px] tracking-wide uppercase text-slate-300">Starting Balance</label>
+                  <input type="number" value={cashStartingBalance}
+                    onChange={(ev) => persist({ cashStartingBalance: parseFloat(ev.target.value) || 0 })}
+                    className="bg-white/10 border border-white/20 rounded-sm px-2 py-1 text-xs font-mono w-28 focus:outline-none focus:ring-1 focus:ring-amber-500" />
+                  <span className="text-[10px] text-slate-400">(set once when starting to use this)</span>
+                </div>
+              </div>
+            )}
+
+            <div className="bg-white border border-stone-200 rounded-sm shadow-sm">
+              <div className="px-5 pt-5 pb-4">
+                <h1 className="text-xl font-bold tracking-tight text-slate-900">{activeModule}</h1>
+                <p className="text-xs text-slate-500 mt-1">{isDirect ? "Bank payment entry" : "Cash voucher entry"}</p>
+              </div>
+              <div className="perforation mx-5" />
+              <div className="px-5 py-5 space-y-4">
+                {isDirect ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Company</label>
+                        <select value={company} onChange={(ev) => setCompany(ev.target.value)}
+                          className="mt-1 w-full border border-stone-300 rounded-sm px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-700 focus:border-teal-700">
+                          {DIRECT_COMPANIES.map((c) => (<option key={c} value={c}>{c}</option>))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Bank Resource</label>
+                        <select value={bankResource} onChange={(ev) => setBankResource(ev.target.value)}
+                          className="mt-1 w-full border border-stone-300 rounded-sm px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-700 focus:border-teal-700">
+                          {BANK_RESOURCES.map((b) => (<option key={b} value={b}>{b}</option>))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Payment Mode</label>
+                        <select value={paymentMode} onChange={(ev) => setPaymentMode(ev.target.value)}
+                          className="mt-1 w-full border border-stone-300 rounded-sm px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-700 focus:border-teal-700">
+                          {PAYMENT_MODES.map((m) => (<option key={m} value={m}>{m}</option>))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Vendor</label>
+                        <input type="text" value={vendor} onChange={(ev) => setVendor(ev.target.value)} placeholder="Vendor name"
+                          className="mt-1 w-full border border-stone-300 rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-700 focus:border-teal-700" />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Entity</label>
+                      <select value={entity} onChange={(ev) => setEntity(ev.target.value)}
+                        className="mt-1 w-full border border-stone-300 rounded-sm px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-700 focus:border-teal-700">
+                        {CASH_ENTITIES.map((e) => (<option key={e} value={e}>{e}</option>))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Cash Custodian</label>
+                      <select value={custodian} onChange={(ev) => setCustodian(ev.target.value)}
+                        className="mt-1 w-full border border-stone-300 rounded-sm px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-700 focus:border-teal-700">
+                        {CUSTODIANS.map((c) => (<option key={c} value={c}>{c}</option>))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Transaction</label>
+                  <div className="mt-1 grid grid-cols-2 border border-stone-300 rounded-sm overflow-hidden">
+                    <button type="button" onClick={() => setTransactionType("Income")}
+                      className={`py-2 text-sm font-medium transition-colors ${transactionType === "Income" ? "bg-emerald-700 text-white" : "bg-white text-slate-600"}`}>Income</button>
+                    <button type="button" onClick={() => setTransactionType("Expense")}
+                      className={`py-2 text-sm font-medium transition-colors ${transactionType === "Expense" ? "bg-rose-700 text-white" : "bg-white text-slate-600"}`}>Expense</button>
+                  </div>
+                </div>
+
+                {transactionType === "Income" && (
+                  <div className="field-enter">
+                    <label className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Income Source</label>
+                    <select value={incomeSource} onChange={(ev) => setIncomeSource(ev.target.value)}
+                      className="mt-1 w-full border border-stone-300 rounded-sm px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-700 focus:border-teal-700">
+                      {INCOME_SOURCES.map((s) => (<option key={s} value={s}>{s}</option>))}
+                    </select>
+                  </div>
+                )}
+
+                {transactionType === "Expense" && (
+                  <div className="field-enter space-y-4">
+                    <div>
+                      <label className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Expense Category</label>
+                      <select value={category} onChange={(ev) => setCategory(ev.target.value)}
+                        className="mt-1 w-full border border-stone-300 rounded-sm px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-700 focus:border-teal-700">
+                        {EXPENSE_CATEGORIES.map((c) => (<option key={c} value={c}>{c}</option>))}
+                      </select>
+                    </div>
+                    {isSubcontractor && (
+                      <div className="grid grid-cols-2 gap-3 field-enter">
+                        <div>
+                          <label className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Trade</label>
+                          <select value={trade} onChange={(ev) => setTrade(ev.target.value)}
+                            className="mt-1 w-full border border-stone-300 rounded-sm px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-700 focus:border-teal-700">
+                            {TRADES.map((t) => (<option key={t} value={t}>{t}</option>))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Contractor</label>
+                          <select value={contractor} onChange={(ev) => setContractor(ev.target.value)}
+                            className="mt-1 w-full border border-stone-300 rounded-sm px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-700 focus:border-teal-700">
+                            {(TRADE_CONTRACTORS[trade] || []).map((c) => (<option key={c} value={c}>{c}</option>))}
+                          </select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Amount</label>
+                    <div className="mt-1 flex items-center border border-stone-300 rounded-sm overflow-hidden focus-within:ring-2 focus-within:ring-teal-700">
+                      <span className="px-2 text-slate-400"><IndianRupee size={14} /></span>
+                      <input type="number" min="0" step="0.01" value={amount} onChange={(ev) => setAmount(ev.target.value)} placeholder="0"
+                        className="w-full py-2 pr-3 text-sm font-mono focus:outline-none" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Date</label>
+                    <input type="date" value={date} onChange={(ev) => setDate(ev.target.value)}
+                      className="mt-1 w-full border border-stone-300 rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-700 focus:border-teal-700" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                    Project / Site Reference <span className="normal-case text-slate-400">(optional)</span>
+                  </label>
+                  <input type="text" value={projectRef} onChange={(ev) => setProjectRef(ev.target.value)} placeholder="e.g. KIMS Hospital - ICU HVAC"
+                    className="mt-1 w-full border border-stone-300 rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-700 focus:border-teal-700" />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Remarks</label>
+                  <input type="text" value={remarks} onChange={(ev) => setRemarks(ev.target.value)} placeholder="Short note"
+                    className="mt-1 w-full border border-stone-300 rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-700 focus:border-teal-700" />
+                </div>
+
+                <BillAttachment
+                  billNumber={billNumber} setBillNumber={setBillNumber}
+                  billPhoto={billPhoto} setBillPhoto={setBillPhoto}
+                  busy={billPhotoBusy} setBusy={setBillPhotoBusy}
+                />
+
+                {error && <p className="text-xs text-rose-700">{error}</p>}
+
+                <button type="button" onClick={handleSave}
+                  className="w-full flex items-center justify-center gap-2 bg-teal-700 hover:bg-teal-800 active:scale-[0.99] transition-all text-white py-2.5 rounded-sm text-sm font-semibold">
+                  <Plus size={16} /> Save Entry
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-6 space-y-2">
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {["All", "Direct Expense (White)", "Cash Voucher"].map((p) => (
+                  <button key={p} onClick={() => setFilterPayment(p)}
+                    className={`whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                      filterPayment === p ? "bg-slate-800 border-slate-800 text-white" : "bg-white border-stone-300 text-slate-600"
+                    }`}>
+                    {p === "Direct Expense (White)" ? "Direct (White)" : p}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {["All", ...allEntities].map((e) => (
+                  <button key={e} onClick={() => setFilterEntity(e)}
+                    className={`whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                      filterEntity === e ? "bg-amber-600 border-amber-600 text-white" : "bg-white border-stone-300 text-slate-600"
+                    }`}>
+                    {e}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 mt-4">
+              <div className="bg-white border border-stone-200 rounded-sm p-3">
+                <div className="flex items-center gap-1 text-emerald-700"><TrendingUp size={14} /><span className="text-[10px] font-semibold tracking-wide uppercase">Income</span></div>
+                <p className="font-mono text-sm font-semibold text-slate-900 mt-1">{inr(totals.income)}</p>
+              </div>
+              <div className="bg-white border border-stone-200 rounded-sm p-3">
+                <div className="flex items-center gap-1 text-rose-700"><TrendingDown size={14} /><span className="text-[10px] font-semibold tracking-wide uppercase">Expense</span></div>
+                <p className="font-mono text-sm font-semibold text-slate-900 mt-1">{inr(totals.expense)}</p>
+              </div>
+              <div className="bg-white border border-stone-200 rounded-sm p-3">
+                <div className="flex items-center gap-1 text-slate-600"><Receipt size={14} /><span className="text-[10px] font-semibold tracking-wide uppercase">Net</span></div>
+                <p className="font-mono text-sm font-semibold text-slate-900 mt-1">{inr(totals.income - totals.expense)}</p>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <h2 className="text-xs font-semibold tracking-widest text-slate-500 uppercase mb-2">Ledger</h2>
+              {!loaded ? (
+                <p className="text-sm text-slate-400">Loading entries…</p>
+              ) : visibleEntries.length === 0 ? (
+                <div className="bg-white border border-dashed border-stone-300 rounded-sm p-6 text-center">
+                  <p className="text-sm text-slate-400">No entries yet. Save a voucher above to get started.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto bg-white border border-stone-200 rounded-sm">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-stone-100 text-[10px] font-semibold tracking-wide text-slate-500 uppercase">
+                        <th className="text-left px-3 py-2">Date</th>
+                        <th className="text-left px-3 py-2">Payment</th>
+                        <th className="text-left px-3 py-2">Entity</th>
+                        <th className="text-left px-3 py-2">Type</th>
+                        <th className="text-left px-3 py-2">Category / Source</th>
+                        <th className="text-left px-3 py-2">Vendor/Contractor</th>
+                        <th className="text-right px-3 py-2">Amount</th>
+                        <th className="text-left px-3 py-2">Remarks</th>
+                        <th className="px-3 py-2">Bill</th>
+                        <th className="px-3 py-2"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {visibleEntries.map((e, i) => (
+                        <tr key={e.id} className={i % 2 ? "bg-stone-50" : "bg-white"}>
+                          <td className="px-3 py-2 whitespace-nowrap text-slate-600">{e.date}</td>
+                          <td className="px-3 py-2 whitespace-nowrap">
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                              e.paymentCategory === "Direct Expense (White)" ? "bg-slate-100 text-slate-700" : "bg-amber-50 text-amber-700"
+                            }`}>{e.paymentCategory === "Direct Expense (White)" ? "White" : "Cash"}</span>
+                          </td>
+                          <td className="px-3 py-2 whitespace-nowrap text-slate-600">{e.entity.replace("Wellman ", "")}</td>
+                          <td className="px-3 py-2">
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                              e.transactionType === "Income" ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
+                            }`}>{e.transactionType}</span>
+                          </td>
+                          <td className="px-3 py-2 text-slate-600">{e.category || e.incomeSource || "—"}</td>
+                          <td className="px-3 py-2 text-slate-600">{e.contractor ? `${e.contractor} (${e.trade})` : e.vendor || "—"}</td>
+                          <td className="px-3 py-2 text-right font-mono text-slate-900">{inr(e.amount)}</td>
+                          <td className="px-3 py-2 text-slate-500 max-w-[120px] truncate">{e.remarks || "—"}</td>
+                          <td className="px-3 py-2 text-center">
+                            {(e.billNumber || e.hasBillPhoto) ? (
+                              <button onClick={() => handleViewBill(e)} className="text-teal-700 hover:text-teal-900"><Paperclip size={14} /></button>
+                            ) : <span className="text-stone-200">—</span>}
+                          </td>
+                          <td className="px-3 py-2 text-right">
+                            <button onClick={() => handleDelete(e.id)} className="text-slate-300 hover:text-rose-700"><Trash2 size={14} /></button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {!isDirect && cashDaily.length > 0 && (
+              <div className="mt-6">
+                <h2 className="text-xs font-semibold tracking-widest text-slate-500 uppercase mb-2">Cash Silak History</h2>
+                <div className="overflow-x-auto bg-white border border-stone-200 rounded-sm">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-stone-100 text-[10px] font-semibold tracking-wide text-slate-500 uppercase">
+                        <th className="text-left px-3 py-2">Date</th>
+                        <th className="text-right px-3 py-2">Opening</th>
+                        <th className="text-right px-3 py-2">Cash In</th>
+                        <th className="text-right px-3 py-2">Cash Out</th>
+                        <th className="text-right px-3 py-2">Closing</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cashDaily.map((r, i) => (
+                        <tr key={r.date} className={i % 2 ? "bg-stone-50" : "bg-white"}>
+                          <td className="px-3 py-2 whitespace-nowrap text-slate-600">{r.date}</td>
+                          <td className="px-3 py-2 text-right font-mono text-slate-600">{inr(r.open)}</td>
+                          <td className="px-3 py-2 text-right font-mono text-emerald-700">{inr(r.income)}</td>
+                          <td className="px-3 py-2 text-right font-mono text-rose-700">{inr(r.expense)}</td>
+                          <td className="px-3 py-2 text-right font-mono font-semibold text-slate-900">{inr(r.close)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {viewingBill && (
+        <div className="fixed inset-0 bg-slate-900/70 flex items-center justify-center p-4 z-50" onClick={() => setViewingBill(null)}>
+          <div className="bg-white rounded-sm max-w-sm w-full p-4" onClick={(ev) => ev.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-slate-800">Bill Detail</h3>
+              <button onClick={() => setViewingBill(null)} className="text-slate-400 hover:text-slate-700"><X size={16} /></button>
+            </div>
+            {viewingBill.billNumber && (
+              <p className="text-sm text-slate-600 mb-3"><span className="font-semibold">Bill No.:</span> {viewingBill.billNumber}</p>
+            )}
+            {viewingBill.loading ? (
+              <p className="text-sm text-slate-400">Loading photo…</p>
+            ) : viewingBill.dataUrl ? (
+              <img src={viewingBill.dataUrl} alt="Bill" className="w-full rounded-sm border border-stone-200" />
+            ) : !viewingBill.billNumber ? (
+              <p className="text-sm text-slate-400 flex items-center gap-1"><ImageIcon size={14} /> No photo attached</p>
+            ) : null}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

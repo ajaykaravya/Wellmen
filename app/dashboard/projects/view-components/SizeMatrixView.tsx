@@ -1,12 +1,35 @@
 "use client";
 
+import {
+  getSectionRowColChildValue,
+  getSectionRowColValue,
+  resolveSectionKey,
+} from "@/lib/sectionFormKeys";
+import { isFilled, isSizeMatrixRowFilled } from "@/lib/formViewUtils";
+
 export default function SizeMatrixView({
   section,
   formData,
+  templateSections = [],
 }: {
   section: any;
   formData: any;
+  templateSections?: any[];
 }) {
+  const sectionKey = resolveSectionKey(section);
+  const filledRows =
+    section.rows?.filter((row: any) =>
+      isSizeMatrixRowFilled(
+        formData,
+        sectionKey,
+        row.key,
+        section.columns,
+        templateSections,
+      ),
+    ) ?? [];
+
+  if (filledRows.length === 0) return null;
+
   return (
     <div className="rbac-card">
       <h3 className="rbac-title-lg mb-5">{section.title}</h3>
@@ -33,20 +56,38 @@ export default function SizeMatrixView({
             </tr>
           </thead>
           <tbody className="divide-y divide-[color:var(--theme-border)]">
-            {section.rows?.map((row: any) => (
-              <tr key={row.key} className="hover:bg-[var(--theme-surface-2)]">
+            {filledRows.map((row: any) => (
+              <tr key={`${sectionKey}-${row.key}`} className="hover:bg-[var(--theme-surface-2)]">
                 <td className="px-4 py-3 font-medium text-[color:var(--theme-text)]">{row.label}</td>
                 {section.columns?.map((col: any) => 
                   col.children ? col.children.map((child: any) => {
-                    const key = `${row.key}_${col.key}_${child.key}`;
+                    const value = getSectionRowColChildValue(
+                      formData,
+                      sectionKey,
+                      row.key,
+                      col.key,
+                      child.key,
+                      "sizeMatrix",
+                      templateSections,
+                    );
                     return (
-                      <td key={key} className="px-2 py-3 text-center border-l text-[color:var(--theme-text)]">
-                        {formData?.[key] || <span className="text-[color:var(--theme-text-muted)]">-</span>}
+                      <td key={`${sectionKey}-${row.key}-${col.key}-${child.key}`} className="px-2 py-3 text-center border-l text-[color:var(--theme-text)]">
+                        {isFilled(value) ? String(value) : null}
                       </td>
                     );
                   }) : (
                     <td key={col.key} className="px-2 py-3 text-center border-l text-[color:var(--theme-text)]">
-                      {formData?.[`${row.key}_${col.key}`] || <span className="text-[color:var(--theme-text-muted)]">-</span>}
+                      {(() => {
+                        const value = getSectionRowColValue(
+                          formData,
+                          sectionKey,
+                          row.key,
+                          col.key,
+                          "sizeMatrix",
+                          templateSections,
+                        );
+                        return isFilled(value) ? String(value) : null;
+                      })()}
                     </td>
                   )
                 )}

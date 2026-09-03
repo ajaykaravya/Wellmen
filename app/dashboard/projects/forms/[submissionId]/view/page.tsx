@@ -11,6 +11,7 @@ import {
   loadPrimaryCompany,
   type CompanyDetails,
 } from "@/lib/api/dashboard/companies";
+import { migrateFormData } from "@/lib/sectionFormKeys";
 
 export default function ViewSubmissionPage() {
   const params = useParams();
@@ -299,7 +300,10 @@ export default function ViewSubmissionPage() {
 
           <ViewRenderer
             template={data.projectForm.template}
-            formData={data.formData}
+            formData={migrateFormData(
+              data.formData || {},
+              data.projectForm.template,
+            )}
             onBack={handleBack}
           />
         </div>

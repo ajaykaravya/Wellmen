@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  contactMobileKey,
+  contactNameKey,
+  resolveSectionKey,
+} from "@/lib/sectionFormKeys";
+
 export default function ContactSection({
   section,
   formData,
@@ -9,34 +15,31 @@ export default function ContactSection({
   formData: any;
   setFormData: any;
 }) {
+  const sectionKey = resolveSectionKey(section);
+
   return (
     <div className="rbac-card">
-      {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <h3 className="rbac-title-lg">{section.title}</h3>
       </div>
-
-      {/* Desktop View */}
 
       <div className="hidden md:block overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700">
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-[var(--theme-surface-2)] text-[color:var(--theme-text-muted)] text-sm">
               <th className="px-5 py-4 text-left">Department</th>
-
               <th className="px-5 py-4 text-left">Name</th>
-
               <th className="px-5 py-4 text-left">Mobile</th>
             </tr>
           </thead>
 
           <tbody>
             {section.rows.map((row: any, index: number) => {
-              const nameKey = `${row.key}_name`;
-              const mobileKey = `${row.key}_mobile`;
+              const nameKey = contactNameKey(sectionKey, row.key);
+              const mobileKey = contactMobileKey(sectionKey, row.key);
               return (
                 <tr
-                  key={row.key}
+                  key={`${sectionKey}-${row.key}`}
                   className="border-t border-gray-200 dark:border-gray-700 dark:hover:bg-gray-800 transition"
                 >
                   <td className="px-5 py-4 text-sm">
@@ -80,15 +83,13 @@ export default function ContactSection({
         </table>
       </div>
 
-      {/* Mobile View */}
-
       <div className="md:hidden space-y-4">
         {section.rows.map((row: any, index: number) => {
-          const nameKey = `${row.key}_name`;
-          const mobileKey = `${row.key}_mobile`;
+          const nameKey = contactNameKey(sectionKey, row.key);
+          const mobileKey = contactMobileKey(sectionKey, row.key);
           return (
             <div
-              key={row.key}
+              key={`${sectionKey}-${row.key}`}
               className="border rounded-xl p-4 space-y-4 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
             >
               <div className="flex items-center gap-3 text-sm font-medium">

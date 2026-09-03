@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  checklistRemarkKey,
+  checklistStatusKey,
+  resolveSectionKey,
+} from "@/lib/sectionFormKeys";
+
 export default function ChecklistSection({
   section,
   formData,
@@ -9,6 +15,8 @@ export default function ChecklistSection({
   formData: any;
   setFormData: any;
 }) {
+  const sectionKey = resolveSectionKey(section);
+
   return (
     <div className="rbac-card">
       <div className="flex items-center justify-between mb-5">
@@ -25,77 +33,87 @@ export default function ChecklistSection({
             </tr>
           </thead>
           <tbody>
-            {section.rows.map((row: any, index: number) => (
-              <tr key={row.key} className="border-t dark:hover:bg-gray-800">
-                <td className="px-5 py-4">{row.label}</td>
-                <td className="px-5 py-4">
-                  <StatusRadio
-                    name={row.key}
-                    idPrefix={`desktop_${row.key}`}
-                    value={formData?.[row.key]}
-                    onChange={(val: string) => {
-                      setFormData((prev: any) => ({
-                        ...prev,
-                        [row.key]: val,
-                      }));
-                    }}
-                  />
-                </td>
-                <td className="px-5 py-4">
-                  <input
-                    className="rbac-input"
-                    placeholder="Add remark..."
-                    name={`${row.key}_remark`}
-                    value={formData?.[`${row.key}_remark`] || ""}
-                    onChange={(e) => {
-                      setFormData((prev: any) => ({
-                        ...prev,
-                        [`${row.key}_remark`]: e.target.value,
-                      }));
-                    }}
-                  />
-                </td>
-              </tr>
-            ))}
+            {section.rows.map((row: any) => {
+              const statusKey = checklistStatusKey(sectionKey, row.key);
+              const remarkKey = checklistRemarkKey(sectionKey, row.key);
+
+              return (
+                <tr key={`${sectionKey}-${row.key}`} className="border-t dark:hover:bg-gray-800">
+                  <td className="px-5 py-4">{row.label}</td>
+                  <td className="px-5 py-4">
+                    <StatusRadio
+                      name={statusKey}
+                      idPrefix={`desktop_${statusKey}`}
+                      value={formData?.[statusKey]}
+                      onChange={(val: string) => {
+                        setFormData((prev: any) => ({
+                          ...prev,
+                          [statusKey]: val,
+                        }));
+                      }}
+                    />
+                  </td>
+                  <td className="px-5 py-4">
+                    <input
+                      className="rbac-input"
+                      placeholder="Add remark..."
+                      name={remarkKey}
+                      value={formData?.[remarkKey] || ""}
+                      onChange={(e) => {
+                        setFormData((prev: any) => ({
+                          ...prev,
+                          [remarkKey]: e.target.value,
+                        }));
+                      }}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
-        {section.rows.map((row: any, index: number) => (
-          <div
-            key={row.key}
-            className="border rounded-xl p-4 bg-white dark:bg-gray-900 space-y-4 "
-          >
-            <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
-              {row.label}
+        {section.rows.map((row: any) => {
+          const statusKey = checklistStatusKey(sectionKey, row.key);
+          const remarkKey = checklistRemarkKey(sectionKey, row.key);
+
+          return (
+            <div
+              key={`${sectionKey}-${row.key}`}
+              className="border rounded-xl p-4 bg-white dark:bg-gray-900 space-y-4 "
+            >
+              <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                {row.label}
+              </div>
+              <StatusRadio
+                name={`${statusKey}_mobile`}
+                idPrefix={`mobile_${statusKey}`}
+                value={formData?.[statusKey]}
+                onChange={(val: string) => {
+                  setFormData((prev: any) => ({
+                    ...prev,
+                    [statusKey]: val,
+                  }));
+                }}
+              />
+              <input
+                className="rbac-input"
+                placeholder="Add remark..."
+                name={remarkKey}
+                value={formData?.[remarkKey] || ""}
+                onChange={(e) => {
+                  setFormData((prev: any) => ({
+                    ...prev,
+                    [remarkKey]: e.target.value,
+                  }));
+                }}
+              />
             </div>
-            <StatusRadio
-              name={`${row.key}_mobile`}
-              idPrefix={`mobile_${row.key}`}
-              value={formData?.[row.key]}
-              onChange={(val: string) => {
-                setFormData((prev: any) => ({
-                  ...prev,
-                  [row.key]: val,
-                }));
-              }}
-            />
-            <input
-              className="rbac-input"
-              placeholder="Add remark..."
-              name={`${row.key}_remark`}
-              value={formData?.[`${row.key}_remark`] || ""}
-              onChange={(e) => {
-                setFormData((prev: any) => ({
-                  ...prev,
-                  [`${row.key}_remark`]: e.target.value,
-                }));
-              }}
-            />
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

@@ -41,6 +41,7 @@ export default function MatrixSection({
                 setFormData={setFormData}
                 group={group}
                 columns={section.columns}
+                section={section}
               />
             )}
           </div>

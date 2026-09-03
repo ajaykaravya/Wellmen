@@ -24,9 +24,11 @@ export default function ViewRenderer({
     return <div>No form template found</div>;
   }
 
+  const templateSections = template.sections;
+
   return (
     <div className="space-y-8">
-      {template.sections.map((section: any) => {
+      {templateSections.map((section: any) => {
         switch (section.type) {
           case "header":
             return (
@@ -43,6 +45,7 @@ export default function ViewRenderer({
                 formData={formData}
                 key={section.key || section.title}
                 section={section}
+                templateSections={templateSections}
               />
             );
 
@@ -52,6 +55,7 @@ export default function ViewRenderer({
                 formData={formData}
                 key={section.key}
                 section={section}
+                templateSections={templateSections}
               />
             );
 
@@ -70,6 +74,7 @@ export default function ViewRenderer({
                 formData={formData}
                 key={section.key}
                 section={section}
+                templateSections={templateSections}
               />
             );
 
@@ -79,25 +84,18 @@ export default function ViewRenderer({
                 formData={formData}
                 key={section.key}
                 section={section}
+                templateSections={templateSections}
               />
             );
 
           case "fileUpload":
-
             return (
-
               <FileUploadView
-
                 key={section.key}
-
                 section={section}
-
                 formData={formData}
-
               />
-
             );
-
 
           case "completeSiteMatrix":
           case "completeSiteSize":
@@ -106,6 +104,7 @@ export default function ViewRenderer({
                 formData={formData}
                 key={section.key}
                 section={section}
+                templateSections={templateSections}
               />
             );
 

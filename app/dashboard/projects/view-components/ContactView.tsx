@@ -1,12 +1,29 @@
 "use client";
 
+import {
+  getContactMobileValue,
+  getContactNameValue,
+  resolveSectionKey,
+} from "@/lib/sectionFormKeys";
+import { isContactRowFilled, isFilled } from "@/lib/formViewUtils";
+
 export default function ContactView({
   section,
   formData,
+  templateSections = [],
 }: {
   section: any;
   formData: any;
+  templateSections?: any[];
 }) {
+  const sectionKey = resolveSectionKey(section);
+  const filledRows =
+    section.rows?.filter((row: any) =>
+      isContactRowFilled(formData, sectionKey, row.key, templateSections),
+    ) ?? [];
+
+  if (filledRows.length === 0) return null;
+
   return (
     <div className="rbac-card">
       <h3 className="rbac-title-lg mb-5">{section.title}</h3>
@@ -20,14 +37,28 @@ export default function ContactView({
             </tr>
           </thead>
           <tbody className="divide-y divide-[color:var(--theme-border)]">
-            {section.rows?.map((row: any) => {
-              const name = formData?.[`${row.key}_name`];
-              const mobile = formData?.[`${row.key}_mobile`];
+            {filledRows.map((row: any) => {
+              const name = getContactNameValue(
+                formData,
+                sectionKey,
+                row.key,
+                templateSections,
+              );
+              const mobile = getContactMobileValue(
+                formData,
+                sectionKey,
+                row.key,
+                templateSections,
+              );
               return (
-                <tr key={row.key} className="hover:bg-[var(--theme-surface-2)]">
+                <tr key={`${sectionKey}-${row.key}`} className="hover:bg-[var(--theme-surface-2)]">
                   <td className="px-6 py-4 font-medium text-[color:var(--theme-text)]">{row.label}</td>
-                  <td className="px-6 py-4 text-[color:var(--theme-text)]">{name || <span className="text-[color:var(--theme-text-muted)]">-</span>}</td>
-                  <td className="px-6 py-4 text-[color:var(--theme-text)]">{mobile || <span className="text-[color:var(--theme-text-muted)]">-</span>}</td>
+                  <td className="px-6 py-4 text-[color:var(--theme-text)]">
+                    {isFilled(name) ? String(name) : null}
+                  </td>
+                  <td className="px-6 py-4 text-[color:var(--theme-text)]">
+                    {isFilled(mobile) ? String(mobile) : null}
+                  </td>
                 </tr>
               );
             })}

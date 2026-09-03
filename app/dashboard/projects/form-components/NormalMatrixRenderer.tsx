@@ -1,15 +1,19 @@
 "use client";
 
+import { getMatrixCellValue, matrixCellKey } from "@/lib/matrixFormKeys";
+
 export default function NormalMatrixRenderer({
   group,
   columns,
   formData,
   setFormData,
+  section,
 }: {
   group: any;
   columns: any[];
   formData: any;
   setFormData: any;
+  section?: any;
 }) {
   return (
     <div className="w-full overflow-x-auto">
@@ -33,17 +37,27 @@ export default function NormalMatrixRenderer({
 
         <tbody>
           {group.rows.map((row: any) => (
-            <tr key={row.key}>
+            <tr key={`${group.key}-${row.key}`}>
               <td className="border p-2 whitespace-nowrap">{row.label}</td>
 
               {columns.map((col) => {
-                const name = `${row.key}_${col.key}`;
+                const name = matrixCellKey(group.key, row.key, col.key);
                 return (
                   <td key={col.key} className="border p-2 min-w-[150px]">
                     <input
                       className="rbac-input w-full"
                       name={name}
-                      value={formData?.[name] || ""}
+                      value={
+                        String(
+                          getMatrixCellValue(
+                            formData,
+                            group.key,
+                            row.key,
+                            col.key,
+                            section,
+                          ) ?? "",
+                        )
+                      }
                       onChange={(e) => {
                         setFormData((prev: any) => ({
                           ...prev,

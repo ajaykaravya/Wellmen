@@ -1,5 +1,7 @@
 "use client";
 
+import { completeSiteSizeKey, resolveSectionKey } from "@/lib/sectionFormKeys";
+
 export default function CompleteSiteSizeRenderer({
   section,
   formData,
@@ -9,6 +11,8 @@ export default function CompleteSiteSizeRenderer({
   formData: any;
   setFormData: any;
 }) {
+  const sectionKey = resolveSectionKey(section);
+
   return (
     <table className="w-full border">
       <thead>
@@ -33,13 +37,13 @@ export default function CompleteSiteSizeRenderer({
 
       <tbody>
         {section.rows.map((row: any) => (
-          <tr key={row.key}>
+          <tr key={`${sectionKey}-${row.key}`}>
             <td className="border p-2">{row.label}</td>
 
-            {["L", "W", "H"].map((x) => {
-              const name = `${row.key}_size_${x}`;
+            {(["L", "W", "H"] as const).map((dimension) => {
+              const name = completeSiteSizeKey(sectionKey, row.key, dimension);
               return (
-                <td key={x} className="border p-2">
+                <td key={dimension} className="border p-2">
                   <input
                     className="rbac-input w-full"
                     name={name}
