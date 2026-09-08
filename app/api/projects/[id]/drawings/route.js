@@ -89,7 +89,7 @@ export async function POST(req, { params }) {
     if (!getDrawingFileType(file.name)) {
       return NextResponse.json(
         {
-          error: `Unsupported file "${file.name}". Allowed: PDF, PPT/PPTX, JPG/JPEG/PNG, DWG/DXF.`,
+          error: `Unsupported file "${file.name}". Allowed: PDF, DOC/DOCX, XLS/XLSX/CSV, PPT/PPTX, JPG/JPEG/PNG, DWG/DXF.`,
         },
         { status: 400 },
       );

@@ -60,6 +60,10 @@ export const DEFAULT_DRAWING_CATEGORIES = [
   "Wall Panel",
   "Ceiling Panel",
   "Elevation Drawing",
+  "Duct Calculation Sheet",
+  "Wall Panel BOQ",
+  "Ceiling Panel BOQ",
+  "Accessories BOQ",
 ]
 
 export const DEFAULT_PROJECT_FORMS = [

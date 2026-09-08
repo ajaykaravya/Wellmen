@@ -549,6 +549,8 @@ enum FormStatus {
 enum DrawingFileType {
   PDF
   PPT
+  DOC
+  EXCEL
   IMAGE
   AUTOCAD
 }

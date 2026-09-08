@@ -7,9 +7,11 @@ import {
   FaDownload,
   FaEye,
   FaFileAlt,
+  FaFileExcel,
   FaFileImage,
   FaFilePdf,
   FaFilePowerpoint,
+  FaFileWord,
   FaTrash,
 } from "react-icons/fa";
 import { IoIosClose } from "react-icons/io";
@@ -24,11 +26,14 @@ import {
   type ProjectDrawing,
 } from "@/lib/api/dashboard/project-drawings";
 
-const ACCEPT = ".pdf,.ppt,.pptx,.jpg,.jpeg,.png,.dwg,.dxf";
+const ACCEPT =
+  ".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.jpg,.jpeg,.png,.dwg,.dxf";
 
 const FILE_TYPE_LABEL: Record<DrawingFileType, string> = {
   PDF: "PDF",
   PPT: "PPT",
+  DOC: "Word",
+  EXCEL: "Excel",
   IMAGE: "Image",
   AUTOCAD: "AutoCAD",
 };
@@ -38,6 +43,10 @@ function FileTypeIcon({ fileType }: { fileType: DrawingFileType }) {
     return <FaFilePdf className="text-rose-600" size={16} />;
   if (fileType === "PPT")
     return <FaFilePowerpoint className="text-orange-600" size={16} />;
+  if (fileType === "DOC")
+    return <FaFileWord className="text-sky-700" size={16} />;
+  if (fileType === "EXCEL")
+    return <FaFileExcel className="text-emerald-700" size={16} />;
   if (fileType === "IMAGE")
     return <FaFileImage className="text-emerald-600" size={16} />;
   return <FaFileAlt className="text-sky-700" size={16} />;
@@ -141,7 +150,7 @@ export default function ProjectDrawingsSection({
       <div className="mb-3">
         <h3 className="rbac-title-lg">Drawings</h3>
         <p className="text-xs text-slate-500">
-          Upload PDF, PPT, JPG/PNG or AutoCAD (.dwg/.dxf) files against each
+          Upload PDF, Word, Excel, PPT, JPG/PNG or AutoCAD (.dwg/.dxf) files against each
           drawing category. Any or all formats may be uploaded.
         </p>
       </div>
@@ -326,7 +335,11 @@ export default function ProjectDrawingsSection({
                     Download the file and open it in{" "}
                     {viewing.fileType === "AUTOCAD"
                       ? "AutoCAD or a DWG/DXF viewer"
-                      : "PowerPoint"}
+                      : viewing.fileType === "EXCEL"
+                        ? "Excel"
+                        : viewing.fileType === "DOC"
+                          ? "Word"
+                          : "PowerPoint"}
                     .
                   </p>
                   <a

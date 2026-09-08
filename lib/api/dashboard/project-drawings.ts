@@ -6,7 +6,13 @@ export type DrawingCategoryOption = {
   sortOrder: number;
 };
 
-export type DrawingFileType = "PDF" | "PPT" | "IMAGE" | "AUTOCAD";
+export type DrawingFileType =
+  | "PDF"
+  | "PPT"
+  | "DOC"
+  | "EXCEL"
+  | "IMAGE"
+  | "AUTOCAD";
 
 export type ProjectDrawing = {
   id: string;
