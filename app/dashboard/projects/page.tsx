@@ -250,20 +250,20 @@ function ProjectListContent() {
               type="button"
               onClick={() => handleView(row.original)}
             >
-              <FaEye />
+              <FaEye size={20} />
             </button>
             <button onClick={() => handleEditProject(row.original)} className="rbac-link" type="button">
-              <FaEdit />
+              <FaEdit size={20} />
             </button>
             <button
               className="rbac-link danger"
               type="button"
               onClick={() => handleDeleteProject(row.original)}
             >
-              <FaTrash />
+              <FaTrash size={20} />
             </button>
             <button className="rbac-link" type="button" onClick={() => handleProjectForm(row.original)}>
-              <IoDocumentTextOutline />
+              <IoDocumentTextOutline size={20} />
             </button>
             <button
               className="rbac-link"
@@ -271,7 +271,7 @@ function ProjectListContent() {
               title="Drawings"
               onClick={() => handleProjectDrawings(row.original)}
             >
-              <FaDraftingCompass />
+              <FaDraftingCompass size={20} />
             </button>
           </div>
         ),
@@ -472,47 +472,13 @@ function ProjectListContent() {
               {!loading &&
                 visibleProjects.map((project) => (
                   <div key={project.id} className="rbac-card p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="text-sm font-semibold">
-                          {project.name}
-                        </h4>
-                        <p className="text-xs text-slate-500">
-                          {project.city || "-"}
-                        </p>
-                      </div>
-                      <div className="flex">
-                        <button
-                          style={{ padding: "2px" }}
-                          className="rbac-link"
-                          type="button"
-                          onClick={() => handleView(project)}
-                        >
-                          <FaEye size={18} />
-                        </button>
-                        <button className="rbac-link" type="button" onClick={() => handleEditProject(project)}>
-                          <FaEdit size={18} />
-                        </button>
-                        <button
-                          style={{ padding: "2px" }}
-                          className="rbac-link danger"
-                          type="button"
-                          onClick={() => handleDeleteProject(project)}
-                        >
-                          <FaTrash size={18} />
-                        </button>
-                        <button className="rbac-link" type="button" onClick={() => handleProjectForm(project)}>
-                          <IoDocumentTextOutline  size={18}/>
-                        </button>
-                        <button
-                          className="rbac-link"
-                          type="button"
-                          title="Drawings"
-                          onClick={() => handleProjectDrawings(project)}
-                        >
-                          <FaDraftingCompass size={18} />
-                        </button>
-                      </div>
+                    <div className="mb-2">
+                      <h4 className="text-sm font-semibold">
+                        {project.name}
+                      </h4>
+                      <p className="text-xs text-slate-500">
+                        {project.city || "-"}
+                      </p>
                     </div>
                     <div className="grid gap-1 text-sm">
                       {project.contactNumber && (
@@ -542,6 +508,51 @@ function ProjectListContent() {
                           <strong>Status:</strong> {statusLabel(project.status)}
                         </p>
                       )}
+                    </div>
+
+                    {/* Actions sit below the details on mobile so the card
+                        reads top-to-bottom and the taps clear the text. */}
+                    <div className="mt-3 flex items-center justify-around gap-1 border-t border-slate-200 pt-3">
+                      <button
+                        className="rbac-link p-2"
+                        type="button"
+                        title="View"
+                        onClick={() => handleView(project)}
+                      >
+                        <FaEye size={22} />
+                      </button>
+                      <button
+                        className="rbac-link p-2"
+                        type="button"
+                        title="Edit"
+                        onClick={() => handleEditProject(project)}
+                      >
+                        <FaEdit size={22} />
+                      </button>
+                      <button
+                        className="rbac-link danger p-2"
+                        type="button"
+                        title="Delete"
+                        onClick={() => handleDeleteProject(project)}
+                      >
+                        <FaTrash size={22} />
+                      </button>
+                      <button
+                        className="rbac-link p-2"
+                        type="button"
+                        title="Forms"
+                        onClick={() => handleProjectForm(project)}
+                      >
+                        <IoDocumentTextOutline size={22} />
+                      </button>
+                      <button
+                        className="rbac-link p-2"
+                        type="button"
+                        title="Drawings"
+                        onClick={() => handleProjectDrawings(project)}
+                      >
+                        <FaDraftingCompass size={22} />
+                      </button>
                     </div>
                   </div>
                 ))}
