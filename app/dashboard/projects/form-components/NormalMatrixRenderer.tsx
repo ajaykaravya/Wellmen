@@ -42,29 +42,61 @@ export default function NormalMatrixRenderer({
 
               {columns.map((col) => {
                 const name = matrixCellKey(group.key, row.key, col.key);
+
+                // A group may override a column, e.g. Wall renders Size as a
+                // dropdown while every other group keeps the free-text box.
+                const override = group.columnOverrides?.[col.key];
+                const field = { ...col, ...(override || {}) };
+
+                const value = String(
+                  getMatrixCellValue(
+                    formData,
+                    group.key,
+                    row.key,
+                    col.key,
+                    section,
+                  ) ?? "",
+                );
+
+                const onChange = (
+                  e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+                ) => {
+                  setFormData((prev: any) => ({
+                    ...prev,
+                    [name]: e.target.value,
+                  }));
+                };
+
                 return (
                   <td key={col.key} className="border p-2 min-w-[150px]">
-                    <input
-                      className="rbac-input w-full"
-                      name={name}
-                      value={
-                        String(
-                          getMatrixCellValue(
-                            formData,
-                            group.key,
-                            row.key,
-                            col.key,
-                            section,
-                          ) ?? "",
-                        )
-                      }
-                      onChange={(e) => {
-                        setFormData((prev: any) => ({
-                          ...prev,
-                          [name]: e.target.value,
-                        }));
-                      }}
-                    />
+                    {field.fieldType === "select" ? (
+                      <select
+                        className="rbac-input rbac-select w-full"
+                        name={name}
+                        value={value}
+                        onChange={onChange}
+                      >
+                        <option value="">Select</option>
+                        {(field.options || []).map((option: any) => {
+                          const optValue =
+                            typeof option === "string" ? option : option.value;
+                          const optLabel =
+                            typeof option === "string" ? option : option.label;
+                          return (
+                            <option key={optValue} value={optValue}>
+                              {optLabel}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    ) : (
+                      <input
+                        className="rbac-input w-full"
+                        name={name}
+                        value={value}
+                        onChange={onChange}
+                      />
+                    )}
                   </td>
                 );
               })}

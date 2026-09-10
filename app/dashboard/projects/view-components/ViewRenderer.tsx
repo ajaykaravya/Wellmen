@@ -27,7 +27,9 @@ export default function ViewRenderer({
   const templateSections = template.sections;
 
   return (
-    <div className="space-y-8">
+    // data-pdf-sections marks these children as the units the PDF export
+    // paginates between, so a section is never split mid-table.
+    <div className="space-y-8" data-pdf-sections>
       {templateSections.map((section: any) => {
         switch (section.type) {
           case "header":
