@@ -1,25 +1,27 @@
 "use client";
 
-import {
-  getElectricSubZeroValue,
-  getElectricTouchPanelValue,
-  resolveSectionKey,
-} from "@/lib/sectionFormKeys";
-import { isElectricRowFilled, isFilled } from "@/lib/formViewUtils";
+import { resolveSectionKey, scopedKey } from "@/lib/sectionFormKeys";
+import { isFilled } from "@/lib/formViewUtils";
 
 export default function ElectricView({
   section,
   formData,
-  templateSections = [],
 }: {
   section: any;
   formData: any;
   templateSections?: any[];
 }) {
   const sectionKey = resolveSectionKey(section);
+  const columns: any[] = section.columns || [];
+  const editable = columns.filter((col) => !col.source);
+
+  const cellValue = (row: any, col: any) =>
+    formData?.[scopedKey(sectionKey, row.key, col.key)];
+
+  // A row earns its place in the view once any of its input columns is filled.
   const filledRows =
     section.rows?.filter((row: any) =>
-      isElectricRowFilled(formData, sectionKey, row.key, templateSections),
+      editable.some((col) => isFilled(cellValue(row, col))),
     ) ?? [];
 
   if (filledRows.length === 0) return null;
@@ -30,38 +32,40 @@ export default function ElectricView({
       <div className="overflow-x-auto rounded-xl border border-gray-200">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-[var(--theme-surface-2)] text-[color:var(--theme-text-muted)] uppercase text-xs font-bold">
-              <th className="px-6 py-4 text-left">Description</th>
-              <th className="px-6 py-4 text-left">Sub Zero Panel Board</th>
-              <th className="px-6 py-4 text-left">Touch Panel Board</th>
+            <tr className="bg-[var(--theme-surface-2)] text-xs font-bold uppercase text-[color:var(--theme-text-muted)]">
+              {columns.map((col) => (
+                <th key={col.key} className="px-6 py-4 text-left">
+                  {col.label}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {filledRows.map((row: any) => {
-              const subZero = getElectricSubZeroValue(
-                formData,
-                sectionKey,
-                row.key,
-                templateSections,
-              );
-              const touchPanel = getElectricTouchPanelValue(
-                formData,
-                sectionKey,
-                row.key,
-                templateSections,
-              );
-              return (
-                <tr key={`${sectionKey}-${row.key}`} className="">
-                  <td className="px-6 py-4 font-medium">{row.label}</td>
-                  <td className="px-6 py-4">
-                    {isFilled(subZero) ? String(subZero) : null}
-                  </td>
-                  <td className="px-6 py-4">
-                    {isFilled(touchPanel) ? String(touchPanel) : null}
-                  </td>
-                </tr>
-              );
-            })}
+            {filledRows.map((row: any) => (
+              <tr key={`${sectionKey}-${row.key}`}>
+                {columns.map((col) => {
+                  if (col.source === "row") {
+                    return (
+                      <td
+                        key={col.key}
+                        className={`px-6 py-4 align-top ${
+                          col.key === "description" ? "font-medium" : ""
+                        }`}
+                      >
+                        {row[col.key] ??
+                          (col.key === "description" ? row.label : null)}
+                      </td>
+                    );
+                  }
+                  const value = cellValue(row, col);
+                  return (
+                    <td key={col.key} className="px-6 py-4 align-top">
+                      {isFilled(value) ? String(value) : null}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
