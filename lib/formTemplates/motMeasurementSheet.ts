@@ -61,7 +61,13 @@ export const MOT_MEASUREMENT_SHEET = {
                 {
                     "key": "colour",
                     "label": "Colour",
-                    "fieldType": "text"
+                    "fieldType": "select",
+                    "options": [
+                        "Black",
+                        "Red",
+                        "Green",
+                        "Yellow"
+                    ]
                 },
                 {
                     "key": "qty",

@@ -44,7 +44,13 @@ export const MOT_MEASUREMENT_SHEET_FORM = {
                 },
                 {
                     "key": "sqft",
-                    "label": "Sq.Ft (Total)"
+                    "label": "Sq.Ft (Total)",
+                    "computed": {
+                        "multiply": [
+                            "size.w",
+                            "size.h"
+                        ]
+                    }
                 },
                 {
                     "key": "remark",
@@ -212,6 +218,12 @@ export const MOT_MEASUREMENT_SHEET_FORM = {
                     "key": "door_opp_side_10",
                     "label": "Door Opp. Side 10"
                 }
+            ],
+            "totals": [
+                {
+                    "column": "sqft",
+                    "label": "Total Sq.Ft"
+                }
             ]
         },
         {
@@ -266,7 +278,13 @@ export const MOT_MEASUREMENT_SHEET_FORM = {
                 },
                 {
                     "key": "sqft",
-                    "label": "Sq.Ft (Total)"
+                    "label": "Sq.Ft (Total)",
+                    "computed": {
+                        "multiply": [
+                            "size.w",
+                            "size.l"
+                        ]
+                    }
                 }
             ],
             "rows": [
@@ -329,10 +347,12 @@ export const MOT_MEASUREMENT_SHEET_FORM = {
                 {
                     "key": "ceiling_15",
                     "label": "15"
-                },
+                }
+            ],
+            "totals": [
                 {
-                    "key": "total",
-                    "label": "Total"
+                    "column": "sqft",
+                    "label": "Total Sq.Ft"
                 }
             ]
         },
@@ -414,7 +434,13 @@ export const MOT_MEASUREMENT_SHEET_FORM = {
                 },
                 {
                     "key": "sqft",
-                    "label": "Sq.Ft (Total)"
+                    "label": "Sq.Ft (Total)",
+                    "computed": {
+                        "multiply": [
+                            "size.w",
+                            "size.l"
+                        ]
+                    }
                 },
                 {
                     "key": "colour",
@@ -441,10 +467,12 @@ export const MOT_MEASUREMENT_SHEET_FORM = {
                 {
                     "key": "extra_5",
                     "label": "5"
-                },
+                }
+            ],
+            "totals": [
                 {
-                    "key": "total",
-                    "label": "Total"
+                    "column": "sqft",
+                    "label": "Total Sq.Ft"
                 }
             ]
         },

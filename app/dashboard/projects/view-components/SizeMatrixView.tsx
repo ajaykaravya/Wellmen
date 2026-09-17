@@ -94,6 +94,63 @@ export default function SizeMatrixView({
               </tr>
             ))}
           </tbody>
+
+          {(section.totals || []).length > 0 ? (
+            <tfoot>
+              {(section.totals || []).map((total: any) => {
+                const width = (col: any) =>
+                  col.children ? col.children.length : 1;
+                const index = section.columns.findIndex(
+                  (col: any) => col.key === total.column,
+                );
+                const leading =
+                  1 +
+                  section.columns
+                    .slice(0, Math.max(index, 0))
+                    .reduce((n: number, col: any) => n + width(col), 0);
+                const trailing = section.columns
+                  .slice(index + 1)
+                  .reduce((n: number, col: any) => n + width(col), 0);
+
+                // Sums the stored per-row values, so the figure matches what
+                // the form showed when it was filled in.
+                const sum = filledRows.reduce((acc: number, row: any) => {
+                  const raw = getSectionRowColValue(
+                    formData,
+                    sectionKey,
+                    row.key,
+                    total.column,
+                    "sizeMatrix",
+                    templateSections,
+                  );
+                  const n = Number(raw);
+                  return Number.isFinite(n) && String(raw ?? "").trim() !== ""
+                    ? acc + n
+                    : acc;
+                }, 0);
+
+                return (
+                  <tr
+                    key={total.column}
+                    className="bg-[var(--theme-surface-2)] font-bold"
+                  >
+                    <td
+                      className="px-4 py-3 text-right border-t"
+                      colSpan={leading}
+                    >
+                      {total.label || "Total"}
+                    </td>
+                    <td className="px-2 py-3 text-center border-l border-t">
+                      {Math.round(sum * 100) / 100}
+                    </td>
+                    {trailing > 0 ? (
+                      <td className="border-l border-t" colSpan={trailing} />
+                    ) : null}
+                  </tr>
+                );
+              })}
+            </tfoot>
+          ) : null}
         </table>
       </div>
     </div>
