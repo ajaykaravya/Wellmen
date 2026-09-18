@@ -54,8 +54,13 @@ export const MOT_MEASUREMENT_SHEET = {
             "title": "Material Selection",
             "columns": [
                 {
-                    "key": "size",
-                    "label": "Size",
+                    "key": "qty",
+                    "label": "QTY",
+                    "fieldType": "text"
+                },
+                {
+                    "key": "unit",
+                    "label": "Unit",
                     "fieldType": "text"
                 },
                 {
@@ -70,13 +75,8 @@ export const MOT_MEASUREMENT_SHEET = {
                     ]
                 },
                 {
-                    "key": "qty",
-                    "label": "QTY",
-                    "fieldType": "text"
-                },
-                {
-                    "key": "unit",
-                    "label": "Unit",
+                    "key": "size",
+                    "label": "Size",
                     "fieldType": "text"
                 },
                 {
