@@ -70,25 +70,40 @@ export default function NormalMatrixRenderer({
                 return (
                   <td key={col.key} className="border p-2 min-w-[150px]">
                     {field.fieldType === "select" ? (
-                      <select
-                        className="rbac-input rbac-select w-full"
-                        name={name}
-                        value={value}
-                        onChange={onChange}
-                      >
-                        <option value="">Select</option>
-                        {(field.options || []).map((option: any) => {
-                          const optValue =
-                            typeof option === "string" ? option : option.value;
-                          const optLabel =
-                            typeof option === "string" ? option : option.label;
-                          return (
-                            <option key={optValue} value={optValue}>
-                              {optLabel}
-                            </option>
-                          );
-                        })}
-                      </select>
+                      (() => {
+                        const options = (field.options || []).map(
+                          (option: any) =>
+                            typeof option === "string"
+                              ? { value: option, label: option }
+                              : option,
+                        );
+
+                        // Older submissions may hold a value from before this
+                        // column became a dropdown. Carry it as an extra option
+                        // so opening and saving the form cannot silently wipe it.
+                        const isLegacy =
+                          value !== "" &&
+                          !options.some((o: any) => o.value === value);
+
+                        return (
+                          <select
+                            className="rbac-input rbac-select w-full"
+                            name={name}
+                            value={value}
+                            onChange={onChange}
+                          >
+                            <option value="">Select</option>
+                            {options.map((option: any) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                            {isLegacy ? (
+                              <option value={value}>{value}</option>
+                            ) : null}
+                          </select>
+                        );
+                      })()
                     ) : (
                       <input
                         className="rbac-input w-full"

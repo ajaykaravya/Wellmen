@@ -64,14 +64,22 @@ export const MOT_MEASUREMENT_SHEET = {
                     "fieldType": "text"
                 },
                 {
+                    "key": "make",
+                    "label": "Make",
+                    "fieldType": "text"
+                },
+                {
                     "key": "colour",
                     "label": "Colour",
                     "fieldType": "select",
                     "options": [
-                        "Black",
-                        "Red",
+                        "White",
+                        "Blue",
+                        "Gray",
                         "Green",
-                        "Yellow"
+                        "Orange",
+                        "Ozon",
+                        "Light grey"
                     ]
                 },
                 {
@@ -342,7 +350,20 @@ export const MOT_MEASUREMENT_SHEET = {
                             "key": "cfm_11000",
                             "label": "11000 CFM"
                         }
-                    ]
+                    ],
+                    "columnOverrides": {
+                        "make": {
+                            "fieldType": "select",
+                            "options": [
+                                "Citizen",
+                                "JPC",
+                                "Ethos",
+                                "Anjani",
+                                "Wellman",
+                                "Any Make"
+                            ]
+                        }
+                    }
                 },
                 {
                     "key": "outdoor_unit",
@@ -578,7 +599,18 @@ export const MOT_MEASUREMENT_SHEET = {
                             "key": "hp_25",
                             "label": "25 HP"
                         }
-                    ]
+                    ],
+                    "columnOverrides": {
+                        "make": {
+                            "fieldType": "select",
+                            "options": [
+                                "Schnider",
+                                "Mistu Shubhi",
+                                "Denfos",
+                                "Any Make"
+                            ]
+                        }
+                    }
                 },
                 {
                     "key": "hepa_filter",

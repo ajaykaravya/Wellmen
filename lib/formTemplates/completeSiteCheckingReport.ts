@@ -287,14 +287,32 @@ export const COMPLETE_SITE_CHECKING_REPORT = {
             columns: [
 
                 {
-                    key: "5_5_ton",
-                    label: "5.5 TON"
+                    key: "2_ton",
+                    label: "2 TON"
                 },
 
 
                 {
                     key: "3_ton",
                     label: "3 TON"
+                },
+
+
+                {
+                    key: "5_5_ton",
+                    label: "5.5 TON"
+                },
+
+
+                {
+                    key: "8_5_ton",
+                    label: "8.5 TON"
+                },
+
+
+                {
+                    key: "11_ton",
+                    label: "11 TON"
                 }
 
             ],
