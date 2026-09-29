@@ -1,6 +1,8 @@
 "use client";
 
 import { getMatrixCellValue, matrixCellKey } from "@/lib/matrixFormKeys";
+import { getCustomRows } from "@/lib/customRows";
+import { AddRowButton, CustomRowLabelCell } from "./CustomRowControls";
 
 export default function NormalMatrixRenderer({
   group,
@@ -15,6 +17,13 @@ export default function NormalMatrixRenderer({
   setFormData: any;
   section?: any;
 }) {
+  // Cell keys here are scoped by group, so the group is the row scope too.
+  const scope = group.key;
+  const allRows = [
+    ...(group.rows || []),
+    ...getCustomRows(formData, scope).map((row) => ({ ...row, isCustom: true })),
+  ];
+
   return (
     <div className="w-full overflow-x-auto">
       <table className="w-full min-w-[700px] border-collapse border">
@@ -36,9 +45,19 @@ export default function NormalMatrixRenderer({
         </thead>
 
         <tbody>
-          {group.rows.map((row: any) => (
+          {allRows.map((row: any) => (
             <tr key={`${group.key}-${row.key}`}>
-              <td className="border p-2 whitespace-nowrap">{row.label}</td>
+              <td className="border p-2 whitespace-nowrap">
+                {row.isCustom ? (
+                  <CustomRowLabelCell
+                    scope={scope}
+                    row={row}
+                    setFormData={setFormData}
+                  />
+                ) : (
+                  row.label
+                )}
+              </td>
 
               {columns.map((col) => {
                 const name = matrixCellKey(group.key, row.key, col.key);
@@ -119,6 +138,8 @@ export default function NormalMatrixRenderer({
           ))}
         </tbody>
       </table>
+
+      <AddRowButton scope={scope} setFormData={setFormData} />
     </div>
   );
 }

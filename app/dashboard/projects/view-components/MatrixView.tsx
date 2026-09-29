@@ -7,6 +7,7 @@ import {
   isMatrixGroupFilled,
   isMatrixRowFilled,
 } from "@/lib/formViewUtils";
+import { getCustomRows } from "@/lib/customRows";
 
 export default function MatrixView({
   section,
@@ -15,10 +16,16 @@ export default function MatrixView({
   section: any;
   formData: any;
 }) {
-  const filledGroups =
-    section.groups?.filter((group: any) =>
-      isMatrixGroupFilled(formData, group, section.columns, section),
-    ) ?? [];
+  // Merge in user-added rows before deciding whether a group has content,
+  // otherwise a group whose only filled row was added by hand is dropped.
+  const groupsWithCustomRows = (section.groups || []).map((group: any) => ({
+    ...group,
+    rows: [...(group.rows || []), ...getCustomRows(formData, group.key)],
+  }));
+
+  const filledGroups = groupsWithCustomRows.filter((group: any) =>
+    isMatrixGroupFilled(formData, group, section.columns, section),
+  );
 
   if (filledGroups.length === 0) return null;
 
@@ -85,7 +92,7 @@ export default function MatrixView({
             ) : (
               (() => {
                 const filledRows =
-                  group.rows?.filter((row: any) =>
+                  (group.rows || []).filter((row: any) =>
                     isMatrixRowFilled(
                       formData,
                       group.key,

@@ -1,6 +1,8 @@
 "use client";
 
 import { resolveSectionKey, sectionRowColKey } from "@/lib/sectionFormKeys";
+import { getCustomRows } from "@/lib/customRows";
+import { AddRowButton, CustomRowLabelCell } from "./CustomRowControls";
 
 export default function CompleteSiteMatrixRenderer({
   section,
@@ -13,7 +15,16 @@ export default function CompleteSiteMatrixRenderer({
 }) {
   const sectionKey = resolveSectionKey(section);
 
+  const allRows = [
+    ...(section.rows || []),
+    ...getCustomRows(formData, sectionKey).map((row: any) => ({
+      ...row,
+      isCustom: true,
+    })),
+  ];
+
   return (
+    <>
     <table className="w-full border">
       <thead>
         <tr>
@@ -28,9 +39,13 @@ export default function CompleteSiteMatrixRenderer({
       </thead>
 
       <tbody>
-        {section.rows.map((row: any) => (
+        {allRows.map((row: any) => (
           <tr key={`${sectionKey}-${row.key}`}>
-            <td className="border p-2">{row.label}</td>
+            <td className="border p-2">{row.isCustom ? (
+                <CustomRowLabelCell scope={sectionKey} row={row} setFormData={setFormData} />
+              ) : (
+                row.label
+              )}</td>
 
             {section.columns.map((col: any) => {
               const name = sectionRowColKey(sectionKey, row.key, col.key);
@@ -54,5 +69,8 @@ export default function CompleteSiteMatrixRenderer({
         ))}
       </tbody>
     </table>
+
+      <AddRowButton scope={sectionKey} setFormData={setFormData} />
+    </>
   );
 }

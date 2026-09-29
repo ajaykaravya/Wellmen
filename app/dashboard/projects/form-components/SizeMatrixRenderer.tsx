@@ -5,6 +5,11 @@ import {
   sectionRowColChildKey,
   sectionRowColKey,
 } from "@/lib/sectionFormKeys";
+import { getCustomRows } from "@/lib/customRows";
+import {
+  AddRowButton,
+  CustomRowLabelCell,
+} from "./CustomRowControls";
 
 export default function SizeMatrixRenderer({
   section,
@@ -68,8 +73,14 @@ export default function SizeMatrixRenderer({
       return updated;
     });
 
+  const customRows = getCustomRows(formData, sectionKey);
+  const allRows = [
+    ...(section.rows || []),
+    ...customRows.map((row) => ({ ...row, isCustom: true })),
+  ];
+
   const columnTotal = (colKey: string) => {
-    const sum = (section.rows || []).reduce((acc: number, row: any) => {
+    const sum = allRows.reduce((acc: number, row: any) => {
       const raw = formData?.[sectionRowColKey(sectionKey, row.key, colKey)];
       const n = Number(raw);
       return Number.isFinite(n) && String(raw ?? "").trim() !== "" ? acc + n : acc;
@@ -78,6 +89,7 @@ export default function SizeMatrixRenderer({
   };
 
   const totals: any[] = section.totals || [];
+
 
   return (
     <div className="rbac-card">
@@ -129,10 +141,18 @@ export default function SizeMatrixRenderer({
         </thead>
 
         <tbody>
-          {section.rows.map((row: any) => (
+          {allRows.map((row: any) => (
             <tr key={`${sectionKey}-${row.key}`}>
               <td className="border p-2 text-sm whitespace-nowrap">
-                {row.label}
+                {row.isCustom ? (
+                  <CustomRowLabelCell
+                    scope={sectionKey}
+                    row={row}
+                    setFormData={setFormData}
+                  />
+                ) : (
+                  row.label
+                )}
               </td>
 
               {section.columns.map((col: any) =>
@@ -227,6 +247,8 @@ export default function SizeMatrixRenderer({
           ) : null}
         </table>
       </div>
+
+      <AddRowButton scope={sectionKey} setFormData={setFormData} />
     </div>
   );
 }

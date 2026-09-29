@@ -10,6 +10,7 @@ import {
   isCompleteSiteSizeRowFilled,
   isFilled,
 } from "@/lib/formViewUtils";
+import { getCustomRows } from "@/lib/customRows";
 
 export default function CompleteSiteView({
   section,
@@ -21,10 +22,17 @@ export default function CompleteSiteView({
   templateSections?: any[];
 }) {
   const sectionKey = resolveSectionKey(section);
+
+  // Rows the user added while filling the form live in formData, not the
+  // template, so they must be merged in or they vanish from the view and PDF.
+  const viewRows = [
+    ...(section.rows || []),
+    ...getCustomRows(formData, sectionKey),
+  ];
   const isSizeSection = section.type === "completeSiteSize";
 
   const filledRows =
-    section.rows?.filter((row: any) =>
+    viewRows.filter((row: any) =>
       isSizeSection
         ? isCompleteSiteSizeRowFilled(
             formData,

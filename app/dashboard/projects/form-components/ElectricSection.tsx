@@ -1,6 +1,8 @@
 "use client";
 
 import { resolveSectionKey, scopedKey } from "@/lib/sectionFormKeys";
+import { getCustomRows } from "@/lib/customRows";
+import { AddRowButton, CustomRowLabelCell } from "./CustomRowControls";
 
 // Columns are declared by the template. Those carrying `source: "row"` are
 // fixed sheet text printed from the row itself; the rest are user inputs.
@@ -16,6 +18,14 @@ export default function ElectricSection({
   const sectionKey = resolveSectionKey(section);
   const columns: any[] = section.columns || [];
   const editable = columns.filter((col) => !col.source);
+
+  const allRows = [
+    ...(section.rows || []),
+    ...getCustomRows(formData, sectionKey).map((row: any) => ({
+      ...row,
+      isCustom: true,
+    })),
+  ];
 
   const cellKey = (rowKey: string, colKey: string) =>
     scopedKey(sectionKey, rowKey, colKey);
@@ -125,7 +135,7 @@ export default function ElectricSection({
       <div className="mb-5 flex items-center justify-between">
         <h3 className="rbac-title-lg">{section.title}</h3>
         <span className="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-          {section.rows.length} Items
+          {allRows.length} Items
         </span>
       </div>
 
@@ -142,7 +152,7 @@ export default function ElectricSection({
           </thead>
 
           <tbody>
-            {section.rows.map((row: any) => (
+            {allRows.map((row: any) => (
               <tr
                 key={`${sectionKey}-${row.key}`}
                 className="border-t border-gray-200 transition dark:border-gray-700 dark:hover:bg-gray-800"
@@ -154,9 +164,18 @@ export default function ElectricSection({
                       col.fieldType === "textarea" ? "min-w-[240px]" : ""
                     }`}
                   >
-                    {col.source === "row"
-                      ? (row[col.key] ?? (col.key === "description" ? row.label : ""))
-                      : renderField(row, col)}
+                    {col.source !== "row"
+                      ? renderField(row, col)
+                      : row.isCustom && col.key === "description"
+                        ? (
+                            <CustomRowLabelCell
+                              scope={sectionKey}
+                              row={row}
+                              setFormData={setFormData}
+                            />
+                          )
+                        : (row[col.key] ??
+                          (col.key === "description" ? row.label : ""))}
                   </td>
                 ))}
               </tr>
@@ -166,14 +185,24 @@ export default function ElectricSection({
       </div>
 
       <div className="space-y-4 md:hidden">
-        {section.rows.map((row: any) => (
+        {allRows.map((row: any) => (
           <div
             key={`${sectionKey}-${row.key}`}
             className="space-y-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900"
           >
             <div className="text-sm font-medium">
-              {row.srNo ? `${row.srNo}. ` : ""}
-              {row.description ?? row.label}
+              {row.isCustom ? (
+                <CustomRowLabelCell
+                  scope={sectionKey}
+                  row={row}
+                  setFormData={setFormData}
+                />
+              ) : (
+                <>
+                  {row.srNo ? `${row.srNo}. ` : ""}
+                  {row.description ?? row.label}
+                </>
+              )}
             </div>
 
             {columns
@@ -201,6 +230,8 @@ export default function ElectricSection({
           </div>
         ))}
       </div>
+      <AddRowButton scope={sectionKey} setFormData={setFormData} />
+
     </div>
   );
 }

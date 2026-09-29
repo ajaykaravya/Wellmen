@@ -2,6 +2,7 @@
 
 import { resolveSectionKey, scopedKey } from "@/lib/sectionFormKeys";
 import { isFilled } from "@/lib/formViewUtils";
+import { getCustomRows } from "@/lib/customRows";
 
 export default function ElectricView({
   section,
@@ -12,6 +13,13 @@ export default function ElectricView({
   templateSections?: any[];
 }) {
   const sectionKey = resolveSectionKey(section);
+
+  // Rows the user added while filling the form live in formData, not the
+  // template, so they must be merged in or they vanish from the view and PDF.
+  const viewRows = [
+    ...(section.rows || []),
+    ...getCustomRows(formData, sectionKey),
+  ];
   const columns: any[] = section.columns || [];
   const editable = columns.filter((col) => !col.source);
 
@@ -20,7 +28,7 @@ export default function ElectricView({
 
   // A row earns its place in the view once any of its input columns is filled.
   const filledRows =
-    section.rows?.filter((row: any) =>
+    viewRows.filter((row: any) =>
       editable.some((col) => isFilled(cellValue(row, col))),
     ) ?? [];
 

@@ -1,6 +1,8 @@
 "use client";
 
 import { completeSiteSizeKey, resolveSectionKey } from "@/lib/sectionFormKeys";
+import { getCustomRows } from "@/lib/customRows";
+import { AddRowButton, CustomRowLabelCell } from "./CustomRowControls";
 
 export default function CompleteSiteSizeRenderer({
   section,
@@ -13,7 +15,16 @@ export default function CompleteSiteSizeRenderer({
 }) {
   const sectionKey = resolveSectionKey(section);
 
+  const allRows = [
+    ...(section.rows || []),
+    ...getCustomRows(formData, sectionKey).map((row: any) => ({
+      ...row,
+      isCustom: true,
+    })),
+  ];
+
   return (
+    <>
     <table className="w-full border">
       <thead>
         <tr>
@@ -36,9 +47,13 @@ export default function CompleteSiteSizeRenderer({
       </thead>
 
       <tbody>
-        {section.rows.map((row: any) => (
+        {allRows.map((row: any) => (
           <tr key={`${sectionKey}-${row.key}`}>
-            <td className="border p-2">{row.label}</td>
+            <td className="border p-2">{row.isCustom ? (
+                <CustomRowLabelCell scope={sectionKey} row={row} setFormData={setFormData} />
+              ) : (
+                row.label
+              )}</td>
 
             {(["L", "W", "H"] as const).map((dimension) => {
               const name = completeSiteSizeKey(sectionKey, row.key, dimension);
@@ -62,5 +77,8 @@ export default function CompleteSiteSizeRenderer({
         ))}
       </tbody>
     </table>
+
+      <AddRowButton scope={sectionKey} setFormData={setFormData} />
+    </>
   );
 }

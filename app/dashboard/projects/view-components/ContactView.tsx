@@ -6,6 +6,7 @@ import {
   resolveSectionKey,
 } from "@/lib/sectionFormKeys";
 import { isContactRowFilled, isFilled } from "@/lib/formViewUtils";
+import { getCustomRows } from "@/lib/customRows";
 
 export default function ContactView({
   section,
@@ -17,8 +18,15 @@ export default function ContactView({
   templateSections?: any[];
 }) {
   const sectionKey = resolveSectionKey(section);
+
+  // Rows the user added while filling the form live in formData, not the
+  // template, so they must be merged in or they vanish from the view and PDF.
+  const viewRows = [
+    ...(section.rows || []),
+    ...getCustomRows(formData, sectionKey),
+  ];
   const filledRows =
-    section.rows?.filter((row: any) =>
+    viewRows.filter((row: any) =>
       isContactRowFilled(formData, sectionKey, row.key, templateSections),
     ) ?? [];
 

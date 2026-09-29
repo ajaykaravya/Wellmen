@@ -5,6 +5,8 @@ import {
   contactNameKey,
   resolveSectionKey,
 } from "@/lib/sectionFormKeys";
+import { getCustomRows } from "@/lib/customRows";
+import { AddRowButton, CustomRowLabelCell } from "./CustomRowControls";
 
 export default function ContactSection({
   section,
@@ -16,6 +18,14 @@ export default function ContactSection({
   setFormData: any;
 }) {
   const sectionKey = resolveSectionKey(section);
+
+  const allRows = [
+    ...(section.rows || []),
+    ...getCustomRows(formData, sectionKey).map((row: any) => ({
+      ...row,
+      isCustom: true,
+    })),
+  ];
 
   return (
     <div className="rbac-card">
@@ -34,7 +44,7 @@ export default function ContactSection({
           </thead>
 
           <tbody>
-            {section.rows.map((row: any, index: number) => {
+            {allRows.map((row: any, index: number) => {
               const nameKey = contactNameKey(sectionKey, row.key);
               const mobileKey = contactMobileKey(sectionKey, row.key);
               return (
@@ -43,7 +53,13 @@ export default function ContactSection({
                   className="border-t border-gray-200 dark:border-gray-700 dark:hover:bg-gray-800 transition"
                 >
                   <td className="px-5 py-4 text-sm">
-                    <div className="flex items-center gap-3">{row.label}</div>
+                    <div className="flex items-center gap-3">
+                      {row.isCustom ? (
+                        <CustomRowLabelCell scope={sectionKey} row={row} setFormData={setFormData} />
+                      ) : (
+                        row.label
+                      )}
+                    </div>
                   </td>
 
                   <td className="px-5 py-4">
@@ -84,7 +100,7 @@ export default function ContactSection({
       </div>
 
       <div className="md:hidden space-y-4">
-        {section.rows.map((row: any, index: number) => {
+        {allRows.map((row: any, index: number) => {
           const nameKey = contactNameKey(sectionKey, row.key);
           const mobileKey = contactMobileKey(sectionKey, row.key);
           return (
@@ -96,7 +112,11 @@ export default function ContactSection({
                 <span className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 flex items-center justify-center text-xs">
                   {index + 1}
                 </span>
-                {row.label}
+                {row.isCustom ? (
+                  <CustomRowLabelCell scope={sectionKey} row={row} setFormData={setFormData} />
+                ) : (
+                  row.label
+                )}
               </div>
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">Name</label>
@@ -135,6 +155,7 @@ export default function ContactSection({
           );
         })}
       </div>
+      <AddRowButton scope={sectionKey} setFormData={setFormData} />
     </div>
   );
 }

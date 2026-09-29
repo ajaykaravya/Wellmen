@@ -5,6 +5,8 @@ import {
   checklistStatusKey,
   resolveSectionKey,
 } from "@/lib/sectionFormKeys";
+import { getCustomRows } from "@/lib/customRows";
+import { AddRowButton, CustomRowLabelCell } from "./CustomRowControls";
 
 export default function ChecklistSection({
   section,
@@ -16,6 +18,14 @@ export default function ChecklistSection({
   setFormData: any;
 }) {
   const sectionKey = resolveSectionKey(section);
+
+  const allRows = [
+    ...(section.rows || []),
+    ...getCustomRows(formData, sectionKey).map((row: any) => ({
+      ...row,
+      isCustom: true,
+    })),
+  ];
 
   return (
     <div className="rbac-card">
@@ -33,13 +43,19 @@ export default function ChecklistSection({
             </tr>
           </thead>
           <tbody>
-            {section.rows.map((row: any) => {
+            {allRows.map((row: any) => {
               const statusKey = checklistStatusKey(sectionKey, row.key);
               const remarkKey = checklistRemarkKey(sectionKey, row.key);
 
               return (
                 <tr key={`${sectionKey}-${row.key}`} className="border-t dark:hover:bg-gray-800">
-                  <td className="px-5 py-4">{row.label}</td>
+                  <td className="px-5 py-4">
+                    {row.isCustom ? (
+                      <CustomRowLabelCell scope={sectionKey} row={row} setFormData={setFormData} />
+                    ) : (
+                      row.label
+                    )}
+                  </td>
                   <td className="px-5 py-4">
                     <StatusRadio
                       name={statusKey}
@@ -76,7 +92,7 @@ export default function ChecklistSection({
 
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
-        {section.rows.map((row: any) => {
+        {allRows.map((row: any) => {
           const statusKey = checklistStatusKey(sectionKey, row.key);
           const remarkKey = checklistRemarkKey(sectionKey, row.key);
 
@@ -86,7 +102,11 @@ export default function ChecklistSection({
               className="border rounded-xl p-4 bg-white dark:bg-gray-900 space-y-4 "
             >
               <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                {row.label}
+                {row.isCustom ? (
+                  <CustomRowLabelCell scope={sectionKey} row={row} setFormData={setFormData} />
+                ) : (
+                  row.label
+                )}
               </div>
               <StatusRadio
                 name={`${statusKey}_mobile`}
@@ -115,6 +135,8 @@ export default function ChecklistSection({
           );
         })}
       </div>
+      <AddRowButton scope={sectionKey} setFormData={setFormData} />
+
     </div>
   );
 }
