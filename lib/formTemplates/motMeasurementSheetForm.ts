@@ -459,14 +459,6 @@ export const MOT_MEASUREMENT_SHEET_FORM = {
                 {
                     "key": "passage",
                     "label": "Passage"
-                },
-                {
-                    "key": "extra_4",
-                    "label": "4"
-                },
-                {
-                    "key": "extra_5",
-                    "label": "5"
                 }
             ],
             "totals": [
@@ -621,6 +613,14 @@ export const MOT_MEASUREMENT_SHEET_FORM = {
                 {
                     "key": "tr_5_5_b",
                     "label": "5.5 TR."
+                },
+                {
+                    "key": "tr_8_5",
+                    "label": "8.5 TR."
+                },
+                {
+                    "key": "tr_11",
+                    "label": "11 TR."
                 }
             ]
         },
@@ -665,20 +665,36 @@ export const MOT_MEASUREMENT_SHEET_FORM = {
                     "label": "D.P. Gauge"
                 },
                 {
-                    "key": "extra_9",
-                    "label": "9"
+                    "key": "painting",
+                    "label": "Painting"
                 },
                 {
-                    "key": "extra_10",
-                    "label": "10"
+                    "key": "mgps_bead_head_panel",
+                    "label": "MGPS Bead Head Panel"
                 },
                 {
-                    "key": "extra_11",
-                    "label": "11"
+                    "key": "fix_pendent",
+                    "label": "Fix Pendent"
                 },
                 {
-                    "key": "extra_12",
-                    "label": "12"
+                    "key": "dgu_window",
+                    "label": "DGU Window"
+                },
+                {
+                    "key": "storage_cabinat",
+                    "label": "Storage Cabinat"
+                },
+                {
+                    "key": "single_arm_pendent",
+                    "label": "Single Arm Pendent"
+                },
+                {
+                    "key": "passbox",
+                    "label": "Passbox"
+                },
+                {
+                    "key": "window",
+                    "label": "Window"
                 }
             ]
         }

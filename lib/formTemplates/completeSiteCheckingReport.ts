@@ -92,17 +92,7 @@ export const COMPLETE_SITE_CHECKING_REPORT = {
 
                 {
                     key: "drawing",
-                    label: "Drawing(mm)"
-                },
-
-                {
-                    key: "width",
-                    label: "Width(mm)"
-                },
-
-                {
-                    key: "height",
-                    label: "Height(mm)"
+                    label: "Size"
                 }
 
             ],
