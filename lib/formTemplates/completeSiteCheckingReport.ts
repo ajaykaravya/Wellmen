@@ -290,13 +290,13 @@ export const COMPLETE_SITE_CHECKING_REPORT = {
 
                 {
                     key: "5_5_ton",
-                    label: "5.5 TON"
+                    label: "5 TON"
                 },
 
 
                 {
                     key: "8_5_ton",
-                    label: "8.5 TON"
+                    label: "8 TON"
                 },
 
 
