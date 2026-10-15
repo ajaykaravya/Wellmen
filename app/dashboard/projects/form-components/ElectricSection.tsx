@@ -140,7 +140,7 @@ export default function ElectricSection({
       </div>
 
       <div className="hidden overflow-x-auto rounded-xl border border-gray-200 md:block dark:border-gray-700">
-        <table className="w-full min-w-[1180px] border-collapse">
+        <table className="w-full min-w-[1480px] border-collapse">
           <thead>
             <tr className="bg-[var(--theme-surface-2)] text-sm text-[color:var(--theme-text-muted)]">
               {columns.map((col) => (

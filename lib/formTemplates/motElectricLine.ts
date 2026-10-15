@@ -48,6 +48,25 @@ export const MOT_ELECTRIC_LINE = {
                     }
                 },
                 {
+                    "key": "touchPanelApplicable",
+                    "label": "Touch Panel",
+                    "fieldType": "select",
+                    "options": [
+                        "Yes",
+                        "Not"
+                    ]
+                },
+                {
+                    "key": "touchPanelRemark",
+                    "label": "Remark For Touch Panel Board",
+                    "fieldType": "textarea",
+                    "defaultFrom": "touchPanelRemark",
+                    "enabledWhen": {
+                        "column": "touchPanelApplicable",
+                        "equals": "Yes"
+                    }
+                },
+                {
                     "key": "purpose",
                     "label": "Purpose",
                     "fieldType": "textarea"
@@ -64,6 +83,7 @@ export const MOT_ELECTRIC_LINE = {
                     "srNo": "1",
                     "description": "10MM (4 Core) Cable For Main DP Panel To AHU Electrical Panel",
                     "panelRemark": "This wire goes to seprate MCB power",
+                    "touchPanelRemark": "This wire goes to seprate MCB power",
                     "purpose": "For main power"
                 },
                 {
@@ -71,6 +91,7 @@ export const MOT_ELECTRIC_LINE = {
                     "srNo": "2",
                     "description": "4MM (4 Core) Cable For Electrical Panel To AHU",
                     "panelRemark": "This wire goes to Electrical Panel to AHU",
+                    "touchPanelRemark": "This wire goes to Electrical Panel to AHU",
                     "purpose": "For AHU power"
                 },
                 {
@@ -78,6 +99,7 @@ export const MOT_ELECTRIC_LINE = {
                     "srNo": "3",
                     "description": "4MM (4 Core) Cable For Electrical Panel To Heater Cable",
                     "panelRemark": "This wire goes to Electrical Panel to Heater Cable",
+                    "touchPanelRemark": "This wire goes to Electrical Panel to Heater Cable",
                     "purpose": "For AHU heater"
                 },
                 {
@@ -85,6 +107,7 @@ export const MOT_ELECTRIC_LINE = {
                     "srNo": "4",
                     "description": "4MM (4 Core) Cable For Electrical Panel To Compressor -1",
                     "panelRemark": "This wire goes to Electrical Panel to Comrassor -1",
+                    "touchPanelRemark": "This wire goes to Electrical Panel to Comrassor -1",
                     "purpose": "For COM-1 power"
                 },
                 {
@@ -92,6 +115,7 @@ export const MOT_ELECTRIC_LINE = {
                     "srNo": "5",
                     "description": "4MM (4 Core) Cable For Electrical Panel To Compressor -2",
                     "panelRemark": "This wire goes to Electrical Panel to Comrassor -2",
+                    "touchPanelRemark": "This wire goes to Electrical Panel to Comrassor -2",
                     "purpose": "For COM-2 power"
                 },
                 {
@@ -99,6 +123,7 @@ export const MOT_ELECTRIC_LINE = {
                     "srNo": "6",
                     "description": "1.5MM (2 Core) Cable For Electrical Panel To Compressor -1",
                     "panelRemark": "This wire goes to Electrical Panel to HP/LP Comrassor -1",
+                    "touchPanelRemark": "This wire goes to Electrical Panel to HP/LP Comrassor -1",
                     "purpose": "For COM-1 HP/LP power"
                 },
                 {
@@ -106,6 +131,7 @@ export const MOT_ELECTRIC_LINE = {
                     "srNo": "7",
                     "description": "1.5MM (2 Core) Cable For Electrical Panel To Compressor -2",
                     "panelRemark": "This wire goes to Electrical Panel to HP/LP Comrassor -2",
+                    "touchPanelRemark": "This wire goes to Electrical Panel to HP/LP Comrassor -2",
                     "purpose": "For COM-2 HP/LP power"
                 },
                 {
@@ -113,6 +139,7 @@ export const MOT_ELECTRIC_LINE = {
                     "srNo": "8",
                     "description": "1.5MM (2 Core) Cable For Electrical Panel To Compressor -1",
                     "panelRemark": "This wire goes to Electrical Panel to CO command Comrassor-1",
+                    "touchPanelRemark": "This wire goes to Electrical Panel to CO command Comrassor-1",
                     "purpose": "For CP control"
                 },
                 {
@@ -120,6 +147,7 @@ export const MOT_ELECTRIC_LINE = {
                     "srNo": "9",
                     "description": "1.5MM (2 Core) Cable For Electrical Panel To Compressor -2",
                     "panelRemark": "This wire goes to Electrical Panel to CP Comrassor-2",
+                    "touchPanelRemark": "This wire goes to Electrical Panel to CP Comrassor-2",
                     "purpose": "For CP control"
                 },
                 {
@@ -127,6 +155,7 @@ export const MOT_ELECTRIC_LINE = {
                     "srNo": "10",
                     "description": "1.5MM (2 Core) Cable For Electrical Panel To Riser",
                     "panelRemark": "This wire goes to 12 module board near of door",
+                    "touchPanelRemark": "This wire goes to Electrical Panel",
                     "purpose": "For tempeture control"
                 },
                 {
@@ -134,6 +163,7 @@ export const MOT_ELECTRIC_LINE = {
                     "srNo": "11",
                     "description": "1.5MM (Single Core) Cable For Electrical Panel To Erthing",
                     "panelRemark": "This wire goes to Electrical Panel to Erthing",
+                    "touchPanelRemark": "This wire goes to Electrical Panel",
                     "purpose": "For ground"
                 },
                 {
@@ -141,6 +171,7 @@ export const MOT_ELECTRIC_LINE = {
                     "srNo": "12",
                     "description": "Duct 6 Core Sheld Cable (CAT 6 Sheld Cable) From Electrical Panel To Return Duct",
                     "panelRemark": "This wire goes to Electrical Panel to Return Duct",
+                    "touchPanelRemark": "This wire goes to Electrical Panel to Return Duct",
                     "purpose": "For tempreture controling command option"
                 },
                 {
@@ -148,6 +179,7 @@ export const MOT_ELECTRIC_LINE = {
                     "srNo": "14",
                     "description": "1.5MM (2 Core) Cable For Electrical Panel To LED Light 2X2",
                     "panelRemark": "This wire goes to 12 module board near of door",
+                    "touchPanelRemark": "This wire goes from Electrical Panel LED Light",
                     "purpose": "For 2X2 light"
                 },
                 {
@@ -155,6 +187,7 @@ export const MOT_ELECTRIC_LINE = {
                     "srNo": "15",
                     "description": "1.5MM (2 Core) Cable For Electrical Panel To Operation Progress Light",
                     "panelRemark": "This wire goes to 8 module board near of door",
+                    "touchPanelRemark": "This wire goes from 8 Modual to Progress Light",
                     "purpose": "Operation progress light"
                 },
                 {
@@ -162,6 +195,7 @@ export const MOT_ELECTRIC_LINE = {
                     "srNo": "16",
                     "description": "1.5MM (2 Core) Cable For X-Ray View Box To 8 Modular Board",
                     "panelRemark": "This wire goes to 12 module board near of door",
+                    "touchPanelRemark": "This wire goes from X-Ray View Box to 8 Module Board bottom panel",
                     "purpose": "For X-Ray view box"
                 },
                 {
@@ -169,6 +203,7 @@ export const MOT_ELECTRIC_LINE = {
                     "srNo": "17",
                     "description": "1.MM (6 Core) Cable For Subzero To Electrical Panel",
                     "panelRemark": "This wire goes to Subzero to Electrical Panel",
+                    "touchPanelRemark": "-",
                     "purpose": "CP command (On/Off)"
                 },
                 {
@@ -176,6 +211,7 @@ export const MOT_ELECTRIC_LINE = {
                     "srNo": "18",
                     "description": "6 Core Sheld Cable (CAT 6 Sheld Cable) From Electrical Panel To Return Duct",
                     "panelRemark": "",
+                    "touchPanelRemark": "This wire goes from Touch Panel to Electrical Panel",
                     "purpose": "For HMI touch panel"
                 },
                 {
@@ -183,6 +219,7 @@ export const MOT_ELECTRIC_LINE = {
                     "srNo": "19",
                     "description": "1.5MM (2 Core) Cable For DGU Window To 12 Modular Board",
                     "panelRemark": "This wire goes to 12 module board to DGU window",
+                    "touchPanelRemark": "This wire goes to Electrical Panel",
                     "purpose": "For DGU remote"
                 },
                 {
@@ -190,6 +227,7 @@ export const MOT_ELECTRIC_LINE = {
                     "srNo": "20",
                     "description": "1.5MM (2 Core) Cable For Pendent To Electrical Panel",
                     "panelRemark": "This wire goes to Pendent to Electrical Panel",
+                    "touchPanelRemark": "This wire goes to Pendent to Electrical Panel",
                     "purpose": "For pendent to electrical panel"
                 },
                 {
@@ -197,6 +235,7 @@ export const MOT_ELECTRIC_LINE = {
                     "srNo": "Note:-",
                     "description": "2.5/4 SQ MM 2 Core Wire For 8 Modular",
                     "panelRemark": "Separate MCB / all sercuit required",
+                    "touchPanelRemark": "Separate MCB / wall sercuit required",
                     "purpose": "Depend on MOT medical equipment"
                 },
                 {
@@ -204,6 +243,7 @@ export const MOT_ELECTRIC_LINE = {
                     "srNo": "",
                     "description": "4/6 SQ MM 4 Core Wire For 8 Modular",
                     "panelRemark": "Double dome light / video controling / camera",
+                    "touchPanelRemark": "Double DOME light",
                     "purpose": "Seperate poweer and switch nees add"
                 },
                 {
@@ -211,6 +251,7 @@ export const MOT_ELECTRIC_LINE = {
                     "srNo": "",
                     "description": "SDI Cable - 2 nos, HDMI Cable - 2 nos, AUX Cable - 1 nos, Speaker Cable - 1 nos, Power 5/15A Socket - 3 nos",
                     "panelRemark": "",
+                    "touchPanelRemark": "For CCTV camera / video / internet controling",
                     "purpose": "Depend on MOT medical equipment and clint need"
                 }
             ]

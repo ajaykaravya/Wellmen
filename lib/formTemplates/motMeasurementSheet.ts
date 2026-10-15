@@ -66,7 +66,11 @@ export const MOT_MEASUREMENT_SHEET = {
                 {
                     "key": "make",
                     "label": "Make",
-                    "fieldType": "text"
+                    "fieldType": "select",
+                    "options": [
+                        "Wellman",
+                        "Any Make"
+                    ]
                 },
                 {
                     "key": "colour",
@@ -266,6 +270,15 @@ export const MOT_MEASUREMENT_SHEET = {
                                 "945x645",
                                 "1400x645"
                             ]
+                        },
+                        "make": {
+                            "fieldType": "select",
+                            "options": [
+                                "Digiline",
+                                "Biox",
+                                "Wellman",
+                                "Any Make"
+                            ]
                         }
                     }
                 },
@@ -288,6 +301,15 @@ export const MOT_MEASUREMENT_SHEET = {
                             "options": [
                                 "945x645",
                                 "1400x645"
+                            ]
+                        },
+                        "make": {
+                            "fieldType": "select",
+                            "options": [
+                                "Digiline",
+                                "Biox",
+                                "Wellman",
+                                "Any Make"
                             ]
                         }
                     }
@@ -389,7 +411,19 @@ export const MOT_MEASUREMENT_SHEET = {
                             "key": "tr_11",
                             "label": "11 TR."
                         }
-                    ]
+                    ],
+                    "columnOverrides": {
+                        "make": {
+                            "fieldType": "select",
+                            "options": [
+                                "Emerson",
+                                "Diakin",
+                                "Carrier",
+                                "Wellman",
+                                "Any Make"
+                            ]
+                        }
+                    }
                 },
                 {
                     "key": "aluminium_coving",
@@ -573,7 +607,18 @@ export const MOT_MEASUREMENT_SHEET = {
                             "key": "sub_zero_panel",
                             "label": "Sub Zero Panel"
                         }
-                    ]
+                    ],
+                    "columnOverrides": {
+                        "make": {
+                            "fieldType": "select",
+                            "options": [
+                                "Schnider",
+                                "Mistshubhishi",
+                                "Wellman",
+                                "Any Make"
+                            ]
+                        }
+                    }
                 },
                 {
                     "key": "v_f_d_for_electrical_panel",
@@ -605,8 +650,9 @@ export const MOT_MEASUREMENT_SHEET = {
                             "fieldType": "select",
                             "options": [
                                 "Schnider",
-                                "Mistu Shubhi",
+                                "Mistshubhishi",
                                 "Denfos",
+                                "Wellman",
                                 "Any Make"
                             ]
                         }
@@ -624,7 +670,18 @@ export const MOT_MEASUREMENT_SHEET = {
                             "key": "box_type",
                             "label": "Box Type"
                         }
-                    ]
+                    ],
+                    "columnOverrides": {
+                        "make": {
+                            "fieldType": "select",
+                            "options": [
+                                "Aaf",
+                                "Mechmark",
+                                "Wellman",
+                                "Any Make"
+                            ]
+                        }
+                    }
                 },
                 {
                     "key": "riser_grill",

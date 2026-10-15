@@ -93,16 +93,21 @@ export default function CompleteSiteView({
     );
   }
 
+  // On a narrow screen the columns would otherwise squeeze down to a few
+  // characters each; stating a floor makes the wrapper scroll instead. The
+  // PDF export stylesheet resets table min-width, so capture is unaffected.
+  const tableMinWidth = 160 + (section.columns?.length || 0) * 90;
+
   return (
     <div className="rbac-card">
       <h3 className="rbac-title-lg mb-5">{section.title}</h3>
       <div className="overflow-x-auto rounded-xl border border-[color:var(--theme-border)] bg-[var(--theme-surface)]">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm" style={{ minWidth: `${tableMinWidth}px` }}>
           <thead>
             <tr className="bg-[var(--theme-surface-2)] text-[color:var(--theme-text-muted)] uppercase text-xs font-bold">
               <th className="px-4 py-3 text-left">Description</th>
               {section.columns?.map((col: any) => (
-                <th key={col.key} className="px-4 py-3 text-center border-l">{col.label}</th>
+                <th key={col.key} className="px-4 py-3 text-center border-l whitespace-nowrap">{col.label}</th>
               ))}
             </tr>
           </thead>

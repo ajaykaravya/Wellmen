@@ -3,8 +3,10 @@ import { RETURN_DUCT_CHECKING } from "./returnDuctChecking";
 import { AHU_CHECKLIST_REPORT } from "./ahuChecklistReport";
 import { COMPOSER_CHECKLIST_REPORT } from "./composerChecklistReport";
 import { PLENUM_BOX_CHECKLIST_REPORT } from "./plenumBoxChecklistReport";
+import { INSTALLATION_CHECKLIST_MODULAR_OT } from "./installationChecklistModularOt";
 
-// Combines the five HVAC checklists into a single document. The sections are
+// Combines the five HVAC checklists and the six Modular OT installation
+// checklists into a single document. The sections are
 // reused from the original templates rather than copied, so edits to any of
 // them stay reflected here. Each section keeps its own key, which keeps saved
 // form data separated per checklist.
@@ -23,5 +25,7 @@ export const SOP_AND_CHECKLIST_OF_HVAC_SYSTEM = {
       title: "Compressor Checklist Report",
     })),
     ...PLENUM_BOX_CHECKLIST_REPORT.sections,
+    // Wall Panel, Ceiling Panel, Coving, Flooring, Door and Electric Panel.
+    ...INSTALLATION_CHECKLIST_MODULAR_OT.sections,
   ],
 };
