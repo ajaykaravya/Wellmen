@@ -330,7 +330,17 @@ export const MOT_MEASUREMENT_SHEET = {
                             "key": "touch_panel_base",
                             "label": "Touch Panel Base"
                         }
-                    ]
+                    ],
+                    "columnOverrides": {
+                        "make": {
+                            "fieldType": "select",
+                            "options": [
+                                "Oxymac",
+                                "Wellman",
+                                "Any Make"
+                            ]
+                        }
+                    }
                 },
                 {
                     "key": "air_handling_unit",
@@ -465,7 +475,17 @@ export const MOT_MEASUREMENT_SHEET = {
                             "key": "aluminium",
                             "label": "Aluminium"
                         }
-                    ]
+                    ],
+                    "columnOverrides": {
+                        "make": {
+                            "fieldType": "select",
+                            "options": [
+                                "Oxymac",
+                                "Wellman",
+                                "Any Make"
+                            ]
+                        }
+                    }
                 },
                 {
                     "key": "g_i_ducting",
@@ -589,7 +609,18 @@ export const MOT_MEASUREMENT_SHEET = {
                             "key": "membrane",
                             "label": "Membrane"
                         }
-                    ]
+                    ],
+                    "columnOverrides": {
+                        "make": {
+                            "fieldType": "select",
+                            "options": [
+                                "Digiline",
+                                "Biox",
+                                "Wellman",
+                                "Any Make"
+                            ]
+                        }
+                    }
                 },
                 {
                     "key": "electrical_panel",
@@ -709,7 +740,18 @@ export const MOT_MEASUREMENT_SHEET = {
                             "key": "acp",
                             "label": "ACP"
                         }
-                    ]
+                    ],
+                    "columnOverrides": {
+                        "make": {
+                            "fieldType": "select",
+                            "options": [
+                                "Eubiq",
+                                "Oxymac",
+                                "Wellman",
+                                "Any Make"
+                            ]
+                        }
+                    }
                 },
                 {
                     "key": "d_p_guage",
@@ -719,7 +761,17 @@ export const MOT_MEASUREMENT_SHEET = {
                             "key": "d_p_guage",
                             "label": "D.P. Gauge"
                         }
-                    ]
+                    ],
+                    "columnOverrides": {
+                        "make": {
+                            "fieldType": "select",
+                            "options": [
+                                "Samco",
+                                "Wellman",
+                                "Any Make"
+                            ]
+                        }
+                    }
                 }
             ]
         }
