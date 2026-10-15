@@ -7,6 +7,7 @@ import { COMPLETE_SITE_CHECKING_REPORT } from "./formTemplates/completeSiteCheck
 import { SOP_AND_CHECKLIST_OF_HVAC_SYSTEM } from "./formTemplates/sopAndCheckListOfHvacSystem"
 import { MOT_MEASUREMENT_SHEET_FORM } from "./formTemplates/motMeasurementSheetForm"
 import { OT_VALIDATION_AND_CALIBRATION } from "./formTemplates/otValidationAndCalibration"
+import { DOOR_FILLING_DETAIL } from "./formTemplates/doorFillingDetail"
 
 export const DEFAULT_PERMISSIONS = [
   "create_user",
@@ -98,6 +99,10 @@ export const DEFAULT_PROJECT_FORMS = [
   {
     name: "MOT & Accessories Cut-Out Measurement Report",
     template: MOT_ACCESSORIES_CUT_OUT_MEASURMENT_REPORT,
+  },
+  {
+    name: "Door Filling Detail",
+    template: DOOR_FILLING_DETAIL,
   },
 ]
 
@@ -212,6 +217,33 @@ export async function ensureDefaults() {
             where: { name: { in: RETIRED_PROJECT_FORMS } },
             data: { isActive: false },
           })
+
+          // A project only gets its submission rows at creation time, so a
+          // form added to DEFAULT_PROJECT_FORMS afterwards would be invisible
+          // on every project that already exists. Backfill the missing pairs;
+          // the unique index on (projectId, projectFormId) makes this a no-op
+          // once they are in place.
+          const [projectIds, activeFormIds] = await Promise.all([
+            tx.project.findMany({ select: { id: true } }),
+            tx.projectForm.findMany({
+              where: { isActive: true },
+              select: { id: true },
+            }),
+          ])
+
+          if (projectIds.length > 0 && activeFormIds.length > 0) {
+            await tx.projectFormSubmission.createMany({
+              data: projectIds.flatMap((project) =>
+                activeFormIds.map((form) => ({
+                  projectId: project.id,
+                  projectFormId: form.id,
+                  status: "PENDING" as const,
+                  formData: {},
+                })),
+              ),
+              skipDuplicates: true,
+            })
+          }
 
           for (const [index, name] of DEFAULT_DRAWING_CATEGORIES.entries()) {
             await tx.drawingCategory.upsert({
