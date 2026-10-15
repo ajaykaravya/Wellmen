@@ -28,7 +28,7 @@ const PDF_ROOT_FONT_SIZE = "19px";
 
 // Height reserved at the bottom of every page for the company footer (mm).
 const PDF_FOOTER_BAND = 26;
-Data Inventory, Gap Analysis and Onboarding Preparation
+//Data Inventory, Gap Analysis and Onboarding Preparation
 // Side/top margin for placed blocks (mm).
 const PDF_MARGIN = 5;
 
