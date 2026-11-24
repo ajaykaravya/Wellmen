@@ -44,6 +44,33 @@ const DRAWING_EXTENSIONS = {
   ".dxf": "AUTOCAD",
 };
 
+// Browsers send an empty file.type for files they don't recognise (DWG/DXF,
+// sometimes CSV/DOC on some OSes). An empty string would override Supabase's
+// default content type and make the storage upload fail, so fill it in from
+// the extension.
+const MIME_BY_EXTENSION = {
+  ".pdf": "application/pdf",
+  ".ppt": "application/vnd.ms-powerpoint",
+  ".pptx":
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  ".doc": "application/msword",
+  ".docx":
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ".xls": "application/vnd.ms-excel",
+  ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ".csv": "text/csv",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".dwg": "application/octet-stream",
+  ".dxf": "application/octet-stream",
+};
+
+const resolveContentType = (file, ext) =>
+  String(file?.type || "").trim() ||
+  MIME_BY_EXTENSION[ext] ||
+  "application/octet-stream";
+
 export const getDrawingFileType = (fileName) =>
   DRAWING_EXTENSIONS[path.extname(String(fileName || "")).toLowerCase()] || null;
 
@@ -128,7 +155,7 @@ async function saveOne(file, { type, projectId, kind }) {
     const { error } = await supabase.storage
       .from("wellmen")
       .upload(uploadPath, bytes, {
-        contentType: file.type,
+        contentType: resolveContentType(file, ext),
         upsert: false,
       });
 

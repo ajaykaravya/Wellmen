@@ -122,8 +122,13 @@ export default function ProjectDrawingsSection({
       await load();
     } catch (error) {
       console.error("Failed to upload drawing", error);
+      const status = (error as { status?: number })?.status;
       toast.error(
-        error instanceof Error ? error.message : "Failed to upload drawing.",
+        status === 413
+          ? "File is too large to upload. Keep each upload under 4.5 MB (upload large drawings one at a time)."
+          : error instanceof Error
+            ? error.message
+            : "Failed to upload drawing.",
       );
     } finally {
       setUploadingId(null);
