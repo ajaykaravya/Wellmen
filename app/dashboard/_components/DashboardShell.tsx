@@ -27,6 +27,8 @@ type SessionUser = {
 type MenuKey =
   | "dashboard"
   | "dailyActivity"
+  | "expenseReport"
+  | "incomeReport"
   | "users"
   | "roles"
   | "permissions"
@@ -105,6 +107,8 @@ const routeByMenu: Record<MenuKey, string> = {
   cashTracker: "/dashboard/cash-tracker",
   newPetiCash: "/dashboard/new-peti-cash",
   dailyActivity: "/dashboard/daily-activity",
+  expenseReport: "/dashboard/account-reports/expense",
+  incomeReport: "/dashboard/account-reports/income",
   settings: "/dashboard/settings",
 };
 
@@ -112,6 +116,8 @@ const getActiveMenu = (pathname: string | null): MenuKey => {
   const safePathname = pathname || "";
   if (safePathname.startsWith("/dashboard/settings")) return "settings";
   if (safePathname.startsWith("/dashboard/daily-activity")) return "dailyActivity";
+  if (safePathname.startsWith("/dashboard/account-reports/expense")) return "expenseReport";
+  if (safePathname.startsWith("/dashboard/account-reports/income")) return "incomeReport";
   if (safePathname.startsWith("/dashboard/users")) return "users";
   if (safePathname.startsWith("/dashboard/office-categories"))
     return "officeCategories";
@@ -200,7 +206,7 @@ export default function DashboardShell({
   }, [activeMenu]);
 
   const isReportsActive = useMemo(() => {
-    return ["employeeFinancialReport", "transportReports"].includes(
+    return ["expenseReport", "incomeReport", "employeeFinancialReport", "transportReports"].includes(
       activeMenu,
     );
   }, [activeMenu]);
@@ -287,6 +293,8 @@ export default function DashboardShell({
         label: "Reports",
         hasDropdown: true,
         dropdownItems: [
+          { key: "expenseReport", label: "Expense Report" },
+          { key: "incomeReport", label: "Income Report" },
           { key: "employeeFinancialReport", label: "Employee Financial Report" },
           { key: "transportReports", label: "Transport Reports" },
         ],
