@@ -26,6 +26,7 @@ type SessionUser = {
 
 type MenuKey =
   | "dashboard"
+  | "dailyActivity"
   | "users"
   | "roles"
   | "permissions"
@@ -103,12 +104,14 @@ const routeByMenu: Record<MenuKey, string> = {
   incomeTypes: "/dashboard/income-types",
   cashTracker: "/dashboard/cash-tracker",
   newPetiCash: "/dashboard/new-peti-cash",
+  dailyActivity: "/dashboard/daily-activity",
   settings: "/dashboard/settings",
 };
 
 const getActiveMenu = (pathname: string | null): MenuKey => {
   const safePathname = pathname || "";
   if (safePathname.startsWith("/dashboard/settings")) return "settings";
+  if (safePathname.startsWith("/dashboard/daily-activity")) return "dailyActivity";
   if (safePathname.startsWith("/dashboard/users")) return "users";
   if (safePathname.startsWith("/dashboard/office-categories"))
     return "officeCategories";
@@ -267,6 +270,7 @@ export default function DashboardShell({
       hasDropdown?: boolean;
       dropdownItems?: { key: MenuKey; label: string }[];
     }[] = [{ key: "dashboard", label: "Dashboard" }];
+    if (isAdmin) items.push({ key: "dailyActivity", label: "Daily Activity" });
     items.push({ key: "task-management", label: "Task Management" });
     items.push({ key: "reports", label: "Reporting" });
     items.push(
