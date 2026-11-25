@@ -125,7 +125,12 @@ export async function POST(req, { params }) {
   } catch (error) {
     console.error("POST project drawings failed", error);
     return NextResponse.json(
-      { error: "Failed to upload drawing." },
+      {
+        error:
+          error instanceof Error && error.message.startsWith("Storage upload failed")
+            ? error.message
+            : "Failed to upload drawing.",
+      },
       { status: 500 },
     );
   }

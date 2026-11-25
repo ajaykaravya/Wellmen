@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
-import { unlink } from "node:fs/promises";
-import path from "node:path";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
-import { supabase } from "@/lib/supabase";
+import { deleteMediaFile } from "@/app/api/_utils/mediaUpload";
 
 export async function DELETE(req, { params }) {
   const gate = await requireRole(req, ["Admin", "Manager"]);
@@ -18,25 +16,7 @@ export async function DELETE(req, { params }) {
     return NextResponse.json({ error: "Drawing not found." }, { status: 404 });
   }
 
-  // Remove the stored file on a best-effort basis - a missing or unreachable
-  // file must not block removing the record.
-  try {
-    if (drawing.fileUrl.startsWith("/uploads/")) {
-      await unlink(
-        path.join(process.cwd(), "public", drawing.fileUrl.replace(/^\//, "")),
-      );
-    } else if (supabase) {
-      const marker = "/storage/v1/object/public/wellmen/";
-      const index = drawing.fileUrl.indexOf(marker);
-      if (index !== -1) {
-        await supabase.storage
-          .from("wellmen")
-          .remove([drawing.fileUrl.slice(index + marker.length)]);
-      }
-    }
-  } catch (error) {
-    console.warn("Failed to remove drawing file, deleting record anyway", error);
-  }
+  await deleteMediaFile(drawing.fileUrl);
 
   await prisma.projectDrawing.delete({ where: { id: drawingId } });
 

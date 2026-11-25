@@ -1,7 +1,8 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { unlink } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { supabase } from "@/lib/supabase";
+import { prisma } from "@/lib/prisma";
 
 const sanitizeName = (value) =>
   String(value || "")
@@ -89,13 +90,7 @@ export const getDocumentFileType = (fileName) =>
 
 export const ALLOWED_DOCUMENT_EXTENSIONS = Object.keys(DOCUMENT_EXTENSIONS);
 
-const ensureUploadDir = async (scope) => {
-  const uploadDir = path.join(process.cwd(), "public", "uploads", scope);
-  await mkdir(uploadDir, { recursive: true });
-  return uploadDir;
-};
-
-const getPublicUrl = (scope, name) => `/uploads/${scope}/${name}`;
+const STORED_FILE_URL_PREFIX = "/api/files/";
 
 const getSupabasePublicUrl = (projectId, kind, name) => {
   // Use the correct Supabase Storage URL format
@@ -106,6 +101,26 @@ const getSupabasePublicUrl = (projectId, kind, name) => {
   );
   return `${baseUrl}/storage/v1/object/public/wellmen/${projectId}/${kind}/${name}`;
 };
+
+// Vercel has no writable disk, so without Supabase the file bytes are kept in
+// the StoredFile table and served by /api/files/[id].
+const saveToDatabase = async (file, ext, bytes) => {
+  const row = await prisma.storedFile.create({
+    data: {
+      fileName: String(file.name || `file${ext}`).slice(0, 191),
+      mimeType: resolveContentType(file, ext),
+      size: bytes.byteLength,
+      data: new Uint8Array(bytes),
+    },
+    select: { id: true },
+  });
+  return `${STORED_FILE_URL_PREFIX}${row.id}`;
+};
+
+const storageError = (error) =>
+  new Error(
+    `Storage upload failed: ${error instanceof Error ? error.message : String(error)}`,
+  );
 
 async function saveOne(file, { type, projectId, kind }) {
   if (!(file instanceof File) || !file.size) return null;
@@ -133,44 +148,53 @@ async function saveOne(file, { type, projectId, kind }) {
   }
 
   const ext = getExt(file);
-  const baseName = sanitizeName(path.basename(file.name || "file", ext));
-  const fileName = `${type}-${Date.now()}-${randomUUID()}-${baseName || kind}${ext}`;
+  const bytes = await file.arrayBuffer();
 
-  const saveLocally = async (bytes) => {
-    const scope = `${projectId}/${kind}`;
-    const uploadDir = await ensureUploadDir(scope);
-    await writeFile(path.join(uploadDir, fileName), Buffer.from(bytes));
-    return getPublicUrl(scope, fileName);
-  };
-
-  try {
-    const bytes = await file.arrayBuffer();
-
-    // Supabase is optional - without credentials, go straight to local disk.
-    if (!supabase) {
-      return saveLocally(bytes);
-    }
-
-    const uploadPath = `${projectId}/${kind}/${fileName}`;
+  if (supabase) {
+    const baseName = sanitizeName(path.basename(file.name || "file", ext));
+    const fileName = `${type}-${Date.now()}-${randomUUID()}-${baseName || kind}${ext}`;
     const { error } = await supabase.storage
       .from("wellmen")
-      .upload(uploadPath, bytes, {
+      .upload(`${projectId}/${kind}/${fileName}`, bytes, {
         contentType: resolveContentType(file, ext),
         upsert: false,
       });
+    if (!error) return getSupabasePublicUrl(projectId, kind, fileName);
+    console.warn(
+      "Supabase upload failed, falling back to database storage:",
+      error.message,
+    );
+  }
 
-    if (error) {
-      console.warn(
-        "Supabase upload failed, falling back to local storage:",
-        error.message,
-      );
-      return saveLocally(bytes);
-    }
-
-    return getSupabasePublicUrl(projectId, kind, fileName);
+  try {
+    return await saveToDatabase(file, ext, bytes);
   } catch (error) {
-    console.error("Upload failed:", error);
-    throw new Error("Failed to upload file");
+    console.error("Database file upload failed:", error);
+    throw storageError(error);
+  }
+}
+
+// Best-effort removal of a file saved by saveMediaFile(s). Never throws, so a
+// missing or unreachable file can't block deleting the record that owns it.
+export async function deleteMediaFile(fileUrl) {
+  const url = String(fileUrl || "");
+  try {
+    if (url.startsWith(STORED_FILE_URL_PREFIX)) {
+      const id = url.slice(STORED_FILE_URL_PREFIX.length).split(/[/?#]/)[0];
+      await prisma.storedFile.deleteMany({ where: { id } });
+    } else if (url.startsWith("/uploads/")) {
+      await unlink(path.join(process.cwd(), "public", url.replace(/^\//, "")));
+    } else if (supabase) {
+      const marker = "/storage/v1/object/public/wellmen/";
+      const index = url.indexOf(marker);
+      if (index !== -1) {
+        await supabase.storage
+          .from("wellmen")
+          .remove([url.slice(index + marker.length)]);
+      }
+    }
+  } catch (error) {
+    console.warn("Failed to remove stored file", url, error);
   }
 }
 

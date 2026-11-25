@@ -19,7 +19,8 @@ const cachedClientHasModel = (client: PrismaClient | undefined) => {
     typeof delegates.financeTransaction !== "undefined" &&
     typeof delegates.incomeTransaction !== "undefined" &&
     typeof delegates.transportConfig !== "undefined" &&
-    typeof delegates.company !== "undefined"
+    typeof delegates.company !== "undefined" &&
+    typeof delegates.storedFile !== "undefined"
   )
 }
 

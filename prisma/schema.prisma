@@ -554,3 +554,15 @@ enum DrawingFileType {
   IMAGE
   AUTOCAD
 }
+
+// Uploaded file bytes (drawings, documents, report media, logos) kept in the
+// database because the app runs on Vercel, which has no writable disk.
+// Served by /api/files/[id].
+model StoredFile {
+  id        String   @id @default(uuid()) @db.Char(36)
+  fileName  String
+  mimeType  String
+  size      Int
+  data      Bytes    @db.LongBlob
+  createdAt DateTime @default(now())
+}
